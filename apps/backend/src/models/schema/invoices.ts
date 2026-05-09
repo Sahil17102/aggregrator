@@ -5,6 +5,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  serial,
   timestamp,
   uuid,
   varchar,
@@ -20,7 +21,7 @@ export const invoiceType = pgEnum('invoice_type', ['b2b', 'b2c'])
 // INVOICES (Single Table)
 // --------------------
 export const invoices = pgTable('invoices', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   userId: uuid('userId')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),

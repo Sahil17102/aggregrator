@@ -6,9 +6,8 @@ import { db } from '../models/client'
 import { locations } from '../schema/schema'
 
 const DATA_DIR = path.resolve('src/scripts/data')
-const CHUNK_SIZE = 10
+const CHUNK_SIZE = 1000
 
-// ---------- Types ----------
 type Row = {
   pincode: string
   city: string
@@ -17,9 +16,12 @@ type Row = {
   tags: string[]
 }
 
-// ---------- Helpers ----------
 function normalize(x: any): string {
   return (x ?? '').toString().trim()
+}
+
+function locationKey(row: Pick<Row, 'pincode' | 'city' | 'state'>): string {
+  return `${row.pincode}|${row.city.toLowerCase()}|${row.state.toLowerCase()}`
 }
 
 const SPECIAL_ZONE_STATES = new Set(
@@ -36,12 +38,12 @@ const SPECIAL_ZONE_STATES = new Set(
 )
 
 function mapRow(raw: Record<string, any>): Row | null {
-  const pincode = normalize(raw['Pincode'])
+  const pincode = normalize(raw.Pincode)
   if (!pincode || !/^\d{6}$/.test(pincode)) return null
 
-  const state = normalize(raw['HubState'])
-  const city = normalize(raw['BillingCity'])
-  const billingZone = normalize(raw['BillingZone'])
+  const state = normalize(raw.HubState)
+  const city = normalize(raw.BillingCity)
+  const billingZone = normalize(raw.BillingZone)
   const cityType = normalize(raw['City Type'])
 
   const tags: string[] = []
@@ -54,77 +56,89 @@ function mapRow(raw: Record<string, any>): Row | null {
   return { pincode, city, state, country: 'India', tags }
 }
 
-// ---------- Insert helper ----------
 async function insertBatch(rows: Row[]) {
   if (!rows.length) return
 
-  const values = rows.map((r) => ({
-    pincode: r.pincode,
-    city: r.city,
-    state: r.state,
-    country: r.country,
-    tags: Array.isArray(r.tags) ? r.tags : [], // force array
-    created_at: new Date(),
-  }))
+  await db.insert(locations).values(
+    rows.map((row) => ({
+      pincode: row.pincode,
+      city: row.city,
+      state: row.state,
+      country: row.country,
+      tags: row.tags,
+      created_at: new Date(),
+    })),
+  )
 
-  for (const zone of values) {
-    console.log('inserting:', zone.pincode, 'tags:', JSON.stringify(zone.tags))
-    await db.insert(locations).values(zone) // Drizzle insert
-  }
-
-  console.log(`✅ Inserted ${rows.length} rows`)
+  console.log(`Inserted ${rows.length} rows`)
 }
 
-// ---------- Main import ----------
 async function importXlsx(filename: string) {
   const fullPath = path.join(DATA_DIR, filename)
   if (!fs.existsSync(fullPath)) {
     console.error('File not found:', fullPath)
     return
   }
-  console.log('📂 Reading XLSX:', fullPath)
 
-  const wb = XLSX.readFile(fullPath)
-  const sheet = wb.Sheets[wb.SheetNames[0]]
+  console.log('Reading XLSX:', fullPath)
+
+  const workbook = XLSX.readFile(fullPath)
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const jsonRows: Record<string, any>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
 
   console.log('Total rows parsed:', jsonRows.length)
 
+  const existingRows = await db
+    .select({
+      pincode: locations.pincode,
+      city: locations.city,
+      state: locations.state,
+    })
+    .from(locations)
+  const existingKeys = new Set(existingRows.map(locationKey))
+
   let batch: Row[] = []
-  let processed = 0
+  let inserted = 0
+  let skipped = 0
 
   for (const raw of jsonRows) {
     const mapped = mapRow(raw)
     if (!mapped) continue
 
+    const key = locationKey(mapped)
+    if (existingKeys.has(key)) {
+      skipped++
+      continue
+    }
+
+    existingKeys.add(key)
     batch.push(mapped)
 
     if (batch.length >= CHUNK_SIZE) {
       await insertBatch(batch)
-      processed += batch.length
-      if (processed % 1000 === 0) console.log(`➡️  Processed ${processed} rows...`)
+      inserted += batch.length
+      console.log(`Processed ${inserted} new rows`)
       batch = []
     }
   }
 
   if (batch.length) {
     await insertBatch(batch)
-    processed += batch.length
+    inserted += batch.length
   }
 
-  console.log(`✅ Import finished. Total inserted: ${processed}`)
+  console.log(`Import finished. Inserted: ${inserted}, skipped existing: ${skipped}`)
 }
 
-// ---------- CLI ----------
 ;(async () => {
-  const arg = process.argv[2]
-  if (!arg) {
+  const filename = process.argv[2]
+  if (!filename) {
     console.error('Usage: node dist/scripts/seedLocations.js <file.xlsx>')
     process.exit(1)
   }
 
   try {
-    await importXlsx(arg)
+    await importXlsx(filename)
   } catch (err) {
     console.error('Import failed:', (err as Error).message)
     process.exitCode = 1

@@ -30,7 +30,10 @@ async function seedZones() {
     }
 
     for (const zone of allZones) {
-      await db.insert(zones).values(zone).onConflictDoNothing({ target: zones.code }) // avoid duplicates
+      await db
+        .insert(zones)
+        .values(zone)
+        .onConflictDoNothing({ target: [zones.code, zones.business_type] }) // avoid duplicates
     }
 
     console.log('✅ Zones seeded successfully for both B2B and B2C')
