@@ -14,21 +14,22 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react'
 import React from 'react'
+import { brand as brandTokens, brandFonts, brandGradients, brandIdentity } from '../../theme/brand'
 
 function SignUp() {
-  const pageBg = useColorModeValue('#F4F8FF', '#081F45')
-  const shellBg = useColorModeValue('rgba(255,255,255,0.92)', 'rgba(7, 28, 68, 0.9)')
-  const shellBorder = useColorModeValue('rgba(10,78,163,0.12)', 'rgba(26,166,247,0.18)')
+  const pageBg = useColorModeValue(brandTokens.page, '#050B24')
+  const shellBg = useColorModeValue('rgba(255,255,255,0.92)', 'rgba(13, 27, 77, 0.9)')
+  const shellBorder = useColorModeValue('rgba(13,27,77,0.12)', 'rgba(26,166,247,0.18)')
   const heroBg = useColorModeValue(
-    'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(234,243,255,0.96) 100%)',
-    'linear-gradient(180deg, rgba(7,28,68,0.94) 0%, rgba(10,78,163,0.88) 100%)',
+    brandGradients.hero,
+    'linear-gradient(180deg, rgba(13,27,77,0.94) 0%, rgba(22,62,89,0.88) 100%)',
   )
-  const textPrimary = useColorModeValue('#10213A', 'whiteAlpha.900')
-  const textSecondary = useColorModeValue('#5A6B84', 'whiteAlpha.700')
+  const textPrimary = useColorModeValue(brandTokens.ink, 'whiteAlpha.900')
+  const textSecondary = useColorModeValue(brandTokens.inkSoft, 'whiteAlpha.700')
   const inputBg = useColorModeValue('rgba(255,255,255,0.92)', 'rgba(7, 23, 54, 0.74)')
-  const inputBorder = useColorModeValue('rgba(10,78,163,0.18)', 'rgba(26,166,247,0.2)')
-  const brand = useColorModeValue('#0A4EA3', '#8FD4FF')
-  const accent = useColorModeValue('#F57C00', '#FFB547')
+  const inputBorder = useColorModeValue('rgba(13,27,77,0.16)', 'rgba(26,166,247,0.2)')
+  const brand = useColorModeValue(brandTokens.ink, '#8FD4FF')
+  const accent = useColorModeValue(brandTokens.accent, '#FFB547')
 
   return (
     <Flex
@@ -45,8 +46,8 @@ function SignUp() {
         position="absolute"
         inset="0"
         bgImage={useColorModeValue(
-          'radial-gradient(circle at 10% 8%, rgba(10,78,163,0.16) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(245,124,0,0.14) 0%, transparent 28%)',
-          'radial-gradient(circle at 10% 8%, rgba(26,166,247,0.18) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(255,181,71,0.12) 0%, transparent 28%)',
+          brandGradients.page,
+          'radial-gradient(circle at 10% 8%, rgba(26,166,247,0.18) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(255,138,40,0.12) 0%, transparent 28%)',
         )}
       />
 
@@ -57,7 +58,7 @@ function SignUp() {
         border="1px solid"
         borderColor={shellBorder}
         borderRadius={{ base: '24px', lg: '30px' }}
-        boxShadow={useColorModeValue('0 28px 72px rgba(16,33,58,0.12)', '0 28px 72px rgba(0,0,0,0.38)')}
+        boxShadow={useColorModeValue(brandTokens.shadow, '0 28px 72px rgba(0,0,0,0.38)')}
         overflow="hidden"
         direction={{ base: 'column', lg: 'row' }}
         backdropFilter="blur(16px)"
@@ -73,12 +74,12 @@ function SignUp() {
           minH={{ base: '240px', lg: 'unset' }}
           position="relative"
           overflow="hidden"
-          borderRight={{ base: 'none', lg: '1px solid rgba(10,78,163,0.08)' }}
+          borderRight={{ base: 'none', lg: '1px solid rgba(13,27,77,0.08)' }}
         >
           <VStack align="flex-start" spacing={5} position="relative" zIndex="1">
-            <Box as="img" src="/skyrush-logo.png" alt="SkyRush Express Courier" h="62px" w="224px" objectFit="contain" />
+            <Box as="img" src={brandIdentity.logoPath} alt={brandIdentity.name} h="62px" w="224px" objectFit="contain" />
             <Heading
-              fontFamily="'Barlow', 'Plus Jakarta Sans', sans-serif"
+              fontFamily={brandFonts.display}
               fontSize={{ base: '3xl', md: '5xl' }}
               fontWeight="800"
               lineHeight="0.98"
@@ -90,7 +91,7 @@ function SignUp() {
               </Text>
             </Heading>
             <Text color={textSecondary} fontSize="sm" maxW="360px" lineHeight="1.8">
-              Create a SkyRush Express Courier workspace for teams that need cleaner shipment
+              Create a ChoiceMee Logistics workspace for teams that need cleaner shipment
               control, billing visibility, and faster daily operations.
             </Text>
           </VStack>
@@ -107,7 +108,7 @@ function SignUp() {
                 py={3}
                 borderRadius="20px"
                 bg={useColorModeValue('rgba(255,255,255,0.68)', 'rgba(255,255,255,0.06)')}
-                border={`1px solid ${useColorModeValue('rgba(10,78,163,0.14)', 'rgba(255,255,255,0.14)')}`}
+                border={`1px solid ${useColorModeValue('rgba(13,27,77,0.14)', 'rgba(255,255,255,0.14)')}`}
               >
                 <Text fontSize="lg" fontWeight="800" color={accent} lineHeight="1">
                   {item.value}
@@ -128,7 +129,7 @@ function SignUp() {
                   DELIVER FASTER
                 </Text>
                 <Heading
-                  fontFamily="'Barlow', 'Plus Jakarta Sans', sans-serif"
+                  fontFamily={brandFonts.display}
                   fontSize={{ base: '2xl', md: '4xl' }}
                   fontWeight="800"
                   color={textPrimary}
@@ -138,7 +139,7 @@ function SignUp() {
                   Create your admin workspace
                 </Heading>
                 <Text mt={2} color={textSecondary} fontSize="sm" lineHeight="1.8">
-                  Use this setup form to onboard your SkyRush operations team.
+                  Use this setup form to onboard your ChoiceMee operations team.
                 </Text>
               </Box>
 
@@ -153,7 +154,7 @@ function SignUp() {
                     borderRadius="18px"
                     bg={inputBg}
                     borderColor={inputBorder}
-                    _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 4px rgba(10,78,163,0.12)' }}
+                    _focus={{ borderColor: 'accent.500', boxShadow: '0 0 0 4px rgba(255,138,40,0.16)' }}
                   />
                 </FormControl>
                 <FormControl isRequired>
@@ -161,12 +162,12 @@ function SignUp() {
                     Company
                   </FormLabel>
                   <Input
-                    placeholder="SkyRush operations"
+                    placeholder="ChoiceMee operations"
                     h="52px"
                     borderRadius="18px"
                     bg={inputBg}
                     borderColor={inputBorder}
-                    _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 4px rgba(10,78,163,0.12)' }}
+                    _focus={{ borderColor: 'accent.500', boxShadow: '0 0 0 4px rgba(255,138,40,0.16)' }}
                   />
                 </FormControl>
               </SimpleGrid>
@@ -182,7 +183,7 @@ function SignUp() {
                   borderRadius="18px"
                   bg={inputBg}
                   borderColor={inputBorder}
-                  _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 4px rgba(10,78,163,0.12)' }}
+                  _focus={{ borderColor: 'accent.500', boxShadow: '0 0 0 4px rgba(255,138,40,0.16)' }}
                 />
               </FormControl>
 
@@ -197,7 +198,7 @@ function SignUp() {
                   borderRadius="18px"
                   bg={inputBg}
                   borderColor={inputBorder}
-                  _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 4px rgba(10,78,163,0.12)' }}
+                  _focus={{ borderColor: 'accent.500', boxShadow: '0 0 0 4px rgba(255,138,40,0.16)' }}
                 />
               </FormControl>
 
@@ -210,13 +211,13 @@ function SignUp() {
               <Button
                 h="52px"
                 borderRadius="999px"
-                bg="brand.500"
+                bg={brandGradients.button}
                 color="white"
                 fontWeight="700"
-                _hover={{ bg: 'brand.600' }}
-                _active={{ bg: 'brand.700' }}
+                _hover={{ boxShadow: '0 20px 36px rgba(255, 122, 21, 0.28)', transform: 'translateY(-1px)' }}
+                _active={{ transform: 'translateY(0)' }}
               >
-                Start with SkyRush
+                Start with ChoiceMee
               </Button>
 
               <Text color={textSecondary} fontWeight="medium" textAlign="center">

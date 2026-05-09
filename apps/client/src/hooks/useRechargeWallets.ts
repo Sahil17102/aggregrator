@@ -75,7 +75,7 @@ export const useRechargeWallet = () =>
         key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency || 'INR',
-        name: orderData.name || 'Dolphin Enterprise',
+        name: orderData.name || 'ChoiceMee Logistics',
         description: orderData.description || 'Wallet Recharge',
         order_id: orderData.orderId,
         prefill: orderData.prefill,

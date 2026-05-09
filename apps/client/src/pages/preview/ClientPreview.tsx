@@ -1,6 +1,7 @@
 import { alpha, Box, Button, Chip, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { TbBolt, TbChartArcs3, TbMapPinBolt, TbRoute, TbSparkles, TbTruckDelivery } from 'react-icons/tb'
+import BrandLogo from '../../components/brand/BrandLogo'
 import Sidebar, { COLLAPSED_WIDTH } from '../../components/UI/Sidebar'
 import { brand, brandFonts, brandGradients } from '../../theme/brand'
 import { DRAWER_WIDTH } from '../../utils/constants'
@@ -29,7 +30,7 @@ const focusCards = [
   },
   {
     title: 'Help Center',
-    text: 'Support tickets, public pages, and policy surfaces now follow the same Dolphin visual system.',
+    text: 'Support tickets, public pages, and policy surfaces now follow the same ChoiceMee visual system.',
   },
 ]
 
@@ -80,12 +81,7 @@ export default function ClientPreview() {
               justifyContent="space-between"
             >
               <Stack spacing={1.1}>
-                <Box
-                  component="img"
-                  src="/logo/dolphin-logo-transparent.png"
-                  alt="Dolphin Enterprise"
-                  sx={{ width: { xs: 165, md: 210 }, height: 'auto' }}
-                />
+                <BrandLogo sx={{ width: { xs: 165, md: 210 }, height: 'auto' }} />
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Box
                     sx={{
@@ -117,7 +113,7 @@ export default function ClientPreview() {
 
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 <Chip
-                  label="Dolphin theme"
+                  label="ChoiceMee theme"
                   icon={<TbBolt size={14} />}
                   sx={{
                     bgcolor: alpha(PLUM, 0.08),
@@ -213,7 +209,7 @@ export default function ClientPreview() {
                   </Typography>
 
                   <Typography sx={{ maxWidth: 620, color: MUTED, lineHeight: 1.65 }}>
-                    This preview skips sign-in so you can review the client UI shell, Dolphin color
+                    This preview skips sign-in so you can review the client UI shell, ChoiceMee color
                     system, logo treatment, sidebar labels, and the overall layout direction first.
                   </Typography>
 

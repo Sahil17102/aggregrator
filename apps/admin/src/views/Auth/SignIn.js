@@ -23,6 +23,7 @@ import { useHistory } from 'react-router-dom'
 import { DoorstepCourierScene } from '../../components/Brand/AnimatedCourierScene'
 import { loginAdmin } from '../../services/auth.service'
 import { useAuthStore } from '../../store/useAuthStore'
+import { brand as brandTokens, brandFonts, brandGradients, brandIdentity } from '../../theme/brand'
 
 function isTokenValid(token) {
   try {
@@ -34,21 +35,21 @@ function isTokenValid(token) {
 }
 
 function SignIn() {
-  const pageBg = useColorModeValue('#F5F0E8', '#171310')
-  const shellBg = useColorModeValue('rgba(255,252,248,0.94)', 'rgba(22, 18, 15, 0.92)')
-  const shellBorder = useColorModeValue('rgba(23,19,16,0.08)', 'rgba(255,255,255,0.12)')
+  const pageBg = useColorModeValue(brandTokens.page, '#050B24')
+  const shellBg = useColorModeValue('rgba(255,255,255,0.94)', 'rgba(13, 27, 77, 0.92)')
+  const shellBorder = useColorModeValue('rgba(13,27,77,0.08)', 'rgba(255,255,255,0.12)')
   const sideBg = useColorModeValue(
-    'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(248,242,234,0.98) 100%)',
-    'linear-gradient(180deg, rgba(22,18,15,0.96) 0%, rgba(30,24,20,0.94) 100%)',
+    brandGradients.hero,
+    'linear-gradient(180deg, rgba(13,27,77,0.96) 0%, rgba(22,62,89,0.94) 100%)',
   )
-  const textPrimary = useColorModeValue('#171310', 'whiteAlpha.900')
-  const textSecondary = useColorModeValue('#74685D', 'whiteAlpha.700')
+  const textPrimary = useColorModeValue(brandTokens.ink, 'whiteAlpha.900')
+  const textSecondary = useColorModeValue(brandTokens.inkSoft, 'whiteAlpha.700')
   const inputBg = useColorModeValue('rgba(255,255,255,0.94)', 'rgba(38, 30, 25, 0.72)')
-  const inputBorder = useColorModeValue('rgba(23,19,16,0.12)', 'rgba(255,255,255,0.18)')
-  const iconHoverBg = useColorModeValue('rgba(23,19,16,0.06)', 'rgba(255,255,255,0.12)')
-  const chipBg = useColorModeValue('rgba(23,19,16,0.06)', 'rgba(255,255,255,0.08)')
-  const chipBorder = useColorModeValue('rgba(23,19,16,0.1)', 'rgba(255,255,255,0.14)')
-  const brand = useColorModeValue('#171310', '#F3E9DE')
+  const inputBorder = useColorModeValue('rgba(13,27,77,0.12)', 'rgba(255,255,255,0.18)')
+  const iconHoverBg = useColorModeValue('rgba(13,27,77,0.06)', 'rgba(255,255,255,0.12)')
+  const chipBg = useColorModeValue('rgba(255,138,40,0.09)', 'rgba(255,255,255,0.08)')
+  const chipBorder = useColorModeValue('rgba(255,138,40,0.18)', 'rgba(255,255,255,0.14)')
+  const brand = useColorModeValue(brandTokens.accent, '#FFC58F')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -127,8 +128,8 @@ function SignIn() {
         position="absolute"
         inset="0"
         bgImage={useColorModeValue(
-          'radial-gradient(circle at 10% 8%, rgba(216,201,183,0.34) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(217,121,67,0.14) 0%, transparent 28%)',
-          'radial-gradient(circle at 10% 8%, rgba(255,255,255,0.1) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(217,121,67,0.12) 0%, transparent 28%)',
+          brandGradients.page,
+          'radial-gradient(circle at 10% 8%, rgba(255,255,255,0.1) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(255,138,40,0.12) 0%, transparent 28%)',
         )}
       />
 
@@ -144,7 +145,7 @@ function SignIn() {
         borderColor={shellBorder}
         borderRadius={{ base: '24px', lg: '32px' }}
         boxShadow={useColorModeValue(
-          '0 28px 72px rgba(36,26,27,0.12)',
+          brandTokens.shadow,
           '0 28px 72px rgba(0,0,0,0.38)',
         )}
         overflow="hidden"
@@ -163,7 +164,7 @@ function SignIn() {
           minH={{ base: '240px', '2xl': 'unset' }}
           position="relative"
           overflow="hidden"
-          borderRight={{ base: 'none', '2xl': '1px solid rgba(23,19,16,0.08)' }}
+          borderRight={{ base: 'none', '2xl': '1px solid rgba(13,27,77,0.08)' }}
         >
           <VStack align="flex-start" spacing={4} position="relative" zIndex="1">
             <HStack spacing={2.5} flexWrap="wrap">
@@ -186,8 +187,8 @@ function SignIn() {
             <HStack spacing={3} align="center">
               <Box
                 as="img"
-                src="/skyrush-logo.png"
-                alt="SkyRush Express Courier"
+                src={brandIdentity.logoPath}
+                alt={brandIdentity.name}
                 h="62px"
                 w="224px"
                 objectFit="contain"
@@ -198,7 +199,7 @@ function SignIn() {
             </HStack>
 
             <Heading
-              fontFamily="'Plus Jakarta Sans', 'Barlow', sans-serif"
+              fontFamily={brandFonts.display}
               fontSize={{ base: '3xl', md: '4xl' }}
               fontWeight="800"
               lineHeight="0.98"
@@ -211,8 +212,8 @@ function SignIn() {
             </Heading>
 
             <Text color={textSecondary} fontSize="sm" maxW="420px" lineHeight="1.8">
-              Review orders, monitor activity, and manage operations from a cleaner SkyRush admin
-              workspace with stronger hierarchy and a more editorial rhythm.
+              Review orders, monitor activity, and manage operations from a cleaner ChoiceMee admin
+              workspace with stronger hierarchy and a calmer daily rhythm.
             </Text>
           </VStack>
         </Flex>
@@ -234,8 +235,8 @@ function SignIn() {
                 <HStack spacing={3} align="center" mb={4}>
                   <Box
                     as="img"
-                    src="/skyrush-logo.png"
-                    alt="SkyRush Express Courier"
+                    src={brandIdentity.logoPath}
+                    alt={brandIdentity.name}
                     h="46px"
                     w="168px"
                     objectFit="contain"
@@ -248,7 +249,7 @@ function SignIn() {
                   SECURE ACCESS
                 </Text>
                 <Heading
-                  fontFamily="'Plus Jakarta Sans', 'Barlow', sans-serif"
+                  fontFamily={brandFonts.display}
                   fontSize={{ base: '2xl', md: '4xl' }}
                   fontWeight="800"
                   color={textPrimary}
@@ -270,7 +271,7 @@ function SignIn() {
                     py={1.5}
                     borderRadius="999px"
                     bg="rgba(255,255,255,0.78)"
-                    border="1px solid rgba(23,19,16,0.08)"
+                    border="1px solid rgba(13,27,77,0.08)"
                   >
                     <Text fontSize="xs" fontWeight="700" color={textPrimary}>
                       {pill}
@@ -294,8 +295,8 @@ function SignIn() {
                   borderColor={inputBorder}
                   _hover={{ borderColor: 'brand.400' }}
                   _focus={{
-                    borderColor: 'brand.500',
-                    boxShadow: '0 0 0 4px rgba(23,19,16,0.08)',
+                    borderColor: 'accent.500',
+                    boxShadow: '0 0 0 4px rgba(255,138,40,0.16)',
                   }}
                 />
               </FormControl>
@@ -317,8 +318,8 @@ function SignIn() {
                     pr="48px"
                     _hover={{ borderColor: 'brand.400' }}
                     _focus={{
-                      borderColor: 'brand.500',
-                      boxShadow: '0 0 0 4px rgba(23,19,16,0.08)',
+                      borderColor: 'accent.500',
+                      boxShadow: '0 0 0 4px rgba(255,138,40,0.16)',
                     }}
                   />
                   <InputRightElement h="54px" pr="10px">
@@ -339,13 +340,13 @@ function SignIn() {
                 type="submit"
                 h="54px"
                 borderRadius="999px"
-                bg="brand.500"
+                bg={brandGradients.button}
                 color="white"
                 fontWeight="700"
                 isLoading={loading}
                 loadingText="Signing in"
-                _hover={{ bg: 'brand.600' }}
-                _active={{ bg: 'brand.700' }}
+                _hover={{ boxShadow: '0 20px 36px rgba(255, 122, 21, 0.28)', transform: 'translateY(-1px)' }}
+                _active={{ transform: 'translateY(0)' }}
               >
                 Sign In
               </Button>

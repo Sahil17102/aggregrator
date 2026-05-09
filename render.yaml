@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: delexpress-backend
+    name: choicemee-backend
     runtime: node
     rootDir: apps/backend
     buildCommand: npm install && npm run build

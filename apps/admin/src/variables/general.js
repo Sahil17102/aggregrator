@@ -32,7 +32,7 @@ import { SiDropbox } from "react-icons/si";
 export const dashboardTableData = [
   {
     logo: AdobexdLogo,
-    name: "SkyRush Express Courier Version",
+    name: "ChoiceMee Logistics Version",
     members: [avatar1, avatar2, avatar3, avatar4, avatar5],
     budget: "$14,000",
     progression: 60,
@@ -114,7 +114,7 @@ export const timelineData = [
 export const rtlDashboardTableData = [
   {
     logo: AdobexdLogo,
-    name: "Ù†Ø³Ø®Ø© SkyRush Express Courier",
+    name: "Ù†Ø³Ø®Ø© ChoiceMee Logistics",
     members: [avatar1, avatar2, avatar3, avatar4, avatar5],
     budget: "$14,000",
     progression: 60,
@@ -198,7 +198,7 @@ export const tablesTableData = [
   {
     logo: avatar1,
     name: "Esthera Jackson",
-    email: "alexa@simmmple.com",
+    email: "ops@choicemee.com",
     subdomain: "Manager",
     domain: "Organization",
     status: "Online",
@@ -207,7 +207,7 @@ export const tablesTableData = [
   {
     logo: avatar2,
     name: "Alexa Liras",
-    email: "laurent@simmmple.com",
+    email: "ops@choicemee.com",
     subdomain: "Programmer",
     domain: "Developer",
     status: "Offline",
@@ -216,7 +216,7 @@ export const tablesTableData = [
   {
     logo: avatar3,
     name: "Laurent Michael",
-    email: "laurent@simmmple.com",
+    email: "ops@choicemee.com",
     subdomain: "Executive",
     domain: "Projects",
     status: "Online",
@@ -225,7 +225,7 @@ export const tablesTableData = [
   {
     logo: avatar4,
     name: "Freduardo Hill",
-    email: "freduardo@simmmple.com",
+    email: "ops@choicemee.com",
     subdomain: "Manager",
     domain: "Organization",
     status: "Online",
@@ -234,7 +234,7 @@ export const tablesTableData = [
   {
     logo: avatar5,
     name: "Daniel Thomas",
-    email: "daniel@simmmple.com",
+    email: "ops@choicemee.com",
     subdomain: "Programmer",
     domain: "Developer",
     status: "Offline",
@@ -243,7 +243,7 @@ export const tablesTableData = [
   {
     logo: avatar7,
     name: "Mark Wilson",
-    email: "mark@simmmple.com",
+    email: "ops@choicemee.com",
     subdomain: "Designer",
     domain: "UI/UX Design",
     status: "Offline",
@@ -254,7 +254,7 @@ export const tablesTableData = [
 export const tablesProjectData = [
   {
     logo: AdobexdLogo,
-    name: "SkyRush Express Courier Version",
+    name: "ChoiceMee Logistics Version",
     budget: "$14,000",
     status: "Working",
     progression: 60,

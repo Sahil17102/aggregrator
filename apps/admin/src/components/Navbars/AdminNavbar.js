@@ -8,6 +8,7 @@ import {
 } from "@chakra-ui/react";
 import PropTypes from "prop-types";
 import { NavLink } from "react-router-dom";
+import { brand, brandIdentity } from "theme/brand";
 import AdminNavbarLinks from "./AdminNavbarLinks";
 
 const navItems = [
@@ -21,22 +22,22 @@ const navItems = [
 export default function AdminNavbar(props) {
   const { fixed, secondary, onOpen, sidebarWidth = 275, brandText, ...rest } = props;
 
-  const mainText = useColorModeValue("#171310", "gray.100");
-  const secondaryText = useColorModeValue("#74685D", "gray.400");
+  const mainText = useColorModeValue(brand.ink, "gray.100");
+  const secondaryText = useColorModeValue(brand.inkSoft, "gray.400");
   const navbarShadow = useColorModeValue(
-    "0 18px 36px rgba(23,19,16,0.08)",
+    "0 18px 36px rgba(68,92,138,0.1)",
     "0 18px 36px rgba(0, 0, 0, 0.4)"
   );
   const defaultNavbarBg = useColorModeValue(
-    "rgba(255,252,248,0.94)",
-    "linear-gradient(110deg, rgba(22,18,15,0.94) 0%, rgba(34,28,24,0.94) 100%)"
+    brand.surfaceGlass,
+    "linear-gradient(110deg, rgba(13,27,77,0.94) 0%, rgba(22,62,89,0.94) 100%)"
   );
   const defaultNavbarBorder = useColorModeValue(
-    "1px solid rgba(23,19,16,0.08)",
+    "1px solid rgba(13,27,77,0.08)",
     "1px solid rgba(255,255,255,0.12)"
   );
   const activeBg = useColorModeValue(
-    "rgba(217,121,67,0.12)",
+    "rgba(255,138,40,0.12)",
     "rgba(255,255,255,0.08)"
   );
   const navShellBg = useColorModeValue(
@@ -44,7 +45,7 @@ export default function AdminNavbar(props) {
     "rgba(255,255,255,0.06)"
   );
   const navShellBorder = useColorModeValue(
-    "rgba(23,19,16,0.08)",
+    "rgba(13,27,77,0.08)",
     "rgba(255,255,255,0.12)"
   );
   const navbarBg = secondary ? "transparent" : defaultNavbarBg;
@@ -84,10 +85,10 @@ export default function AdminNavbar(props) {
         >
           <Box
             as="img"
-            src="/skyrush-logo.png"
-            alt="SkyRush Express Courier"
-            h="30px"
-            w="118px"
+            src={brandIdentity.logoPath}
+            alt={brandIdentity.name}
+            h="42px"
+            w="132px"
             objectFit="contain"
           />
           <Box minW={0} display={{ base: "none", md: "block" }}>

@@ -12,7 +12,7 @@ console.log('node env', env)
 dotenv.config()
 
 // Render provides PORT as a string env var, so coerce it to a real TCP port number.
-const PORT = process.env.PORT || 5002
+const PORT = Number(process.env.PORT) || 5002
 
 // Test database connection before starting server
 async function startServer() {
@@ -29,7 +29,7 @@ async function startServer() {
   server.timeout = 210000 // 3.5 minutes
 
   server.listen(PORT, '0.0.0.0', () => {
-    const url = env === 'production' ? `https://api.DelExpress.in` : `http://localhost:${PORT}`
+    const url = env === 'production' ? `https://api.choicemee.com` : `http://localhost:${PORT}`
     console.log(`🚀 Server running on port ${PORT} in ${env} mode at ${url}`)
   })
 }

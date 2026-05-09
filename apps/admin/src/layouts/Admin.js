@@ -1,10 +1,6 @@
 import { Box, ChakraProvider, Portal, useColorModeValue, useDisclosure } from '@chakra-ui/react'
 import Configurator from 'components/Configurator/Configurator'
 import Footer from 'components/Footer/Footer.js'
-import '@fontsource/open-sans/400.css'
-import '@fontsource/open-sans/600.css'
-import '@fontsource/raleway/600.css'
-import '@fontsource/raleway/700.css'
 import AdminNavbar from 'components/Navbars/AdminNavbar.js'
 import Sidebar from 'components/Sidebar'
 import { useEffect, useState } from 'react'
@@ -15,6 +11,7 @@ import FixedPlugin from '../components/FixedPlugin/FixedPlugin'
 import MainPanel from '../components/Layout/MainPanel'
 import PanelContainer from '../components/Layout/PanelContainer'
 import PanelContent from '../components/Layout/PanelContent'
+import { brandIdentity } from '../theme/brand'
 
 export default function Dashboard(props) {
   const { ...rest } = props
@@ -85,7 +82,7 @@ export default function Dashboard(props) {
     <ChakraProvider theme={theme} resetCss={false}>
       <Sidebar
         routes={routes}
-        logoText={'SkyRush Express Courier'}
+        logoText={brandIdentity.name}
         sidebarVariant={sidebarVariant}
         sidebarWidth={sidebarWidth}
         {...rest}
@@ -101,7 +98,7 @@ export default function Dashboard(props) {
         <Portal>
           <AdminNavbar
             onOpen={onOpen}
-            logoText={'SkyRush Express Courier'}
+            logoText={brandIdentity.name}
             brandText={getActiveRoute(routes)}
             secondary={getActiveNavbar(routes)}
             fixed={fixed}

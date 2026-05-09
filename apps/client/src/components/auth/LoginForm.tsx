@@ -5,21 +5,23 @@ import {
   TbShieldCheck,
   TbTruckDelivery,
 } from 'react-icons/tb'
+import { brand, brandFonts } from '../../theme/brand'
+import BrandLogo from '../brand/BrandLogo'
 import { DoorstepCourierScene, RollingVanScene } from '../branding/AnimatedCourierScene'
 import PhoneForm from './PhoneForm'
 
-const INK = '#F6ECDD'
-const INK_SOFT = '#FFF8F0'
-const SKY = '#1D2842'
-const CLAY = '#D97943'
-const MIST = '#EEF3FB'
-const SURFACE = '#FFFFFF'
-const TEXT = '#1A2238'
-const MUTED = '#68758B'
-const DISPLAY_FONT = '"Plus Jakarta Sans", "Barlow", "Segoe UI", "Helvetica Neue", Arial, sans-serif'
+const INK = brand.surface
+const INK_SOFT = brand.cream
+const SKY = brand.ink
+const CLAY = brand.accent
+const MIST = brand.page
+const SURFACE = brand.surface
+const TEXT = brand.ink
+const MUTED = brand.inkSoft
+const DISPLAY_FONT = brandFonts.display
 
 const commandNotes = [
-  'Sign in with your registered email to access your Dolphin account.',
+  'Sign in with your registered email to access your ChoiceMee account.',
   'Use OTP login or email and password based on your account access.',
   'Access orders, billing, support, channels, and courier tools after sign in.',
 ]
@@ -86,10 +88,7 @@ export default function LoginForm() {
             sx={{ position: 'relative', zIndex: 1, width: '100%', justifyContent: 'space-between' }}
           >
             <Stack spacing={2.4}>
-              <Box
-                component="img"
-                src="/logo/dolphin-logo-transparent.png"
-                alt="Dolphin Enterprise"
+              <BrandLogo
                 sx={{
                   width: { xs: 152, sm: 176, md: 198 },
                   height: 'auto',
@@ -98,7 +97,7 @@ export default function LoginForm() {
               />
 
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {['Dolphin platform', 'Dolphin brand colors', 'Secure login system'].map((chip) => (
+                {['ChoiceMee platform', 'ChoiceMee brand colors', 'Secure login system'].map((chip) => (
                   <Box
                     key={chip}
                     sx={{
@@ -140,7 +139,7 @@ export default function LoginForm() {
                 >
                   Sign in to your
                   <Box component="span" sx={{ color: CLAY, display: 'block' }}>
-                    Dolphin account.
+                    ChoiceMee account.
                   </Box>
                 </Typography>
                 <Typography
@@ -152,7 +151,7 @@ export default function LoginForm() {
                   }}
                 >
                   Access your account and continue with orders, billing, support,
-                  and shipping operations in Dolphin.
+                  and shipping operations in ChoiceMee.
                 </Typography>
               </Stack>
             </Stack>
@@ -264,7 +263,7 @@ export default function LoginForm() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  Dolphin sign in
+                  ChoiceMee sign in
                 </Typography>
               </Stack>
 
@@ -289,7 +288,7 @@ export default function LoginForm() {
                     maxWidth: 470,
                   }}
                 >
-                  Sign in with OTP or password to access your Dolphin dashboard and account tools.
+                  Sign in with OTP or password to access your ChoiceMee dashboard and account tools.
                 </Typography>
               </Stack>
 
@@ -360,7 +359,7 @@ export default function LoginForm() {
               <Stack direction="row" spacing={0.8} alignItems="center" justifyContent="flex-start">
                 <TbTruckDelivery size={16} color={CLAY} />
                 <Typography sx={{ color: SKY, fontSize: '0.84rem', fontWeight: 700 }}>
-                  Dolphin account access
+                  ChoiceMee account access
                 </Typography>
               </Stack>
             </Stack>

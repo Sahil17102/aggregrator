@@ -21,13 +21,14 @@ export const buttonStyles = {
             boxShadow: 'none',
           },
           _hover: {
-            bg: 'rgba(155, 49, 80, 0.08)',
+            bg: 'rgba(255, 138, 40, 0.1)',
           },
         },
       },
       baseStyle: {
         borderRadius: '999px',
         fontWeight: '700',
+        letterSpacing: '0',
         _focus: {
           boxShadow: 'none',
         },

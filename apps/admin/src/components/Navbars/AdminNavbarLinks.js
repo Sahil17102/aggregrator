@@ -22,24 +22,25 @@ import PropTypes from 'prop-types'
 import { useRef } from 'react'
 import routes from 'routes.js'
 import { useAuthStore } from 'store/useAuthStore'
+import { brand, brandIdentity } from 'theme/brand'
 import NotificationMenu from './NotificationMenu'
 
 export default function HeaderLinks({ variant, children, fixed, secondary, onOpen, ...rest }) {
   const settingsRef = useRef()
   const { isLoggedIn, logout } = useAuthStore()
-  const inputBg = useColorModeValue('rgba(255, 255, 255, 0.74)', 'rgba(20, 34, 56, 0.72)')
-  const inputBorder = useColorModeValue('rgba(12,59,128,0.16)', 'rgba(44,143,255,0.22)')
-  const hoverBg = useColorModeValue('rgba(12,59,128,0.08)', 'rgba(255, 255, 255, 0.08)')
+  const inputBg = useColorModeValue('rgba(255, 255, 255, 0.84)', 'rgba(20, 34, 56, 0.72)')
+  const inputBorder = useColorModeValue('rgba(13,27,77,0.14)', 'rgba(44,143,255,0.22)')
+  const hoverBg = useColorModeValue('rgba(255,138,40,0.1)', 'rgba(255, 255, 255, 0.08)')
   const mainTextColor = useColorModeValue('gray.700', 'gray.100')
   const navbarIconColor = useColorModeValue('gray.600', 'gray.200')
   const searchIconColor = useColorModeValue('brand.500', 'blue.200')
   const placeholder = useColorModeValue('gray.400', 'gray.500')
 
   const styles = {
-    accent: '#171310',
-    accentSecondary: '#D97943',
-    accentSky: '#BFA58C',
-    accentSuccess: '#2D7A63',
+    accent: brand.ink,
+    accentSecondary: brand.accent,
+    accentSky: '#4778BD',
+    accentSuccess: brand.success,
     inputBg,
     inputBorder,
     hoverBg,
@@ -62,7 +63,7 @@ export default function HeaderLinks({ variant, children, fixed, secondary, onOpe
         transition="all 0.2s ease"
         _focusWithin={{
           borderColor: styles.accent,
-          boxShadow: '0 0 0 3px rgba(12,59,128,0.12)',
+          boxShadow: '0 0 0 3px rgba(255,138,40,0.16)',
         }}
       >
         <InputLeftElement pointerEvents="none" pl="14px">
@@ -126,7 +127,7 @@ export default function HeaderLinks({ variant, children, fixed, secondary, onOpe
                       Confirm Logout
                     </Text>
                     <Text fontSize="sm" color={styles.searchIcon}>
-                      You will leave the SkyRush Express Courier admin workspace.
+                      You will leave the {brandIdentity.name} admin workspace.
                     </Text>
                   </Box>
                   <Flex justify="flex-end" gap="8px">
@@ -155,7 +156,7 @@ export default function HeaderLinks({ variant, children, fixed, secondary, onOpe
         </Popover>
       ) : null}
 
-      <SidebarResponsive logoText={rest.logoText || 'SkyRush Express Courier'} secondary={secondary} routes={routes} {...rest} />
+      <SidebarResponsive logoText={rest.logoText || brandIdentity.name} secondary={secondary} routes={routes} {...rest} />
 
       <IconButton
         aria-label="Settings"

@@ -1,5 +1,5 @@
 {
-	"name": "delexpress-admin-dashboard",
+	"name": "choicemee-admin-dashboard",
 	"version": "2.0.2",
 	"private": true,
 	"homepage": ".",
@@ -59,7 +59,7 @@
 	},
 	"scripts": {
 		"start": "react-scripts start",
-		"build": "cross-env CI=false cross-env DISABLE_ESLINT_PLUGIN=true cross-env GENERATE_SOURCEMAP=false cross-env PUBLIC_URL=/ react-scripts build && gulp licenses",
+		"build": "cross-env CI=false cross-env DISABLE_ESLINT_PLUGIN=true cross-env GENERATE_SOURCEMAP=false cross-env PUBLIC_URL=/ react-scripts build",
 		"build:netlify": "cross-env CI=false cross-env DISABLE_ESLINT_PLUGIN=true cross-env GENERATE_SOURCEMAP=false cross-env PUBLIC_URL=/ react-scripts build",
 		"test": "react-scripts test --env=jsdom",
 		"eject": "react-scripts eject",
@@ -77,8 +77,6 @@
 		"@babel/plugin-transform-react-jsx-source": "^7.14.5",
 		"eslint-config-prettier": "8.3.0",
 		"eslint-plugin-prettier": "3.4.0",
-		"gulp": "4.0.2",
-		"gulp-append-prepend": "1.0.9",
 		"prettier": "2.2.1"
 	},
 	"browserslist": {

@@ -53,7 +53,7 @@ const PrivacyPolicy = () => {
               <>
                 Your Privacy Rights: You may review, update, or correct your details, or withdraw
                 consent by contacting us at{' '}
-                <Link href="mailto:support@dolphinenterprise.com">support@dolphinenterprise.com</Link>.
+                <Link href="mailto:ops@choicemee.com">ops@choicemee.com</Link>.
               </>
             }
           />
@@ -73,10 +73,10 @@ const PrivacyPolicy = () => {
               <>
                 Grievance Officer: If you have queries or complaints, reach out to us at{' '}
                 <a
-                  href="mailto:support@dolphinenterprise.com"
+                  href="mailto:ops@choicemee.com"
                   style={{ color: '#0052CC', textDecoration: 'none' }}
                 >
-                  support@dolphinenterprise.com
+                  ops@choicemee.com
                 </a>
                 .
               </>

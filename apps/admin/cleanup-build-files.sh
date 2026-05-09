@@ -7,7 +7,7 @@
 
 set +e
 
-VPS_TARGET_PATH="/var/www/delexpress/admin-dashboard"
+VPS_TARGET_PATH="/var/www/choicemee/admin-dashboard"
 
 if [ -n "$1" ]; then
   VPS_CONNECTION="$1"
@@ -23,14 +23,10 @@ echo "ðŸ” You will be prompted for your VPS password"
 echo ""
 echo "âš ï¸  This will remove build files from root (they belong in build/ subdirectory):"
 echo "   - asset-manifest.json"
-echo "   - favicon.ico"
 echo "   - index.html"
-echo "   - logo/"
 echo "   - manifest.json"
 echo "   - static/"
-echo "   - login-bg.jpg"
-echo "   - admin.ico"
-echo "   - apple-icon.png"
+echo "   - brand/"
 echo ""
 echo "âœ… Source files will remain untouched (src/, node_modules/, package.json, etc.)"
 echo ""
@@ -46,8 +42,8 @@ echo "ðŸ“ Removing build files from root directory..."
 
 # Remove build files from root (keep source files)
 ssh "${VPS_CONNECTION}" "cd ${VPS_TARGET_PATH} && \
-  rm -f asset-manifest.json favicon.ico index.html manifest.json login-bg.jpg admin.ico apple-icon.png && \
-  rm -rf logo/ static/ 2>/dev/null || true"
+  rm -f asset-manifest.json index.html manifest.json && \
+  rm -rf brand/ static/ 2>/dev/null || true"
 
 if [ $? -eq 0 ]; then
   echo "âœ… Cleanup complete! Build files removed from root directory."
@@ -59,4 +55,3 @@ fi
 echo ""
 echo "ðŸ“‹ Remaining files on VPS root:"
 ssh "${VPS_CONNECTION}" "ls -la ${VPS_TARGET_PATH}"
-

@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react'
 import React from 'react'
+import { brandIdentity } from 'theme/brand'
 import SidebarContent from './SidebarContent'
 
 function Sidebar(props) {
@@ -18,16 +19,16 @@ function Sidebar(props) {
           my={{ sm: '18px' }}
           h="calc(100vh - 36px)"
           borderRadius="30px"
-          background="linear-gradient(180deg, rgba(255,250,244,0.94) 0%, rgba(247,235,221,0.9) 100%)"
-          border="1px solid rgba(12,59,128,0.1)"
-          boxShadow="0 28px 60px rgba(36,26,27,0.1)"
+          background="linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,254,0.9) 100%)"
+          border="1px solid rgba(13,27,77,0.1)"
+          boxShadow="0 28px 60px rgba(68,92,138,0.14)"
           overflow="hidden"
           position="relative"
         >
           <SidebarContent
             sidebarWidth={sidebarWidth}
             routes={routes}
-            logoText={logoText || 'SkyRush Express Courier'}
+            logoText={logoText || brandIdentity.name}
             sidebarVariant={sidebarVariant}
           />
         </Box>

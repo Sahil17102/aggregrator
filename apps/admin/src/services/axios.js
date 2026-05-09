@@ -5,7 +5,7 @@ const isLocalhost =
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
-  (isLocalhost ? 'http://127.0.0.1:5002/api' : 'https://delexpress-backend.onrender.com/api')
+  (isLocalhost ? 'http://127.0.0.1:5002/api' : 'https://choicemee-backend.onrender.com/api')
 
 const api = axios.create({
   baseURL: API_BASE_URL,

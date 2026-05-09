@@ -2,30 +2,31 @@ import { ChevronDownIcon } from '@chakra-ui/icons'
 import { Box, Button, Collapse, Flex, Stack, Text, useColorModeValue } from '@chakra-ui/react'
 import React, { useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { brand, brandIdentity } from 'theme/brand'
 
-const NAVY = '#171310'
-const ORANGE = '#D97943'
-const SKY = '#BFA58C'
-const TEAL = '#2D7A63'
+const NAVY = brand.ink
+const ORANGE = brand.accent
+const SKY = '#4778BD'
+const TEAL = brand.success
 
 const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
   const location = useLocation()
   const [state, setState] = React.useState({})
 
-  const sidebarBg = useColorModeValue('rgba(255,252,248,0.96)', 'rgba(22, 18, 15, 0.94)')
-  const sidebarBorder = useColorModeValue('rgba(23,19,16,0.1)', 'rgba(255,255,255,0.16)')
-  const sidebarShadow = useColorModeValue('14px 0 36px rgba(23, 19, 16, 0.08)', '14px 0 36px rgba(0, 0, 0, 0.38)')
-  const activeBg = useColorModeValue('rgba(217,121,67,0.1)', 'rgba(255,255,255,0.12)')
-  const hoverBg = useColorModeValue('rgba(23,19,16,0.04)', 'rgba(255, 255, 255, 0.08)')
-  const activeBorder = useColorModeValue('rgba(217,121,67,0.16)', 'rgba(255,255,255,0.2)')
-  const hoverBorder = useColorModeValue('rgba(23,19,16,0.08)', 'rgba(255,255,255,0.14)')
+  const sidebarBg = useColorModeValue('rgba(255,255,255,0.96)', 'rgba(13, 27, 77, 0.94)')
+  const sidebarBorder = useColorModeValue('rgba(13,27,77,0.1)', 'rgba(255,255,255,0.16)')
+  const sidebarShadow = useColorModeValue('14px 0 36px rgba(68, 92, 138, 0.1)', '14px 0 36px rgba(0, 0, 0, 0.38)')
+  const activeBg = useColorModeValue('rgba(255,138,40,0.12)', 'rgba(255,255,255,0.12)')
+  const hoverBg = useColorModeValue('rgba(13,27,77,0.04)', 'rgba(255, 255, 255, 0.08)')
+  const activeBorder = useColorModeValue('rgba(255,138,40,0.2)', 'rgba(255,255,255,0.2)')
+  const hoverBorder = useColorModeValue('rgba(13,27,77,0.08)', 'rgba(255,255,255,0.14)')
   const textColor = useColorModeValue('gray.700', 'gray.100')
   const iconColor = useColorModeValue('gray.500', 'gray.300')
   const dividerColor = useColorModeValue('rgba(23,19,16,0.08)', 'rgba(255,255,255,0.12)')
   const thumbColor = useColorModeValue('rgba(23,19,16,0.22)', 'rgba(255,255,255,0.24)')
   const brandText = useColorModeValue('gray.800', 'gray.100')
-  const mutedText = useColorModeValue('rgba(36,26,27,0.66)', 'rgba(255,255,255,0.66)')
-  const collapsedLogoBg = useColorModeValue('rgba(12,59,128,0.08)', 'rgba(44,143,255,0.18)')
+  const mutedText = useColorModeValue('rgba(96,115,151,0.9)', 'rgba(255,255,255,0.66)')
+  const collapsedLogoBg = useColorModeValue('rgba(215,226,243,0.68)', 'rgba(44,143,255,0.18)')
   const panelBg = useColorModeValue('rgba(255,255,255,0.64)', 'rgba(255,255,255,0.06)')
   const laneColor = useColorModeValue('rgba(23,19,16,0.08)', 'rgba(255,255,255,0.12)')
 
@@ -215,7 +216,7 @@ const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
       overflowY="auto"
       overflowX="hidden"
       pr="2"
-      backgroundImage="radial-gradient(circle at 18% 4%, rgba(217,121,67,0.09) 0%, transparent 26%), radial-gradient(circle at 88% 9%, rgba(191,165,140,0.16) 0%, transparent 24%)"
+      backgroundImage="radial-gradient(circle at 18% 4%, rgba(255,138,40,0.1) 0%, transparent 26%), radial-gradient(circle at 88% 9%, rgba(215,226,243,0.72) 0%, transparent 24%)"
       css={{
         scrollbarWidth: 'thin',
         '&::-webkit-scrollbar': { width: '5px' },
@@ -232,20 +233,20 @@ const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
             px="14px"
             py="14px"
             borderRadius="26px"
-            bg="linear-gradient(180deg, #171310 0%, #241D18 100%)"
+            bg={`linear-gradient(180deg, ${brand.ink} 0%, #163E59 100%)`}
             color="white"
-            boxShadow="0 18px 36px rgba(23,19,16,0.18)"
+            boxShadow="0 18px 36px rgba(13,27,77,0.18)"
             textAlign="left"
           >
             <Text fontSize="10px" fontWeight="800" letterSpacing="0.18em" textTransform="uppercase" color="rgba(255,255,255,0.62)" mb="8px">
-              Ops cockpit
+              Admin cockpit
             </Text>
-            <Box as="img" src="/skyrush-logo.png" alt="SkyRush Express Courier" h="42px" w="156px" objectFit="contain" mb="12px" />
+            <Box as="img" src={brandIdentity.logoPath} alt={brandIdentity.name} h="56px" w="168px" objectFit="contain" mb="12px" />
             <Text fontWeight="800" fontSize="16px">
               {logoText}
             </Text>
             <Text mt="6px" fontSize="11px" color="rgba(255,255,255,0.72)" lineHeight="1.6">
-              Chhatri Chauraha, Nai Basti, Pilibhit 262001
+              {brandIdentity.tagline}
             </Text>
             <Box
               mt="12px"
@@ -263,8 +264,8 @@ const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
         ) : (
           <Box
             as="img"
-            src="/skyrush-logo.png"
-            alt="SkyRush Express Courier"
+            src={brandIdentity.logoPath}
+            alt={brandIdentity.name}
             h="34px"
             w="50px"
             mx="auto"

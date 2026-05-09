@@ -4,10 +4,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { db, pool } from '../models/client'
 import { users } from '../models/schema/users'
 
-const ADMIN_EMAIL = 'admin@delexpress.in'
+const ADMIN_EMAIL = 'admin@choicemee.com'
 const ADMIN_PASSWORD = 'Admin@12345!'
 
-async function ensureDelExpressAdmin() {
+async function ensureChoiceMeeAdmin() {
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10)
   const [existing] = await db.select().from(users).where(eq(users.email, ADMIN_EMAIL))
 
@@ -41,9 +41,9 @@ async function ensureDelExpressAdmin() {
   console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`)
 }
 
-ensureDelExpressAdmin()
+ensureChoiceMeeAdmin()
   .catch((error) => {
-    console.error('Failed to ensure DelExpress admin:', error)
+    console.error('Failed to ensure ChoiceMee admin:', error)
     process.exitCode = 1
   })
   .finally(async () => {
