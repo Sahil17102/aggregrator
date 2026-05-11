@@ -8,8 +8,9 @@ export interface CreateShipmentParams {
   prepaid_amount?: number
   package_breadth?: number
   package_height?: number
+  shipping_mode?: string
   transaction_fee?: number
-  integration_type?: 'delhivery' | 'xpressbees' | 'ekart' | 'icarry'
+  integration_type?: 'delhivery' | 'xpressbees' | 'ekart' | 'deliveryone' | 'icarry'
   request_auto_pickup?: 'Yes' | 'No'
   gift_wrap?: number
   shipping_charges?: number // What seller charges customer (customer-facing price)

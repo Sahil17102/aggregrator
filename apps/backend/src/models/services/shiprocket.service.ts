@@ -1728,6 +1728,7 @@ export const fetchAvailableCouriersWithRates = async (
               ? formatCourierOptionName(courier.name, applicableRate.max_slab_weight)
               : courier.name,
           localRates: { [rateType]: applicableRate },
+          shipping_mode: applicableRate.mode ?? courier.shipping_mode ?? courier.mode ?? null,
           approxZone,
           courier_cost_estimate:
             courier?.courier_cost_estimate ||
@@ -2188,6 +2189,7 @@ export interface ShipmentParams {
   breadth?: number
   height?: number
   isReverse?: boolean
+  shipping_mode?: string
   transport_speed?: string
   address_type?: string
   ewbn?: string
@@ -2247,6 +2249,10 @@ export interface ShipmentParams {
   preferred_dispatch_date?: string
   delayed_dispatch?: boolean
   mps?: boolean
+  waybill?: string
+  waybills?: string[] | string
+  master_id?: string
+  mps_amount?: number | string
   obd_shipment?: boolean
   qc_details?: any
   category_of_goods?: string
@@ -2557,6 +2563,7 @@ export const createB2CShipmentService = async (
 
   let selectedDelhiveryCourierId: number | null = null
   let selectedDelhiveryShippingMode: 'Express' | 'Surface' | null = null
+  let selectedProviderShippingMode: string | null = null
   const parseSelectedMaxSlabWeight = (value: unknown, courierOptionKey: unknown) => {
     const directValue = Number(value)
     if (Number.isFinite(directValue) && directValue > 0) {
@@ -2607,20 +2614,15 @@ export const createB2CShipmentService = async (
         // Only one courier with this ID - use it directly
         const matchedCourier = matchingCouriers[0]
         const serviceProvider = matchedCourier.serviceProvider?.toLowerCase().trim()
-        if (serviceProvider === 'delhivery') {
-          params.integration_type = 'delhivery'
-          console.log(
-            `✅ Derived integration_type: ${params.integration_type} from courier_id: ${params.courier_id} (courier: ${matchedCourier.name})`,
-          )
-        } else if (serviceProvider === 'ekart') {
-          params.integration_type = 'ekart'
+        if (['delhivery', 'ekart', 'xpressbees', 'deliveryone'].includes(serviceProvider || '')) {
+          params.integration_type = serviceProvider
           console.log(
             `✅ Derived integration_type: ${params.integration_type} from courier_id: ${params.courier_id} (courier: ${matchedCourier.name})`,
           )
         } else {
           throw new HttpError(
             400,
-            `Unsupported serviceProvider: ${serviceProvider}. Supported providers: delhivery, ekart.`,
+            `Unsupported serviceProvider: ${serviceProvider}. Supported providers: delhivery, ekart, xpressbees, deliveryone.`,
           )
         }
       } else {
@@ -2690,6 +2692,18 @@ export const createB2CShipmentService = async (
       courier_id: selectedDelhiveryCourierId,
       shipping_mode: selectedDelhiveryShippingMode,
     })
+  }
+
+  const normalizedIntegrationForMode = String(params.integration_type || '').toLowerCase()
+  selectedProviderShippingMode =
+    selectedDelhiveryShippingMode ??
+    (String(params.shipping_mode || '').trim() ||
+      (normalizedIntegrationForMode === 'deliveryone'
+        ? getDelhiveryShippingModeByCourierId(normalizeCourierId(params.courier_id))
+        : null) ||
+      null)
+  if (selectedProviderShippingMode && !params.shipping_mode) {
+    params.shipping_mode = selectedProviderShippingMode
   }
 
   const selectedMaxSlabWeight = parseSelectedMaxSlabWeight(
@@ -2810,10 +2824,13 @@ export const createB2CShipmentService = async (
   }
 
   const normalizedPaymentType = params.payment_type?.trim().toLowerCase()
-  if (!normalizedPaymentType || !['cod', 'prepaid', 'reverse'].includes(normalizedPaymentType)) {
+  if (
+    !normalizedPaymentType ||
+    !['cod', 'prepaid', 'reverse', 'replacement'].includes(normalizedPaymentType)
+  ) {
     throw new HttpError(
       400,
-      'payment_type is required and must be either cod, prepaid, or reverse when booking with Delhivery.',
+      'payment_type is required and must be cod, prepaid, reverse, or replacement when booking a B2C shipment.',
     )
   }
   params.payment_type = normalizedPaymentType as ShipmentParams['payment_type']
@@ -2960,7 +2977,7 @@ export const createB2CShipmentService = async (
         userId,
         courierId: courierIdForRate,
         serviceProvider: params.integration_type ?? null,
-        mode: selectedDelhiveryShippingMode ?? null,
+        mode: selectedProviderShippingMode,
         selectedMaxSlabWeight,
         zoneIdOverride: params.zone_id ?? null,
         destinationPincode: bookingDestinationPincode,
@@ -3100,20 +3117,26 @@ export const createB2CShipmentService = async (
   try {
     // 1️⃣ CREATE SHIPMENT
     const requestedIntegrationType = String(params.integration_type || '').toLowerCase()
-    const allowedIntegrationTypes = ['delhivery', 'ekart', 'xpressbees']
+    const allowedIntegrationTypes = ['delhivery', 'ekart', 'xpressbees', 'deliveryone']
     if (!requestedIntegrationType || !allowedIntegrationTypes.includes(requestedIntegrationType)) {
       throw new Error(
-        `Invalid integration_type: ${params.integration_type}. Supported values: delhivery, ekart, xpressbees.`,
+        `Invalid integration_type: ${params.integration_type}. Supported values: delhivery, ekart, xpressbees, deliveryone.`,
       )
     }
 
-    const integrationType = requestedIntegrationType as 'delhivery' | 'ekart' | 'xpressbees'
+    const integrationType = requestedIntegrationType as
+      | 'delhivery'
+      | 'ekart'
+      | 'xpressbees'
+      | 'deliveryone'
     const providerName =
       integrationType === 'delhivery'
         ? 'Delhivery'
         : integrationType === 'ekart'
           ? 'Ekart Logistics'
-          : 'Xpressbees'
+          : integrationType === 'deliveryone'
+            ? 'Delivery One'
+            : 'Xpressbees'
 
     let manifestFailure: DelhiveryManifestError | null = null
     let shipmentSuccessPackage: any = null
@@ -3211,6 +3234,75 @@ export const createB2CShipmentService = async (
         shipment_id: shipmentData.upload_wbn ?? shipmentData.shipment_id ?? undefined,
         awb_number: shipmentSuccessPackage?.waybill ?? shipmentData.awb_number ?? undefined,
         courier_name: 'Delhivery',
+        courier_id: params.courier_id ? Number(params.courier_id) : null,
+        label: undefined,
+        manifest: shipmentData?.upload_wbn ?? shipmentData?.manifest ?? undefined,
+        courier_cost: providerCourierCost,
+        sort_code: providerSortCode,
+      }
+    } else if (integrationType === 'deliveryone') {
+      console.log(
+        isReverseShipment
+          ? 'â†’ Using Delivery One Reverse Shipment API...'
+          : 'â†’ Using Delivery One Shipment API...',
+      )
+
+      const deliveryOne = new DeliveryOneService()
+      const serviceability = await deliveryOne.checkPairServiceability({
+        originPincode: bookingPickupPincode,
+        destinationPincode: bookingDestinationPincode,
+        paymentType: params.payment_type,
+      })
+
+      if (!serviceability.serviceable) {
+        throw new HttpError(
+          400,
+          `Delivery One is not serviceable for order ${params.order_number}. Please select another courier.`,
+        )
+      }
+
+      shipmentData = await deliveryOne.createShipment(params)
+      const rawDeliveryOnePackages = shipmentData?.packages
+      const deliveryOnePackages: any[] =
+        Array.isArray(rawDeliveryOnePackages)
+          ? rawDeliveryOnePackages
+          : rawDeliveryOnePackages
+            ? [rawDeliveryOnePackages]
+            : []
+      shipmentSuccessPackage = deliveryOnePackages.find(
+        (pkg) =>
+          pkg?.waybill &&
+          pkg?.serviceable !== false &&
+          String(pkg?.status || '').toLowerCase() !== 'fail',
+      )
+
+      if (!shipmentSuccessPackage?.waybill) {
+        console.error('âŒ Invalid Delivery One shipment:', shipmentData)
+        throw new HttpError(500, 'Delivery One shipment creation failed')
+      }
+
+      providerCourierCost =
+        shipmentSuccessPackage?.charge ||
+        shipmentSuccessPackage?.amount ||
+        shipmentData?.charge ||
+        shipmentData?.amount ||
+        params?.courier_cost ||
+        null
+      providerSortCode =
+        shipmentSuccessPackage?.sort_code ??
+        shipmentSuccessPackage?.sortCode ??
+        shipmentSuccessPackage?.routing_code ??
+        shipmentSuccessPackage?.routingCode ??
+        null
+
+      shipmentMeta = {
+        shipment_id:
+          shipmentData?.upload_wbn ??
+          shipmentData?.shipment_id ??
+          shipmentSuccessPackage?.waybill ??
+          undefined,
+        awb_number: shipmentSuccessPackage.waybill,
+        courier_name: 'Delivery One',
         courier_id: params.courier_id ? Number(params.courier_id) : null,
         label: undefined,
         manifest: shipmentData?.upload_wbn ?? shipmentData?.manifest ?? undefined,
@@ -3464,7 +3556,7 @@ export const createB2CShipmentService = async (
       userId,
       courierId: courierIdForRate,
       serviceProvider: params.integration_type ?? null,
-      mode: selectedDelhiveryShippingMode ?? null,
+      mode: selectedProviderShippingMode,
       selectedMaxSlabWeight,
       zoneIdOverride: params.zone_id ?? null,
       originPincode: String(pickupPincode),
@@ -3623,7 +3715,7 @@ export const createB2CShipmentService = async (
         volumetricWeight: slabbedFreight.volumetric_weight ?? undefined,
         chargedWeight: slabbedFreight.chargeable_weight ?? undefined,
         chargedSlabs: slabbedFreight.slabs ?? undefined,
-        shippingMode: selectedDelhiveryShippingMode ?? null,
+        shippingMode: selectedProviderShippingMode,
         selectedMaxSlabWeight,
       })
 

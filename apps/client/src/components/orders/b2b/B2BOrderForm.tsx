@@ -78,6 +78,7 @@ export type B2BFormData = {
   forwardCharges?: number
   otherCharges?: number
   integrationType?: 'delhivery'
+  shippingMode?: string
 
   // Pickup location (optional)
   pickupLocationId?: string

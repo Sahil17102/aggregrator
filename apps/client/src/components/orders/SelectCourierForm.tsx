@@ -448,6 +448,10 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     setValue('forwardCharges', forwardCharge)
                     setValue('otherCharges', local?.forward?.other_charges ?? 0)
                     setValue(
+                      'shippingMode',
+                      courier?.shipping_mode ?? courier?.mode ?? local?.forward?.mode ?? '',
+                    )
+                    setValue(
                       'courierCost',
                       courier?.courier_cost_estimate || courier?.rateEstimate || null,
                     ) // Estimated courier cost from serviceability

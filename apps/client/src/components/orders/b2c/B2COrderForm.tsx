@@ -74,7 +74,8 @@ export type B2CFormData = {
   pickupLocationId?: string
   pickupLocationPincode?: string
   pickupLocationName?: string
-  integrationType?: 'delhivery' | 'xpressbees' | 'icarry'
+  integrationType?: 'delhivery' | 'xpressbees' | 'ekart' | 'deliveryone' | 'icarry'
+  shippingMode?: string
   pickupAddress?: string
   pickupLocationPOCName?: string
   courierPartnerId: string
@@ -202,6 +203,7 @@ export default function B2COrderFormSteps({ onClose }: { onClose?: () => void })
         cod_charges: data?.courierCod,
         package_breadth: data.breadth,
         package_height: data.height,
+        shipping_mode: data.shippingMode,
         shipping_charges: Number(data?.shippingCharges ?? 0), // What seller charges customer
         freight_charges: Number(data?.forwardCharges ?? 0), // What platform charges seller (based on rate card)
         courier_cost: data?.courierCost ? Number(data.courierCost) : undefined, // Estimated courier cost from serviceability (what platform pays courier)

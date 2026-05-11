@@ -1,6 +1,12 @@
 import axios from 'axios'
-import { HttpError } from '../../../utils/classes'
+import qs from 'qs'
+import { DelhiveryManifestError, HttpError } from '../../../utils/classes'
+import {
+  getDelhiveryShippingModeByCourierId,
+  normalizeCourierId,
+} from '../../../utils/delhiveryCourier'
 import { DeliveryOneConfig, getEffectiveCourierConfig } from '../courierCredentials.service'
+import type { ShipmentParams } from '../shiprocket.service'
 
 type DeliveryOnePincodeRecord = {
   postal_code?: {
@@ -145,6 +151,23 @@ export class DeliveryOneService {
     return []
   }
 
+  private async postFormEncoded(path: string, payload: unknown) {
+    const token = await this.getToken()
+    const encodedData = qs.stringify({
+      format: 'json',
+      data: JSON.stringify(payload),
+    })
+
+    return axios.post(`${this.apiBase}${path}`, encodedData, {
+      headers: {
+        Authorization: `Token ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      timeout: 30000,
+    })
+  }
+
   private extractWaybills(raw: any): string[] {
     const candidates = [
       raw?.waybill,
@@ -254,6 +277,352 @@ export class DeliveryOneService {
 
   async fetchSingleWaybill(): Promise<DeliveryOneWaybillFetchResponse> {
     return this.fetchWaybills(1)
+  }
+
+  async createShipment(params: ShipmentParams, providedWaybills?: string | string[]) {
+    const sanitizeString = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).trim()
+    }
+    const sanitizePhone = (value?: string | number | null) => {
+      const digits = String(value || '').replace(/\D/g, '')
+      return digits.length >= 10 ? digits.slice(-10) : digits
+    }
+    const sanitizePincode = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).replace(/\D/g, '').slice(0, 6)
+    }
+    const sanitizeBoolean = (value?: boolean | string | number | null) => {
+      if (value === undefined || value === null) return undefined
+      if (typeof value === 'boolean') return value
+      const normalized = String(value).trim().toLowerCase()
+      return ['true', '1', 'yes', 'y'].includes(normalized)
+    }
+    const toPositiveNumber = (value: unknown, fallback: number) => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+    }
+    const normalizeDate = (value: unknown) => {
+      if (value instanceof Date) return value.toISOString().split('T')[0]
+      const normalized = sanitizeString(value as any)
+      return normalized || new Date().toISOString().split('T')[0]
+    }
+    const normalizeWaybillList = (...values: unknown[]) =>
+      values
+        .flatMap((value) => {
+          if (Array.isArray(value)) return value
+          if (typeof value === 'string') return value.split(/[,\s]+/)
+          if (value === undefined || value === null) return []
+          return [value]
+        })
+        .map((value) => sanitizeString(value as any))
+        .filter(Boolean)
+
+    const pickup = params.pickup || ({} as ShipmentParams['pickup'])
+    const consignee = params.consignee || ({} as ShipmentParams['consignee'])
+    const rto = params.rto
+    const boxes = Array.isArray(params.boxes) ? params.boxes : []
+    const orderItems = Array.isArray(params.order_items) ? params.order_items : []
+    const orderNumber = sanitizeString(params.order_number)
+    const orderAmount = Number(params.order_amount ?? 0)
+    const invoiceNumber = sanitizeString(params.invoice_number) || orderNumber
+
+    if (!orderNumber) {
+      throw new HttpError(400, 'order_number is required to create a Delivery One shipment.')
+    }
+    if (orderAmount <= 0 || Number.isNaN(orderAmount)) {
+      throw new HttpError(
+        400,
+        'order_amount is required and must be a positive number for Delivery One shipment creation.',
+      )
+    }
+
+    const consigneePhone = sanitizePhone(consignee.phone)
+    if (!consigneePhone) {
+      throw new HttpError(
+        400,
+        'Consignee phone must contain at least 10 digits for Delivery One shipments.',
+      )
+    }
+
+    const pickupPhone = sanitizePhone(pickup.phone)
+    if (!pickupPhone) {
+      throw new HttpError(400, 'Valid pickup phone is required for Delivery One shipments.')
+    }
+
+    const destinationPin = sanitizePincode(consignee.pincode)
+    if (!/^\d{6}$/.test(destinationPin)) {
+      throw new HttpError(400, 'A valid 6-digit destination pincode is required.')
+    }
+
+    const pickupLocationName = sanitizeString(pickup.warehouse_name || params.pickup_location_alias)
+    if (!pickupLocationName) {
+      throw new HttpError(
+        400,
+        'Delivery One pickup_location.name is required and must match the registered warehouse name.',
+      )
+    }
+
+    const selectedShippingMode =
+      sanitizeString((params as any).shipping_mode) ||
+      getDelhiveryShippingModeByCourierId(normalizeCourierId(params.courier_id)) ||
+      'Surface'
+    const paymentType = sanitizeString(params.payment_type).toLowerCase()
+    const paymentMode =
+      paymentType === 'cod'
+        ? 'COD'
+        : paymentType === 'reverse'
+          ? 'Pickup'
+          : paymentType === 'replacement'
+            ? 'REPL'
+            : 'Prepaid'
+    const codAmount = paymentMode === 'COD' ? Number((params as any).cod_amount ?? orderAmount) : 0
+    const productNames = orderItems
+      .map((item) => sanitizeString(item?.name))
+      .filter((name) => name.length > 0)
+    const productsDesc =
+      sanitizeString((params as any).products_desc) ||
+      (productNames.length ? productNames.join(', ') : 'General Merchandise')
+    const hsnCodes = Array.from(
+      new Set(
+        orderItems
+          .map((item) => sanitizeString(item?.hsn || item?.hsnCode))
+          .filter((code) => code.length > 0),
+      ),
+    )
+    const quantity =
+      params.quantity !== undefined && params.quantity !== null
+        ? sanitizeString(params.quantity)
+        : String(orderItems.reduce((sum, item) => sum + Number(item?.qty ?? item?.quantity ?? 0), 0) || 1)
+    const pickupAddress = [pickup.address, pickup.address_2]
+      .map((part) => sanitizeString(part))
+      .filter(Boolean)
+      .join(', ')
+    const sellerName = sanitizeString(params.company?.name || pickup.name || 'ChoiceMe')
+    const sellerGst = sanitizeString(params.company?.gst || pickup.gst_number || '')
+    const returnAddress =
+      rto && (params.is_rto_different === 'yes' || paymentMode === 'Pickup' || paymentMode === 'REPL')
+        ? rto
+        : paymentMode === 'Pickup' || paymentMode === 'REPL'
+          ? pickup
+          : null
+    const isMps = params.mps === true || boxes.length > 1 || String((params as any).shipment_type || '').toUpperCase() === 'MPS'
+    const packageCount = isMps ? Math.max(boxes.length, 2) : 1
+    let waybills = normalizeWaybillList(
+      providedWaybills,
+      (params as any).waybills,
+      (params as any).waybill,
+      boxes.map((box: any) => box?.waybill),
+    )
+
+    if (isMps && waybills.length < packageCount) {
+      const fetched = await this.fetchWaybills(packageCount - waybills.length)
+      waybills = [...waybills, ...fetched.waybills]
+    }
+
+    if (isMps && waybills.length < packageCount) {
+      throw new HttpError(
+        400,
+        `Delivery One MPS shipment requires ${packageCount} prefetched waybills. Received ${waybills.length}.`,
+      )
+    }
+
+    const baseShipment: Record<string, any> = {
+      order: orderNumber,
+      order_date: normalizeDate(params.order_date),
+      name: sanitizeString(consignee.name),
+      phone: consigneePhone,
+      add: sanitizeString(consignee.address),
+      city: sanitizeString(consignee.city),
+      state: sanitizeString(consignee.state),
+      pin: destinationPin,
+      country: sanitizeString(consignee.country || params.country) || 'India',
+      payment_mode: paymentMode,
+      cod_amount: codAmount,
+      total_amount: orderAmount,
+      products_desc: productsDesc,
+      hsn_code: hsnCodes.join(', '),
+      seller_inv: invoiceNumber,
+      quantity,
+      seller_name: sellerName,
+      seller_add: pickupAddress || pickupLocationName,
+      shipment_width: toPositiveNumber(params.package_breadth ?? params.breadth, 10),
+      shipment_height: toPositiveNumber(params.package_height ?? params.height, 10),
+      shipment_length: toPositiveNumber(params.package_length ?? params.length, 10),
+      weight: toPositiveNumber(params.package_weight ?? params.weight, 0.5),
+      shipping_mode: selectedShippingMode,
+      address_type: sanitizeString(params.address_type),
+    }
+
+    const ewbnValue =
+      params.ewbn || params.ewb || params.ewbn_number || params.ewaybill_number || undefined
+    if (ewbnValue) baseShipment.ewbn = sanitizeString(ewbnValue)
+    if (params.transport_speed) baseShipment.transport_speed = sanitizeString(params.transport_speed)
+    if (params.dangerous_good !== undefined) {
+      baseShipment.dangerous_good = sanitizeBoolean(params.dangerous_good)
+    }
+    if (params.fragile_shipment !== undefined) {
+      baseShipment.fragile_shipment = sanitizeBoolean(params.fragile_shipment)
+    }
+    if (params.plastic_packaging !== undefined) {
+      baseShipment.plastic_packaging = sanitizeBoolean(params.plastic_packaging)
+    }
+
+    if (returnAddress) {
+      Object.assign(baseShipment, {
+        return_name: sanitizeString(returnAddress.name),
+        return_add: sanitizeString(returnAddress.address),
+        return_address: sanitizeString(returnAddress.address),
+        return_city: sanitizeString(returnAddress.city),
+        return_state: sanitizeString(returnAddress.state),
+        return_pin: sanitizePincode(returnAddress.pincode),
+        return_phone: sanitizePhone(returnAddress.phone),
+        return_country: sanitizeString(returnAddress.country) || 'India',
+      })
+    }
+
+    const shipments = isMps
+      ? Array.from({ length: packageCount }).map((_, index) => {
+          const box = boxes[index] || {}
+          return {
+            ...baseShipment,
+            order: sanitizeString(box.order || box.order_number) || orderNumber,
+            weight: toPositiveNumber(box.weight ?? box.weight_g ?? params.package_weight, baseShipment.weight),
+            shipment_length: toPositiveNumber(box.length ?? params.package_length, baseShipment.shipment_length),
+            shipment_width: toPositiveNumber(
+              box.breadth ?? box.width ?? params.package_breadth,
+              baseShipment.shipment_width,
+            ),
+            shipment_height: toPositiveNumber(box.height ?? params.package_height, baseShipment.shipment_height),
+            mps_amount: paymentMode === 'COD' ? Number((params as any).mps_amount ?? codAmount) : 0,
+            mps_children: packageCount,
+            master_id: sanitizeString((params as any).master_id) || waybills[0],
+            shipment_type: 'MPS',
+            waybill: waybills[index],
+          }
+        })
+      : [
+          {
+            ...baseShipment,
+            waybill: waybills[0] || undefined,
+          },
+        ]
+
+    const payload = {
+      shipments,
+      pickup_location: {
+        name: pickupLocationName,
+      },
+    }
+
+    this.log('Create shipment payload summary', {
+      order: orderNumber,
+      paymentMode,
+      pickupLocation: pickupLocationName,
+      shippingMode: selectedShippingMode,
+      mps: isMps,
+      shipmentCount: shipments.length,
+      hasWaybills: waybills.length,
+    })
+
+    try {
+      const response = await this.postFormEncoded('/api/cmu/create.json', payload)
+      const responseData = response.data
+      const rawPackages = responseData?.packages
+      const packages: any[] =
+        Array.isArray(rawPackages)
+          ? rawPackages
+          : rawPackages
+            ? [rawPackages]
+            : []
+      const normalizedStatus = (value?: string) => String(value || '').toLowerCase()
+      const normalizeRemarks = (remarks: unknown): string[] => {
+        if (!remarks) return []
+        if (Array.isArray(remarks)) {
+          return remarks.flatMap((entry) => normalizeRemarks(entry)).filter(Boolean)
+        }
+        if (typeof remarks === 'object') {
+          return Object.values(remarks as Record<string, unknown>)
+            .flatMap((entry) => normalizeRemarks(entry))
+            .filter(Boolean)
+        }
+        return [String(remarks).trim()].filter(Boolean)
+      }
+      const successfulPackages = packages.filter(
+        (pkg) =>
+          pkg?.waybill && pkg?.serviceable !== false && normalizedStatus(pkg?.status) !== 'fail',
+      )
+      const packageFailures = packages
+        .filter(
+          (pkg) =>
+            normalizedStatus(pkg?.status) === 'fail' ||
+            pkg?.serviceable === false ||
+            !pkg?.waybill,
+        )
+        .map((pkg) => ({
+          ...pkg,
+          remarks: normalizeRemarks(pkg?.remarks),
+        }))
+
+      if (
+        normalizedStatus(responseData?.status) === 'fail' ||
+        responseData?.success === false ||
+        responseData?.serviceable === false ||
+        !successfulPackages.length
+      ) {
+        const failureReason =
+          responseData?.message ||
+          responseData?.status_message ||
+          packageFailures
+            .map((pkg) => {
+              const joinedRemarks = pkg.remarks.join(' | ')
+              return joinedRemarks || pkg?.message || pkg?.reason || pkg?.rmk || `status=${pkg?.status}`
+            })
+            .filter(Boolean)
+            .join(' | ') ||
+          normalizeRemarks(responseData?.rmk).join(' | ') ||
+          'Delivery One reported a failure during shipment creation.'
+
+        this.log('Create shipment rejected', {
+          order: orderNumber,
+          status: response.status,
+          failureReason,
+          response: responseData,
+        })
+        throw new DelhiveryManifestError(502, failureReason, responseData)
+      }
+
+      this.log('Create shipment succeeded', {
+        order: orderNumber,
+        status: response.status,
+        packages: successfulPackages.length,
+        awb: successfulPackages[0]?.waybill,
+      })
+
+      return responseData
+    } catch (error: any) {
+      if (error instanceof DelhiveryManifestError || error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        (typeof error?.response?.data === 'string' ? error.response.data : '') ||
+        error?.message ||
+        'Delivery One shipment creation failed'
+
+      this.log('Create shipment failed', {
+        order: orderNumber,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
   }
 
   async checkPincodeServiceability(
