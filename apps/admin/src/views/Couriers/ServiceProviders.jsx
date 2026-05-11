@@ -14,6 +14,13 @@ import {
 } from '@chakra-ui/react'
 import { useServiceProviders, useUpdateServiceProviderStatus } from 'hooks/useCouriers'
 
+const providerLabels = {
+  delhivery: 'Delhivery',
+  ekart: 'Ekart',
+  xpressbees: 'Xpressbees',
+  deliveryone: 'Delivery One',
+}
+
 const ServiceProviders = () => {
   const { data: providers = [], isLoading, error } = useServiceProviders()
   const updateStatus = useUpdateServiceProviderStatus()
@@ -48,7 +55,7 @@ const ServiceProviders = () => {
         Service Providers
       </Text>
       <Text fontSize="sm" color="gray.500">
-        Manage enabled courier providers for Delhivery, Ekart, and Xpressbees.
+        Manage enabled courier providers for Delhivery, Ekart, Xpressbees, and Delivery One.
       </Text>
       <Table variant="simple">
         <Thead>
@@ -70,7 +77,7 @@ const ServiceProviders = () => {
           ) : (
             providers.map((p) => (
               <Tr key={p.serviceProvider}>
-                <Td textTransform="capitalize">{p.serviceProvider}</Td>
+                <Td>{providerLabels[p.serviceProvider] || p.serviceProvider}</Td>
                 <Td isNumeric>{p.totalCouriers}</Td>
                 <Td isNumeric>{p.enabledCouriers}</Td>
                 <Td>

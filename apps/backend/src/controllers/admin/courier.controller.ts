@@ -14,6 +14,7 @@ import {
   DEFAULT_EKART_BASE_URL,
   normalizeEkartBaseUrl,
 } from '../../models/services/courierCredentials.service'
+import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
 import { EkartService } from '../../models/services/couriers/ekart.service'
 import { XpressbeesService } from '../../models/services/couriers/xpressbees.service'
 import { fetchAvailableCouriersWithRatesAdmin } from '../../models/services/shiprocket.service'
@@ -244,7 +245,7 @@ export const updateCourierStatusController = async (req: Request, res: Response)
 export const getServiceProvidersController = async (req: Request, res: Response) => {
   try {
     // Only expose the main integrated service providers in the enable/disable UI
-    const allowedProviders = ['delhivery', 'ekart', 'xpressbees']
+    const allowedProviders = ['delhivery', 'ekart', 'xpressbees', 'deliveryone']
 
     const rows = await db
       .select({
@@ -290,7 +291,7 @@ export const updateServiceProviderStatusController = async (req: Request, res: R
   const { isEnabled } = req.body
 
   try {
-    const allowedProviders = ['delhivery', 'ekart', 'xpressbees']
+    const allowedProviders = ['delhivery', 'ekart', 'xpressbees', 'deliveryone']
 
     if (!serviceProvider || typeof isEnabled !== 'boolean') {
       return res.status(400).json({
@@ -382,7 +383,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
       },
       deliveryOne: {
         provider: 'deliveryone',
-        apiBase: '',
+        apiBase: 'https://track.delhivery.com',
         clientId: '',
         username: '',
         hasApiKey: false,
@@ -438,7 +439,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
         const hasWebhookSecret = Boolean((row.webhookSecret || '').trim())
         acc.deliveryOne = {
           provider: 'deliveryone',
-          apiBase: row.apiBase || '',
+          apiBase: row.apiBase || 'https://track.delhivery.com',
           clientId: row.clientId || '',
           username: row.username || '',
           hasApiKey: Boolean(apiKey.trim()),
@@ -557,7 +558,7 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
         updatedAt: new Date(),
       }
       if (nextApiBase !== undefined) {
-        updatePayload.apiBase = nextApiBase
+        updatePayload.apiBase = nextApiBase || 'https://track.delhivery.com'
       }
       if (nextClientId !== undefined) {
         updatePayload.clientId = nextClientId
@@ -582,7 +583,7 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
     } else {
       await db.insert(courier_credentials).values({
         provider: 'deliveryone',
-        apiBase: nextApiBase || '',
+        apiBase: nextApiBase || 'https://track.delhivery.com',
         clientName: '',
         apiKey: hasApiKey ? nextApiKey : '',
         clientId: nextClientId || '',
@@ -591,6 +592,8 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
         webhookSecret: hasWebhookSecret ? nextWebhookSecret : '',
       })
     }
+
+    DeliveryOneService.clearCachedConfig()
 
     const [saved] = await db
       .select({
@@ -610,7 +613,7 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
       message: 'Delivery One credentials updated successfully',
       data: {
         provider: 'deliveryone',
-        apiBase: saved?.apiBase || '',
+        apiBase: saved?.apiBase || 'https://track.delhivery.com',
         clientId: saved?.clientId || '',
         username: saved?.username || '',
         hasPassword: Boolean((saved?.password || '').trim()),

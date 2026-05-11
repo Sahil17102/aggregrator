@@ -44,6 +44,18 @@ import { useState } from 'react'
 
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
+const providerOptions = [
+  { value: 'delhivery', label: 'Delhivery' },
+  { value: 'ekart', label: 'Ekart' },
+  { value: 'xpressbees', label: 'Xpressbees' },
+  { value: 'deliveryone', label: 'Delivery One' },
+]
+
+const providerLabels = providerOptions.reduce((acc, option) => {
+  acc[option.value] = option.label
+  return acc
+}, {})
+
 const Couriers = () => {
   const [filters, setFilters] = useState({
     search: '',
@@ -75,6 +87,7 @@ const Couriers = () => {
   ]
 
   const renderers = {
+    serviceProvider: (value) => providerLabels[value] || value,
     isEnabled: (value) => (
       <Text fontWeight="semibold" color={value ? 'green.500' : 'red.500'}>
         {value ? 'Enabled' : 'Disabled'}
@@ -303,9 +316,11 @@ const Couriers = () => {
             onChange={(e) => setFilters((prev) => ({ ...prev, serviceProvider: e.target.value }))}
             maxW="200px"
           >
-            <option value="delhivery">Delhivery</option>
-            <option value="ekart">Ekart</option>
-            <option value="xpressbees">Xpressbees</option>
+            {providerOptions.map((provider) => (
+              <option key={provider.value} value={provider.value}>
+                {provider.label}
+              </option>
+            ))}
           </Select>
           {(filters.search || filters.serviceProvider) && (
             <Button
@@ -463,9 +478,11 @@ const Couriers = () => {
             required
             isRequired
           >
-            <option value="delhivery">Delhivery</option>
-            <option value="ekart">Ekart</option>
-            <option value="xpressbees">Xpressbees</option>
+            {providerOptions.map((provider) => (
+              <option key={provider.value} value={provider.value}>
+                {provider.label}
+              </option>
+            ))}
           </Select>
 
           <FormControl>

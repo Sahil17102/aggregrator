@@ -471,7 +471,7 @@ const CourierCredentials = () => {
                 onChange={(e) =>
                   setDeliveryOneForm((prev) => ({ ...prev, apiBase: e.target.value }))
                 }
-                placeholder="https://api.deliveryone.co.in"
+                placeholder="https://track.delhivery.com"
               />
             </FormControl>
 

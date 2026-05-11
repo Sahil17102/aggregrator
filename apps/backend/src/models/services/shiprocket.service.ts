@@ -60,6 +60,7 @@ import { userProfiles } from '../schema/userProfile'
 import { b2bPincodes, b2bZoneToZoneRates, zones } from '../schema/zones'
 import { calculateB2BRate } from './b2bAdmin.service'
 import { DelhiveryService } from './couriers/delhivery.service'
+import { DeliveryOneService } from './couriers/deliveryone.service'
 import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
@@ -996,7 +997,7 @@ export const fetchAvailableCouriersWithRates = async (
 
     // Build registry of enabled couriers by service provider
     // Filter by business type: check if business_type JSONB array contains 'b2c'
-    const SUPPORTED_PROVIDERS = ['delhivery', 'ekart', 'xpressbees']
+    const SUPPORTED_PROVIDERS = ['delhivery', 'ekart', 'xpressbees', 'deliveryone']
     const systemCourierRows = await db
       .select({
         id: couriers.id,
@@ -1208,6 +1209,74 @@ export const fetchAvailableCouriersWithRates = async (
       originServiceable: delhiveryOriginServiceable,
       destinationServiceable: delhiveryDestinationServiceable,
       candidates: providerCourierBuckets.get('delhivery')?.rows.length ?? 0,
+    })
+
+    // Delivery One B2C serviceability uses the same Delhivery pincode network contract.
+    let deliveryOneAvailable = false
+    let deliveryOneResp: any = null
+    if (enabledProviders.has('deliveryone')) {
+      const deliveryOne = new DeliveryOneService()
+      const originPincode = normalizePincode(params.origin ?? params.source_pincode)?.toString()
+      const destinationPincode = normalizePincode(
+        params.destination ?? params.destination_pincode,
+      )?.toString()
+
+      console.log('[Serviceability] Delivery One pincode check start', {
+        mode: isCalculator ? 'calculator' : 'standard',
+        origin: originPincode,
+        destination: destinationPincode,
+      })
+
+      if (originPincode && destinationPincode) {
+        try {
+          deliveryOneResp = await deliveryOne.checkPairServiceability({
+            originPincode,
+            destinationPincode,
+            paymentType: normalizedPaymentType,
+          })
+          deliveryOneAvailable = deliveryOneResp.serviceable === true
+          console.log('[Serviceability] Delivery One pincode check result', {
+            mode: isCalculator ? 'calculator' : 'standard',
+            origin: originPincode,
+            destination: destinationPincode,
+            paymentType: normalizedPaymentType,
+            available: deliveryOneAvailable,
+            originPickup: deliveryOneResp.origin?.pickupAvailable,
+            destinationPrePaid: deliveryOneResp.destination?.prepaidAvailable,
+            destinationCod: deliveryOneResp.destination?.codAvailable,
+            destinationEmbargoed: deliveryOneResp.destination?.embargoed,
+          })
+        } catch (err: any) {
+          console.error(
+            'Delivery One serviceability error:',
+            err?.response?.data || err?.message || err,
+          )
+        }
+      } else {
+        console.log('[Serviceability] Delivery One pincode validation skipped (missing input)', {
+          mode: isCalculator ? 'calculator' : 'standard',
+          origin: originPincode,
+          destination: destinationPincode,
+        })
+      }
+    }
+
+    if (deliveryOneAvailable) {
+      registerServiceableProvider('deliveryone', {
+        providerId: 'deliveryone',
+        providerName: 'Delivery One',
+        codAvailable: deliveryOneResp?.codAvailable ?? true,
+        prepaidAvailable: deliveryOneResp?.prepaidAvailable ?? true,
+        edd: '3-5 Days',
+        raw: deliveryOneResp,
+      })
+    }
+
+    console.log('[Serviceability] Delivery One candidate couriers prepared', {
+      mode: isCalculator ? 'calculator' : 'standard',
+      destination: params.destination?.toString(),
+      available: deliveryOneAvailable,
+      candidates: providerCourierBuckets.get('deliveryone')?.rows.length ?? 0,
     })
 
     // 🟢 Ekart Serviceability V3
