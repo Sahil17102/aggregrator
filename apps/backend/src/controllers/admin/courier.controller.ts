@@ -627,6 +627,25 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
   }
 }
 
+export const fetchDeliveryOneWaybillsController = async (req: Request, res: Response) => {
+  try {
+    const rawCount = req.method === 'GET' ? req.query.count : req.body?.count
+    const count = rawCount === undefined ? 1 : Number(rawCount)
+    const result = await new DeliveryOneService().fetchWaybills(count)
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to fetch Delivery One waybills:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to fetch Delivery One waybills',
+    })
+  }
+}
+
 export const updateEkartCredentialsController = async (req: Request, res: Response) => {
   const { apiBase, clientId, username, password, webhookSecret } = req.body || {}
 

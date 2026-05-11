@@ -46,6 +46,13 @@ export type DeliveryOneHeavyPincodeServiceabilityResponse = {
   raw: any
 }
 
+export type DeliveryOneWaybillFetchResponse = {
+  mode: 'single' | 'bulk'
+  requestedCount: number
+  waybills: string[]
+  raw: any
+}
+
 export class DeliveryOneService {
   private apiBase =
     process.env.DELIVERY_ONE_API_BASE ||
@@ -113,6 +120,19 @@ export class DeliveryOneService {
     }
   }
 
+  private async getToken() {
+    await this.ensureConfigLoaded()
+
+    if (!this.apiKey) {
+      throw new HttpError(
+        400,
+        'Delivery One API key is not configured. Save the token in Courier Credentials first.',
+      )
+    }
+
+    return this.apiKey
+  }
+
   private isYes(value: unknown) {
     const normalized = String(value ?? '').trim().toLowerCase()
     return ['y', 'yes', 'true', '1', 'available', 'serviceable'].includes(normalized)
@@ -123,6 +143,117 @@ export class DeliveryOneService {
     if (Array.isArray(raw?.data?.delivery_codes)) return raw.data.delivery_codes
     if (Array.isArray(raw)) return raw
     return []
+  }
+
+  private extractWaybills(raw: any): string[] {
+    const candidates = [
+      raw?.waybill,
+      raw?.waybills,
+      raw?.data?.waybill,
+      raw?.data?.waybills,
+      raw?.data,
+      raw,
+    ]
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const normalized = candidate.trim()
+        if (!normalized) continue
+
+        return normalized
+          .split(/[,\s]+/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      }
+
+      if (Array.isArray(candidate)) {
+        const waybills = candidate
+          .flatMap((item) => {
+            if (typeof item === 'string' || typeof item === 'number') return [String(item)]
+            if (item && typeof item === 'object') {
+              return [
+                item.waybill,
+                item.wbn,
+                item.awb,
+                item.awb_number,
+                item.waybill_number,
+              ].filter(Boolean)
+            }
+            return []
+          })
+          .map((item) => String(item).trim())
+          .filter(Boolean)
+
+        if (waybills.length) return waybills
+      }
+    }
+
+    return []
+  }
+
+  async fetchWaybills(count = 1): Promise<DeliveryOneWaybillFetchResponse> {
+    const normalizedCount = Math.floor(Number(count || 1))
+    if (!Number.isFinite(normalizedCount) || normalizedCount < 1) {
+      throw new HttpError(400, 'Delivery One waybill count must be at least 1.')
+    }
+    if (normalizedCount > 10000) {
+      throw new HttpError(400, 'Delivery One bulk waybill count cannot be more than 10,000.')
+    }
+
+    const token = await this.getToken()
+    const mode = normalizedCount === 1 ? 'single' : 'bulk'
+    const path =
+      mode === 'single' ? '/waybill/api/fetch/json/' : '/waybill/api/bulk/json/'
+    const url = `${this.apiBase}${path}`
+
+    try {
+      const response = await axios.get(url, {
+        headers: { Accept: 'application/json' },
+        params: {
+          token,
+          ...(mode === 'bulk' ? { count: normalizedCount } : {}),
+        },
+        timeout: 20000,
+      })
+
+      const waybills = this.extractWaybills(response.data)
+      this.log('Fetch waybills', {
+        mode,
+        requestedCount: normalizedCount,
+        status: response.status,
+        receivedCount: waybills.length,
+      })
+
+      return {
+        mode,
+        requestedCount: normalizedCount,
+        waybills,
+        raw: response.data,
+      }
+    } catch (error: any) {
+      const status = Number(error?.response?.status || 502)
+      const message =
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        (typeof error?.response?.data === 'string' ? error.response.data : '') ||
+        error?.message ||
+        'Delivery One waybill fetch failed'
+
+      this.log('Fetch waybills failed', {
+        mode,
+        requestedCount: normalizedCount,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async fetchSingleWaybill(): Promise<DeliveryOneWaybillFetchResponse> {
+    return this.fetchWaybills(1)
   }
 
   async checkPincodeServiceability(
