@@ -12,7 +12,6 @@ import { CompanyInfo } from '../../types/profileBlocks.types'
 import { IUser } from '../../types/users.types'
 import { OTP_EXPIRY } from '../../utils/constants'
 import {
-  isEmailDeliveryConfigured,
   logAuthCode,
   sendTempPasswordEmail,
   sendVerificationEmail,
@@ -25,7 +24,9 @@ import path from 'path'
 
 // Load correct .env based on NODE_ENV
 const env = process.env.NODE_ENV || 'development'
-dotenv.config({ path: path.resolve(__dirname, `../../.env.${env}`) })
+const backendRoot = path.resolve(__dirname, '../../..')
+dotenv.config({ path: path.resolve(backendRoot, `.env.${env}`) })
+dotenv.config({ path: path.resolve(backendRoot, '.env') })
 const parseBooleanEnv = (value: string | undefined, defaultValue: boolean) => {
   if (value === undefined) return defaultValue
   return value === 'true'
@@ -38,8 +39,8 @@ const maskEmailForLog = (email: string) => {
     localPart.length <= 2 ? `${localPart[0] ?? '*'}*` : `${localPart.slice(0, 2)}***`
   return `${visibleLocal}@${domain}`
 }
-const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, env !== 'production')
-const shouldExposeAuthCodes = () => exposeAuthCodes || !isEmailDeliveryConfigured()
+const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false)
+const shouldExposeAuthCodes = () => exposeAuthCodes
 
 // Define User and NewUser types for convenience
 export type User = typeof users.$inferSelect

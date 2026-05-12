@@ -5,6 +5,7 @@ import { FiArrowRight, FiMail } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useRequestOtp, useVerifyOtp } from '../../hooks/useOTP'
+import { getPostAuthRedirect } from '../../utils/authRedirect'
 import { TERMS_AND_CONDITIONS } from '../../utils/constants'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import CustomCheckbox from '../UI/inputs/CustomCheckbox'
@@ -119,7 +120,7 @@ export default function OtpLoginPanel({
           sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
           setUserId(user?.id)
           setTokens(token, refreshToken)
-          navigate('/app', { replace: true })
+          navigate(getPostAuthRedirect(user), { replace: true })
         },
         onError: (err: any) => {
           setError(getAuthErrorMessage(err, 'OTP verification failed'))

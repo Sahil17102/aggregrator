@@ -5,13 +5,16 @@ import FullScreenLoader from "../../UI/loader/FullScreenLoader";
 import { useAuth } from "../../../context/auth/AuthContext";
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
   if (loading) return <FullScreenLoader />; // or global spinner
   if (!isAuthenticated) {
     // bounce user to login, keep the page they wanted
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  if (user?.id && !user.onboardingComplete) {
+    return <Navigate to="/onboarding-questions" state={{ from: location }} replace />;
   }
   return children;
 }

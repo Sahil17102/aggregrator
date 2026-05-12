@@ -7,6 +7,7 @@ import { MdInfoOutline, MdPassword } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useRequestPasswordLogin } from '../../hooks/useRequestPasswordLogin'
+import { getPostAuthRedirect } from '../../utils/authRedirect'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import CustomCheckbox from '../UI/inputs/CustomCheckbox'
 import CustomInput from '../UI/inputs/CustomInput'
@@ -142,7 +143,7 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
 
             setUserId(user?.id)
             setTokens(token, refreshToken)
-            navigate('/onboarding-questions', { replace: true })
+            navigate(getPostAuthRedirect(user), { replace: true })
           },
           onError: (error: any) => {
             toast.open({

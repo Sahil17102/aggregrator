@@ -12,6 +12,7 @@ import { FiEdit2, FiRefreshCcw } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useRequestOtp, useVerifyOtp } from '../../hooks/useOTP'
+import { getPostAuthRedirect } from '../../utils/authRedirect'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import { toast } from '../UI/Toast'
 import { getAuthErrorMessage } from './getAuthErrorMessage'
@@ -144,7 +145,7 @@ export default function OtpForm({ email, onEditEmail }: Props) {
           sessionStorage.setItem('activeEmail', email)
           setUserId(user?.id)
           setTokens(token, refreshToken)
-          navigate('/onboarding-questions', { replace: true })
+          navigate(getPostAuthRedirect(user), { replace: true })
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (err: any) => {

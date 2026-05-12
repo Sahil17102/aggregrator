@@ -24,13 +24,14 @@ import { eq } from 'drizzle-orm'
 import { db } from '../models/client'
 import { changeAdminPassword, loginAdmin } from '../models/services/adminAuth.service'
 import { employees } from '../schema/schema'
-import { isEmailDeliveryConfigured, logAuthCode, sendVerificationEmail } from '../utils/emailSender'
+import { logAuthCode, sendVerificationEmail } from '../utils/emailSender'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt'
 
 const env = process.env.NODE_ENV || 'development'
 
-// Load the correct .env file
-dotenv.config({ path: path.resolve(__dirname, `../../.env.${env}`) })
+const backendRoot = path.resolve(__dirname, '../..')
+dotenv.config({ path: path.resolve(backendRoot, `.env.${env}`) })
+dotenv.config({ path: path.resolve(backendRoot, '.env') })
 
 const parseBooleanEnv = (value: string | undefined, defaultValue: boolean) => {
   if (value === undefined) return defaultValue
@@ -47,8 +48,24 @@ const maskEmailForLog = (email: string) => {
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const allowInlineOtp = parseBooleanEnv(process.env.ALLOW_INLINE_OTP, false)
-const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, env !== 'production') || allowInlineOtp
-const shouldExposeAuthCodes = () => exposeAuthCodes || !isEmailDeliveryConfigured()
+const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false) || allowInlineOtp
+const shouldExposeAuthCodes = () => exposeAuthCodes
+
+const buildAuthUserPayload = async (userId: string, fallback?: any) => {
+  const user = (await findUserById(userId)) || fallback || {}
+
+  return {
+    id: userId,
+    phone: user.phone ?? null,
+    phoneVerified: Boolean(user.phoneVerified),
+    email: user.email ?? fallback?.email ?? null,
+    emailVerified: Boolean(user.emailVerified),
+    profilePicture: user.profilePicture ?? null,
+    role: user.role ?? fallback?.role ?? 'customer',
+    onboardingComplete: Boolean(user.onboardingComplete),
+    onboardingStep: Number(user.onboardingStep ?? 0),
+  }
+}
 
 export const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 
@@ -236,6 +253,7 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
         ? 'Verification code generated successfully'
         : 'OTP sent successfully to your email',
       ...(exposeOtp ? { otp } : {}),
+      emailDelivered: !exposeOtp,
     })
   } catch (err) {
     console.error('[Auth OTP] Error in requestOtp', {
@@ -303,18 +321,16 @@ export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
     /* ---------- persist newest refresh token ---------- */
     await saveRefreshToken(user.id, refreshToken, ONE_WEEK_MS)
 
+    const authUser = await buildAuthUserPayload(user.id, {
+      ...user,
+      emailVerified: true,
+    })
+
     return res.json({
       message: 'OTP verified successfully',
       token: accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        phoneVerified: user.phoneVerified,
-        email: user.email,
-        emailVerified: true,
-        role: user.role,
-      },
+      user: authUser,
     })
   } catch (error) {
     console.error('Error in verifyOtp:', error)
@@ -374,6 +390,7 @@ export const requestEmailVerification = async (req: Request, res: Response): Pro
 
       result.data.token = accessToken
       result.data.refreshToken = refreshToken
+      result.data.user = await buildAuthUserPayload(user.id, user)
     }
 
     return res.status(result.status).json(result.data)
@@ -420,16 +437,16 @@ export const verifyEmailToken = async (req: Request, res: Response): Promise<any
     /* ---------- persist newest refresh token ---------- */
     await saveRefreshToken(user.id, refreshToken, ONE_WEEK_MS)
 
+    const authUser = await buildAuthUserPayload(user.id, {
+      ...user,
+      emailVerified: true,
+    })
+
     return res.json({
       message: 'Email verified successfully',
       token: accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        emailVerified: true,
-        role: user.role,
-      },
+      user: authUser,
     })
   } catch (error) {
     console.error('verifyEmailToken error:', error)
@@ -514,19 +531,13 @@ export const googleOAuthLogin = async (req: Request, res: Response): Promise<any
       /* ---------- persist newest refresh token ---------- */
       await saveRefreshToken(user.id, refreshToken, ONE_WEEK_MS)
 
+      const authUser = await buildAuthUserPayload(user.id, user)
+
       return res.json({
         message: 'Google login successful',
         token: accessToken,
         refreshToken,
-        user: {
-          id: user?.id,
-          email: user?.email,
-          emailVerified: user?.emailVerified,
-          phone: user?.phone,
-          phoneVerified: user?.phoneVerified,
-          profilePicture: user?.profilePicture,
-          role: user?.role,
-        },
+        user: authUser,
       })
     } else {
       return res.status(500).json({ error: 'User not found' })

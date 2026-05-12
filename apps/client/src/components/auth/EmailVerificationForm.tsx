@@ -5,6 +5,7 @@ import { FiArrowRight, FiEdit2, FiMail, FiRefreshCcw } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useVerifyEmailOtp } from '../../hooks/useRequestPasswordLogin'
+import { getPostAuthRedirect } from '../../utils/authRedirect'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import { toast } from '../UI/Toast'
 import { getAuthErrorMessage } from './getAuthErrorMessage'
@@ -143,7 +144,7 @@ export default function EmailVerificationForm({
             message: 'Email verified successfully',
             severity: 'success',
           })
-          navigate('/onboarding-questions', { replace: true })
+          navigate(getPostAuthRedirect(user), { replace: true })
         },
         onError: (err: any) => {
           setError(getAuthErrorMessage(err, 'Invalid code. Please try again.'))

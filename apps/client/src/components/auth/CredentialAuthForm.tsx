@@ -6,6 +6,7 @@ import { MdPassword } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useRequestPasswordLogin, useVerifyEmailOtp } from '../../hooks/useRequestPasswordLogin'
+import { getPostAuthRedirect } from '../../utils/authRedirect'
 import { TERMS_AND_CONDITIONS } from '../../utils/constants'
 import { setOnboardingPrefill } from '../../utils/onboardingPrefill'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
@@ -120,7 +121,7 @@ export default function CredentialAuthForm({
             sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
             setUserId(response?.user?.id)
             setTokens(response.token, response.refreshToken)
-            navigate('/app', { replace: true })
+            navigate(getPostAuthRedirect(response?.user), { replace: true })
             return
           }
 
@@ -170,7 +171,7 @@ export default function CredentialAuthForm({
           sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
           setUserId(user?.id)
           setTokens(token, refreshToken)
-          navigate('/app', { replace: true })
+          navigate(getPostAuthRedirect(user), { replace: true })
         },
         onError: (err: any) => {
           setError(getAuthErrorMessage(err, 'Verification failed'))
@@ -326,7 +327,7 @@ export default function CredentialAuthForm({
 
           <CustomIconLoadingButton
             type="submit"
-            text={mode === 'signup' ? 'Verify and open dashboard' : 'Verify and continue'}
+            text={mode === 'signup' ? 'Verify and start onboarding' : 'Verify and continue'}
             loading={verifying}
             loadingText="Verifying..."
             disabled={code.length !== 8}

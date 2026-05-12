@@ -6,7 +6,9 @@ import path from 'path'
 
 // Load correct .env based on NODE_ENV
 const env = process.env.NODE_ENV || 'development'
-dotenv.config({ path: path.resolve(__dirname, `../../.env.${env}`) })
+const backendRoot = path.resolve(__dirname, '../..')
+dotenv.config({ path: path.resolve(backendRoot, `.env.${env}`) })
+dotenv.config({ path: path.resolve(backendRoot, '.env') })
 
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.GOOGLE_SMTP_USER || ''
 const GOOGLE_SMTP_USER = process.env.GOOGLE_SMTP_USER || EMAIL_FROM
@@ -14,6 +16,8 @@ const GOOGLE_SMTP_PASSWORD = process.env.GOOGLE_SMTP_PASSWORD!
 const SMTP_HOST = process.env.SMTP_HOST
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587)
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true'
+const AUTH_CODE_LOGGING_ENABLED =
+  process.env.EXPOSE_AUTH_CODES === 'true' || process.env.ALLOW_INLINE_OTP === 'true'
 
 const maskEmailForLog = (email: string) => {
   const [localPart = '', domain = ''] = email.split('@')
@@ -45,7 +49,15 @@ export const logAuthCode = ({
   to: string
   code: string
 }) => {
-  console.log('[Auth Code Console Fallback]', {
+  if (!AUTH_CODE_LOGGING_ENABLED) {
+    console.warn('[Auth Code] Code logging suppressed because inline auth codes are disabled.', {
+      purpose,
+      to: maskEmailForLog(to),
+    })
+    return
+  }
+
+  console.log('[Auth Code Debug]', {
     purpose,
     to: maskEmailForLog(to),
     code,
@@ -159,11 +171,7 @@ export const sendVerificationEmail = async (to: string, token: string) => {
   })
 
   if (!isEmailDeliveryConfigured()) {
-    logAuthCode({ purpose: 'verification-email', to, code: token })
-    console.warn('[Auth Email] SMTP credentials are not configured. Code was logged instead.', {
-      to: maskEmailForLog(to),
-    })
-    return { delivered: false }
+    throw new Error('Email service is not configured. Missing SMTP credentials.')
   }
 
   const html = `
