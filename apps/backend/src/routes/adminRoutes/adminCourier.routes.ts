@@ -3,6 +3,7 @@ import { Router } from 'express'
 import {
   cancelDeliveryOneShipmentController,
   calculateDeliveryOneShippingCostController,
+  createDeliveryOnePickupRequestController,
   editDeliveryOneShipmentController,
   fetchDeliveryOneWaybillsController,
   generateDeliveryOneLabelController,
@@ -91,6 +92,18 @@ router.post(
   requireAuth,
   isAdminMiddleware,
   generateDeliveryOneLabelController,
+)
+router.post(
+  '/delivery-one/pickups',
+  requireAuth,
+  isAdminMiddleware,
+  createDeliveryOnePickupRequestController,
+)
+router.post(
+  '/delivery-one/pickup-request',
+  requireAuth,
+  isAdminMiddleware,
+  createDeliveryOnePickupRequestController,
 )
 router.post(
   '/delivery-one/shipments/edit',

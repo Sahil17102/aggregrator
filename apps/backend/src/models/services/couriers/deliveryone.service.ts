@@ -198,6 +198,29 @@ export type DeliveryOneLabelResponse = {
   raw: any
 }
 
+export type DeliveryOnePickupRequestPayload = {
+  pickup_time?: string
+  pickupTime?: string
+  pickup_date?: string | Date
+  pickupDate?: string | Date
+  pickup_location?: string
+  pickupLocation?: string
+  expected_package_count?: number | string
+  expectedPackageCount?: number | string
+  package_count?: number | string
+  count?: number | string
+}
+
+export type DeliveryOnePickupRequestResponse = {
+  payload: {
+    pickup_time: string
+    pickup_date: string
+    pickup_location: string
+    expected_package_count: number
+  }
+  raw: any
+}
+
 export class DeliveryOneService {
   private apiBase =
     process.env.DELIVERY_ONE_API_BASE ||
@@ -967,6 +990,121 @@ export class DeliveryOneService {
         pdfSize: pdfSize || null,
         status,
         response: responseData || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async createPickupRequest(
+    params: DeliveryOnePickupRequestPayload,
+  ): Promise<DeliveryOnePickupRequestResponse> {
+    const sanitizeString = (value?: string | number | Date | null) => {
+      if (value === undefined || value === null) return ''
+      if (value instanceof Date) return value.toISOString().split('T')[0]
+      return String(value).trim()
+    }
+    const normalizeDate = (value: unknown) => {
+      const normalized =
+        value instanceof Date
+          ? value.toISOString().split('T')[0]
+          : sanitizeString(value as any)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+        throw new HttpError(400, 'pickup_date must be in YYYY-MM-DD format.')
+      }
+      return normalized
+    }
+    const normalizeTime = (value: unknown) => {
+      const normalized = sanitizeString(value as any)
+      const withSeconds = /^\d{2}:\d{2}$/.test(normalized)
+        ? `${normalized}:00`
+        : normalized
+      if (!/^\d{2}:\d{2}:\d{2}$/.test(withSeconds)) {
+        throw new HttpError(400, 'pickup_time must be in hh:mm:ss format.')
+      }
+      return withSeconds
+    }
+    const normalizeCount = (value: unknown) => {
+      const parsed = Number(value)
+      if (!Number.isFinite(parsed) || parsed < 1) {
+        throw new HttpError(400, 'expected_package_count must be at least 1.')
+      }
+      return Math.floor(parsed)
+    }
+
+    const payload = {
+      pickup_time: normalizeTime(params.pickup_time ?? params.pickupTime),
+      pickup_date: normalizeDate(params.pickup_date ?? params.pickupDate),
+      pickup_location: sanitizeString(params.pickup_location ?? params.pickupLocation),
+      expected_package_count: normalizeCount(
+        params.expected_package_count ??
+          params.expectedPackageCount ??
+          params.package_count ??
+          params.count,
+      ),
+    }
+
+    if (!payload.pickup_location) {
+      throw new HttpError(
+        400,
+        'pickup_location is required and must match the registered Delivery One warehouse name.',
+      )
+    }
+
+    const headers = await this.getHeaders()
+
+    try {
+      const response = await axios.post(`${this.apiBase}/fm/request/new/`, payload, {
+        headers,
+        timeout: 30000,
+      })
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        typeof raw?.error === 'string' ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'Pickup request rejected' : 'Pickup request created', {
+        pickupDate: payload.pickup_date,
+        pickupTime: payload.pickup_time,
+        pickupLocation: payload.pickup_location,
+        expectedPackageCount: payload.expected_package_count,
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One pickup request failed.'),
+        )
+      }
+
+      return {
+        payload,
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One pickup request failed'
+
+      this.log('Pickup request failed', {
+        pickupDate: payload.pickup_date,
+        pickupTime: payload.pickup_time,
+        pickupLocation: payload.pickup_location,
+        expectedPackageCount: payload.expected_package_count,
+        status,
+        response: error?.response?.data || null,
         message,
       })
 

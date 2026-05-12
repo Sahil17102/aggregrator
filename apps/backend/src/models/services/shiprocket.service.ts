@@ -5952,6 +5952,8 @@ export const generateManifestService = async (params: {
           }
         }
 
+        const deliveryOnePickupWarnings: string[] = []
+
         for (const awb of params.awbs) {
           let order: any = orders.find((o) => o.awb_number === awb)
           if (!order) {
@@ -6267,6 +6269,79 @@ export const generateManifestService = async (params: {
           }
         }
 
+        if (params.type === 'b2c' && integrationType === 'deliveryone') {
+          const orderIds = orders.map((order) => order.id).filter(Boolean)
+          const deliveryOneOrders = orderIds.length
+            ? await tx.select().from(b2c_orders).where(inArray(b2c_orders.id, orderIds))
+            : []
+          const defaultNow = new Date()
+          const defaultPickupDate = defaultNow.toISOString().split('T')[0]
+          const defaultPickupTime = new Date(defaultNow.getTime() + 60 * 60 * 1000)
+            .toTimeString()
+            .split(' ')[0]
+          const pickupGroups = new Map<
+            string,
+            { pickupDate: string; pickupTime: string; expectedPackageCount: number }
+          >()
+
+          for (const order of deliveryOneOrders) {
+            if (!order.awb_number) continue
+
+            const pickupDetails = normalizePickupDetails(order.pickup_details) as any
+            const pickupLocation = String(
+              pickupDetails?.warehouse_name || order.pickup_location_id || '',
+            ).trim()
+
+            if (!pickupLocation) {
+              deliveryOnePickupWarnings.push(
+                `${order.order_number}: pickup request skipped because pickup warehouse name is missing.`,
+              )
+              continue
+            }
+
+            const existingGroup = pickupGroups.get(pickupLocation)
+            if (existingGroup) {
+              existingGroup.expectedPackageCount += 1
+            } else {
+              pickupGroups.set(pickupLocation, {
+                pickupDate: String(pickupDetails?.pickup_date || defaultPickupDate).slice(0, 10),
+                pickupTime: String(pickupDetails?.pickup_time || defaultPickupTime),
+                expectedPackageCount: 1,
+              })
+            }
+          }
+
+          for (const [pickupLocation, pickupGroup] of pickupGroups.entries()) {
+            try {
+              const deliveryOne = new DeliveryOneService()
+              await deliveryOne.createPickupRequest({
+                pickup_date: pickupGroup.pickupDate,
+                pickup_time: pickupGroup.pickupTime,
+                pickup_location: pickupLocation,
+                expected_package_count: pickupGroup.expectedPackageCount,
+              })
+              console.log('[Delivery One] Pickup request created during manifest', {
+                pickupLocation,
+                pickupDate: pickupGroup.pickupDate,
+                pickupTime: pickupGroup.pickupTime,
+                expectedPackageCount: pickupGroup.expectedPackageCount,
+              })
+            } catch (pickupErr: any) {
+              const warning = `Delivery One pickup request failed for ${pickupLocation}: ${
+                pickupErr?.message || pickupErr
+              }`
+              deliveryOnePickupWarnings.push(warning)
+              console.warn('[Delivery One] Pickup request failed during manifest', {
+                pickupLocation,
+                pickupDate: pickupGroup.pickupDate,
+                pickupTime: pickupGroup.pickupTime,
+                expectedPackageCount: pickupGroup.expectedPackageCount,
+                message: pickupErr?.message || pickupErr,
+              })
+            }
+          }
+        }
+
         // When using local manifest generation, just resolve and return a pseudo key as manifest info.
         const manifestKey = `manifest-invoice`
         const manifestDownloadUrl = await resolveManifestUrl(manifestKey)
@@ -6275,6 +6350,7 @@ export const generateManifestService = async (params: {
           manifest_id: manifestKey,
           manifest_url: manifestDownloadUrl,
           manifest_key: manifestKey,
+          warnings: deliveryOnePickupWarnings.length ? deliveryOnePickupWarnings : undefined,
         }
       } catch (error: any) {
         console.error('Generate manifest error:', error)

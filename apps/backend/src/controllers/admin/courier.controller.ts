@@ -766,6 +766,26 @@ export const generateDeliveryOneLabelController = async (req: Request, res: Resp
   }
 }
 
+export const createDeliveryOnePickupRequestController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const result = await new DeliveryOneService().createPickupRequest(req.body || {})
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to create Delivery One pickup request:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to create Delivery One pickup request',
+    })
+  }
+}
+
 export const updateEkartCredentialsController = async (req: Request, res: Response) => {
   const { apiBase, clientId, username, password, webhookSecret } = req.body || {}
 
