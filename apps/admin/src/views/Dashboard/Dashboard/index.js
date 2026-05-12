@@ -53,11 +53,8 @@ function MetricCard({ title, value, subtitle, icon, color = 'accent.500' }) {
   const textPrimary = useColorModeValue('#111827', 'gray.100')
   const textSecondary = useColorModeValue('#64748B', 'gray.400')
   const iconBg = useColorModeValue('rgba(255,138,40,0.13)', 'rgba(255,138,40,0.18)')
-  const cardBg = useColorModeValue(
-    'linear-gradient(180deg, #FFFFFF 0%, rgba(255,138,40,0.04) 100%)',
-    'linear-gradient(180deg, rgba(18,27,45,0.94) 0%, rgba(255,138,40,0.08) 100%)',
-  )
-  const cardBorder = useColorModeValue('rgba(255,138,40,0.18)', 'rgba(255,138,40,0.24)')
+  const cardBg = useColorModeValue('#FFFFFF', 'rgba(18,27,45,0.9)')
+  const cardBorder = useColorModeValue('#E5E7EB', 'rgba(255,255,255,0.08)')
 
   return (
     <Card
@@ -66,18 +63,7 @@ function MetricCard({ title, value, subtitle, icon, color = 'accent.500' }) {
       bg={cardBg}
       borderWidth="1px"
       borderColor={cardBorder}
-      boxShadow="0 16px 34px rgba(255,138,40,0.08), 0 12px 28px rgba(15,23,42,0.045)"
-      overflow="hidden"
-      position="relative"
-      _before={{
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        h: '3px',
-        bg: `linear-gradient(90deg, ${ACCENT} 0%, #FFB15A 100%)`,
-      }}
+      boxShadow="0 12px 28px rgba(15,23,42,0.06)"
     >
       <CardBody p={4}>
         <HStack justify="space-between" align="flex-start" mb={2}>
@@ -103,18 +89,12 @@ export default function Dashboard() {
   const history = useHistory()
   const { data: statsData, isLoading, error, refetch, isRefetching } = useDashboardStats()
 
-  const pageBg = useColorModeValue(
-    'radial-gradient(circle at 0% 0%, rgba(255,138,40,0.18) 0%, transparent 26%), radial-gradient(circle at 100% 2%, rgba(255,177,90,0.14) 0%, transparent 24%), linear-gradient(180deg, #FFF8F2 0%, #F7F9FD 46%, #F5F7FB 100%)',
-    'radial-gradient(circle at 0% 0%, rgba(255,138,40,0.16) 0%, transparent 28%), linear-gradient(180deg, #142238 0%, #101D36 100%)',
-  )
-  const panelBg = useColorModeValue(
-    'linear-gradient(145deg, #FFFFFF 0%, rgba(255,243,234,0.9) 100%)',
-    'linear-gradient(145deg, #101D36 0%, rgba(255,138,40,0.08) 100%)',
-  )
-  const borderColor = useColorModeValue('rgba(255,138,40,0.2)', 'rgba(255,138,40,0.24)')
+  const pageBg = useColorModeValue('#F5F7FB', '#142238')
+  const panelBg = useColorModeValue('#FFFFFF', '#101D36')
+  const borderColor = useColorModeValue('#E5E7EB', 'rgba(148,163,184,0.2)')
   const textPrimary = useColorModeValue('#111827', 'gray.100')
   const textSecondary = useColorModeValue('#64748B', 'gray.400')
-  const tileBg = useColorModeValue('rgba(255,243,234,0.78)', 'rgba(255,138,40,0.1)')
+  const tileBg = useColorModeValue('#F8FAFC', 'rgba(148,163,184,0.1)')
 
   const stats = statsData?.data || {}
   const todayOps = stats.todayOperations || {}
@@ -201,7 +181,7 @@ export default function Dashboard() {
     <Box minH="100vh" pb={8} bg={pageBg}>
       <Container maxW="full" pt={{ base: '128px', md: '88px' }} px={{ base: 4, md: 6 }}>
         <Grid templateColumns={{ base: '1fr', xl: '1.25fr 0.75fr' }} gap={{ base: 4, xl: 5 }} mb={5} alignItems="stretch">
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 18px 42px rgba(255,138,40,0.1), 0 14px 34px rgba(15,23,42,0.05)" overflow="hidden" position="relative" _before={{ content: '""', position: 'absolute', top: 0, left: 0, right: 0, h: '4px', bg: `linear-gradient(90deg, ${ACCENT} 0%, #FFB15A 100%)` }}>
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 14px 34px rgba(15,23,42,0.07)" overflow="hidden" position="relative" _before={{ content: '""', position: 'absolute', top: 0, left: 0, right: 0, h: '4px', bg: `linear-gradient(90deg, ${ACCENT} 0%, #FFB15A 100%)` }}>
             <CardBody p={{ base: 4, md: 5 }}>
               <Stack spacing={4}>
                 <HStack justify="space-between" flexWrap="wrap" spacing={3}>
@@ -237,7 +217,7 @@ export default function Dashboard() {
 
                 <SimpleGrid columns={{ base: 1, md: 3 }} spacing={2.5}>
                   {heroHighlights.map((item) => (
-                    <Box key={item.title} p={4} borderRadius="14px" bg={tileBg} borderWidth="1px" borderColor={borderColor} boxShadow="inset 0 1px 0 rgba(255,255,255,0.72)">
+                    <Box key={item.title} p={4} borderRadius="14px" bg={tileBg} borderWidth="1px" borderColor={borderColor}>
                       <Text fontSize="xs" fontWeight="800" color="accent.700">
                         {item.title}
                       </Text>
@@ -251,7 +231,7 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 18px 42px rgba(255,138,40,0.08), 0 14px 34px rgba(15,23,42,0.05)" overflow="hidden">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 14px 34px rgba(15,23,42,0.07)" overflow="hidden">
             <CardBody p={{ base: 4, md: 5 }}>
               <HStack spacing={3} mb={4}>
                 <Flex w="38px" h="38px" align="center" justify="center" borderRadius="10px" bg="accent.50" color="accent.600" borderWidth="1px" borderColor="accent.100">

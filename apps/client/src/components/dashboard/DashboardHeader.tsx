@@ -22,12 +22,9 @@ export default function DashboardHeader({
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '16px',
-        border: `1px solid ${alpha(dashboardPalette.orange, 0.18)}`,
-        background: `
-          radial-gradient(circle at 0% 0%, ${alpha(dashboardPalette.orange, 0.14)} 0%, transparent 34%),
-          linear-gradient(135deg, #FFFFFF 0%, ${alpha(dashboardPalette.orange, 0.08)} 100%)
-        `,
-        boxShadow: `0 18px 40px ${alpha(dashboardPalette.orange, 0.1)}, 0 14px 34px rgba(15,23,42,0.045)`,
+        border: `1px solid ${dashboardPalette.line}`,
+        background: dashboardPalette.surface,
+        boxShadow: '0 14px 34px rgba(15,23,42,0.06)',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -63,7 +60,7 @@ export default function DashboardHeader({
               Dashboard
             </Typography>
             <Typography sx={{ fontSize: '0.9rem', color: dashboardPalette.muted, fontWeight: 500 }}>
-              A sharper orange-tinted view of orders, cash flow, courier health, and action queues.
+              A clean view of orders, cash flow, courier health, and action queues.
             </Typography>
           </Box>
         </Stack>

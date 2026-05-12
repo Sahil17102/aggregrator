@@ -2,12 +2,12 @@ import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 import { brand } from '../../theme/brand'
 
 export const dashboardPalette = {
-  page: '#FFF8F2',
+  page: '#F5F7FB',
   surface: '#FFFFFF',
-  tile: '#FFF4EA',
+  tile: '#F8FAFC',
   ink: '#111827',
   muted: '#64748B',
-  line: '#F0DCCB',
+  line: '#E5E7EB',
   orange: brand.accent,
   orangeDark: '#E67213',
   orangeSoft: '#FFF3EA',
@@ -22,20 +22,10 @@ export const dashboardCardSx = {
   height: '100%',
   borderRadius: '16px',
   position: 'relative',
-  border: `1px solid ${alpha(dashboardPalette.orange, 0.18)}`,
-  background: `linear-gradient(180deg, #FFFFFF 0%, ${alpha(dashboardPalette.orange, 0.035)} 100%)`,
-  boxShadow: `0 16px 36px ${alpha(dashboardPalette.orange, 0.08)}, 0 14px 34px rgba(15, 23, 42, 0.045)`,
+  border: `1px solid ${dashboardPalette.line}`,
+  background: dashboardPalette.surface,
+  boxShadow: '0 14px 34px rgba(15, 23, 42, 0.06)',
   overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    background: `linear-gradient(90deg, ${dashboardPalette.orange} 0%, ${brand.gold} 100%)`,
-    opacity: 0.88,
-  },
 } satisfies SxProps<Theme>
 
 export const dashboardTileSx = (color = dashboardPalette.orange) => ({

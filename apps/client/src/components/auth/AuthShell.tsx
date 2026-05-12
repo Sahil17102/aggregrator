@@ -63,16 +63,17 @@ export default function AuthShell({
         sx={{
           position: 'relative',
           width: '100%',
-          maxWidth: isCompact ? 760 : 1160,
-          height: { xs: 'auto', lg: 'min(640px, calc(100dvh - 24px))' },
+          maxWidth: isCompact ? 790 : 1210,
+          height: { xs: 'auto', lg: 'min(660px, calc(100dvh - 20px))' },
           minHeight: { xs: 'auto', lg: 0 },
-          maxHeight: { lg: 'calc(100dvh - 24px)' },
+          maxHeight: { lg: 'calc(100dvh - 20px)' },
           borderRadius: { xs: '18px', md: '22px' },
+          border: `1px solid ${alpha(authPalette.navy, 0.14)}`,
           overflow: 'hidden',
           bgcolor: '#FFFFFF',
           boxShadow: {
-            xs: '0 16px 38px rgba(13, 27, 77, 0.08)',
-            md: '0 26px 70px rgba(13, 27, 77, 0.1)',
+            xs: '0 16px 38px rgba(13, 27, 77, 0.1)',
+            md: '0 28px 76px rgba(13, 27, 77, 0.13)',
           },
         }}
       >
