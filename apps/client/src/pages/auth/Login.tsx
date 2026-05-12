@@ -21,10 +21,10 @@ export default function Login() {
   return (
     <AuthShell
       eyebrow="Client Auth"
-      title={'Ship with Confidence.\nWe Deliver Commitment.'}
-      subtitle="Manage your shipments, track deliveries, and stay updated - all in one place."
+      title={'Ship Smarter.\nDeliver Faster.'}
+      subtitle="Track orders, compare courier options, and keep every delivery moving from one polished ChoiceMe workspace."
       helperTitle="Welcome Back to ChoiceMe"
-      helperText="Please log in to manage your shipments"
+      helperText="Sign in to open your courier command center."
       showChrome
       showNavbar={false}
     >

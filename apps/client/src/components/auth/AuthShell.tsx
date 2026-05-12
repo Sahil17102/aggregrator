@@ -26,6 +26,7 @@ const authPalette = {
 }
 
 const deliveryArtwork = '/images/client-auth-delivery-van-theme.png'
+const authDisplayFont = '"Plus Jakarta Sans", "Poppins", ui-sans-serif, system-ui, sans-serif'
 
 export default function AuthShell({
   eyebrow,
@@ -37,6 +38,7 @@ export default function AuthShell({
   children,
 }: AuthShellProps) {
   const isCompact = variant === 'compact'
+  const titleLines = title.split('\n').filter(Boolean)
 
   return (
     <Box
@@ -48,6 +50,7 @@ export default function AuthShell({
         boxSizing: 'border-box',
         bgcolor: '#FFFFFF',
         color: authPalette.text,
+        fontFamily: authDisplayFont,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -121,31 +124,86 @@ export default function AuthShell({
                   textAlign: { xs: 'center', lg: 'left' },
                   pt: { xs: 0.4, lg: 0 },
                   pb: { xs: 1.2, lg: 0 },
-                  gap: { xs: 1.8, lg: 1.4 },
+                  gap: { xs: 1.5, lg: 1.2 },
                 }}
               >
                 <Stack
-                  spacing={{ xs: 1, md: 1.1 }}
+                  spacing={{ xs: 0.9, md: 1 }}
                   sx={{ width: '100%', maxWidth: 520, minWidth: 0 }}
                 >
-                  <Typography
+                  <Box
+                    component="span"
                     sx={{
+                      alignSelf: { xs: 'center', lg: 'flex-start' },
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.8,
+                      width: 'fit-content',
+                      px: { xs: 1, sm: 1.18 },
+                      py: 0.55,
+                      borderRadius: 999,
+                      border: `1px solid ${alpha(authPalette.orange, 0.22)}`,
+                      bgcolor: alpha('#FFFFFF', 0.82),
                       color: authPalette.navy,
-                      fontSize: { xs: '1.25rem', sm: '1.85rem', md: '2.2rem', lg: '2.24rem' },
-                      lineHeight: 1.16,
+                      fontSize: { xs: '0.66rem', sm: '0.72rem' },
                       fontWeight: 800,
+                      lineHeight: 1,
+                      textTransform: 'uppercase',
                       letterSpacing: 0,
-                      whiteSpace: 'pre-line',
-                      overflowWrap: 'break-word',
+                      boxShadow: `0 12px 24px ${alpha(authPalette.navy, 0.07)}`,
                     }}
                   >
-                    {title}
+                    <Box
+                      component="span"
+                      sx={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        bgcolor: authPalette.orange,
+                        boxShadow: `0 0 0 4px ${alpha(authPalette.orange, 0.12)}`,
+                      }}
+                    />
+                    Courier Command Login
+                  </Box>
+
+                  <Typography
+                    component="h1"
+                    sx={{
+                      color: authPalette.navy,
+                      fontFamily: authDisplayFont,
+                      fontSize: { xs: '1.64rem', sm: '2.18rem', md: '2.52rem', lg: '2.62rem' },
+                      lineHeight: { xs: 1.08, md: 1.02 },
+                      fontWeight: 800,
+                      letterSpacing: 0,
+                      overflowWrap: 'break-word',
+                      textShadow: `0 12px 28px ${alpha(authPalette.navy, 0.1)}`,
+                    }}
+                  >
+                    {titleLines.map((line, index) => (
+                      <Box
+                        component="span"
+                        key={line}
+                        sx={{
+                          display: 'block',
+                          color: index === titleLines.length - 1 ? 'transparent' : authPalette.navy,
+                          background:
+                            index === titleLines.length - 1
+                              ? `linear-gradient(90deg, ${authPalette.orange} 0%, #FFB15A 48%, ${authPalette.navy} 100%)`
+                              : 'none',
+                          WebkitBackgroundClip: index === titleLines.length - 1 ? 'text' : 'border-box',
+                          backgroundClip: index === titleLines.length - 1 ? 'text' : 'border-box',
+                        }}
+                      >
+                        {line}
+                      </Box>
+                    ))}
                   </Typography>
                   <Typography
                     sx={{
                       color: authPalette.muted,
-                      fontSize: { xs: '0.82rem', sm: '0.93rem', md: '0.98rem' },
-                      lineHeight: 1.46,
+                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.04rem' },
+                      fontWeight: 600,
+                      lineHeight: 1.52,
                       maxWidth: { xs: 300, sm: 460 },
                       overflowWrap: 'break-word',
                     }}
@@ -195,7 +253,7 @@ export default function AuthShell({
                 pb: { xs: 1, lg: 0 },
               }}
             >
-              <Stack spacing={{ xs: 1, md: 1.1 }} alignItems="center" sx={{ mb: { xs: 1.15, md: 1.35 } }}>
+              <Stack spacing={{ xs: 0.9, md: 1 }} alignItems="center" sx={{ mb: { xs: 1.05, md: 1.25 } }}>
                 <BrandLogo
                   sx={{
                     width: { xs: 122, sm: 146, md: 154 },
@@ -204,9 +262,11 @@ export default function AuthShell({
                 />
                 <Stack spacing={0.8} alignItems="center" textAlign="center">
                   <Typography
+                    component="h2"
                     sx={{
-                      color: authPalette.orange,
-                      fontSize: { xs: '0.98rem', sm: '1.24rem', md: '1.36rem' },
+                      fontFamily: authDisplayFont,
+                      color: authPalette.navy,
+                      fontSize: { xs: '1.18rem', sm: '1.44rem', md: '1.58rem' },
                       lineHeight: 1.1,
                       fontWeight: 800,
                       letterSpacing: 0,
@@ -214,14 +274,25 @@ export default function AuthShell({
                       overflowWrap: 'break-word',
                     }}
                   >
-                    {helperTitle}
+                    <Box
+                      component="span"
+                      sx={{
+                        background: `linear-gradient(90deg, ${authPalette.navy} 0%, ${authPalette.orange} 100%)`,
+                        WebkitBackgroundClip: 'text',
+                        backgroundClip: 'text',
+                        color: 'transparent',
+                      }}
+                    >
+                      {helperTitle}
+                    </Box>
                   </Typography>
                   <Typography
                     sx={{
-                      color: authPalette.text,
-                      fontSize: { xs: '0.78rem', sm: '0.84rem', md: '0.88rem' },
-                      fontWeight: 700,
-                      lineHeight: 1.28,
+                      color: authPalette.muted,
+                      fontSize: { xs: '0.82rem', sm: '0.9rem', md: '0.94rem' },
+                      fontWeight: 600,
+                      lineHeight: 1.38,
+                      maxWidth: 310,
                     }}
                   >
                     {helperText}
