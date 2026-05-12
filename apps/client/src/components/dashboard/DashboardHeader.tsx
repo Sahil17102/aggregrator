@@ -1,7 +1,7 @@
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { MdDashboardCustomize, MdRefresh } from 'react-icons/md'
-import { brand, brandGradients } from '../../theme/brand'
+import { dashboardButtonSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface DashboardHeaderProps {
   isRefetching: boolean
@@ -17,50 +17,45 @@ export default function DashboardHeader({
   return (
     <Box
       sx={{
-        mb: 2.8,
-        p: { xs: 2.2, md: 2.8 },
-        borderRadius: '34px',
-        border: `1px solid ${alpha('#FFFFFF', 0.76)}`,
-        background: `
-          radial-gradient(circle at 100% 0%, rgba(255,221,174,0.6), transparent 24%),
-          ${brandGradients.hero}
-        `,
-        color: brand.ink,
-        boxShadow: '0 24px 52px rgba(15,44,67,0.1)',
+        mb: 2.5,
+        p: { xs: 2, md: 2.4 },
+        borderRadius: '16px',
+        border: `1px solid ${dashboardPalette.line}`,
+        background: dashboardPalette.surface,
+        boxShadow: '0 14px 34px rgba(15,23,42,0.06)',
       }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         justifyContent="space-between"
         alignItems={{ xs: 'flex-start', md: 'center' }}
-        gap={1.4}
+        gap={1.5}
       >
-        <Box>
-          <Typography
-            sx={{
-              fontSize: { xs: '1.45rem', md: '2.05rem' },
-              fontWeight: 800,
-              mb: 0.5,
-              letterSpacing: '-0.05em',
-            }}
-          >
-            Logistics Command Center
-          </Typography>
-          <Typography sx={{ fontSize: '0.94rem', color: brand.inkSoft, fontWeight: 500 }}>
-            Real-time fulfillment metrics and operational insights.
-          </Typography>
-        </Box>
+        <Stack direction="row" spacing={1.4} alignItems="center">
+          <Box sx={dashboardIconSx(dashboardPalette.blue)}>
+            <MdDashboardCustomize size={19} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: { xs: '1.35rem', md: '1.8rem' }, fontWeight: 900 }}>
+              Dashboard
+            </Typography>
+            <Typography sx={{ fontSize: '0.9rem', color: dashboardPalette.muted, fontWeight: 500 }}>
+              A clean view of orders, cash flow, courier health, and action queues.
+            </Typography>
+          </Box>
+        </Stack>
 
-        <Stack direction="row" spacing={1.2}>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           {onCustomize && (
             <Button
               onClick={onCustomize}
               variant="outlined"
               startIcon={<MdDashboardCustomize size={18} />}
               sx={{
-                borderColor: alpha(brand.ink, 0.12),
-                color: brand.ink,
-                backgroundColor: alpha('#FFFFFF', 0.68),
+                ...dashboardButtonSx,
+                borderColor: alpha(dashboardPalette.ink, 0.12),
+                color: dashboardPalette.ink,
+                backgroundColor: dashboardPalette.surface,
               }}
             >
               Customize
@@ -73,17 +68,22 @@ export default function DashboardHeader({
             variant="contained"
             startIcon={
               isRefetching ? (
-                <CircularProgress size={14} thickness={4} sx={{ color: brand.ink }} />
+                <CircularProgress size={14} thickness={4} sx={{ color: '#FFFFFF' }} />
               ) : (
                 <MdRefresh size={18} />
               )
             }
             sx={{
-              background: brandGradients.button,
-              color: brand.ink,
+              ...dashboardButtonSx,
+              background: dashboardPalette.blue,
+              color: '#FFFFFF',
+              '&:hover': {
+                background: dashboardPalette.blueDark,
+                boxShadow: 'none',
+              },
             }}
           >
-            {isRefetching ? 'Updating...' : 'Refresh Feed'}
+            {isRefetching ? 'Updating' : 'Refresh'}
           </Button>
         </Stack>
       </Stack>

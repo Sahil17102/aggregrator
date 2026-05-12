@@ -1,5 +1,6 @@
-import { Box, Card, CardContent, Grid, Typography, alpha, useTheme } from '@mui/material'
+import { alpha, Box, Card, CardContent, Grid, Stack, Typography } from '@mui/material'
 import { TbTruckDelivery } from 'react-icons/tb'
+import { dashboardCardSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface TodaysOperationsCardProps {
   todayOps: {
@@ -11,40 +12,46 @@ interface TodaysOperationsCardProps {
 }
 
 export default function TodaysOperationsCard({ todayOps }: TodaysOperationsCardProps) {
-  const theme = useTheme()
-
   const operations = [
-    { label: 'Today Orders', value: todayOps.orders || 0, color: theme.palette.primary.main },
-    { label: 'Pending', value: todayOps.pending || 0, color: theme.palette.info.main },
-    { label: 'In Transit', value: todayOps.inTransit || 0, color: theme.palette.warning.main },
-    { label: 'Delivered', value: todayOps.delivered || 0, color: theme.palette.success.main },
+    { label: 'Today Orders', value: todayOps.orders || 0, color: dashboardPalette.blue },
+    { label: 'Pending', value: todayOps.pending || 0, color: dashboardPalette.amber },
+    { label: 'In Transit', value: todayOps.inTransit || 0, color: '#0F766E' },
+    { label: 'Delivered', value: todayOps.delivered || 0, color: dashboardPalette.green },
   ]
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderRadius: '16px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        background: theme.palette.mode === 'dark'
-          ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.05)} 0%, transparent 100%)`
-          : 'white',
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          <TbTruckDelivery style={{ marginRight: 8, verticalAlign: 'middle' }} />
-          Today's Operations
-        </Typography>
-        <Grid container spacing={2} mt={1}>
-          {operations.map((op, idx) => (
-            <Grid size={{ xs: 6 }} key={idx}>
-              <Box sx={{ p: 2, bgcolor: alpha(op.color, 0.1), borderRadius: 2 }}>
-                <Typography variant="body2" color="text.secondary">
+    <Card sx={dashboardCardSx}>
+      <CardContent sx={{ p: 2.4 }}>
+        <Stack direction="row" spacing={1.2} alignItems="center" mb={2.2}>
+          <Box sx={dashboardIconSx(dashboardPalette.blue)}>
+            <TbTruckDelivery size={20} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: dashboardPalette.ink }}>
+              Today's Operations
+            </Typography>
+            <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted }}>
+              Live order movement
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Grid container spacing={1.5}>
+          {operations.map((op) => (
+            <Grid size={{ xs: 6 }} key={op.label}>
+              <Box
+                sx={{
+                  p: 1.6,
+                  bgcolor: alpha(op.color, 0.06),
+                  borderRadius: '12px',
+                  border: `1px solid ${alpha(op.color, 0.16)}`,
+                  minHeight: 92,
+                }}
+              >
+                <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted, fontWeight: 800 }}>
                   {op.label}
                 </Typography>
-                <Typography variant="h5" fontWeight="bold">
+                <Typography sx={{ mt: 0.8, fontSize: '1.45rem', fontWeight: 900, color: dashboardPalette.ink }}>
                   {op.value}
                 </Typography>
               </Box>

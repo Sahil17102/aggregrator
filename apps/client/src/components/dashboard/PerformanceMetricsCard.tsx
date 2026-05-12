@@ -1,5 +1,6 @@
-import { Box, Card, CardContent, LinearProgress, Stack, Typography, alpha, useTheme } from '@mui/material'
+import { Box, Card, CardContent, LinearProgress, Stack, Typography } from '@mui/material'
 import { MdAssessment } from 'react-icons/md'
+import { dashboardCardSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface PerformanceMetricsCardProps {
   operational: {
@@ -15,96 +16,61 @@ export default function PerformanceMetricsCard({
   operational,
   formatPercentage,
 }: PerformanceMetricsCardProps) {
-  const theme = useTheme()
+  const rows = [
+    { label: 'Delivery Success Rate', value: operational.deliverySuccessRate || 0, color: dashboardPalette.green },
+    { label: 'NDR Rate', value: operational.ndrRate || 0, color: dashboardPalette.red },
+    { label: 'RTO Rate', value: operational.rtoRate || 0, color: dashboardPalette.amber },
+  ]
+
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderRadius: '16px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        background: theme.palette.mode === 'dark'
-          ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`
-          : 'white',
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" mb={2.5}>
-          <Box
-            sx={{
-              bgcolor: alpha(theme.palette.info.main, 0.1),
-              borderRadius: '10px',
-              p: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MdAssessment size={24} color={theme.palette.info.main} />
+    <Card sx={dashboardCardSx}>
+      <CardContent sx={{ p: 2.4 }}>
+        <Stack direction="row" spacing={1.2} alignItems="center" mb={2.2}>
+          <Box sx={dashboardIconSx(dashboardPalette.blue)}>
+            <MdAssessment size={20} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight="bold">
-              Performance Metrics
+            <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: dashboardPalette.ink }}>
+              Performance
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted }}>
               Operational health
             </Typography>
           </Box>
         </Stack>
-        <Stack spacing={3} mt={2}>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={1}>
-              <Typography variant="body2" color="text.secondary">
-                Delivery Success Rate
-              </Typography>
-              <Typography variant="body2" fontWeight="bold">
-                {formatPercentage(operational.deliverySuccessRate || 0)}
-              </Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={operational.deliverySuccessRate || 0}
-              sx={{ height: 8, borderRadius: 4 }}
-              color="success"
-            />
-          </Box>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={1}>
-              <Typography variant="body2" color="text.secondary">
-                NDR Rate
-              </Typography>
-              <Typography variant="body2" fontWeight="bold" color="error">
-                {formatPercentage(operational.ndrRate || 0)}
-              </Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={operational.ndrRate || 0}
-              sx={{ height: 8, borderRadius: 4 }}
-              color="error"
-            />
-          </Box>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={1}>
-              <Typography variant="body2" color="text.secondary">
-                RTO Rate
-              </Typography>
-              <Typography variant="body2" fontWeight="bold" color="warning.main">
-                {formatPercentage(operational.rtoRate || 0)}
-              </Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={operational.rtoRate || 0}
-              sx={{ height: 8, borderRadius: 4 }}
-              color="warning"
-            />
-          </Box>
-          <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+
+        <Stack spacing={2.2}>
+          {rows.map((row) => (
+            <Box key={row.label}>
+              <Stack direction="row" justifyContent="space-between" mb={0.8}>
+                <Typography sx={{ fontSize: '0.82rem', color: dashboardPalette.muted, fontWeight: 700 }}>
+                  {row.label}
+                </Typography>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 900, color: row.color }}>
+                  {formatPercentage(row.value)}
+                </Typography>
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(100, row.value)}
+                sx={{
+                  height: 7,
+                  borderRadius: 999,
+                  bgcolor: '#EEF2F7',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 999,
+                    bgcolor: row.color,
+                  },
+                }}
+              />
+            </Box>
+          ))}
+
+          <Box sx={{ pt: 0.4 }}>
+            <Typography sx={{ fontSize: '0.82rem', color: dashboardPalette.muted, fontWeight: 700 }}>
               Average Delivery Time
             </Typography>
-            <Typography variant="h5" fontWeight="bold">
+            <Typography sx={{ mt: 0.4, fontSize: '1.45rem', fontWeight: 900, color: dashboardPalette.ink }}>
               {operational.avgDeliveryTime || 0} days
             </Typography>
           </Box>
@@ -113,4 +79,3 @@ export default function PerformanceMetricsCard({
     </Card>
   )
 }
-

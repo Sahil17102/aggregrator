@@ -12,6 +12,40 @@ function parseCoordinate(value: string | null | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+function getCourierErrorText(rawError: any, err?: any) {
+  const candidates = [
+    rawError?.detail,
+    rawError?.error?.[0],
+    rawError?.error,
+    rawError?.message,
+    rawError?.data?.message,
+    err?.message,
+  ]
+
+  return candidates
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter(Boolean)
+    .map((value) => String(value))
+    .join(' | ')
+}
+
+function isCourierAuthOrConfigError(rawError: any, err?: any) {
+  const status = Number(err?.statusCode || err?.status || err?.response?.status || rawError?.status || 0)
+  const text = getCourierErrorText(rawError, err).toLowerCase()
+
+  return (
+    status === 401 ||
+    status === 403 ||
+    text.includes('invalid token') ||
+    text.includes('unauthorized') ||
+    text.includes('forbidden') ||
+    text.includes('api key is not configured') ||
+    text.includes('token is not configured') ||
+    text.includes('credentials') ||
+    text.includes('authentication')
+  )
+}
+
 /**
  * Create Pickup + optional RTO
  */
@@ -108,8 +142,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       console.error('❌ Error registering Delhivery warehouse:', rawError)
 
       // Detect duplicate-warehouse error from Delhivery and throw a typed error
-      const delhiveryErrorText: string | undefined =
-        rawError?.error?.[0] || rawError?.message || rawError?.data?.message
+      const delhiveryErrorText = getCourierErrorText(rawError, err)
 
       if (typeof delhiveryErrorText === 'string') {
         if (
@@ -134,11 +167,18 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
         }
       }
 
-      const genericErr: any = new Error(
-        'Pickup location could not be verified. Please check the address details and try again.',
-      )
-      genericErr.code = 'DELHIVERY_WAREHOUSE_GENERAL_ERROR'
-      throw genericErr
+      if (isCourierAuthOrConfigError(rawError, err)) {
+        console.warn(
+          'âš ï¸ Skipping Delhivery warehouse registration because credentials are invalid or missing. Pickup address was saved locally.',
+          rawError,
+        )
+      } else {
+        const genericErr: any = new Error(
+          'Pickup location could not be verified. Please check the address details and try again.',
+        )
+        genericErr.code = 'DELHIVERY_WAREHOUSE_GENERAL_ERROR'
+        throw genericErr
+      }
     }
 
     // Delivery One uses the same warehouse registration contract. Keep this best-effort so
@@ -325,7 +365,14 @@ export async function updatePickupAddressService(
         }
       } catch (err: any) {
         console.error('❌ Delhivery warehouse update error:', err.message)
-        throw new Error('Failed to update warehouse')
+        const rawError = err?.response?.data ?? err
+        if (isCourierAuthOrConfigError(rawError, err)) {
+          console.warn(
+            'Skipping Delhivery warehouse update because credentials are invalid or missing. Pickup address update was saved locally.',
+          )
+        } else {
+          throw new Error('Failed to update warehouse')
+        }
       }
 
       return pickup

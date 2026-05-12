@@ -1,7 +1,8 @@
-import { Box, Card, CardContent, Chip, LinearProgress, Stack, Typography, alpha, useTheme } from '@mui/material'
+import { alpha, Box, Card, CardContent, Chip, LinearProgress, Stack, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { MdAccountBalanceWallet, MdArrowForward } from 'react-icons/md'
 import { TbCurrencyRupee } from 'react-icons/tb'
+import { dashboardCardSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface FinancialHealthCardProps {
   financial: {
@@ -17,68 +18,49 @@ export default function FinancialHealthCard({
   financial,
   formatCurrency,
 }: FinancialHealthCardProps) {
-  const theme = useTheme()
   const navigate = useNavigate()
 
   const isHealthy = financial.walletBalance > 1000 && financial.codRemittanceDue < financial.walletBalance * 2
   const isLowBalance = financial.walletBalance < 500
+  const statusColor = isLowBalance ? dashboardPalette.red : isHealthy ? dashboardPalette.green : dashboardPalette.amber
   const healthScore = isHealthy ? 90 : isLowBalance ? 40 : 70
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderRadius: '16px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: `2px solid ${isLowBalance ? theme.palette.error.main : isHealthy ? theme.palette.success.main : theme.palette.warning.main}`,
-        background: `linear-gradient(135deg, ${alpha(
-          isLowBalance ? theme.palette.error.main : isHealthy ? theme.palette.success.main : theme.palette.warning.main,
-          0.05,
-        )} 0%, transparent 100%)`,
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box
-              sx={{
-                bgcolor: alpha(
-                  isLowBalance ? theme.palette.error.main : isHealthy ? theme.palette.success.main : theme.palette.warning.main,
-                  0.1,
-                ),
-                borderRadius: '10px',
-                p: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <TbCurrencyRupee size={24} color={isLowBalance ? theme.palette.error.main : isHealthy ? theme.palette.success.main : theme.palette.warning.main} />
+    <Card sx={dashboardCardSx}>
+      <CardContent sx={{ p: 2.4 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2.4}>
+          <Stack direction="row" spacing={1.2} alignItems="center">
+            <Box sx={dashboardIconSx(statusColor)}>
+              <TbCurrencyRupee size={20} />
             </Box>
             <Box>
-              <Typography variant="h6" fontWeight="bold">
+              <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: dashboardPalette.ink }}>
                 Financial Health
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Your account overview
+              <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted }}>
+                Wallet and COD position
               </Typography>
             </Box>
           </Stack>
           <Chip
-            label={isHealthy ? 'Healthy' : isLowBalance ? 'Low Balance' : 'Warning'}
-            color={isHealthy ? 'success' : isLowBalance ? 'error' : 'warning'}
+            label={isHealthy ? 'Healthy' : isLowBalance ? 'Low Balance' : 'Watch'}
             size="small"
-            sx={{ fontWeight: 600, height: 26 }}
+            sx={{
+              height: 26,
+              borderRadius: '8px',
+              fontWeight: 800,
+              color: statusColor,
+              bgcolor: alpha(statusColor, 0.1),
+            }}
           />
         </Stack>
 
-        {/* Health Score */}
-        <Box sx={{ mb: 3 }}>
-          <Stack direction="row" justifyContent="space-between" mb={1}>
-            <Typography variant="body2" fontWeight="medium" color="text.secondary">
+        <Box sx={{ mb: 2.2 }}>
+          <Stack direction="row" justifyContent="space-between" mb={0.8}>
+            <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: dashboardPalette.muted }}>
               Health Score
             </Typography>
-            <Typography variant="body2" fontWeight="bold" color={isHealthy ? 'success.main' : isLowBalance ? 'error.main' : 'warning.main'}>
+            <Typography sx={{ fontSize: '0.82rem', fontWeight: 900, color: statusColor }}>
               {healthScore}/100
             </Typography>
           </Stack>
@@ -86,97 +68,69 @@ export default function FinancialHealthCard({
             variant="determinate"
             value={healthScore}
             sx={{
-              height: 8,
-              borderRadius: 4,
-              bgcolor: alpha(theme.palette.divider, 0.1),
+              height: 7,
+              borderRadius: 999,
+              bgcolor: '#EEF2F7',
               '& .MuiLinearProgress-bar': {
-                borderRadius: 4,
-                bgcolor: isHealthy ? theme.palette.success.main : isLowBalance ? theme.palette.error.main : theme.palette.warning.main,
+                borderRadius: 999,
+                bgcolor: statusColor,
               },
             }}
           />
         </Box>
 
-        <Stack spacing={2.5}>
+        <Stack spacing={1.4}>
           <Box
             sx={{
-              p: 2.5,
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              p: 1.6,
               borderRadius: '12px',
-              border: `1.5px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              bgcolor: alpha(dashboardPalette.blue, 0.055),
+              border: `1px solid ${alpha(dashboardPalette.blue, 0.16)}`,
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.12),
-                transform: 'translateY(-2px)',
-                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`,
-              },
             }}
             onClick={() => navigate('/billing/wallet_transactions')}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box sx={{ flex: 1 }}>
-                <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                  <MdAccountBalanceWallet size={18} color={theme.palette.primary.main} />
-                  <Typography variant="body2" fontWeight="600" color="text.secondary">
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0 }}>
+                <Stack direction="row" spacing={1} alignItems="center" mb={0.7}>
+                  <MdAccountBalanceWallet size={17} color={dashboardPalette.blue} />
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: dashboardPalette.muted }}>
                     Wallet Balance
                   </Typography>
                 </Stack>
-                <Typography
-                  variant="h5"
-                  fontWeight="bold"
-                  color={isLowBalance ? 'error.main' : 'primary.main'}
-                  sx={{ mb: 0.5 }}
-                >
+                <Typography sx={{ fontSize: '1.2rem', fontWeight: 900, color: isLowBalance ? dashboardPalette.red : dashboardPalette.ink }}>
                   {formatCurrency(financial.walletBalance || 0)}
                 </Typography>
-                {isLowBalance ? (
-                  <Chip
-                    label="⚠️ Recharge required"
-                    size="small"
-                    color="error"
-                    sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }}
-                  />
-                ) : (
-                  <Typography variant="caption" color="text.secondary">
-                    Available for shipping
-                  </Typography>
-                )}
               </Box>
-              <MdArrowForward size={20} color={theme.palette.primary.main} style={{ opacity: 0.6 }} />
+              <MdArrowForward size={19} color={dashboardPalette.blue} />
             </Stack>
           </Box>
 
           <Box
             sx={{
-              p: 2.5,
-              bgcolor: alpha(theme.palette.warning.main, 0.08),
+              p: 1.6,
               borderRadius: '12px',
-              border: `1.5px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+              bgcolor: alpha(dashboardPalette.amber, 0.065),
+              border: `1px solid ${alpha(dashboardPalette.amber, 0.18)}`,
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.warning.main, 0.12),
-                transform: 'translateY(-2px)',
-              },
             }}
             onClick={() => navigate('/cod-remittance')}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" fontWeight="600" color="text.secondary" gutterBottom>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: dashboardPalette.muted, mb: 0.7 }}>
                   COD Remittance Due
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" color="warning.main" sx={{ mb: 1 }}>
+                <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: dashboardPalette.ink }}>
                   {formatCurrency(financial.codRemittanceDue || 0)}
                 </Typography>
                 {financial.codRemittanceCredited > 0 && (
-                  <Typography variant="caption" color="text.secondary">
-                    ✓ Credited this month: {formatCurrency(financial.codRemittanceCredited || 0)}
+                  <Typography sx={{ fontSize: '0.74rem', color: dashboardPalette.muted, mt: 0.4 }}>
+                    Credited this month: {formatCurrency(financial.codRemittanceCredited || 0)}
                   </Typography>
                 )}
               </Box>
-              <MdArrowForward size={20} color={theme.palette.warning.main} style={{ opacity: 0.6 }} />
+              <MdArrowForward size={19} color={dashboardPalette.amber} />
             </Stack>
           </Box>
         </Stack>

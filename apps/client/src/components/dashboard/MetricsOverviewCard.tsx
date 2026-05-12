@@ -1,6 +1,7 @@
-import { Box, Card, CardContent, Grid, Stack, Typography, alpha, useTheme } from '@mui/material'
+import { alpha, Box, Card, CardContent, Grid, Stack, Typography } from '@mui/material'
 import { MdAnalytics, MdShoppingBag } from 'react-icons/md'
 import { TbCurrencyRupee } from 'react-icons/tb'
+import { dashboardCardSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface MetricsOverviewCardProps {
   metrics: {
@@ -12,103 +13,76 @@ interface MetricsOverviewCardProps {
 }
 
 export default function MetricsOverviewCard({ metrics, formatCurrency }: MetricsOverviewCardProps) {
-  const theme = useTheme()
-
   const metricCards = [
     {
       title: 'Avg Order Value',
       value: formatCurrency(metrics.avgOrderValue || 0),
-      icon: <MdAnalytics size={24} />,
-      color: theme.palette.primary.main,
-      gradient: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+      icon: <MdAnalytics size={20} />,
+      color: dashboardPalette.blue,
     },
     {
       title: 'Prepaid Orders',
       value: metrics.totalPrepaidOrders?.toLocaleString() || '0',
-      icon: <MdShoppingBag size={24} />,
-      color: theme.palette.info.main,
-      gradient: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)} 0%, ${alpha(theme.palette.info.main, 0.05)} 100%)`,
+      icon: <MdShoppingBag size={20} />,
+      color: '#0F766E',
     },
     {
       title: 'COD Orders',
       value: metrics.totalCodOrders?.toLocaleString() || '0',
-      icon: <TbCurrencyRupee size={24} />,
-      color: theme.palette.warning.main,
-      gradient: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.1)} 0%, ${alpha(theme.palette.warning.main, 0.05)} 100%)`,
+      icon: <TbCurrencyRupee size={20} />,
+      color: dashboardPalette.amber,
     },
   ]
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderRadius: '16px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        background: theme.palette.mode === 'dark'
-          ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.05)} 0%, transparent 100%)`
-          : 'white',
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" mb={3}>
-          <Box
-            sx={{
-              bgcolor: alpha(theme.palette.secondary.main, 0.1),
-              borderRadius: '10px',
-              p: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MdAnalytics size={24} color={theme.palette.secondary.main} />
+    <Card sx={dashboardCardSx}>
+      <CardContent sx={{ p: 2.4 }}>
+        <Stack direction="row" spacing={1.2} alignItems="center" mb={2.3}>
+          <Box sx={dashboardIconSx(dashboardPalette.blue)}>
+            <MdAnalytics size={20} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight="bold">
+            <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: dashboardPalette.ink }}>
               Key Metrics
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Business insights
+            <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted }}>
+              Order mix and value
             </Typography>
           </Box>
         </Stack>
 
-        <Grid container spacing={2} mb={3}>
-          {metricCards.map((metric, idx) => (
-            <Grid size={{ xs: 12, sm: 4 }} key={idx}>
+        <Grid container spacing={1.5}>
+          {metricCards.map((metric) => (
+            <Grid size={{ xs: 12, sm: 4 }} key={metric.title}>
               <Box
                 sx={{
-                  p: 2,
+                  p: 1.7,
                   borderRadius: '12px',
-                  background: metric.gradient,
-                  border: `1.5px solid ${alpha(metric.color, 0.2)}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 16px ${alpha(metric.color, 0.2)}`,
-                  },
+                  background: alpha(metric.color, 0.055),
+                  border: `1px solid ${alpha(metric.color, 0.16)}`,
+                  minHeight: 108,
                 }}
               >
-                <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+                <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                   <Box
                     sx={{
-                      bgcolor: alpha(metric.color, 0.15),
-                      borderRadius: '8px',
-                      p: 0.75,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: 30,
+                      height: 30,
+                      borderRadius: '9px',
+                      display: 'grid',
+                      placeItems: 'center',
                       color: metric.color,
+                      bgcolor: alpha(metric.color, 0.1),
+                      flex: '0 0 auto',
                     }}
                   >
                     {metric.icon}
                   </Box>
-                  <Typography variant="body2" fontWeight="600" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: dashboardPalette.muted, lineHeight: 1.2 }}>
                     {metric.title}
                   </Typography>
                 </Stack>
-                <Typography variant="h6" fontWeight="bold" color={metric.color} sx={{ mb: 0.5 }}>
+                <Typography sx={{ fontSize: '1.2rem', fontWeight: 900, color: dashboardPalette.ink, overflowWrap: 'anywhere' }}>
                   {metric.value}
                 </Typography>
               </Box>
@@ -119,4 +93,3 @@ export default function MetricsOverviewCard({ metrics, formatCurrency }: Metrics
     </Card>
   )
 }
-

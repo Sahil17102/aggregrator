@@ -65,7 +65,7 @@ const theme = createTheme({
     divider: alpha(brand.ink, 0.08),
   },
   shape: {
-    borderRadius: 10,
+    borderRadius: 8,
   },
   typography: {
     fontFamily: brandFonts.body,
@@ -161,19 +161,19 @@ const theme = createTheme({
           color: brand.ink,
         },
         '.MuiButton-root': {
-          borderRadius: '10px !important',
+          borderRadius: '8px !important',
           minHeight: 40,
           alignItems: 'center',
           justifyContent: 'center',
         },
         '.MuiCard-root': {
-          borderRadius: '14px !important',
+          borderRadius: '16px !important',
         },
         '.MuiPaper-root': {
-          borderRadius: '14px',
+          borderRadius: '12px',
         },
         '.MuiIconButton-root': {
-          borderRadius: '10px',
+          borderRadius: '8px',
         },
       },
     },
@@ -184,9 +184,9 @@ const theme = createTheme({
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 14,
-          boxShadow: '0 14px 30px rgba(15, 44, 67, 0.07)',
-          border: `1px solid ${alpha('#FFFFFF', 0.82)}`,
-          background: brandGradients.surface,
+          boxShadow: '0 14px 34px rgba(15, 23, 42, 0.06)',
+          border: `1px solid ${alpha(brand.ink, 0.08)}`,
+          background: '#FFFFFF',
         },
       },
     },
@@ -219,15 +219,15 @@ const theme = createTheme({
           fontSize: '0.88rem',
           fontWeight: 700,
           boxShadow: 'none',
+          transition: 'background-color .18s ease, border-color .18s ease, color .18s ease',
         },
         containedPrimary: {
           background: brandGradients.button,
           color: '#FFFFFF',
-          boxShadow: '0 18px 36px rgba(255, 122, 21, 0.28)',
+          boxShadow: 'none',
           '&:hover': {
             background: brandGradients.button,
-            transform: 'translateY(-1px)',
-            boxShadow: '0 24px 42px rgba(255, 122, 21, 0.34)',
+            boxShadow: 'none',
           },
         },
         containedSecondary: {

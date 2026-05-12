@@ -17,15 +17,15 @@ import {
 } from '@chakra-ui/react'
 import {
   IconAlertTriangle,
+  IconChartBar,
   IconCheck,
+  IconCircleCheck,
   IconCoinRupee,
   IconMapPin,
   IconPackageExport,
   IconRefresh,
-  IconTruck,
-  IconUsers,
+  IconShieldCheck,
 } from '@tabler/icons-react'
-import { DoorstepCourierScene, RollingVanScene } from 'components/Brand/AnimatedCourierScene'
 import Card from 'components/Card/Card'
 import CardBody from 'components/Card/CardBody'
 import CardHeader from 'components/Card/CardHeader'
@@ -47,25 +47,25 @@ const toNum = (value) => {
 }
 
 function MetricCard({ title, value, subtitle, icon, color = 'brand.500' }) {
-  const textPrimary = useColorModeValue('#241A1B', 'gray.100')
-  const textSecondary = useColorModeValue('#6A5E59', 'gray.400')
-  const iconBg = useColorModeValue('rgba(12,59,128,0.06)', 'rgba(148,163,184,0.14)')
+  const textPrimary = useColorModeValue('#111827', 'gray.100')
+  const textSecondary = useColorModeValue('#64748B', 'gray.400')
+  const iconBg = useColorModeValue('rgba(37,99,235,0.08)', 'rgba(148,163,184,0.14)')
 
   return (
-    <Card borderRadius="24px" h="full" bg={useColorModeValue('rgba(255,253,248,0.96)', 'rgba(18,27,45,0.9)')} borderWidth="1px" borderColor={useColorModeValue('rgba(12,59,128,0.1)', 'rgba(255,255,255,0.08)')}>
-      <CardBody p={4.5}>
+    <Card borderRadius="16px" h="full" bg={useColorModeValue('#FFFFFF', 'rgba(18,27,45,0.9)')} borderWidth="1px" borderColor={useColorModeValue('#E5E7EB', 'rgba(255,255,255,0.08)')} boxShadow="0 12px 28px rgba(15,23,42,0.06)">
+      <CardBody p={4}>
         <HStack justify="space-between" align="flex-start" mb={2}>
-          <Text fontSize="xs" color={textSecondary} fontWeight="700" textTransform="uppercase" letterSpacing="0.45px">
+          <Text fontSize="sm" color={textPrimary} fontWeight="700">
             {title}
           </Text>
-          <Flex w="38px" h="38px" borderRadius="14px" bg={iconBg} align="center" justify="center" color={color}>
+          <Flex w="36px" h="36px" borderRadius="10px" bg={iconBg} align="center" justify="center" color={color}>
             {icon}
           </Flex>
         </HStack>
         <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="800" color={textPrimary} lineHeight="1.1">
           {value}
         </Text>
-        <Text mt={1.5} fontSize="sm" color={textSecondary}>
+        <Text mt={1.5} fontSize="xs" color={textSecondary}>
           {subtitle}
         </Text>
       </CardBody>
@@ -77,12 +77,12 @@ export default function Dashboard() {
   const history = useHistory()
   const { data: statsData, isLoading, error, refetch, isRefetching } = useDashboardStats()
 
-  const pageBg = useColorModeValue('#F7EBDD', '#142238')
-  const panelBg = useColorModeValue('rgba(255,253,248,0.96)', '#101D36')
-  const borderColor = useColorModeValue('rgba(12,59,128,0.12)', 'rgba(148,163,184,0.2)')
-  const textPrimary = useColorModeValue('#241A1B', 'gray.100')
-  const textSecondary = useColorModeValue('#6A5E59', 'gray.400')
-  const tileBg = useColorModeValue('rgba(255,244,232,0.8)', 'rgba(148,163,184,0.1)')
+  const pageBg = useColorModeValue('#F5F7FB', '#142238')
+  const panelBg = useColorModeValue('#FFFFFF', '#101D36')
+  const borderColor = useColorModeValue('#E5E7EB', 'rgba(148,163,184,0.2)')
+  const textPrimary = useColorModeValue('#111827', 'gray.100')
+  const textSecondary = useColorModeValue('#64748B', 'gray.400')
+  const tileBg = useColorModeValue('#F8FAFC', 'rgba(148,163,184,0.1)')
 
   const stats = statsData?.data || {}
   const todayOps = stats.todayOperations || {}
@@ -105,6 +105,27 @@ export default function Dashboard() {
     {
       title: 'Net revenue',
       value: formatCurrency(financial.totalRevenue),
+    },
+  ]
+
+  const focusItems = [
+    {
+      title: 'Dispatch readiness',
+      value: Math.max(0, 100 - toNum(todayOps.pending)),
+      note: `${toNum(todayOps.pending)} pending`,
+      color: 'blue',
+    },
+    {
+      title: 'Delivery quality',
+      value: toNum(operational.deliverySuccessRate),
+      note: `${toNum(operational.deliveredOrders)} delivered`,
+      color: 'green',
+    },
+    {
+      title: 'Support pressure',
+      value: Math.max(0, 100 - toNum(alerts.openTickets)),
+      note: `${toNum(alerts.openTickets)} open tickets`,
+      color: 'orange',
     },
   ]
 
@@ -147,21 +168,20 @@ export default function Dashboard() {
   return (
     <Box minH="100vh" pb={8} bg={pageBg}>
       <Container maxW="full" pt={{ base: '128px', md: '88px' }} px={{ base: 4, md: 6 }}>
-        <Grid templateColumns={{ base: '1fr', '2xl': '1.55fr 0.8fr' }} gap={{ base: 4, xl: 5 }} mb={5} alignItems="start">
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="28px">
+        <Grid templateColumns={{ base: '1fr', xl: '1.25fr 0.75fr' }} gap={{ base: 4, xl: 5 }} mb={5} alignItems="stretch">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 14px 34px rgba(15,23,42,0.07)">
             <CardBody p={{ base: 4, md: 5 }}>
               <Stack spacing={4}>
                 <HStack justify="space-between" flexWrap="wrap" spacing={3}>
                   <VStack align="flex-start" spacing={1}>
-                    <Text fontSize="xs" fontWeight="800" letterSpacing="0.16em" textTransform="uppercase" color="brand.500">
-                      ChoiceMe operations deck
+                    <Text fontSize="xs" fontWeight="800" letterSpacing="0.12em" textTransform="uppercase" color="blue.500">
+                      Admin dashboard
                     </Text>
-                    <Heading size="lg" color={textPrimary} letterSpacing="-0.04em">
-                      Run admin operations from a clearer top layer.
+                    <Heading size="lg" color={textPrimary}>
+                      Operations overview
                     </Heading>
-                    <Text color={textSecondary} maxW="520px" lineHeight="1.75">
-                      The admin home now uses softer surfaces, stronger sectioning, and a more
-                      product-led flow for orders, finance, risk, and courier control.
+                    <Text color={textSecondary} maxW="620px" lineHeight="1.7">
+                      Monitor shipment volume, revenue, courier health, and priority queues from one clean workspace.
                     </Text>
                   </VStack>
                   <HStack spacing={3}>
@@ -170,24 +190,23 @@ export default function Dashboard() {
                       leftIcon={isRefetching ? <Spinner size="sm" /> : <IconRefresh size={16} />}
                       isLoading={isRefetching}
                       onClick={() => refetch()}
-                      bg="brand.500"
+                      borderRadius="10px"
+                      bg="blue.600"
                       color="white"
-                      _hover={{ bg: 'brand.600' }}
+                      _hover={{ bg: 'blue.700' }}
                     >
                       Refresh
                     </Button>
-                    <Button size="sm" variant="outline" borderColor={borderColor} onClick={() => history.push('/admin/orders')}>
+                    <Button size="sm" variant="outline" borderColor={borderColor} borderRadius="10px" onClick={() => history.push('/admin/orders')}>
                       Orders
                     </Button>
                   </HStack>
                 </HStack>
 
-                <RollingVanScene compact />
-
                 <SimpleGrid columns={{ base: 1, md: 3 }} spacing={2.5}>
                   {heroHighlights.map((item) => (
-                    <Box key={item.title} p={3} borderRadius="18px" bg={tileBg} borderWidth="1px" borderColor={borderColor}>
-                      <Text fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.08em" color={textSecondary}>
+                    <Box key={item.title} p={4} borderRadius="14px" bg={tileBg} borderWidth="1px" borderColor={borderColor}>
+                      <Text fontSize="xs" fontWeight="700" color={textSecondary}>
                         {item.title}
                       </Text>
                       <Text mt={1.5} fontSize="lg" fontWeight="800" color={textPrimary}>
@@ -200,9 +219,30 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          <Box display={{ base: 'none', '2xl': 'block' }}>
-            <DoorstepCourierScene compact />
-          </Box>
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 14px 34px rgba(15,23,42,0.07)">
+            <CardBody p={{ base: 4, md: 5 }}>
+              <HStack spacing={3} mb={4}>
+                <Flex w="38px" h="38px" align="center" justify="center" borderRadius="10px" bg="blue.50" color="blue.600">
+                  <IconChartBar size={18} />
+                </Flex>
+                <Box>
+                  <Heading size="sm" color={textPrimary}>Operational Focus</Heading>
+                  <Text fontSize="sm" color={textSecondary}>Static health snapshot</Text>
+                </Box>
+              </HStack>
+              <VStack align="stretch" spacing={4}>
+                {focusItems.map((item) => (
+                  <Box key={item.title}>
+                    <HStack justify="space-between" mb={2}>
+                      <Text fontSize="sm" fontWeight="700" color={textPrimary}>{item.title}</Text>
+                      <Text fontSize="xs" color={textSecondary}>{item.note}</Text>
+                    </HStack>
+                    <Progress value={Math.min(100, item.value)} size="sm" borderRadius="999px" colorScheme={item.color} bg="gray.100" />
+                  </Box>
+                ))}
+              </VStack>
+            </CardBody>
+          </Card>
         </Grid>
 
         <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4} mb={6}>
@@ -211,20 +251,20 @@ export default function Dashboard() {
             value={toNum(todayOps.orders).toLocaleString()}
             subtitle={`${toNum(todayOps.pending)} of today's orders pending dispatch`}
             icon={<IconPackageExport size={18} />}
-            color="brand.500"
+            color="blue.600"
           />
           <MetricCard
             title="Delivery Success"
             value={`${toNum(operational.deliverySuccessRate)}%`}
             subtitle={`${toNum(operational.deliveredOrders)} delivered out of ${toNum(operational.totalOrders)} orders`}
-            icon={<IconCheck size={18} />}
+            icon={<IconCircleCheck size={18} />}
             color="green.500"
           />
           <MetricCard
             title="NDR Rate"
             value={`${toNum(operational.ndrRate)}%`}
             subtitle={`${toNum(operational.ndrOrders)} active NDR orders`}
-            icon={<IconAlertTriangle size={18} />}
+            icon={<IconShieldCheck size={18} />}
             color="orange.500"
           />
           <MetricCard
@@ -232,12 +272,12 @@ export default function Dashboard() {
             value={formatCurrency(financial.totalRevenue)}
             subtitle={`Today ${formatCurrency(financial.todayRevenue)} | Freight - courier cost`}
             icon={<IconCoinRupee size={18} />}
-            color="secondary.500"
+            color="blue.600"
           />
         </SimpleGrid>
 
         <Grid templateColumns={{ base: '1fr', xl: '1.45fr 1fr' }} gap={6} mb={6}>
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="24px" h="full">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
             <CardHeader p={5} pb={2}>
               <Heading size="sm" color={textPrimary}>Orders Trend (7 days)</Heading>
               <Text fontSize="sm" color={textSecondary} mt={1}>Shipment volume by day</Text>
@@ -249,7 +289,7 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="24px" h="full">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
             <CardHeader p={5} pb={2}>
               <Heading size="sm" color={textPrimary}>Action Queue</Heading>
               <Text fontSize="sm" color={textSecondary} mt={1}>Operational items needing attention</Text>
@@ -282,7 +322,7 @@ export default function Dashboard() {
                   <Flex
                     key={item.title}
                     p={3.5}
-                    borderRadius="18px"
+                    borderRadius="12px"
                     borderWidth="1px"
                     borderColor={`${item.colorScheme}.200`}
                     bg={`${item.colorScheme}.50`}
@@ -306,7 +346,7 @@ export default function Dashboard() {
         </Grid>
 
         <Grid templateColumns={{ base: '1fr', xl: '1fr 1fr' }} gap={6} mb={6}>
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="24px" h="full">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
             <CardHeader p={5} pb={2}>
               <Heading size="sm" color={textPrimary}>Revenue Trend (7 days)</Heading>
               <Text fontSize="sm" color={textSecondary} mt={1}>Net revenue performance</Text>
@@ -316,13 +356,13 @@ export default function Dashboard() {
                 <RevenueBarChart data={charts.revenueByDate || []} />
               </Box>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} mt={4}>
-                <Box p={3.5} borderRadius="18px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
+                <Box p={3.5} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
                   <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.45px" color={textSecondary} fontWeight="700">
                     COD Outstanding
                   </Text>
                   <Text mt={1} fontWeight="800" color={textPrimary}>{formatCurrency(financial.codRemittanceDue)}</Text>
                 </Box>
-                <Box p={3.5} borderRadius="18px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
+                <Box p={3.5} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
                   <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.45px" color={textSecondary} fontWeight="700">
                     Total COD Value
                   </Text>
@@ -332,7 +372,7 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="24px" h="full">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
             <CardHeader p={5} pb={2}>
               <Heading size="sm" color={textPrimary}>Courier Snapshot</Heading>
               <Text fontSize="sm" color={textSecondary} mt={1}>Top couriers by volume</Text>
@@ -343,7 +383,7 @@ export default function Dashboard() {
                   <Text fontSize="sm" color={textSecondary}>No courier data available.</Text>
                 ) : (
                   topCouriers.map((courier, index) => (
-                    <Box key={courier.name} p={3.5} borderRadius="18px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
+                    <Box key={courier.name} p={3.5} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
                       <HStack justify="space-between" mb={2}>
                         <HStack spacing={2}>
                           <Badge borderRadius="full">{index + 1}</Badge>
@@ -366,7 +406,7 @@ export default function Dashboard() {
         </Grid>
 
         <Grid templateColumns={{ base: '1fr', xl: '1fr 1fr' }} gap={6}>
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="24px" h="full">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
             <CardHeader p={5} pb={2}>
               <Heading size="sm" color={textPrimary}>Origin Hotspots</Heading>
             </CardHeader>
@@ -376,7 +416,7 @@ export default function Dashboard() {
                   <Text fontSize="sm" color={textSecondary}>No origin city data yet.</Text>
                 ) : (
                   (geographic.topOriginCities || []).slice(0, 5).map((item) => (
-                    <HStack key={`origin-${item.city}`} justify="space-between" p={3} borderRadius="16px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
+                    <HStack key={`origin-${item.city}`} justify="space-between" p={3} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
                       <HStack spacing={2}>
                         <IconMapPin size={16} color="#0C3B80" />
                         <Text color={textPrimary} fontSize="sm">{item.city}</Text>
@@ -389,7 +429,7 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="24px" h="full">
+          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
             <CardHeader p={5} pb={2}>
               <Heading size="sm" color={textPrimary}>Destination Hotspots</Heading>
             </CardHeader>
@@ -399,7 +439,7 @@ export default function Dashboard() {
                   <Text fontSize="sm" color={textSecondary}>No destination city data yet.</Text>
                 ) : (
                   (geographic.topDestinationCities || []).slice(0, 5).map((item) => (
-                    <HStack key={`dest-${item.city}`} justify="space-between" p={3} borderRadius="16px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
+                    <HStack key={`dest-${item.city}`} justify="space-between" p={3} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
                       <HStack spacing={2}>
                         <IconMapPin size={16} color="#F57C00" />
                         <Text color={textPrimary} fontSize="sm">{item.city}</Text>

@@ -2,13 +2,21 @@ import React from 'react'
 import Chart from 'react-apexcharts'
 import { useColorModeValue } from '@chakra-ui/react'
 
-const RevenueBarChart = ({ data = [] }) => {
-  const textColor = useColorModeValue('gray.700', 'white')
-  const textColorSecondary = useColorModeValue('gray.500', 'gray.400')
-  const gridColor = useColorModeValue('gray.200', 'gray.700')
+const formatChartDate = (value) => {
+  const [year, month, day] = String(value || '')
+    .split('-')
+    .map(Number)
+  if (!year || !month || !day) return value
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
-  // Enhanced gradient colors for revenue
-  const gradientColors = ['#10B981', '#34D399', '#6EE7B7']
+const RevenueBarChart = ({ data = [] }) => {
+  const textColor = useColorModeValue('#111827', 'white')
+  const textColorSecondary = useColorModeValue('#64748B', 'gray.400')
+  const gridColor = useColorModeValue('#E5E7EB', 'gray.700')
 
   const chartData = [
     {
@@ -19,65 +27,25 @@ const RevenueBarChart = ({ data = [] }) => {
 
   const chartOptions = {
     chart: {
-      toolbar: {
-        show: false,
-      },
+      toolbar: { show: false },
       type: 'bar',
       height: '100%',
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
-        animateGradually: {
-          enabled: true,
-          delay: 150,
-        },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 350,
-        },
-      },
+      animations: { enabled: false },
+      fontFamily: 'Inter, sans-serif',
     },
     plotOptions: {
       bar: {
-        borderRadius: 8,
+        borderRadius: 6,
         horizontal: false,
-        columnWidth: '55%',
-        dataLabels: {
-          position: 'top',
-        },
+        columnWidth: '48%',
       },
     },
-    dataLabels: {
-      enabled: true,
-      formatter: (val) => {
-        if (val >= 1000) {
-          return `₹${(val / 1000).toFixed(1)}k`
-        }
-        return `₹${val}`
-      },
-      offsetY: -20,
-      style: {
-        fontSize: '11px',
-        colors: [textColor],
-        fontWeight: 600,
-        fontFamily: 'Inter, sans-serif',
-      },
-    },
+    dataLabels: { enabled: false },
     fill: {
-      type: 'gradient',
-      gradient: {
-        shade: 'light',
-        type: 'vertical',
-        shadeIntensity: 0.5,
-        gradientToColors: ['#10B981', '#34D399', '#6EE7B7'],
-        inverseColors: false,
-        opacityFrom: 1,
-        opacityTo: 0.8,
-        stops: [0, 50, 100],
-      },
+      type: 'solid',
+      opacity: 0.95,
     },
-    colors: ['#10B981'],
+    colors: ['#2563EB'],
     xaxis: {
       categories: data.map((item) => formatChartDate(item.date)),
       labels: {
@@ -88,12 +56,8 @@ const RevenueBarChart = ({ data = [] }) => {
           fontWeight: 500,
         },
       },
-      axisBorder: {
-        show: false,
-      },
-      axisTicks: {
-        show: false,
-      },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
     yaxis: {
       labels: {
@@ -104,29 +68,19 @@ const RevenueBarChart = ({ data = [] }) => {
           fontWeight: 500,
         },
         formatter: (val) => {
-          if (val >= 1000) {
-            return `₹${(val / 1000).toFixed(1)}k`
-          }
-          return `₹${Math.round(val)}`
+          if (val >= 1000) return `Rs. ${(val / 1000).toFixed(1)}k`
+          return `Rs. ${Math.round(val)}`
         },
       },
     },
     grid: {
       borderColor: gridColor,
-      strokeDashArray: 3,
-      xaxis: {
-        lines: {
-          show: false,
-        },
-      },
-      yaxis: {
-        lines: {
-          show: true,
-        },
-      },
+      strokeDashArray: 4,
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
       padding: {
-        top: 0,
-        right: 0,
+        top: 8,
+        right: 8,
         bottom: 0,
         left: 0,
       },
@@ -138,42 +92,19 @@ const RevenueBarChart = ({ data = [] }) => {
         fontFamily: 'Inter, sans-serif',
       },
       y: {
-        formatter: (val) => {
-          return new Intl.NumberFormat('en-IN', {
+        formatter: (val) =>
+          new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
             maximumFractionDigits: 0,
-          }).format(val)
-        },
+          }).format(val),
       },
-      marker: {
-        show: true,
-      },
+      marker: { show: true },
     },
-    legend: {
-      show: false,
-    },
+    legend: { show: false },
   }
 
-  return (
-    <Chart
-      options={chartOptions}
-      series={chartData}
-      type="bar"
-      width="100%"
-      height="100%"
-    />
-  )
+  return <Chart options={chartOptions} series={chartData} type="bar" width="100%" height="100%" />
 }
 
 export default RevenueBarChart
-  const formatChartDate = (value) => {
-    const [year, month, day] = String(value || '')
-      .split('-')
-      .map(Number)
-    if (!year || !month || !day) return value
-    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
-  }

@@ -8,7 +8,6 @@ import {
   Typography,
   useTheme,
 } from '@mui/material'
-import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import ActionItemsCard from '../../components/dashboard/ActionItemsCard'
 import CourierComparisonChart from '../../components/dashboard/CourierComparisonChart'
@@ -29,6 +28,7 @@ import TopDestinationsCard from '../../components/dashboard/TopDestinationsCard'
 import { useMerchantDashboardStats } from '../../hooks/useDashboard'
 import { useDashboardPreferences } from '../../hooks/useDashboardPreferences'
 import { brand, brandGradients } from '../../theme/brand'
+import { dashboardButtonSx, dashboardCardSx, dashboardPalette } from '../../components/dashboard/dashboardStyles'
 
 // Widget mapping
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,12 +81,12 @@ export default function Dashboard() {
       <Box
         sx={{
           minHeight: '58vh',
-          borderRadius: 1,
+          borderRadius: '16px',
           display: 'grid',
           placeItems: 'center',
-          border: `1px solid ${alpha(brand.ink, 0.08)}`,
-          bgcolor: '#ffffff',
-          boxShadow: '0 20px 42px rgba(15,44,67,0.08)',
+          border: `1px solid ${dashboardPalette.line}`,
+          bgcolor: dashboardPalette.surface,
+          boxShadow: '0 14px 34px rgba(15,23,42,0.06)',
         }}
       >
         <Box textAlign="center">
@@ -104,11 +104,11 @@ export default function Dashboard() {
       <Box
         sx={{
           minHeight: '58vh',
-          borderRadius: 1,
+          borderRadius: '16px',
           display: 'grid',
           placeItems: 'center',
           border: `1px solid ${alpha(brand.danger, 0.14)}`,
-          bgcolor: '#ffffff',
+          bgcolor: dashboardPalette.surface,
         }}
       >
         <Box textAlign="center" sx={{ p: 4 }}>
@@ -121,7 +121,7 @@ export default function Dashboard() {
           <Button
             variant="contained"
             onClick={() => refetch()}
-            sx={{ background: brandGradients.button, color: brand.ink }}
+            sx={{ ...dashboardButtonSx, background: brandGradients.button, color: '#FFFFFF' }}
           >
             Retry Connection
           </Button>
@@ -314,6 +314,7 @@ export default function Dashboard() {
       sx={{
         minHeight: '100%',
         pb: 2.5,
+        bgcolor: dashboardPalette.page,
       }}
     >
       <Container
@@ -321,9 +322,7 @@ export default function Dashboard() {
         sx={{
           pt: 1.2,
           '& .MuiCard-root': {
-            borderRadius: '30px',
-            border: `1px solid ${alpha('#FFFFFF', 0.7)}`,
-            boxShadow: '0 20px 42px rgba(15,44,67,0.08)',
+            ...dashboardCardSx,
           },
         }}
       >
@@ -389,15 +388,9 @@ export default function Dashboard() {
 
                 return (
                   <Grid size={gridSize} key={widgetId} sx={{ display: 'flex' }}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: '-50px' }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
-                      style={{ width: '100%', height: '100%' }}
-                    >
+                    <Box sx={{ width: '100%', height: '100%' }}>
                       <WidgetComponent {...(widgetProps[widgetId] || {})} />
-                    </motion.div>
+                    </Box>
                   </Grid>
                 )
               })}

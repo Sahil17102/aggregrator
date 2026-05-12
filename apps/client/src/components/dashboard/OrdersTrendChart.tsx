@@ -1,6 +1,7 @@
 import React from 'react'
-import { Card, CardContent, Typography, alpha, useTheme } from '@mui/material'
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import { FaChartLine } from 'react-icons/fa'
+import { dashboardCardSx, dashboardChartBase, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface OrdersTrendChartProps {
   chartData: { date: string; orders: number }[]
@@ -8,7 +9,6 @@ interface OrdersTrendChartProps {
 }
 
 export default function OrdersTrendChart({ chartData, ChartComponent }: OrdersTrendChartProps) {
-  const theme = useTheme()
   const formatChartDate = (value: string) => {
     const [year, month, day] = value.split('-').map(Number)
     if (!year || !month || !day) return value
@@ -20,28 +20,43 @@ export default function OrdersTrendChart({ chartData, ChartComponent }: OrdersTr
 
   const chartOptions = {
     chart: {
-      type: 'line' as const,
-      toolbar: { show: false },
+      ...dashboardChartBase,
+      type: 'area' as const,
       sparkline: { enabled: false },
-      animations: { enabled: true, easing: 'easeinout', speed: 800 },
+      zoom: { enabled: false },
     },
     stroke: {
       curve: 'smooth' as const,
       width: 3,
+      lineCap: 'round' as const,
     },
-    colors: [theme.palette.primary.main],
+    fill: {
+      type: 'gradient',
+      gradient: {
+        opacityFrom: 0.18,
+        opacityTo: 0,
+        stops: [0, 100],
+      },
+    },
+    markers: { size: 0, hover: { size: 5 } },
+    colors: [dashboardPalette.blue],
+    dataLabels: { enabled: false },
     xaxis: {
       categories: chartData?.map((d) => formatChartDate(d.date)) || [],
-      labels: { style: { colors: theme.palette.text.secondary } },
+      labels: { style: { colors: dashboardPalette.muted, fontSize: '12px' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
     yaxis: {
-      labels: { style: { colors: theme.palette.text.secondary } },
+      labels: { style: { colors: dashboardPalette.muted, fontSize: '12px' } },
     },
     tooltip: {
-      theme: theme.palette.mode,
+      theme: 'light',
+      y: { formatter: (val: number) => `${val} orders` },
     },
     grid: {
-      borderColor: alpha(theme.palette.divider, 0.1),
+      borderColor: dashboardPalette.line,
+      strokeDashArray: 4,
     },
   }
 
@@ -53,24 +68,23 @@ export default function OrdersTrendChart({ chartData, ChartComponent }: OrdersTr
   ]
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderRadius: '16px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        background: theme.palette.mode === 'dark'
-          ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`
-          : 'white',
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          <FaChartLine style={{ marginRight: 8, verticalAlign: 'middle', color: theme.palette.primary.main }} />
-          Orders Trend (Last 7 Days)
-        </Typography>
+    <Card sx={dashboardCardSx}>
+      <CardContent sx={{ p: 2.4 }}>
+        <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
+          <Box sx={dashboardIconSx(dashboardPalette.blue)}>
+            <FaChartLine size={17} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: dashboardPalette.ink }}>
+              Orders Trend
+            </Typography>
+            <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted }}>
+              Last 7 days shipment volume
+            </Typography>
+          </Box>
+        </Stack>
         {ChartComponent && (
-          <ChartComponent options={chartOptions} series={chartSeries} type="line" height={300} />
+          <ChartComponent options={chartOptions} series={chartSeries} type="area" height={300} />
         )}
       </CardContent>
     </Card>

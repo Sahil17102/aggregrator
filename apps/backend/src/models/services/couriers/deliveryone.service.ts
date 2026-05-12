@@ -629,7 +629,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'
@@ -695,7 +695,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'
@@ -794,7 +794,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'
@@ -871,7 +871,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'
@@ -1018,7 +1018,7 @@ export class DeliveryOneService {
       const raw = parseRaw(response.data)
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'
@@ -1136,7 +1136,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'
@@ -1264,7 +1264,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         (Array.isArray(raw?.error) && raw.error.length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
@@ -1372,7 +1372,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         (Array.isArray(raw?.error) && raw.error.length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
@@ -1535,7 +1535,7 @@ export class DeliveryOneService {
       const raw = response.data
       const explicitFailure =
         raw?.error === true ||
-        typeof raw?.error === 'string' ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
         raw?.success === false ||
         raw?.Success === false ||
         String(raw?.status || '').toLowerCase() === 'fail'

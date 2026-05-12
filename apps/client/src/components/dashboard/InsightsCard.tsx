@@ -1,6 +1,7 @@
 import React from 'react'
 import { alpha, Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import { MdCheckCircle, MdInfo, MdLightbulb, MdTrendingDown, MdTrendingUp, MdWarning } from 'react-icons/md'
+import { dashboardCardSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface InsightsCardProps {
   operational: {
@@ -21,9 +22,6 @@ interface InsightsCardProps {
 }
 
 type InsightType = 'good' | 'warning' | 'notice'
-
-const DE_BLUE = '#0052CC'
-const DE_AMBER = '#FFAB00'
 
 export default function InsightsCard({ operational, trends, actions }: InsightsCardProps) {
   const insights: Array<{
@@ -77,54 +75,54 @@ export default function InsightsCard({ operational, trends, actions }: InsightsC
   }
 
   const palette: Record<InsightType, { bg: string; border: string; color: string }> = {
-    good: { bg: alpha('#36B37E', 0.08), border: alpha('#36B37E', 0.2), color: '#00875A' },
-    warning: { bg: alpha('#DE350B', 0.08), border: alpha('#DE350B', 0.2), color: '#DE350B' },
-    notice: { bg: alpha(DE_BLUE, 0.06), border: alpha(DE_BLUE, 0.2), color: DE_BLUE },
+    good: {
+      bg: alpha(dashboardPalette.green, 0.07),
+      border: alpha(dashboardPalette.green, 0.2),
+      color: dashboardPalette.green,
+    },
+    warning: {
+      bg: alpha(dashboardPalette.red, 0.07),
+      border: alpha(dashboardPalette.red, 0.2),
+      color: dashboardPalette.red,
+    },
+    notice: {
+      bg: alpha(dashboardPalette.blue, 0.06),
+      border: alpha(dashboardPalette.blue, 0.2),
+      color: dashboardPalette.blue,
+    },
   }
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderRadius: 1,
-        border: `1px solid ${alpha(DE_BLUE, 0.1)}`,
-        boxShadow: `0 8px 20px ${alpha(DE_BLUE, 0.05)}`,
-      }}
-    >
-      <CardContent sx={{ p: 2.2 }}>
+    <Card sx={dashboardCardSx}>
+      <CardContent sx={{ p: 2.4 }}>
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2.2}>
-          <Box
-            sx={{
-              p: 0.9,
-              borderRadius: 1,
-              bgcolor: alpha(DE_AMBER, 0.1),
-              color: DE_AMBER,
-              display: 'flex',
-            }}
-          >
-            <MdLightbulb size="20" />
+          <Box sx={dashboardIconSx(dashboardPalette.amber)}>
+            <MdLightbulb size={20} />
           </Box>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: '#172B4D', letterSpacing: -0.2 }}>
-            Performance Insights
-          </Typography>
+          <Box>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: dashboardPalette.ink }}>
+              Performance Insights
+            </Typography>
+            <Typography sx={{ fontSize: '0.76rem', color: dashboardPalette.muted }}>
+              Signals that need attention
+            </Typography>
+          </Box>
         </Stack>
 
-        <Stack spacing={1.5}>
+        <Stack spacing={1.3}>
           {insights.slice(0, 4).map((insight, idx) => (
             <Box
               key={idx}
               sx={{
-                p: 1.4,
-                borderRadius: 1,
+                p: 1.35,
+                borderRadius: '12px',
                 border: `1px solid ${palette[insight.type].border}`,
                 bgcolor: palette[insight.type].bg,
-                transition: 'all 0.2s ease',
-                '&:hover': { transform: 'translateX(4px)' },
               }}
             >
-              <Stack direction="row" spacing={1.2} alignItems="flex-start">
+              <Stack direction="row" spacing={1.1} alignItems="flex-start">
                 <Box sx={{ color: palette[insight.type].color, mt: 0.2 }}>{insight.icon}</Box>
-                <Typography sx={{ fontSize: '0.82rem', color: '#172B4D', fontWeight: 600, lineHeight: 1.4 }}>
+                <Typography sx={{ fontSize: '0.82rem', color: dashboardPalette.ink, fontWeight: 600, lineHeight: 1.45 }}>
                   {insight.message}
                 </Typography>
               </Stack>

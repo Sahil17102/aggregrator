@@ -60,9 +60,7 @@ const CourierDistributionChart = ({ data = {} }) => {
         show: false,
       },
       animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
+        enabled: false,
       },
     },
     plotOptions: {
