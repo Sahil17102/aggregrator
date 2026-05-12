@@ -12,6 +12,7 @@ import {
   importShippingRatesController,
   updateDelhiveryCredentialsController,
   updateDeliveryOneCredentialsController,
+  updateDeliveryOneEWaybillController,
   updateEkartCredentialsController,
   updateXpressbeesCredentialsController,
   updateShippingRateController,
@@ -90,6 +91,18 @@ router.post(
   requireAuth,
   isAdminMiddleware,
   cancelDeliveryOneShipmentController,
+)
+router.post(
+  '/delivery-one/shipments/ewaybill',
+  requireAuth,
+  isAdminMiddleware,
+  updateDeliveryOneEWaybillController,
+)
+router.put(
+  '/delivery-one/shipments/:waybill/ewaybill',
+  requireAuth,
+  isAdminMiddleware,
+  updateDeliveryOneEWaybillController,
 )
 router.put(
   '/credentials/ekart',

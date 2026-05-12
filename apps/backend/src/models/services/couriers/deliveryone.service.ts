@@ -89,6 +89,37 @@ export type DeliveryOneShipmentEditResponse = {
   raw: any
 }
 
+export type DeliveryOneEWaybillUpdatePayload = {
+  waybill: string
+  dcn?: string
+  invoice_number?: string
+  invoiceNumber?: string
+  ewbn?: string
+  ewb?: string
+  ewaybill_number?: string
+  ewaybillNumber?: string
+  data?: Array<{
+    dcn?: string
+    invoice_number?: string
+    invoiceNumber?: string
+    ewbn?: string
+    ewb?: string
+    ewaybill_number?: string
+    ewaybillNumber?: string
+  }>
+}
+
+export type DeliveryOneEWaybillUpdateResponse = {
+  waybill: string
+  payload: {
+    data: Array<{
+      dcn: string
+      ewbn: string
+    }>
+  }
+  raw: any
+}
+
 export class DeliveryOneService {
   private apiBase =
     process.env.DELIVERY_ONE_API_BASE ||
@@ -521,6 +552,110 @@ export class DeliveryOneService {
 
       this.log('Cancel shipment failed', {
         waybill: normalizedWaybill,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async updateEWaybill(
+    payload: DeliveryOneEWaybillUpdatePayload,
+  ): Promise<DeliveryOneEWaybillUpdateResponse> {
+    const sanitizeString = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).trim()
+    }
+
+    const waybill = sanitizeString(payload?.waybill)
+    if (!waybill) {
+      throw new HttpError(400, 'waybill is required to update a Delivery One e-waybill.')
+    }
+
+    const recordsSource =
+      Array.isArray(payload?.data) && payload.data.length
+        ? payload.data
+        : [
+            {
+              dcn: payload?.dcn ?? payload?.invoice_number ?? payload?.invoiceNumber,
+              ewbn:
+                payload?.ewbn ??
+                payload?.ewb ??
+                payload?.ewaybill_number ??
+                payload?.ewaybillNumber,
+            },
+          ]
+
+    const data = recordsSource
+      .map((record) => ({
+        dcn: sanitizeString(record?.dcn ?? record?.invoice_number ?? record?.invoiceNumber),
+        ewbn: sanitizeString(
+          record?.ewbn ?? record?.ewb ?? record?.ewaybill_number ?? record?.ewaybillNumber,
+        ),
+      }))
+      .filter((record) => record.dcn && record.ewbn)
+
+    if (!data.length) {
+      throw new HttpError(
+        400,
+        'dcn (invoice number) and ewbn (e-waybill number) are required to update a Delivery One e-waybill.',
+      )
+    }
+
+    const headers = await this.getHeaders()
+    const requestPayload = { data }
+
+    try {
+      const response = await axios.put(
+        `${this.apiBase}/api/rest/ewaybill/${encodeURIComponent(waybill)}/`,
+        requestPayload,
+        {
+          headers,
+          timeout: 20000,
+        },
+      )
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        typeof raw?.error === 'string' ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'Update e-waybill rejected' : 'Update e-waybill succeeded', {
+        waybill,
+        status: response.status,
+        records: data.length,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One e-waybill update failed.'),
+        )
+      }
+
+      return {
+        waybill,
+        payload: requestPayload,
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One e-waybill update failed'
+
+      this.log('Update e-waybill failed', {
+        waybill,
         status,
         response: error?.response?.data || null,
         message,

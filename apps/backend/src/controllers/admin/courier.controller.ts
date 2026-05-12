@@ -681,6 +681,26 @@ export const cancelDeliveryOneShipmentController = async (req: Request, res: Res
   }
 }
 
+export const updateDeliveryOneEWaybillController = async (req: Request, res: Response) => {
+  try {
+    const result = await new DeliveryOneService().updateEWaybill({
+      ...(req.body || {}),
+      waybill: req.body?.waybill || req.params?.waybill,
+    })
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to update Delivery One e-waybill:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to update Delivery One e-waybill',
+    })
+  }
+}
+
 export const updateEkartCredentialsController = async (req: Request, res: Response) => {
   const { apiBase, clientId, username, password, webhookSecret } = req.body || {}
 
