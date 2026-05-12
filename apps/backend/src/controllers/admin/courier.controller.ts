@@ -701,6 +701,26 @@ export const updateDeliveryOneEWaybillController = async (req: Request, res: Res
   }
 }
 
+export const trackDeliveryOneShipmentController = async (req: Request, res: Response) => {
+  try {
+    const result = await new DeliveryOneService().trackShipment({
+      waybill: req.params?.waybill || req.query?.waybill || req.body?.waybill,
+      ref_ids: req.query?.ref_ids || req.query?.refIds || req.body?.ref_ids || req.body?.refIds,
+    })
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to track Delivery One shipment:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to track Delivery One shipment',
+    })
+  }
+}
+
 export const updateEkartCredentialsController = async (req: Request, res: Response) => {
   const { apiBase, clientId, username, password, webhookSecret } = req.body || {}
 

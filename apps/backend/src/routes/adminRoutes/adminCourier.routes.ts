@@ -10,6 +10,7 @@ import {
   getAllCouriersController,
   getShippingRatesController,
   importShippingRatesController,
+  trackDeliveryOneShipmentController,
   updateDelhiveryCredentialsController,
   updateDeliveryOneCredentialsController,
   updateDeliveryOneEWaybillController,
@@ -103,6 +104,24 @@ router.put(
   requireAuth,
   isAdminMiddleware,
   updateDeliveryOneEWaybillController,
+)
+router.get(
+  '/delivery-one/shipments/track',
+  requireAuth,
+  isAdminMiddleware,
+  trackDeliveryOneShipmentController,
+)
+router.post(
+  '/delivery-one/shipments/track',
+  requireAuth,
+  isAdminMiddleware,
+  trackDeliveryOneShipmentController,
+)
+router.get(
+  '/delivery-one/shipments/:waybill/track',
+  requireAuth,
+  isAdminMiddleware,
+  trackDeliveryOneShipmentController,
 )
 router.put(
   '/credentials/ekart',

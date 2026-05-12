@@ -120,6 +120,12 @@ export type DeliveryOneEWaybillUpdateResponse = {
   raw: any
 }
 
+export type DeliveryOneTrackingParams = {
+  waybill?: string | string[]
+  ref_ids?: string | string[]
+  refIds?: string | string[]
+}
+
 export class DeliveryOneService {
   private apiBase =
     process.env.DELIVERY_ONE_API_BASE ||
@@ -656,6 +662,80 @@ export class DeliveryOneService {
 
       this.log('Update e-waybill failed', {
         waybill,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async trackShipment(params: string | DeliveryOneTrackingParams) {
+    const normalizeList = (value: unknown) =>
+      (Array.isArray(value) ? value : String(value || '').split(','))
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+
+    const waybills = typeof params === 'string' ? normalizeList(params) : normalizeList(params.waybill)
+    const refIds =
+      typeof params === 'string' ? [] : normalizeList(params.ref_ids ?? params.refIds)
+
+    if (!waybills.length && !refIds.length) {
+      throw new HttpError(400, 'waybill or ref_ids is required to track a Delivery One shipment.')
+    }
+    if (waybills.length > 50) {
+      throw new HttpError(400, 'Delivery One tracking supports up to 50 waybills per request.')
+    }
+
+    const headers = await this.getHeaders()
+
+    try {
+      const response = await axios.get(`${this.apiBase}/api/v1/packages/json/`, {
+        headers,
+        params: {
+          ...(waybills.length ? { waybill: waybills.join(',') } : {}),
+          ...(refIds.length ? { ref_ids: refIds.join(',') } : {}),
+        },
+        timeout: 20000,
+      })
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        typeof raw?.error === 'string' ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'Track shipment rejected' : 'Track shipment succeeded', {
+        waybills: waybills.length,
+        refIds: refIds.length,
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One tracking failed.'),
+        )
+      }
+
+      return raw
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One tracking failed'
+
+      this.log('Track shipment failed', {
+        waybill: waybills.join(',') || null,
+        refIds: refIds.join(',') || null,
         status,
         response: error?.response?.data || null,
         message,

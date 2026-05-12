@@ -6569,7 +6569,11 @@ const sortHistoryDescending = (history: TrackingHistoryItem[]) => {
   history.sort((a, b) => new Date(b.event_time).getTime() - new Date(a.event_time).getTime())
 }
 
-const mapDelhiveryTracking = (raw: any, order: OrderSummary): ProviderNormalizedTracking => {
+const mapDelhiveryTracking = (
+  raw: any,
+  order: OrderSummary,
+  courierName = 'Delhivery',
+): ProviderNormalizedTracking => {
   const history: TrackingHistoryItem[] = []
   const shipmentWrapper = Array.isArray(raw?.ShipmentData)
     ? raw?.ShipmentData?.[0]
@@ -6627,7 +6631,7 @@ const mapDelhiveryTracking = (raw: any, order: OrderSummary): ProviderNormalized
     status,
     edd: eddString || undefined,
     shipment_info: shipmentInfo || undefined,
-    courier_name: 'Delhivery',
+    courier_name: courierName,
   }
 }
 
@@ -6773,9 +6777,10 @@ export const trackByAwbService = async (awb: string): Promise<TrackingServiceRes
 
   let providerKey = sanitizeString(order.integration_type ?? 'delhivery').toLowerCase()
 
-  if (!['delhivery'].includes(providerKey) && order.courier_partner) {
+  if (!['delhivery', 'deliveryone'].includes(providerKey) && order.courier_partner) {
     const partner = order.courier_partner.toLowerCase()
     if (partner.includes('delhivery')) providerKey = 'delhivery'
+    if (partner.includes('delivery one')) providerKey = 'deliveryone'
   }
 
   let providerData: ProviderNormalizedTracking
@@ -6785,6 +6790,10 @@ export const trackByAwbService = async (awb: string): Promise<TrackingServiceRes
       const delhiveryService = new DelhiveryService()
       const raw = await delhiveryService.trackShipment(awb)
       providerData = mapDelhiveryTracking(raw, order)
+    } else if (providerKey === 'deliveryone') {
+      const deliveryOneService = new DeliveryOneService()
+      const raw = await deliveryOneService.trackShipment(awb)
+      providerData = mapDelhiveryTracking(raw, order, 'Delivery One')
     } else {
       throw new HttpError(400, 'Unsupported integration_type for tracking')
     }
