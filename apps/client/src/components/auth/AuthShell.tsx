@@ -42,7 +42,8 @@ export default function AuthShell({
     <Box
       aria-label={eyebrow}
       sx={{
-        minHeight: '100dvh',
+        height: { xs: 'auto', lg: '100dvh' },
+        minHeight: { xs: '100dvh', lg: 0 },
         width: '100%',
         boxSizing: 'border-box',
         bgcolor: '#FFFFFF',
@@ -50,20 +51,20 @@ export default function AuthShell({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: { xs: 'auto', lg: 'hidden' },
-        p: { xs: 1, sm: 1.5, md: 2, lg: 1.6 },
+        overflowX: 'hidden',
+        overflowY: { xs: 'auto', lg: 'hidden' },
+        p: { xs: 1, sm: 1.25, md: 1.5, lg: 1.25 },
       }}
     >
       <Box
         sx={{
           position: 'relative',
           width: '100%',
-          maxWidth: isCompact ? 840 : 1320,
-          minHeight: isCompact
-            ? { xs: 'auto', md: 'min(680px, calc(100dvh - 28px))' }
-            : { xs: 'auto', lg: 'min(720px, calc(100dvh - 28px))' },
-          maxHeight: { lg: 'calc(100dvh - 28px)' },
-          borderRadius: { xs: '20px', md: '28px' },
+          maxWidth: isCompact ? 760 : 1160,
+          height: { xs: 'auto', lg: 'min(640px, calc(100dvh - 24px))' },
+          minHeight: { xs: 'auto', lg: 0 },
+          maxHeight: { lg: 'calc(100dvh - 24px)' },
+          borderRadius: { xs: '18px', md: '22px' },
           overflow: 'hidden',
           bgcolor: '#FFFFFF',
           boxShadow: {
@@ -95,40 +96,43 @@ export default function AuthShell({
             minHeight: 'inherit',
             minWidth: 0,
             width: '100%',
+            height: { xs: 'auto', lg: '100%' },
             boxSizing: 'border-box',
-            px: { xs: 2, sm: 2.8, md: 4, lg: 5.4 },
-            py: { xs: 2.4, sm: 3, md: 3.6, lg: 3.8 },
+            px: { xs: 1.6, sm: 2.2, md: 3, lg: 3.2 },
+            py: { xs: 2, sm: 2.4, md: 2.8, lg: 2.4 },
           }}
         >
           {!isCompact && (
             <Grid
-              size={{ xs: 12, lg: 6.6 }}
+              size={{ xs: 12, lg: 6.3 }}
               sx={{
                 display: 'flex',
-                alignItems: { xs: 'center', lg: 'stretch' },
-                minHeight: { xs: 'auto', lg: 'min(620px, calc(100dvh - 104px))' },
+                alignItems: { xs: 'center', lg: 'center' },
+                height: { xs: 'auto', lg: '100%' },
+                minHeight: 0,
                 minWidth: 0,
               }}
             >
               <Stack
                 sx={{
                   width: '100%',
-                  justifyContent: 'space-between',
+                  justifyContent: 'center',
                   alignItems: { xs: 'center', lg: 'flex-start' },
                   textAlign: { xs: 'center', lg: 'left' },
-                  pt: { xs: 0.6, lg: 4.2 },
-                  pb: { xs: 2, lg: 1.5 },
+                  pt: { xs: 0.4, lg: 0 },
+                  pb: { xs: 1.2, lg: 0 },
+                  gap: { xs: 1.8, lg: 1.4 },
                 }}
               >
                 <Stack
-                  spacing={{ xs: 1.2, md: 1.45 }}
-                  sx={{ width: '100%', maxWidth: 610, minWidth: 0 }}
+                  spacing={{ xs: 1, md: 1.1 }}
+                  sx={{ width: '100%', maxWidth: 520, minWidth: 0 }}
                 >
                   <Typography
                     sx={{
                       color: authPalette.navy,
-                      fontSize: { xs: '1.35rem', sm: '2.1rem', md: '2.45rem', lg: '2.55rem' },
-                      lineHeight: 1.22,
+                      fontSize: { xs: '1.25rem', sm: '1.85rem', md: '2.2rem', lg: '2.24rem' },
+                      lineHeight: 1.16,
                       fontWeight: 800,
                       letterSpacing: 0,
                       whiteSpace: 'pre-line',
@@ -140,9 +144,9 @@ export default function AuthShell({
                   <Typography
                     sx={{
                       color: authPalette.muted,
-                      fontSize: { xs: '0.86rem', sm: '1rem', md: '1.06rem' },
-                      lineHeight: 1.58,
-                      maxWidth: { xs: 310, sm: 500 },
+                      fontSize: { xs: '0.82rem', sm: '0.93rem', md: '0.98rem' },
+                      lineHeight: 1.46,
+                      maxWidth: { xs: 300, sm: 460 },
                       overflowWrap: 'break-word',
                     }}
                   >
@@ -155,11 +159,11 @@ export default function AuthShell({
                   src={deliveryArtwork}
                   alt="Delivery van with courier team"
                   sx={{
-                    width: { xs: '78%', sm: '70%', lg: '80%' },
-                    maxWidth: { xs: 250, sm: 430, lg: 520 },
-                    mt: { xs: 2.2, lg: 1 },
-                    ml: { lg: 1 },
-                    alignSelf: { xs: 'center', lg: 'center' },
+                    width: { xs: '66%', sm: '58%', lg: '68%' },
+                    maxWidth: { xs: 220, sm: 330, lg: 380 },
+                    mt: { xs: 0.8, lg: 0.6 },
+                    ml: { lg: 2.4 },
+                    alignSelf: { xs: 'center', lg: 'flex-start' },
                     objectFit: 'contain',
                     mixBlendMode: 'multiply',
                     filter: 'saturate(1.04) contrast(1.02)',
@@ -172,28 +176,29 @@ export default function AuthShell({
           )}
 
           <Grid
-            size={{ xs: 12, lg: isCompact ? 12 : 5.4 }}
+            size={{ xs: 12, lg: isCompact ? 12 : 5.7 }}
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: { xs: 'auto', lg: 'min(620px, calc(100dvh - 104px))' },
+              justifyContent: { xs: 'center', lg: 'flex-start' },
+              height: { xs: 'auto', lg: '100%' },
+              minHeight: 0,
               minWidth: 0,
             }}
           >
             <Box
               sx={{
                 width: '100%',
-                maxWidth: { xs: 'calc(100vw - 48px)', sm: isCompact ? 460 : 440, md: isCompact ? 480 : 460 },
-                mx: 'auto',
+                maxWidth: { xs: 'calc(100vw - 36px)', sm: isCompact ? 430 : 385, md: isCompact ? 440 : 395 },
+                mx: { xs: 'auto', lg: 0 },
                 pt: { xs: 0, lg: isCompact ? 0.6 : 0 },
                 pb: { xs: 1, lg: 0 },
               }}
             >
-              <Stack spacing={{ xs: 1.45, md: 1.8 }} alignItems="center" sx={{ mb: { xs: 1.8, md: 2.1 } }}>
+              <Stack spacing={{ xs: 1, md: 1.1 }} alignItems="center" sx={{ mb: { xs: 1.15, md: 1.35 } }}>
                 <BrandLogo
                   sx={{
-                    width: { xs: 132, sm: 168, md: 188 },
+                    width: { xs: 122, sm: 146, md: 154 },
                     filter: 'drop-shadow(0 10px 18px rgba(13, 27, 77, 0.08))',
                   }}
                 />
@@ -201,8 +206,8 @@ export default function AuthShell({
                   <Typography
                     sx={{
                       color: authPalette.orange,
-                      fontSize: { xs: '1.02rem', sm: '1.52rem', md: '1.78rem' },
-                      lineHeight: 1.18,
+                      fontSize: { xs: '0.98rem', sm: '1.24rem', md: '1.36rem' },
+                      lineHeight: 1.1,
                       fontWeight: 800,
                       letterSpacing: 0,
                       maxWidth: '100%',
@@ -214,9 +219,9 @@ export default function AuthShell({
                   <Typography
                     sx={{
                       color: authPalette.text,
-                      fontSize: { xs: '0.86rem', sm: '0.96rem', md: '1.02rem' },
+                      fontSize: { xs: '0.78rem', sm: '0.84rem', md: '0.88rem' },
                       fontWeight: 700,
-                      lineHeight: 1.38,
+                      lineHeight: 1.28,
                     }}
                   >
                     {helperText}

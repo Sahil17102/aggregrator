@@ -28,7 +28,7 @@ const AUTH_ORANGE = '#E86F00'
 
 const loginButtonStyles = {
   width: '100%',
-  minHeight: 50,
+  minHeight: 44,
   borderRadius: '7px',
   background: AUTH_NAVY,
   color: '#FFFFFF',
@@ -130,7 +130,7 @@ export default function OtpLoginPanel({
   }
 
   return (
-    <Stack spacing={compactLogin ? 1.6 : 1.8}>
+    <Stack spacing={compactLogin ? 1.1 : 1.8}>
       {showIntro ? (
         <Stack spacing={0.8}>
           <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.18rem' }}>
@@ -170,7 +170,7 @@ export default function OtpLoginPanel({
           />
 
           <FormControlLabel
-            sx={{ mt: compactLogin ? 0.7 : 1, mb: compactLogin ? 1.35 : 1.8, alignItems: 'flex-start' }}
+            sx={{ mt: compactLogin ? 0.45 : 1, mb: compactLogin ? 0.85 : 1.8, alignItems: 'flex-start' }}
             control={
               <CustomCheckbox
                 checked={termsChecked}

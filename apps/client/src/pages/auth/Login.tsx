@@ -29,7 +29,7 @@ export default function Login() {
       showChrome
       showNavbar={false}
     >
-      <Stack spacing={{ xs: 1.8, md: 2 }}>
+      <Stack spacing={{ xs: 1.25, md: 1.35 }}>
         <Box
           sx={{
             borderRadius: '7px',
@@ -51,9 +51,9 @@ export default function Login() {
               onClick={() => setMode(item.value as 'otp' | 'password')}
               sx={{
                 borderRadius: 0,
-                py: { xs: 0.95, sm: 1.05 },
+                py: { xs: 0.75, sm: 0.82 },
                 px: { xs: 0.5, sm: 1 },
-                minHeight: 48,
+                minHeight: 40,
                 background: mode === item.value ? '#FFFFFF' : 'rgba(247,248,252,0.72)',
                 color: mode === item.value ? AUTH_ORANGE : alpha(AUTH_NAVY, 0.72),
                 fontWeight: 800,

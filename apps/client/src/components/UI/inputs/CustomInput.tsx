@@ -55,7 +55,7 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
           <Typography
             sx={{
               mb: isReferenceAuth ? 0.7 : 0.9,
-              fontSize: isReferenceAuth ? '0.98rem' : '0.74rem',
+              fontSize: isReferenceAuth ? '0.9rem' : '0.74rem',
               fontWeight: isReferenceAuth ? 500 : 700,
               letterSpacing: 0,
               textTransform: isReferenceAuth ? 'none' : 'uppercase',
@@ -124,10 +124,10 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
               },
             },
             '& .MuiInputBase-input': {
-              py: isReferenceAuth ? 1.05 : 1.12,
+              py: isReferenceAuth ? 0.82 : 1.12,
               color: brand.ink,
               fontWeight: 600,
-              fontSize: isReferenceAuth ? '0.94rem' : '0.94rem',
+              fontSize: isReferenceAuth ? '0.88rem' : '0.94rem',
               lineHeight: 1.4,
             },
             '& .MuiFormHelperText-root': {
