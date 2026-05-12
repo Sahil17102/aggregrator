@@ -26,9 +26,22 @@ const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
   const thumbColor = useColorModeValue('rgba(23,19,16,0.22)', 'rgba(255,255,255,0.24)')
   const brandText = useColorModeValue('gray.800', 'gray.100')
   const mutedText = useColorModeValue('rgba(96,115,151,0.9)', 'rgba(255,255,255,0.66)')
-  const collapsedLogoBg = useColorModeValue('rgba(215,226,243,0.68)', 'rgba(44,143,255,0.18)')
+  const collapsedLogoBg = useColorModeValue('rgba(255,255,255,0.94)', 'rgba(255,255,255,0.94)')
   const panelBg = useColorModeValue('rgba(255,255,255,0.64)', 'rgba(255,255,255,0.06)')
   const laneColor = useColorModeValue('rgba(23,19,16,0.08)', 'rgba(255,255,255,0.12)')
+  const brandCardBg = useColorModeValue(
+    'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,243,234,0.92) 100%)',
+    'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,243,234,0.9) 100%)',
+  )
+  const brandCardBorder = useColorModeValue('rgba(255,138,40,0.2)', 'rgba(255,255,255,0.22)')
+  const brandCardShadow = useColorModeValue(
+    '0 18px 36px rgba(255,138,40,0.1), 0 10px 24px rgba(13,27,77,0.06)',
+    '0 18px 36px rgba(0,0,0,0.28)',
+  )
+  const brandEyebrow = useColorModeValue('accent.700', 'accent.700')
+  const brandTagline = useColorModeValue('rgba(96,115,151,0.94)', 'rgba(96,115,151,0.94)')
+  const brandChipBg = useColorModeValue('rgba(255,138,40,0.08)', 'rgba(255,138,40,0.08)')
+  const brandChipBorder = useColorModeValue('rgba(255,138,40,0.14)', 'rgba(255,138,40,0.14)')
 
   const activeRoute = (routeName) => location.pathname.startsWith(routeName)
 
@@ -233,19 +246,30 @@ const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
             px="14px"
             py="14px"
             borderRadius="14px"
-            bg={`linear-gradient(180deg, ${brand.ink} 0%, #163E59 100%)`}
-            color="white"
-            boxShadow="0 18px 36px rgba(13,27,77,0.18)"
+            bg={brandCardBg}
+            color={brand.ink}
+            border="1px solid"
+            borderColor={brandCardBorder}
+            boxShadow={brandCardShadow}
             textAlign="left"
           >
-            <Text fontSize="10px" fontWeight="800" letterSpacing="0.18em" textTransform="uppercase" color="rgba(255,255,255,0.62)" mb="8px">
+            <Text fontSize="10px" fontWeight="800" letterSpacing="0.18em" textTransform="uppercase" color={brandEyebrow} mb="8px">
               Admin cockpit
             </Text>
-            <Box as="img" src={brandIdentity.logoPath} alt={brandIdentity.name} h="56px" w="168px" objectFit="contain" mb="12px" />
-            <Text fontWeight="800" fontSize="16px">
+            <Box
+              bg="rgba(255,255,255,0.72)"
+              borderRadius="12px"
+              px="8px"
+              py="6px"
+              border="1px solid rgba(255,138,40,0.12)"
+              mb="12px"
+            >
+              <Box as="img" src={brandIdentity.logoPath} alt={brandIdentity.name} h="56px" w="168px" objectFit="contain" />
+            </Box>
+            <Text fontWeight="800" fontSize="16px" color={brand.ink}>
               {logoText}
             </Text>
-            <Text mt="6px" fontSize="11px" color="rgba(255,255,255,0.72)" lineHeight="1.6">
+            <Text mt="6px" fontSize="11px" color={brandTagline} lineHeight="1.6">
               {brandIdentity.tagline}
             </Text>
             <Box
@@ -253,10 +277,11 @@ const SidebarContent = ({ logoText, routes, sidebarWidth }) => {
               px="10px"
               py="8px"
               borderRadius="10px"
-              bg="rgba(255,255,255,0.08)"
-              border="1px solid rgba(255,255,255,0.1)"
+              bg={brandChipBg}
+              border="1px solid"
+              borderColor={brandChipBorder}
             >
-              <Text fontSize="11px" fontWeight="700" color="rgba(255,255,255,0.9)">
+              <Text fontSize="11px" fontWeight="700" color={brand.ink}>
                 Cleaner sections. Faster admin flow.
               </Text>
             </Box>

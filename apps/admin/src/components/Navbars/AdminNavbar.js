@@ -48,6 +48,14 @@ export default function AdminNavbar(props) {
     "rgba(13,27,77,0.08)",
     "rgba(255,255,255,0.12)"
   );
+  const logoSurface = useColorModeValue(
+    "rgba(255,255,255,0.94)",
+    "rgba(255,255,255,0.96)"
+  );
+  const logoBorder = useColorModeValue(
+    "rgba(255,138,40,0.18)",
+    "rgba(255,255,255,0.2)"
+  );
   const navbarBg = secondary ? "transparent" : defaultNavbarBg;
   const navbarBorder = secondary ? "none" : defaultNavbarBorder;
 
@@ -84,13 +92,23 @@ export default function AdminNavbar(props) {
           gap="12px"
         >
           <Box
-            as="img"
-            src={brandIdentity.logoPath}
-            alt={brandIdentity.name}
-            h="42px"
-            w="132px"
-            objectFit="contain"
-          />
+            px="10px"
+            py="5px"
+            borderRadius="12px"
+            bg={logoSurface}
+            border="1px solid"
+            borderColor={logoBorder}
+            boxShadow="0 10px 24px rgba(255,138,40,0.1)"
+          >
+            <Box
+              as="img"
+              src={brandIdentity.logoPath}
+              alt={brandIdentity.name}
+              h="42px"
+              w="132px"
+              objectFit="contain"
+            />
+          </Box>
           <Box minW={0} display={{ base: "none", md: "block" }}>
             <Text
               fontSize="10px"
