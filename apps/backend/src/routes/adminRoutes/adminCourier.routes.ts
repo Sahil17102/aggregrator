@@ -3,7 +3,9 @@ import { Router } from 'express'
 import {
   cancelDeliveryOneShipmentController,
   calculateDeliveryOneShippingCostController,
+  checkDeliveryOnePincodeServiceabilityController,
   createDeliveryOnePickupRequestController,
+  createDeliveryOneShipmentController,
   createDeliveryOneWarehouseController,
   editDeliveryOneShipmentController,
   fetchDeliveryOneWaybillsController,
@@ -70,6 +72,24 @@ router.post(
   requireAuth,
   isAdminMiddleware,
   fetchDeliveryOneWaybillsController,
+)
+router.get(
+  '/delivery-one/pincode-serviceability',
+  requireAuth,
+  isAdminMiddleware,
+  checkDeliveryOnePincodeServiceabilityController,
+)
+router.post(
+  '/delivery-one/pincode-serviceability',
+  requireAuth,
+  isAdminMiddleware,
+  checkDeliveryOnePincodeServiceabilityController,
+)
+router.get(
+  '/delivery-one/pincodes/:pincode/serviceability',
+  requireAuth,
+  isAdminMiddleware,
+  checkDeliveryOnePincodeServiceabilityController,
 )
 router.get(
   '/delivery-one/shipping-cost',
@@ -142,6 +162,12 @@ router.patch(
   requireAuth,
   isAdminMiddleware,
   updateDeliveryOneWarehouseController,
+)
+router.post(
+  '/delivery-one/shipments',
+  requireAuth,
+  isAdminMiddleware,
+  createDeliveryOneShipmentController,
 )
 router.post(
   '/delivery-one/shipments/edit',

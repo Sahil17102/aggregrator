@@ -647,6 +647,68 @@ export const fetchDeliveryOneWaybillsController = async (req: Request, res: Resp
   }
 }
 
+export const checkDeliveryOnePincodeServiceabilityController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const source = req.method === 'GET' ? req.query : req.body
+    const pincode =
+      req.params?.pincode ||
+      (source as any)?.pincode ||
+      (source as any)?.pin ||
+      (source as any)?.filter_codes
+    const originPincode =
+      (source as any)?.origin_pincode ||
+      (source as any)?.originPincode ||
+      (source as any)?.origin
+    const destinationPincode =
+      (source as any)?.destination_pincode ||
+      (source as any)?.destinationPincode ||
+      (source as any)?.destination
+    const paymentType =
+      (source as any)?.payment_type || (source as any)?.paymentType || (source as any)?.pt
+
+    const deliveryOne = new DeliveryOneService()
+    const result =
+      originPincode && destinationPincode
+        ? await deliveryOne.checkPairServiceability({
+            originPincode,
+            destinationPincode,
+            paymentType,
+          })
+        : await deliveryOne.checkPincodeServiceability(pincode)
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to check Delivery One pincode serviceability:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to check Delivery One pincode serviceability',
+    })
+  }
+}
+
+export const createDeliveryOneShipmentController = async (req: Request, res: Response) => {
+  try {
+    const result = await new DeliveryOneService().createShipment(req.body || {})
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to create Delivery One shipment:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to create Delivery One shipment',
+    })
+  }
+}
+
 export const editDeliveryOneShipmentController = async (req: Request, res: Response) => {
   try {
     const result = await new DeliveryOneService().editShipment(req.body || {})
