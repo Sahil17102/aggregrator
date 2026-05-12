@@ -435,6 +435,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 courier?.rate !== undefined && courier?.rate !== null
                   ? Number(courier.rate)
                   : local?.forward?.rate
+              const providerCost = courier?.provider_rate?.total ?? courier?.courier_cost_estimate
 
               return (
                 <Paper
@@ -453,7 +454,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     )
                     setValue(
                       'courierCost',
-                      courier?.courier_cost_estimate || courier?.rateEstimate || null,
+                      courier?.courier_cost_estimate ?? courier?.rateEstimate ?? null,
                     ) // Estimated courier cost from serviceability
                     setValue('integrationType', courier?.integration_type)
                     setValue('zone', courier?.approxZone?.code ?? courier?.approxZone?.name ?? '')
@@ -553,10 +554,11 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                       {[
                         ['COD', formatCurrency(local?.forward?.cod_charges)],
                         ['Other', formatCurrency(local?.forward?.other_charges)],
+                        ['Provider Cost', providerCost != null ? formatCurrency(providerCost) : '—'],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
                         ['Volumetric', formatWeightKg(courier?.volumetric_weight)],
                       ].map(([label, value]) => (
-                        <Grid key={label} size={{ xs: 6, lg: 3 }}>
+                        <Grid key={label} size={{ xs: 6, lg: 2.4 }}>
                           <Box
                             sx={{
                               p: 1.25,

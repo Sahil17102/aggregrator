@@ -32,6 +32,17 @@ export interface Courier {
   courier_cost_estimate?: number | null
   localRates?: Record<string, unknown>
   approxZone?: { id?: string; code?: string; name?: string } | null
+  integration_type?: string | null
+  serviceProvider?: string | null
+  shipping_mode?: string | null
+  rateEstimate?: number | null
+  provider_rate?: {
+    provider?: string
+    total?: number | null
+    freight?: number | null
+    cod?: number | null
+    chargeable_weight?: number | null
+  } | null
 }
 
 export interface CourierSummary {

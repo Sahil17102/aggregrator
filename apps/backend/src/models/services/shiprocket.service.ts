@@ -65,7 +65,10 @@ import { userProfiles } from '../schema/userProfile'
 import { b2bPincodes, b2bZoneToZoneRates, zones } from '../schema/zones'
 import { calculateB2BRate } from './b2bAdmin.service'
 import { DelhiveryService } from './couriers/delhivery.service'
-import { DeliveryOneService } from './couriers/deliveryone.service'
+import {
+  DeliveryOneService,
+  type DeliveryOneShippingCostResponse,
+} from './couriers/deliveryone.service'
 import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
@@ -874,6 +877,94 @@ const normalizeServiceabilityWeightToGrams = (value: unknown) => {
   return numericValue > 50 ? Math.round(numericValue) : Math.round(numericValue * 1000)
 }
 
+const resolveDeliveryOneBillingMode = (
+  courierId?: unknown,
+  mode?: unknown,
+): 'E' | 'S' | null => {
+  const normalizedMode = normalizeB2CShippingMode(mode)
+  if (normalizedMode === 'air') return 'E'
+  if (normalizedMode === 'surface') return 'S'
+
+  const courierMode = getDelhiveryShippingModeByCourierId(courierId)
+  if (courierMode === 'Express') return 'E'
+  if (courierMode === 'Surface') return 'S'
+
+  return null
+}
+
+const numberOrNull = (value: unknown): number | null => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const getDeliveryOneQuoteAmount = (quote?: DeliveryOneShippingCostResponse | null) => {
+  const total = numberOrNull(quote?.charges?.total)
+  if (total !== null) return total
+
+  const freight = numberOrNull(quote?.charges?.freight)
+  const cod = numberOrNull(quote?.charges?.cod)
+  if (freight !== null && cod !== null) return freight + cod
+  return freight ?? cod
+}
+
+const fetchDeliveryOneShippingCostEstimate = async (params: {
+  deliveryOne?: DeliveryOneService
+  courierId?: unknown
+  mode?: unknown
+  originPincode: string
+  destinationPincode: string
+  paymentType?: string
+  weightG: number
+  chargeableWeightG?: number | null
+  lengthCm?: number | null
+  breadthCm?: number | null
+  heightCm?: number | null
+}) => {
+  const billingMode = resolveDeliveryOneBillingMode(params.courierId, params.mode)
+  if (!billingMode) {
+    console.warn('[Delivery One] Skipping shipping cost estimate: billing mode not resolved', {
+      courierId: params.courierId,
+      mode: params.mode,
+    })
+    return null
+  }
+
+  const chargeableWeight = Math.max(
+    1,
+    Math.round(Number(params.chargeableWeightG || params.weightG || 0)),
+  )
+  if (!Number.isFinite(chargeableWeight) || chargeableWeight <= 0) {
+    console.warn('[Delivery One] Skipping shipping cost estimate: chargeable weight missing', {
+      courierId: params.courierId,
+      weightG: params.weightG,
+      chargeableWeightG: params.chargeableWeightG,
+    })
+    return null
+  }
+
+  const deliveryOne = params.deliveryOne ?? new DeliveryOneService()
+  const optionalDimension = (value?: number | null) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+  }
+  const quote = await deliveryOne.calculateShippingCost({
+    md: billingMode,
+    cgm: chargeableWeight,
+    o_pin: params.originPincode,
+    d_pin: params.destinationPincode,
+    ss: 'Delivered',
+    pt: String(params.paymentType || 'prepaid').toLowerCase() === 'cod' ? 'COD' : 'Pre-paid',
+    l: optionalDimension(params.lengthCm),
+    b: optionalDimension(params.breadthCm),
+    h: optionalDimension(params.heightCm),
+  })
+
+  return {
+    amount: getDeliveryOneQuoteAmount(quote),
+    quote,
+  }
+}
+
 //ADMIN CALCULATION
 export const fetchAvailableCouriersWithRatesAdmin = async (
   params: NimbusServiceabilityParams,
@@ -925,25 +1016,40 @@ async function filterCouriersByBusinessType(
     return []
   }
 
-  // Fetch business_type for all couriers
+  // Courier IDs are shared across providers, so key business-type lookups by
+  // both id and service provider when the caller gives us a provider.
   const courierBusinessTypes = await db
-    .select({ id: couriers.id, businessType: couriers.businessType })
+    .select({
+      id: couriers.id,
+      serviceProvider: couriers.serviceProvider,
+      businessType: couriers.businessType,
+    })
     .from(couriers)
     .where(inArray(couriers.id, courierIds))
 
-  const businessTypeMap = new Map(
-    courierBusinessTypes.map((c) => [c.id, c.businessType as ('b2c' | 'b2b')[]]),
-  )
+  const businessTypeMap = new Map<string, ('b2c' | 'b2b')[]>()
+  const fallbackBusinessTypeMap = new Map<number, ('b2c' | 'b2b')[]>()
+  courierBusinessTypes.forEach((c) => {
+    const types = c.businessType as ('b2c' | 'b2b')[]
+    const providerKey = normalizeServiceProviderKey(c.serviceProvider)
+    businessTypeMap.set(`${c.id}__${providerKey}`, types)
+    if (!fallbackBusinessTypeMap.has(c.id)) fallbackBusinessTypeMap.set(c.id, types)
+  })
 
   // Filter couriers to only include those with the expected business type
   const filtered = courierList.filter((c: any) => {
-    const types = businessTypeMap.get(c.id) || []
+    const providerKey = normalizeServiceProviderKey(c.integration_type || c.serviceProvider)
+    const types =
+      businessTypeMap.get(`${c.id}__${providerKey}`) ||
+      fallbackBusinessTypeMap.get(Number(c.id)) ||
+      []
     const hasBusinessType = Array.isArray(types) && types.includes(expectedBusinessType)
 
     if (!hasBusinessType) {
       console.log('🚫 Removing courier - wrong business_type', {
         courierId: c.id,
         courierName: c.name,
+        providerKey,
         businessType: types,
         expected: expectedBusinessType,
       })
@@ -1653,9 +1759,9 @@ export const fetchAvailableCouriersWithRates = async (
 
     let combined = combinedCouriers
       ?.flatMap((courier: any) => {
-        const providerKey = String(courier.integration_type || courier.service_provider || '')
-          .toLowerCase()
-          .trim()
+        const providerKey = normalizeProviderKey(
+          courier.integration_type || courier.service_provider || courier.serviceProvider || '',
+        )
         const providerMode =
           normalizeB2CShippingMode(
             courier?.shipping_mode ??
@@ -1665,16 +1771,18 @@ export const fetchAvailableCouriersWithRates = async (
               courier?.provider_serviceability?.mode ??
               courier?.mode,
           ) ||
-          (providerKey === 'delhivery'
+          (providerKey === 'delhivery' || providerKey === 'deliveryone'
             ? normalizeB2CShippingMode(getDelhiveryShippingModeByCourierId(courier?.id))
             : '')
         // Find local rates for this courier
         const courierRates = localRates.filter(
-          (r) =>
-            r.courier_id.toString() === courier.id.toString() &&
-            (!providerKey ||
-              !r.service_provider ||
-              String(r.service_provider).toLowerCase().trim() === providerKey),
+          (r) => {
+            const rateProviderKey = normalizeProviderKey(r.service_provider)
+            return (
+              r.courier_id.toString() === courier.id.toString() &&
+              (!providerKey || !rateProviderKey || rateProviderKey === providerKey)
+            )
+          },
         )
 
         const matchedCourierRates = providerMode
@@ -1754,7 +1862,7 @@ export const fetchAvailableCouriersWithRates = async (
 
     const requireLocalRates = params.shipment_type === 'b2c'
     combined = combined.filter((c: any) => {
-      const providerKey = (c.integration_type || '').toLowerCase()
+      const providerKey = normalizeProviderKey(c.integration_type || c.serviceProvider || '')
       const inSystem = isCourierInSystem(providerKey, c.id)
       const requiredRateType = isReverseShipment ? 'rto' : 'forward'
       const localRatesAvailable = !requireLocalRates || Boolean(c.localRates?.[requiredRateType])
@@ -1773,6 +1881,69 @@ export const fetchAvailableCouriersWithRates = async (
 
     // ✅ Final filter: Ensure all couriers have correct business_type
     combined = await filterCouriersByBusinessType(combined, 'b2c')
+
+    // Fetch Delivery One's live provider cost after local rate-card filtering so
+    // order creation can persist the courier-company estimate selected by the user.
+    if (combined.some((c: any) => normalizeProviderKey(c.integration_type) === 'deliveryone')) {
+      const originPincode = params.origin?.toString()
+      const destinationPincode = params.destination?.toString()
+      const deliveryOne = new DeliveryOneService()
+
+      if (originPincode && destinationPincode) {
+        combined = await Promise.all(
+          combined.map(async (courier: any) => {
+            if (normalizeProviderKey(courier.integration_type) !== 'deliveryone') return courier
+
+            const rateType = isReverseShipment ? 'rto' : 'forward'
+            const localRate = courier.localRates?.[rateType] ?? null
+
+            try {
+              const estimate = await fetchDeliveryOneShippingCostEstimate({
+                deliveryOne,
+                courierId: courier.id,
+                mode: courier.shipping_mode ?? courier.mode ?? localRate?.mode,
+                originPincode,
+                destinationPincode,
+                paymentType: normalizedPaymentType,
+                weightG: serviceabilityWeightG,
+                chargeableWeightG: courier.chargeable_weight ?? localRate?.chargeable_weight,
+                lengthCm: Number(params.length ?? 0),
+                breadthCm: Number(params.breadth ?? 0),
+                heightCm: Number(params.height ?? 0),
+              })
+
+              if (!estimate?.quote) return courier
+
+              return {
+                ...courier,
+                courier_cost_estimate: estimate.amount ?? courier.courier_cost_estimate ?? null,
+                provider_rate: {
+                  provider: 'deliveryone',
+                  total: estimate.quote.charges.total,
+                  freight: estimate.quote.charges.freight,
+                  cod: estimate.quote.charges.cod,
+                  chargeable_weight: estimate.quote.charges.chargeableWeight,
+                },
+              }
+            } catch (err: any) {
+              console.error('[Serviceability] Delivery One shipping cost estimate failed', {
+                courierId: courier.id,
+                mode: courier.shipping_mode ?? courier.mode ?? localRate?.mode,
+                origin: originPincode,
+                destination: destinationPincode,
+                error: err?.message || err,
+              })
+              return courier
+            }
+          }),
+        )
+      } else {
+        console.warn('[Serviceability] Delivery One shipping cost skipped: missing pincode', {
+          origin: originPincode,
+          destination: destinationPincode,
+        })
+      }
+    }
 
     // 🔹 Sorting and tagging
     if (userId && combined?.length) {
@@ -3269,6 +3440,39 @@ export const createB2CShipmentService = async (
         )
       }
 
+      try {
+        const estimate = await fetchDeliveryOneShippingCostEstimate({
+          deliveryOne,
+          courierId: params.courier_id,
+          mode: selectedProviderShippingMode ?? params.shipping_mode,
+          originPincode: bookingPickupPincode,
+          destinationPincode: bookingDestinationPincode,
+          paymentType: params.payment_type,
+          weightG: normalizeServiceabilityWeightToGrams(params.package_weight ?? params.weight ?? 0),
+          chargeableWeightG: slabbedFreight.chargeable_weight,
+          lengthCm: Number(params.package_length ?? params.length ?? 0),
+          breadthCm: Number(params.package_breadth ?? params.breadth ?? 0),
+          heightCm: Number(params.package_height ?? params.height ?? 0),
+        })
+
+        if (estimate?.amount !== null && estimate?.amount !== undefined) {
+          params.courier_cost = estimate.amount
+          console.log('[Delivery One] Shipping cost fetched before booking', {
+            order_number: params.order_number,
+            courier_id: params.courier_id,
+            mode: selectedProviderShippingMode ?? params.shipping_mode,
+            courier_cost: estimate.amount,
+          })
+        }
+      } catch (rateErr: any) {
+        console.error('[Delivery One] Shipping cost fetch failed before booking', {
+          order_number: params.order_number,
+          courier_id: params.courier_id,
+          mode: selectedProviderShippingMode ?? params.shipping_mode,
+          error: rateErr?.message || rateErr,
+        })
+      }
+
       shipmentData = await deliveryOne.createShipment(params)
       const rawDeliveryOnePackages = shipmentData?.packages
       const deliveryOnePackages: any[] =
@@ -3560,7 +3764,7 @@ export const createB2CShipmentService = async (
       throw new HttpError(400, 'Courier ID is required to compute freight')
     }
 
-    const slabbedFreight = await computeB2CFreightForOrder({
+    const finalSlabbedFreight = await computeB2CFreightForOrder({
       userId,
       courierId: courierIdForRate,
       serviceProvider: params.integration_type ?? null,
@@ -3587,7 +3791,7 @@ export const createB2CShipmentService = async (
       // Total shipping charges = base shipping + other charges (from serviceability API)
       const totalShippingCharges = shippingCharges + otherCharges
       const freightCharges = Number(
-        slabbedFreight?.freight ?? params?.freight_charges ?? totalShippingCharges,
+        finalSlabbedFreight?.freight ?? params?.freight_charges ?? totalShippingCharges,
       ) // What platform charges seller (based on rate card)
       // Extract courier_cost from shipment response or use estimated from params
       const courierCost =
@@ -3720,9 +3924,9 @@ export const createB2CShipmentService = async (
         manifestError: manifestErrorMessage,
         integration_type: params?.integration_type!,
         is_external_api,
-        volumetricWeight: slabbedFreight.volumetric_weight ?? undefined,
-        chargedWeight: slabbedFreight.chargeable_weight ?? undefined,
-        chargedSlabs: slabbedFreight.slabs ?? undefined,
+        volumetricWeight: finalSlabbedFreight.volumetric_weight ?? undefined,
+        chargedWeight: finalSlabbedFreight.chargeable_weight ?? undefined,
+        chargedSlabs: finalSlabbedFreight.slabs ?? undefined,
         shippingMode: selectedProviderShippingMode,
         selectedMaxSlabWeight,
       })
@@ -3770,9 +3974,9 @@ export const createB2CShipmentService = async (
             freight_charges: freightCharges,
             other_charges: otherCharges,
             cod_charges: isCodOrder ? codCharges : 0,
-            charged_weight: slabbedFreight.chargeable_weight,
-            volumetric_weight: slabbedFreight.volumetric_weight,
-            charged_slabs: slabbedFreight.slabs,
+            charged_weight: finalSlabbedFreight.chargeable_weight,
+            volumetric_weight: finalSlabbedFreight.volumetric_weight,
+            charged_slabs: finalSlabbedFreight.slabs,
             total_wallet_debit: finalWalletDebit,
           },
           tx: tx as any,
@@ -3785,9 +3989,9 @@ export const createB2CShipmentService = async (
             other_charges: otherCharges,
             cod_charges: isCodOrder ? codCharges : 0,
           },
-          charged_weight: slabbedFreight.chargeable_weight,
-          volumetric_weight: slabbedFreight.volumetric_weight,
-          charged_slabs: slabbedFreight.slabs,
+          charged_weight: finalSlabbedFreight.chargeable_weight,
+          volumetric_weight: finalSlabbedFreight.volumetric_weight,
+          charged_slabs: finalSlabbedFreight.slabs,
         })
       }
 
