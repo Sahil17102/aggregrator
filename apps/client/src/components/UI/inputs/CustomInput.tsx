@@ -124,10 +124,10 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
               },
             },
             '& .MuiInputBase-input': {
-              py: isReferenceAuth ? 1.25 : 1.22,
+              py: isReferenceAuth ? 1.05 : 1.12,
               color: brand.ink,
               fontWeight: 600,
-              fontSize: isReferenceAuth ? '1.02rem' : '0.94rem',
+              fontSize: isReferenceAuth ? '0.94rem' : '0.94rem',
               lineHeight: 1.4,
             },
             '& .MuiFormHelperText-root': {

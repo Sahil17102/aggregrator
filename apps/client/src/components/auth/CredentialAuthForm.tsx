@@ -30,7 +30,7 @@ const AUTH_ORANGE = '#E86F00'
 
 const loginButtonStyles = {
   width: '100%',
-  minHeight: 58,
+  minHeight: 50,
   borderRadius: '7px',
   background: AUTH_NAVY,
   color: '#FFFFFF',
@@ -187,7 +187,7 @@ export default function CredentialAuthForm({
       : 'Sign in with your email and password to access bookings, tracking, and courier operations.'
 
   return (
-    <Stack spacing={compactLogin ? 2 : 2.2}>
+    <Stack spacing={compactLogin ? 1.6 : 1.8}>
       {showIntro ? (
         <Stack spacing={0.8}>
           <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.18rem' }}>
@@ -205,7 +205,7 @@ export default function CredentialAuthForm({
       />
 
       {step === 'form' ? (
-        <Stack component="form" spacing={1.1} onSubmit={handleRequest}>
+        <Stack component="form" spacing={compactLogin ? 0.85 : 0.95} onSubmit={handleRequest}>
           {mode === 'signup' ? (
             <CustomInput
               label="Full Name"
@@ -267,7 +267,7 @@ export default function CredentialAuthForm({
           ) : null}
 
           <FormControlLabel
-            sx={{ mt: 0.5, mb: 1.2, alignItems: 'flex-start' }}
+            sx={{ mt: compactLogin ? 0.2 : 0.35, mb: compactLogin ? 0.75 : 0.95, alignItems: 'flex-start' }}
             control={
               <CustomCheckbox
                 checked={termsChecked}
@@ -276,7 +276,7 @@ export default function CredentialAuthForm({
               />
             }
             label={
-              <Typography sx={{ color: compactLogin ? '#111111' : brand.inkSoft, fontSize: '0.86rem', mt: 0.25 }}>
+              <Typography sx={{ color: compactLogin ? '#111111' : brand.inkSoft, fontSize: '0.82rem', mt: 0.25 }}>
                 I agree to{' '}
                 <Link
                   component="button"
@@ -298,7 +298,7 @@ export default function CredentialAuthForm({
             disabled={Boolean(nameError || emailError || passwordError) || !termsChecked}
             styles={compactLogin ? loginButtonStyles : { width: '100%' }}
             textColor={compactLogin ? '#FFFFFF' : undefined}
-            endIconNode={compactLogin ? <FiArrowRight size={28} /> : undefined}
+            endIconNode={compactLogin ? <FiArrowRight size={22} /> : undefined}
           />
         </Stack>
       ) : (

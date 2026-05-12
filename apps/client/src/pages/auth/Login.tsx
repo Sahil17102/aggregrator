@@ -29,7 +29,7 @@ export default function Login() {
       showChrome
       showNavbar={false}
     >
-      <Stack spacing={2.2}>
+      <Stack spacing={{ xs: 1.8, md: 2 }}>
         <Box
           sx={{
             borderRadius: '7px',
@@ -51,13 +51,13 @@ export default function Login() {
               onClick={() => setMode(item.value as 'otp' | 'password')}
               sx={{
                 borderRadius: 0,
-                py: { xs: 1.15, sm: 1.35 },
+                py: { xs: 0.95, sm: 1.05 },
                 px: { xs: 0.5, sm: 1 },
-                minHeight: 56,
+                minHeight: 48,
                 background: mode === item.value ? '#FFFFFF' : 'rgba(247,248,252,0.72)',
                 color: mode === item.value ? AUTH_ORANGE : alpha(AUTH_NAVY, 0.72),
                 fontWeight: 800,
-                fontSize: { xs: '0.68rem', sm: '0.96rem' },
+                fontSize: { xs: '0.68rem', sm: '0.86rem' },
                 textTransform: 'none',
                 whiteSpace: 'nowrap',
                 borderBottom: `3px solid ${mode === item.value ? AUTH_ORANGE : 'transparent'}`,
@@ -87,7 +87,7 @@ export default function Login() {
           <CredentialAuthForm mode="login" showIntro={false} compactLogin />
         )}
 
-        <Typography sx={{ color: brand.inkSoft, textAlign: 'center', fontSize: '0.86rem' }}>
+        <Typography sx={{ color: brand.inkSoft, textAlign: 'center', fontSize: '0.84rem' }}>
           New to ChoiceMe?{' '}
           <Box component={RouterLink} to="/signup" sx={{ color: AUTH_ORANGE, fontWeight: 800 }}>
             Create an account

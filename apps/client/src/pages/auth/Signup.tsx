@@ -22,25 +22,25 @@ export default function Signup() {
       showChrome
       showNavbar={false}
     >
-      <Stack spacing={2.4}>
-        <Stack spacing={0.8}>
+      <Stack spacing={{ xs: 1.8, md: 2 }}>
+        <Stack spacing={0.65}>
           <Typography
             sx={{
               color: brand.ink,
-              fontSize: '2rem',
+              fontSize: { xs: '1.36rem', sm: '1.58rem' },
               fontWeight: 800,
-              letterSpacing: '-0.05em',
+              letterSpacing: 0,
             }}
           >
             Create your account
           </Typography>
-          <Typography sx={{ color: brand.inkSoft, lineHeight: 1.72 }}>
+          <Typography sx={{ color: brand.inkSoft, lineHeight: 1.55, fontSize: '0.9rem' }}>
             Enter your name, email, and password to create access using the current backend flow.
             Verification codes show inline on this page whenever the backend exposes them.
           </Typography>
         </Stack>
 
-        <CredentialAuthForm mode="signup" />
+        <CredentialAuthForm mode="signup" showIntro={false} />
 
         <Typography sx={{ color: brand.inkSoft, textAlign: 'center', fontSize: '0.88rem' }}>
           Already have an account?{' '}
