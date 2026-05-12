@@ -263,6 +263,25 @@ export type DeliveryOneWarehouseResponse = {
   raw: any
 }
 
+export type DeliveryOneWarehouseUpdatePayload = {
+  name?: string
+  warehouseName?: string
+  phone?: string | number
+  address?: string
+  pin?: string | number
+  pincode?: string | number
+}
+
+export type DeliveryOneWarehouseUpdateResponse = {
+  payload: {
+    name: string
+    phone?: string
+    address?: string
+    pin?: string
+  }
+  raw: any
+}
+
 export class DeliveryOneService {
   private apiBase =
     process.env.DELIVERY_ONE_API_BASE ||
@@ -1270,6 +1289,115 @@ export class DeliveryOneService {
       this.log('Warehouse creation failed', {
         name: payload.name,
         pin: payload.pin,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async updateWarehouse(
+    params: DeliveryOneWarehouseUpdatePayload,
+  ): Promise<DeliveryOneWarehouseUpdateResponse> {
+    const sanitizeString = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).trim()
+    }
+    const sanitizePhone = (value?: string | number | null) => {
+      if (value === undefined || value === null || value === '') return undefined
+      const digits = String(value).replace(/\D/g, '')
+      if (digits.length < 10) {
+        throw new HttpError(400, 'phone must contain at least 10 digits.')
+      }
+      return digits.slice(-10)
+    }
+    const sanitizePincode = (value?: string | number | null) => {
+      if (value === undefined || value === null || value === '') return undefined
+      const digits = String(value).replace(/\D/g, '').slice(0, 6)
+      if (!/^\d{6}$/.test(digits)) {
+        throw new HttpError(400, 'pin must be a valid 6-digit pincode.')
+      }
+      return digits
+    }
+
+    const payload: DeliveryOneWarehouseUpdateResponse['payload'] = {
+      name: sanitizeString(params.name ?? params.warehouseName),
+    }
+    const address = sanitizeString(params.address)
+    const phone = sanitizePhone(params.phone)
+    const pin = sanitizePincode(params.pin ?? params.pincode)
+
+    if (!payload.name) {
+      throw new HttpError(
+        400,
+        'name is required and must match the existing Delivery One warehouse name.',
+      )
+    }
+    if (address) payload.address = address
+    if (phone) payload.phone = phone
+    if (pin) payload.pin = pin
+    if (!payload.address && !payload.phone && !payload.pin) {
+      throw new HttpError(
+        400,
+        'Provide at least one warehouse field to update: address, pin, or phone.',
+      )
+    }
+
+    const headers = await this.getHeaders()
+
+    try {
+      const response = await axios.post(
+        `${this.apiBase}/api/backend/clientwarehouse/edit/`,
+        payload,
+        {
+          headers,
+          timeout: 30000,
+        },
+      )
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        typeof raw?.error === 'string' ||
+        (Array.isArray(raw?.error) && raw.error.length > 0) ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'Warehouse update rejected' : 'Warehouse updated', {
+        name: payload.name,
+        hasAddress: Boolean(payload.address),
+        hasPhone: Boolean(payload.phone),
+        hasPin: Boolean(payload.pin),
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One warehouse update failed.'),
+        )
+      }
+
+      return {
+        payload,
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One warehouse update failed'
+
+      this.log('Warehouse update failed', {
+        name: payload.name,
         status,
         response: error?.response?.data || null,
         message,

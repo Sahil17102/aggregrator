@@ -803,6 +803,26 @@ export const createDeliveryOneWarehouseController = async (req: Request, res: Re
   }
 }
 
+export const updateDeliveryOneWarehouseController = async (req: Request, res: Response) => {
+  try {
+    const result = await new DeliveryOneService().updateWarehouse({
+      ...(req.body || {}),
+      name: req.body?.name ?? req.params?.name,
+    })
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to update Delivery One warehouse:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to update Delivery One warehouse',
+    })
+  }
+}
+
 export const updateEkartCredentialsController = async (req: Request, res: Response) => {
   const { apiBase, clientId, username, password, webhookSecret } = req.body || {}
 

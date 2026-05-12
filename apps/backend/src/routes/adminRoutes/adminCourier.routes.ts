@@ -18,6 +18,7 @@ import {
   updateDelhiveryCredentialsController,
   updateDeliveryOneCredentialsController,
   updateDeliveryOneEWaybillController,
+  updateDeliveryOneWarehouseController,
   updateEkartCredentialsController,
   updateXpressbeesCredentialsController,
   updateShippingRateController,
@@ -117,6 +118,30 @@ router.post(
   requireAuth,
   isAdminMiddleware,
   createDeliveryOneWarehouseController,
+)
+router.post(
+  '/delivery-one/warehouses/edit',
+  requireAuth,
+  isAdminMiddleware,
+  updateDeliveryOneWarehouseController,
+)
+router.patch(
+  '/delivery-one/warehouses/:name',
+  requireAuth,
+  isAdminMiddleware,
+  updateDeliveryOneWarehouseController,
+)
+router.post(
+  '/delivery-one/client-warehouses/edit',
+  requireAuth,
+  isAdminMiddleware,
+  updateDeliveryOneWarehouseController,
+)
+router.patch(
+  '/delivery-one/client-warehouses/:name',
+  requireAuth,
+  isAdminMiddleware,
+  updateDeliveryOneWarehouseController,
 )
 router.post(
   '/delivery-one/shipments/edit',
