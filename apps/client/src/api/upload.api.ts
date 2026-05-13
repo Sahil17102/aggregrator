@@ -11,3 +11,29 @@ export const getPresignedDownloadUrls = async (keys: string | string[]) => {
     return response.data.url as string;
   }
 };
+
+export const uploadFileToStorage = async ({
+  file,
+  folderKey,
+  onUploadProgress,
+}: {
+  file: File;
+  folderKey?: string;
+  onUploadProgress?: (progress: number) => void;
+}) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (folderKey) {
+    formData.append("folder", folderKey);
+  }
+
+  const response = await axiosInstance.post("/uploads/file", formData, {
+    onUploadProgress: (event) => {
+      if (event.total && onUploadProgress) {
+        onUploadProgress(Math.round((event.loaded * 100) / event.total));
+      }
+    },
+  });
+
+  return response.data as { publicUrl: string; key: string; bucket: string };
+};

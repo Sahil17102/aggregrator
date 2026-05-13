@@ -20,9 +20,44 @@ interface PresignParams {
   folderKey?: string
 }
 
+interface DirectUploadParams extends PresignParams {
+  buffer: Buffer
+}
+
 const PRESIGN_DOWNLOAD_EXPIRES_IN_SECONDS = 60 * 60 * 24 // 24h
 const PRESIGN_CACHE_SAFETY_BUFFER_MS = 60 * 1000 // refresh 1 min before expiry
 const presignDownloadCache = new Map<string, { url: string; expiresAt: number }>()
+
+const sanitizeKeySegment = (value: string, fallback: string) => {
+  const safe = value
+    .normalize('NFKD')
+    .replace(/[^\w.-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 100)
+
+  return safe || fallback
+}
+
+const sanitizeFolderKey = (folderKey = 'userPp') => {
+  const safeFolder = folderKey
+    .split('/')
+    .map((segment) => sanitizeKeySegment(segment, ''))
+    .filter(Boolean)
+    .join('/')
+
+  return safeFolder || 'userPp'
+}
+
+const sanitizeFilename = (filename: string) => {
+  const rawName = filename.replace(/\\/g, '/').split('/').pop() || 'file'
+  const ext = path.extname(rawName).replace(/[^\w.]+/g, '').slice(0, 20)
+  const baseName = path.basename(rawName, path.extname(rawName))
+
+  return `${sanitizeKeySegment(baseName, 'file')}${ext}`
+}
+
+const buildStorageKey = (folderKey: string | undefined, userId: string, filename: string) =>
+  `${sanitizeFolderKey(folderKey)}/${userId}/${Date.now()}-${sanitizeFilename(filename)}`
 
 const presignCacheKey = (
   bucket: string,
@@ -48,7 +83,7 @@ export const presignUpload = async ({
   folderKey = 'userPp',
 }: PresignParams) => {
   const bucket = getBucketName()
-  const key = `${folderKey}/${userId}/${Date.now()}-${filename}`
+  const key = buildStorageKey(folderKey, userId, filename)
 
   const command = new PutObjectCommand({
     Bucket: bucket,
@@ -60,6 +95,29 @@ export const presignUpload = async ({
 
   const publicUrl = `${process.env.R2_ENDPOINT}/${bucket}/${key}`
   return { uploadUrl, key, publicUrl, bucket }
+}
+
+export const uploadBufferToR2 = async ({
+  buffer,
+  filename,
+  contentType,
+  userId,
+  folderKey = 'userPp',
+}: DirectUploadParams) => {
+  const bucket = getBucketName()
+  const key = buildStorageKey(folderKey, userId, filename)
+
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+  })
+
+  await r2.send(command)
+
+  const publicUrl = `${process.env.R2_ENDPOINT}/${bucket}/${key}`
+  return { key, publicUrl, bucket }
 }
 
 /**
@@ -315,8 +373,7 @@ export const presignDownload = async (
       }),
     )
 
-    // Filter out null values
-    return urls.filter((url): url is string => url !== null)
+    return urls
   } catch (error: any) {
     // If it's a NoSuchKey error, log and return null instead of throwing
     if (error?.code === 'NoSuchKey' || error?.message?.includes('NoSuchKey')) {

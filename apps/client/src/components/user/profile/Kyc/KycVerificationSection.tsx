@@ -1,9 +1,8 @@
 import { Box, Button, Container, Grid, Paper, Step, StepLabel, Stepper } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
 import React, { useEffect, useRef, useState } from 'react'
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5'
-import axiosInstance from '../../../../api/axiosInstance'
+import { uploadFileToStorage } from '../../../../api/upload.api'
 import { useSubmitKyc } from '../../../../hooks/User/Kyc/UseKyc'
 import type { BusinessStructure, CompanyType } from '../../../../types/generic.types'
 import type { KycDetails } from '../../../../types/user.types'
@@ -54,11 +53,9 @@ const KYCVerificationStep: React.FC<{
   const [isStepValid, setIsStepValid] = useState(false)
 
   const updateKycData = (newData: Partial<KycDetails>) => {
-    setKycData((prev) => {
-      const updated = { ...prev, ...newData }
-      kycDataRef.current = updated
-      return updated
-    })
+    const updated = { ...kycDataRef.current, ...newData }
+    kycDataRef.current = updated
+    setKycData(updated)
   }
 
   // Prefill when editing mode is on
@@ -88,24 +85,21 @@ const KYCVerificationStep: React.FC<{
   }
 
   const handleAdditionalInfoChange = async (value: AdditionalKYCForm) => {
-    return new Promise<void>((resolve) => {
-      updateKycData(value)
-      setIsStepValid(true)
-      resolve()
-    })
+    updateKycData(value)
+    setIsStepValid(true)
   }
 
   const handleFinalSubmit = async (data: AdditionalKYCForm) => {
     await handleAdditionalInfoChange(data)
-    handleNext()
+    handleNext({ ...kycDataRef.current, ...data })
   }
 
   useEffect(() => {
     if (kycData?.selfieUrl) setIsStepValid(true)
   }, [kycData?.selfieUrl])
 
-  const handleNext = async () => {
-    const data = kycDataRef.current
+  const handleNext = async (overrideData?: Partial<KycDetails>) => {
+    const data = overrideData ?? kycDataRef.current
 
     if (
       activeStep === 0 &&
@@ -125,31 +119,29 @@ const KYCVerificationStep: React.FC<{
         toast.open({ message: 'Submitting KYC details...', severity: 'info' })
 
         let selfieUrl = data?.selfieUrl ?? ''
+        let selfieMime = data?.selfieMime
 
         if (selfieUrl.startsWith('data:image')) {
           const file = dataUrlToFile(selfieUrl, 'selfie.jpg')
+          selfieMime = file.type
 
           if (file.size / 1024 / 1024 > 5) {
             throw new Error('Selfie exceeds 5MB limit')
           }
 
-          const { data: presign } = await axiosInstance.post('/uploads/presign', {
-            contentType: file.type,
-            filename: file.name,
-            folder: 'kyc',
+          const uploaded = await uploadFileToStorage({
+            file,
+            folderKey: 'kyc',
           })
 
-          await axios.put(presign.uploadUrl, file, {
-            headers: { 'Content-Type': file.type },
-          })
-
-          selfieUrl = presign?.key
+          selfieUrl = uploaded.key
         }
 
         const result = await mutateAsync({
           details: {
             ...data,
             selfieUrl,
+            ...(selfieMime ? { selfieMime } : {}),
           },
         })
 
@@ -286,7 +278,9 @@ const KYCVerificationStep: React.FC<{
                 {activeStep !== steps.length - 1 ? (
                   <Button
                     variant="contained"
-                    onClick={handleNext}
+                    onClick={() => {
+                      void handleNext()
+                    }}
                     disabled={!isStepValid || isPending}
                     endIcon={<IoChevronForward />}
                     sx={{

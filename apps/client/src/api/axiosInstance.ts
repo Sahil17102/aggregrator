@@ -49,6 +49,16 @@ const api = axios.create({
 api.interceptors.request.use((cfg) => {
   const { accessToken } = getAuthTokens()
   if (accessToken) cfg.headers.Authorization = `Bearer ${accessToken}`
+
+  if (typeof FormData !== 'undefined' && cfg.data instanceof FormData && cfg.headers) {
+    const headers = cfg.headers as { delete?: (name: string) => void; [key: string]: unknown }
+    if (typeof headers.delete === 'function') {
+      headers.delete('Content-Type')
+    } else {
+      delete headers['Content-Type']
+    }
+  }
+
   return cfg
 })
 

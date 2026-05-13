@@ -199,6 +199,9 @@ export interface KycDetails {
   cancelledChequeMime?: string;
   boardResolutionMime?: string;
   partnershipDeedMime?: string;
+  businessPanMime?: string;
+  companyAddressProofMime?: string;
+  gstCertificateMime?: string;
   llpAgreementMime?: string;
 
   /* ─ Per-field status ─ */

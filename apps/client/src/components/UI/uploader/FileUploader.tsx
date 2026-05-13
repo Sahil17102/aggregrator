@@ -22,12 +22,11 @@ import {
   type ButtonProps,
 } from '@mui/material'
 import { keyframes, styled } from '@mui/material/styles'
-import axios from 'axios'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useDropzone, type Accept } from 'react-dropzone'
 import { IoCloudUploadOutline } from 'react-icons/io5'
 import { MdClose, MdEdit } from 'react-icons/md' // ← new
-import axiosInstance from '../../../api/axiosInstance'
+import { uploadFileToStorage } from '../../../api/upload.api'
 import { toast } from '../Toast'
 import styles from './uploader.module.css'
 
@@ -216,17 +215,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
       try {
         for (const file of arr) {
-          const { data } = await axiosInstance.post('/uploads/presign', {
-            contentType: file.type || 'application/octet-stream',
-            filename: file.name,
-            folder: folderKey,
-          })
-
-          // Upload directly to R2 using presigned URL - no credentials needed
-          await axios.put(data.uploadUrl, file, {
-            withCredentials: false, // Don't send credentials for presigned URL uploads
-            headers: { 'Content-Type': file.type },
-            onUploadProgress: (e) => e.total && setProgress(Math.round((e.loaded * 100) / e.total)),
+          const data = await uploadFileToStorage({
+            file,
+            folderKey,
+            onUploadProgress: (nextProgress) => setProgress(nextProgress),
           })
 
           uploaded.push({
@@ -256,7 +248,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       } catch (err) {
         console.error(err)
         toast.open({
-          message: 'Upload failed - check console.',
+          message: 'Upload failed. Please try again.',
           severity: 'error',
         })
       } finally {

@@ -45,7 +45,7 @@ const StatusChip = ({ status }) => {
 }
 
 // Card for each document
-const DocCard = ({ label, presignedUrl, status, onApprove, onReject, kycStatus }) => {
+const DocCard = ({ label, fileKey, presignedUrl, status, onApprove, onReject, kycStatus }) => {
   const bgColor = useColorModeValue('gray.50', 'gray.700')
   const hoverBg = useColorModeValue('gray.100', 'gray.600')
   const [isOpen, setIsOpen] = useState(false)
@@ -75,6 +75,8 @@ const DocCard = ({ label, presignedUrl, status, onApprove, onReject, kycStatus }
         <Link href={presignedUrl} isExternal color="blue.500" fontWeight="bold">
           View Document <ExternalLinkIcon mx="2px" />
         </Link>
+      ) : fileKey ? (
+        <Text color="orange.500">Uploaded, preview unavailable</Text>
       ) : (
         <Text color="gray.500">Not uploaded</Text>
       )}
@@ -142,7 +144,12 @@ const UserKycPage = ({ userId }) => {
   const docKeys = useMemo(() => {
     if (!kyc) return []
     return Object.entries(kyc)
-      .filter(([key, value]) => key.toLowerCase().includes('url') && value)
+      .filter(
+        ([key, value]) =>
+          key.toLowerCase().includes('url') &&
+          typeof value === 'string' &&
+          value.trim().length > 0,
+      )
       .map(([_, value]) => value)
   }, [kyc])
 
@@ -151,10 +158,20 @@ const UserKycPage = ({ userId }) => {
   })
 
   const presignedUrlMap = useMemo(() => {
-    if (!presignedUrlsData) return {}
+    if (!Array.isArray(presignedUrlsData)) return {}
     const map = {}
-    docKeys.forEach((key, index) => {
-      map[key] = presignedUrlsData[index]
+    presignedUrlsData.forEach((entry, index) => {
+      const sourceKey = docKeys[index]
+      if (!sourceKey) return
+
+      if (typeof entry === 'string') {
+        map[sourceKey] = entry
+        return
+      }
+
+      if (entry?.url) {
+        map[entry.key || sourceKey] = entry.url
+      }
     })
     return map
   }, [presignedUrlsData, docKeys])
@@ -316,6 +333,7 @@ const UserKycPage = ({ userId }) => {
           <DocCard
             key={doc.key}
             label={doc.label}
+            fileKey={kyc[doc.key]}
             presignedUrl={presignedUrlMap[kyc[doc.key]]}
             status={doc.status}
             onApprove={() => handleApproveDoc(doc.key)}

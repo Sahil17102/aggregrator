@@ -2,11 +2,8 @@ import { Request, Response } from "express";
 import {
   presignDownload,
   presignUpload,
+  uploadBufferToR2,
 } from "../models/services/upload.service";
-import { getBucketName } from "../utils/functions";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { r2 } from "../config/r2Client";
 
 export const createPresignedUrl = async (
   req: any,
@@ -30,6 +27,31 @@ export const createPresignedUrl = async (
   } catch (err) {
     console.error("Presign error:", err);
     return res.status(500).json({ message: "Failed to presign URL" });
+  }
+};
+
+export const uploadFile = async (req: any, res: Response): Promise<any> => {
+  const file = req.file;
+  const { sub } = req?.user ?? {};
+  const folder = req.body?.folder || req.body?.folderKey;
+
+  if (!file || !sub) {
+    return res.status(400).json({ message: "Authenticated file upload requires a file." });
+  }
+
+  try {
+    const data = await uploadBufferToR2({
+      buffer: file.buffer,
+      filename: file.originalname,
+      contentType: file.mimetype || "application/octet-stream",
+      userId: sub,
+      folderKey: folder,
+    });
+
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error("Upload proxy error:", err);
+    return res.status(500).json({ message: "Failed to upload file" });
   }
 };
 

@@ -20,15 +20,24 @@ export interface AdditionalKYCForm {
   gstin?: string;
   cin?: string;
   aadhaarUrl?: string;
+  aadhaarMime?: string;
   businessPanUrl?: string;
+  businessPanMime?: string;
   companyAddressProofUrl?: string;
+  companyAddressProofMime?: string;
   gstCertificateUrl?: string;
+  gstCertificateMime?: string;
   panCardUrl?: string;
+  panCardMime?: string;
   partnershipDeedUrl?: string;
+  partnershipDeedMime?: string;
   boardResolutionUrl?: string;
+  boardResolutionMime?: string;
   llpAgreementUrl?: string;
+  llpAgreementMime?: string;
 
   cancelledChequeUrl?: string;
+  cancelledChequeMime?: string;
 }
 
 interface Props {
@@ -38,7 +47,7 @@ interface Props {
   onComplete: (data?: AdditionalKYCForm) => void;
 }
 
-const fieldLabels: Record<keyof AdditionalKYCForm, string> = {
+const fieldLabels: Partial<Record<keyof AdditionalKYCForm, string>> = {
   panCardUrl: "Upload PAN Card",
   gstin: "GSTIN (Tax ID)",
   cin: "CIN (Corporate Identification Number)",
@@ -102,6 +111,23 @@ const scanLabels: Partial<Record<keyof AdditionalKYCForm, string>> = {
 
 const isScanSupported = (mime?: string) =>
   !mime || mime.startsWith("image/") || mime === "application/pdf";
+
+const mimeFieldByUploadField: Partial<
+  Record<keyof AdditionalKYCForm, keyof AdditionalKYCForm>
+> = {
+  aadhaarUrl: "aadhaarMime",
+  panCardUrl: "panCardMime",
+  cancelledChequeUrl: "cancelledChequeMime",
+  partnershipDeedUrl: "partnershipDeedMime",
+  boardResolutionUrl: "boardResolutionMime",
+  llpAgreementUrl: "llpAgreementMime",
+  companyAddressProofUrl: "companyAddressProofMime",
+  businessPanUrl: "businessPanMime",
+  gstCertificateUrl: "gstCertificateMime",
+};
+
+const getFieldLabel = (field: keyof AdditionalKYCForm) =>
+  fieldLabels[field] ?? String(field);
 
 export default function AdditionalDetailsStep({
   structure = "individual",
@@ -255,7 +281,7 @@ export default function AdditionalDetailsStep({
                             Record<keyof AdditionalKYCForm, boolean>
                           >
                         )?.[field] ?? false
-                      ? `${fieldLabels[field]} is required`
+                      ? `${getFieldLabel(field)} is required`
                       : false,
                   ...(field === "gstin"
                     ? {
@@ -292,16 +318,26 @@ export default function AdditionalDetailsStep({
                         showAccept={Boolean(filePlaceholder(field)) === false}
                         accept={allowedMimeTypes[field]}
                         variant="button"
-                        label={fieldLabels[field]}
+                        label={getFieldLabel(field)}
                         placeholder={filePlaceholder(field) as string}
                         onUploaded={async (files) => {
                           const file = files?.[0];
-                          const fileKey = file?.key;
-                          setValue(field, fileKey);
+                          const fileKey = file?.key ?? "";
+                          setValue(field, fileKey, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          });
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setValue(`${field}_key` as any, file?.originalName);
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setValue(`${field}_mime` as any, file?.mime);
+                          setValue(`${field}_key` as any, file?.originalName ?? "", {
+                            shouldDirty: true,
+                          });
+                          const mimeField = mimeFieldByUploadField[field];
+                          if (mimeField) {
+                            setValue(mimeField, file?.mime ?? "", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            });
+                          }
                           ctrl.onChange(fileKey);
                           void scanUploadedFile(field, fileKey, file?.mime);
                         }}
@@ -399,7 +435,7 @@ export default function AdditionalDetailsStep({
                         )?.[field] ?? false;
 
                   return {
-                    required: isRequired ? `${fieldLabels[field]} is required` : false,
+                    required: isRequired ? `${getFieldLabel(field)} is required` : false,
                     ...(field === "gstin"
                       ? {
                           validate: (value?: string) =>
@@ -430,9 +466,9 @@ export default function AdditionalDetailsStep({
                           )?.[field] ?? false)
                     }
                     fullWidth
-                    label={fieldLabels[field]}
+                    label={getFieldLabel(field)}
                     placeholder={
-                      inputPlaceholders[field] ?? `Enter ${fieldLabels[field]}`
+                      inputPlaceholders[field] ?? `Enter ${getFieldLabel(field)}`
                     }
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
