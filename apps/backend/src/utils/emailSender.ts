@@ -176,11 +176,30 @@ const buildTransportCandidates = (config: EmailConfig) => {
   const candidates: TransportCandidate[] = []
   const configuredHost = config.smtpHost || 'smtp.gmail.com'
 
-  if (config.isGmail && !parseBooleanEnv(process.env.SMTP_PREFER_CONFIGURED, false)) {
+  if (config.isGmail) {
     addTransportCandidate(
       candidates,
       makeTransportCandidate(config, 'gmail-smtps', 'smtp.gmail.com', 465, true),
     )
+
+    if (parseBooleanEnv(process.env.SMTP_ENABLE_GMAIL_STARTTLS_FALLBACK, false)) {
+      addTransportCandidate(
+        candidates,
+        makeTransportCandidate(
+          config,
+          config.smtpHost ? 'configured-smtp' : 'gmail-starttls-fallback',
+          configuredHost,
+          config.smtpPort,
+          config.smtpSecure,
+        ),
+      )
+      addTransportCandidate(
+        candidates,
+        makeTransportCandidate(config, 'gmail-starttls-fallback', 'smtp.gmail.com', 587, false),
+      )
+    }
+
+    return candidates
   }
 
   addTransportCandidate(
@@ -193,17 +212,6 @@ const buildTransportCandidates = (config: EmailConfig) => {
       config.smtpSecure,
     ),
   )
-
-  if (config.isGmail) {
-    addTransportCandidate(
-      candidates,
-      makeTransportCandidate(config, 'gmail-smtps-fallback', 'smtp.gmail.com', 465, true),
-    )
-    addTransportCandidate(
-      candidates,
-      makeTransportCandidate(config, 'gmail-starttls-fallback', 'smtp.gmail.com', 587, false),
-    )
-  }
 
   return candidates
 }
