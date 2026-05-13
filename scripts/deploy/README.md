@@ -4,7 +4,7 @@ This repo deploys to isolated VPS paths only:
 
 - Source sync: `/opt/choicemee/source`
 - Shared backend env: `/opt/choicemee/shared/backend.env`
-- Static sites: `/var/www/choicemee/landing`, `/var/www/choicemee/app`, `/var/www/choicemee/admin`
+- Static sites: `/var/www/choicemee/app`, `/var/www/choicemee/admin`
 - PM2 process: `choicemee-api`
 - Proxy config: `/etc/nginx/sites-available/choicemee.conf` or `/etc/caddy/conf.d/choicemee.caddy`
 - Backend process: `choicemee-api` on `127.0.0.1:5012` through the proxy
@@ -28,10 +28,12 @@ When `PGADMIN_PASSWORD` is set and Docker is available on the VPS, the deploy sc
 
 Domain targets:
 
-- Landing: `https://choicemee.in`
+- Public landing: `https://choicemee.in`
 - Client app: `https://app.choicemee.in`
 - Admin: `https://admin.choicemee.in`
 - API: `https://api.choicemee.in`
 - pgAdmin: `https://pgadmin.choicemee.in`
+
+`choicemee.in` and `app.choicemee.in` are both served from the client bundle, with `/` now resolving to the public landing experience and `/login` continuing into the portal flow.
 
 `pgadmin.choicemee.in` needs its own DNS A record or wildcard DNS pointing to the VPS.

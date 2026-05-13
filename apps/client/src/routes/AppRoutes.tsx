@@ -17,6 +17,7 @@ import GlobalRedirectHandler from './WalletRedirectHandler'
 // Onboarding & Dashboard
 const UserOnboarding = lazy(() => import('../pages/onboarding/UserOnboarding'))
 const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'))
+const LandingPage = lazy(() => import('../pages/LandingPage'))
 
 // Orders
 const Orders = lazy(() => import('../pages/orders/Orders'))
@@ -177,7 +178,7 @@ export default function AppRoutes() {
         <Suspense fallback={<FullScreenLoader />}>
           <Routes>
           {/* public */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/app" element={<AppEntry />} />
@@ -262,7 +263,7 @@ export default function AppRoutes() {
             <Route path="/ops/rto" element={<RtoList />} />
           </Route>
           {/* fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </RouteErrorBoundary>
