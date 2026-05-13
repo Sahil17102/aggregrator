@@ -5,22 +5,34 @@ import path from 'path'
 import Razorpay from 'razorpay'
 
 const env = process.env.NODE_ENV || 'development'
-dotenv.config({ path: path.resolve(__dirname, `../../.env.${env}`) })
+const backendRoot = path.resolve(__dirname, '../..')
+
+// This module is imported before app.ts finishes loading dotenv, so it must
+// hydrate Razorpay env itself. Load mode-specific env first, then base .env as
+// a fallback; already-provided process env values still win.
+dotenv.config({ path: path.join(backendRoot, `.env.${env}`) })
+dotenv.config({ path: path.join(backendRoot, '.env') })
 
 type RazorpayMode = 'test' | 'live'
 
+const configuredMode = process.env.RAZORPAY_MODE
 export const razorpayMode: RazorpayMode =
-  (process.env.RAZORPAY_MODE as RazorpayMode) ??
-  (process.env.NODE_ENV === 'production' ? 'live' : 'test')
+  configuredMode === 'test' || configuredMode === 'live'
+    ? configuredMode
+    : process.env.NODE_ENV === 'production'
+      ? 'live'
+      : 'test'
+
+const normalizeKeyId = (keyId: string) => keyId.trim().replace(/^rzp_tst_/, 'rzp_test_')
 
 const CREDENTIALS: Record<RazorpayMode, { key_id: string; key_secret: string }> = {
   test: {
-    key_id: process.env.RAZORPAY_KEY_ID || '',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+    key_id: normalizeKeyId(process.env.RAZORPAY_KEY_ID || ''),
+    key_secret: process.env.RAZORPAY_KEY_SECRET?.trim() || '',
   },
   live: {
-    key_id: process.env.RAZORPAY_KEY_ID_PROD || '',
-    key_secret: process.env.RAZORPAY_KEY_SECRET_PROD || '',
+    key_id: normalizeKeyId(process.env.RAZORPAY_KEY_ID_PROD || ''),
+    key_secret: process.env.RAZORPAY_KEY_SECRET_PROD?.trim() || '',
   },
 }
 

@@ -82,11 +82,15 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen, currentB
         },
       })
       // ✅ Don't toast here, Razorpay modal handles UI
-      // Payment success is handled in useRechargeWallets hook
+      setOpen(false)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Recharge error:', err)
-      toast.open({ message: 'Recharge failed!', severity: 'error' })
+      const message = err?.message || 'Recharge failed!'
+      toast.open({
+        message,
+        severity: message === 'Payment cancelled' ? 'warning' : 'error',
+      })
     }
   }
 

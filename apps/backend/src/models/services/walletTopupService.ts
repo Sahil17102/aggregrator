@@ -1,6 +1,4 @@
 import { and, eq, or } from 'drizzle-orm'
-import * as dotenv from 'dotenv'
-import path from 'path'
 import {
   assertRazorpayConfigured,
   getRazorpayKeyId,
@@ -10,9 +8,6 @@ import {
 import { db } from '../client'
 import { wallets, walletTopups } from '../schema/wallet'
 import { createWalletTransaction } from './wallet.service'
-
-const env = process.env.NODE_ENV || 'development'
-dotenv.config({ path: path.resolve(__dirname, `../../.env.${env}`) })
 
 const WALLET_TOPUP_DESCRIPTION = 'Wallet Top-up'
 

@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { confirmRecharge, createRechargeOrder } from '../api/wallet.api'
+import { toast } from '../components/UI/Toast'
 
 interface RechargeOptions {
   amount: number
@@ -59,9 +60,21 @@ interface RazorpayPaymentResponse {
   razorpay_signature: string
 }
 
+interface RazorpayFailureResponse {
+  error?: {
+    code?: string
+    description?: string
+    reason?: string
+    metadata?: {
+      order_id?: string
+      payment_id?: string
+    }
+  }
+}
+
 interface RazorpayInstance {
   open: () => void
-  on: (event: string, callback: () => void) => void
+  on: (event: string, callback: (response?: RazorpayFailureResponse) => void) => void
   close: () => void
 }
 
@@ -76,6 +89,11 @@ declare global {
 }
 
 const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js'
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const err = error as { response?: { data?: { error?: string; message?: string } }; message?: string }
+  return err?.response?.data?.error || err?.response?.data?.message || err?.message || fallback
+}
 
 const loadRazorpayCheckout = () =>
   new Promise<void>((resolve, reject) => {
@@ -104,8 +122,10 @@ const loadRazorpayCheckout = () =>
     document.body.appendChild(script)
   })
 
-export const useRechargeWallet = () =>
-  useMutation<void, Error, RechargeOptions>({
+export const useRechargeWallet = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation<void, Error, RechargeOptions>({
     mutationFn: async (options) => {
       await loadRazorpayCheckout()
 
@@ -122,46 +142,78 @@ export const useRechargeWallet = () =>
       if (!window.Razorpay) {
         throw new Error('Razorpay checkout is unavailable')
       }
+      const RazorpayCheckout = window.Razorpay
 
-      const checkoutOptions: RazorpayCheckoutOptions = {
-        key: orderData.key,
-        amount: Number(orderData.amount),
-        currency: orderData.currency || 'INR',
-        name: orderData.name || 'ChoiceMee Logistics',
-        description: orderData.description || 'Wallet Recharge',
-        order_id: orderData.orderId,
-        prefill: {
-          name: orderData.prefill?.name || options.prefill.name || 'ChoiceMee Customer',
-          email: orderData.prefill?.email || options.prefill.email || '',
-          contact: orderData.prefill?.contact || options.prefill.contact || '',
-        },
-        theme: { color: orderData.theme?.color || orderData.themeColor || '#0052CC' },
-        retry: {
-          enabled: true,
-          max_count: 2,
-        },
-        handler: async (response: RazorpayPaymentResponse) => {
-          try {
-            await confirmRecharge({
-              orderId: response.razorpay_order_id,
-              paymentId: response.razorpay_payment_id,
-              signature: response.razorpay_signature,
-            })
+      await new Promise<void>((resolve, reject) => {
+        let finished = false
 
-            window.location.reload()
-          } catch (error) {
-            console.error('Payment confirmation error:', error)
-            alert('Payment successful but wallet confirmation failed. Please contact support.')
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            console.log('Payment cancelled by user')
+        const checkoutOptions: RazorpayCheckoutOptions = {
+          key: orderData.key,
+          amount: Number(orderData.amount),
+          currency: orderData.currency || 'INR',
+          name: orderData.name || 'ChoiceMee Logistics',
+          description: orderData.description || 'Wallet Recharge',
+          order_id: orderData.orderId,
+          prefill: {
+            name: orderData.prefill?.name || options.prefill.name || 'ChoiceMee Customer',
+            email: orderData.prefill?.email || options.prefill.email || '',
+            contact: orderData.prefill?.contact || options.prefill.contact || '',
           },
-        },
-      }
+          theme: { color: orderData.theme?.color || orderData.themeColor || '#0052CC' },
+          retry: {
+            enabled: true,
+            max_count: 2,
+          },
+          handler: async (response: RazorpayPaymentResponse) => {
+            try {
+              await confirmRecharge({
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              })
 
-      const razorpay = new window.Razorpay(checkoutOptions)
-      razorpay.open()
+              finished = true
+              await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['walletBalance'] }),
+                queryClient.invalidateQueries({ queryKey: ['walletTransactions'] }),
+              ])
+              toast.open({ message: 'Wallet recharge successful', severity: 'success' })
+              resolve()
+            } catch (error) {
+              finished = true
+              console.error('Payment confirmation error:', error)
+              reject(
+                new Error(
+                  getErrorMessage(
+                    error,
+                    'Payment successful but wallet confirmation failed. Please contact support.',
+                  ),
+                ),
+              )
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              if (!finished) {
+                reject(new Error('Payment cancelled'))
+              }
+            },
+          },
+        }
+
+        const razorpay = new RazorpayCheckout(checkoutOptions)
+        razorpay.on('payment.failed', (response) => {
+          finished = true
+          reject(
+            new Error(
+              response?.error?.description ||
+                response?.error?.reason ||
+                'Razorpay payment failed',
+            ),
+          )
+        })
+        razorpay.open()
+      })
     },
   })
+}
