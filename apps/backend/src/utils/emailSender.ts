@@ -3,9 +3,16 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import nodemailer from 'nodemailer'
 import path from 'path'
+import sgMail from '@sendgrid/mail'
 
 // Load correct .env based on NODE_ENV
-const env = process.env.NODE_ENV || 'development'
+const resolveRuntimeEnv = () =>
+  process.env.NODE_ENV ||
+  (process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.K_SERVICE
+    ? 'production'
+    : 'development')
+
+const env = resolveRuntimeEnv()
 const backendRoot = path.resolve(__dirname, '../..')
 dotenv.config({ path: path.resolve(backendRoot, `.env.${env}`) })
 dotenv.config({ path: path.resolve(backendRoot, '.env') })
@@ -20,6 +27,8 @@ type EmailConfig = {
   smtpHost: string
   smtpPort: number
   smtpSecure: boolean
+  sendGridApiKey: string
+  sendGridFrom: string
   isGmail: boolean
   connectionTimeout: number
   greetingTimeout: number
@@ -57,6 +66,11 @@ const readEmailConfig = (): EmailConfig => {
   const smtpHost = trimEnv(process.env.SMTP_HOST)
   const smtpPort = parsePositiveIntEnv(process.env.SMTP_PORT, 587)
   const smtpSecure = parseBooleanEnv(process.env.SMTP_SECURE, smtpPort === 465)
+  const sendGridApiKey =
+    trimEnv(process.env.SENDGRID_API_KEY) ||
+    trimEnv(process.env.TWILIO_SENDGRID_API_KEY) ||
+    trimEnv(process.env.TWILLIO_SENDGRID_API_KEY)
+  const sendGridFrom = trimEnv(process.env.SENDGRID_FROM_EMAIL) || emailFrom
   const isGmail =
     /(^|\.)gmail\.com$/i.test(smtpHost) || /@gmail\.com$/i.test(smtpUser)
 
@@ -67,6 +81,8 @@ const readEmailConfig = (): EmailConfig => {
     smtpHost,
     smtpPort,
     smtpSecure,
+    sendGridApiKey,
+    sendGridFrom,
     isGmail,
     connectionTimeout: parsePositiveIntEnv(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10000),
     greetingTimeout: parsePositiveIntEnv(process.env.SMTP_GREETING_TIMEOUT_MS, 10000),
@@ -110,8 +126,13 @@ type AttachmentInput = {
   mimeType?: string
 }
 
-export const isEmailDeliveryConfigured = () =>
-  Boolean(readEmailConfig().emailFrom && readEmailConfig().smtpUser && readEmailConfig().smtpPassword)
+export const isEmailDeliveryConfigured = () => {
+  const config = readEmailConfig()
+  return Boolean(
+    config.emailFrom &&
+      (config.sendGridApiKey || (config.smtpUser && config.smtpPassword)),
+  )
+}
 
 export const logAuthCode = ({
   purpose,
@@ -316,8 +337,82 @@ const sendEmail = async (
   textContent?: string,
 ) => {
   const config = readEmailConfig()
-  const candidates = buildTransportCandidates(config)
   const maskedRecipient = maskEmailForLog(to)
+  const text = textContent || createPlainTextFallback(htmlContent)
+  const resolvedAttachments = attachments?.length
+    ? await Promise.all(
+        attachments.map(async (a) => {
+          let buffer: Buffer
+          if (a.buffer) buffer = a.buffer
+          else if (a.path) buffer = fs.readFileSync(a.path)
+          else throw new Error('Attachment must have path or buffer')
+
+          return {
+            filename: a.filename,
+            content: buffer,
+            contentType: a.mimeType,
+          }
+        }),
+      )
+    : undefined
+
+  if (config.sendGridApiKey) {
+    try {
+      sgMail.setApiKey(config.sendGridApiKey)
+      console.log('[Email] Sending email', {
+        transport: 'sendgrid',
+        to: maskedRecipient,
+        subject,
+        attachments: resolvedAttachments?.length ?? 0,
+      })
+
+      const [response] = await sgMail.send({
+        to,
+        from: {
+          email: config.sendGridFrom,
+          name: 'ChoiceMe Logistics',
+        },
+        replyTo: config.sendGridFrom,
+        subject,
+        text,
+        html: htmlContent,
+        headers: {
+          'X-ChoiceMe-Message-Type': 'transactional',
+          'X-ChoiceMe-Mailer': 'choiceme-backend',
+        },
+        attachments: resolvedAttachments?.map((attachment) => ({
+          filename: attachment.filename,
+          content: attachment.content.toString('base64'),
+          type: attachment.contentType,
+          disposition: 'attachment',
+        })),
+      } as any)
+
+      console.log('[Email] Email accepted by SendGrid', {
+        transport: 'sendgrid',
+        to: maskedRecipient,
+        statusCode: response.statusCode,
+        messageId: response.headers?.['x-message-id'],
+      })
+      return response
+    } catch (error) {
+      console.error('[Email] SendGrid delivery failed', {
+        transport: 'sendgrid',
+        to: maskedRecipient,
+        subject,
+        error,
+      })
+
+      if (!config.smtpUser || !config.smtpPassword) {
+        throw new Error('Email delivery failed through SendGrid')
+      }
+
+      console.warn('[Email] Falling back to SMTP after SendGrid failure', {
+        to: maskedRecipient,
+        subject,
+      })
+    }
+  }
 
   const mailOptions: any = {
     from: `"ChoiceMe Logistics" <${config.emailFrom}>`,
@@ -325,7 +420,7 @@ const sendEmail = async (
     replyTo: config.emailFrom,
     to,
     subject,
-    text: textContent || createPlainTextFallback(htmlContent),
+    text,
     html: htmlContent,
     headers: {
       'X-ChoiceMe-Message-Type': 'transactional',
@@ -333,23 +428,11 @@ const sendEmail = async (
     },
   }
 
-  if (attachments && attachments.length) {
-    mailOptions.attachments = await Promise.all(
-      attachments.map(async (a) => {
-        let buffer: Buffer
-        if (a.buffer) buffer = a.buffer
-        else if (a.path) buffer = fs.readFileSync(a.path)
-        else throw new Error('Attachment must have path or buffer')
-
-        return {
-          filename: a.filename,
-          content: buffer,
-          contentType: a.mimeType,
-        }
-      }),
-    )
+  if (resolvedAttachments?.length) {
+    mailOptions.attachments = resolvedAttachments
   }
 
+  const candidates = buildTransportCandidates(config)
   let lastError: unknown
 
   for (const [index, candidate] of candidates.entries()) {
@@ -430,7 +513,7 @@ export const sendVerificationEmail = async (to: string, token: string) => {
   })
 
   if (!isEmailDeliveryConfigured()) {
-    throw new Error('Email service is not configured. Missing SMTP credentials.')
+    throw new Error('Email service is not configured. Missing SendGrid API key or SMTP credentials.')
   }
 
   const html = `

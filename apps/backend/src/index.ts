@@ -6,7 +6,13 @@ import { testDatabaseConnection } from './models/client'
 import { ensureInvoicePreferencesColumns } from './models/migrations/ensureInvoicePreferencesColumns'
 
 // Determine environment
-const env = process.env.NODE_ENV || 'development'
+const resolveRuntimeEnv = () =>
+  process.env.NODE_ENV ||
+  (process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.K_SERVICE
+    ? 'production'
+    : 'development')
+
+const env = resolveRuntimeEnv()
 console.log('node env', env)
 
 // Load correct .env file

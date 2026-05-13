@@ -65,7 +65,13 @@ import weightReconciliationRoutes from './routes/weightReconciliation.routes'
 // Routes imports
 // import other routes here...
 // Determine environment
-const env = process.env.NODE_ENV || 'development'
+const resolveRuntimeEnv = () =>
+  process.env.NODE_ENV ||
+  (process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.K_SERVICE
+    ? 'production'
+    : 'development')
+
+const env = resolveRuntimeEnv()
 
 // Load correct .env file
 dotenv.config({ path: path.resolve(__dirname, `../.env.${env}`) })

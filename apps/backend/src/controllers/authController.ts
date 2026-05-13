@@ -27,7 +27,13 @@ import { employees } from '../schema/schema'
 import { logAuthCode, sendVerificationEmail } from '../utils/emailSender'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt'
 
-const env = process.env.NODE_ENV || 'development'
+const resolveRuntimeEnv = () =>
+  process.env.NODE_ENV ||
+  (process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.K_SERVICE
+    ? 'production'
+    : 'development')
+
+const env = resolveRuntimeEnv()
 
 const backendRoot = path.resolve(__dirname, '../..')
 dotenv.config({ path: path.resolve(backendRoot, `.env.${env}`) })
@@ -36,6 +42,15 @@ dotenv.config({ path: path.resolve(backendRoot, '.env') })
 const parseBooleanEnv = (value: string | undefined, defaultValue: boolean) => {
   if (value === undefined) return defaultValue
   return value === 'true'
+}
+
+const isEmailDeliveryError = (err: unknown) => {
+  const error = err as { code?: string; command?: string; message?: string }
+  return (
+    error.command === 'CONN' ||
+    ['ETIMEDOUT', 'ECONNECTION', 'ESOCKET', 'ECONNRESET', 'ECONNREFUSED'].includes(error.code || '') ||
+    /email service|smtp|sendgrid|mail|connection timeout/i.test(error.message || '')
+  )
 }
 
 const maskEmailForLog = (email: string) => {
@@ -260,10 +275,9 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
       email: maskEmailForLog(normalizedEmail),
       err,
     })
-    const message =
-      err instanceof Error && err.message.includes('Email service is not configured')
-        ? err.message
-        : 'Something went wrong while requesting OTP'
+    const message = isEmailDeliveryError(err)
+      ? 'We could not send the verification email right now. Please try again in a minute.'
+      : 'Something went wrong while requesting OTP'
     return res.status(500).json({ error: message })
   }
 }

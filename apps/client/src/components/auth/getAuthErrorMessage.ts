@@ -34,10 +34,14 @@ export const getAuthErrorMessage = (err: unknown, fallback: string) => {
   const messages = extractMessages(errObj.response?.data)
   const message = messages.filter(Boolean).slice(0, 3).join(' • ') || errObj.message || fallback
 
+  if (errObj.code === 'ECONNABORTED') {
+    return 'The server took too long to respond. Please try again in a minute.'
+  }
+
   const isNetwork = errObj.code === 'ERR_NETWORK' || !errObj.response
   if (!isNetwork) return message
 
   const base =
     import.meta.env.VITE_API_URL || 'https://choiceme-backend-production.up.railway.app/api'
-  return `Cannot reach API (${base}). Start backend or set VITE_API_URL.`
+  return `Cannot reach the ChoiceMe API (${base}). Please try again in a minute.`
 }
