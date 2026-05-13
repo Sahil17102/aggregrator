@@ -1,5 +1,5 @@
 // AppRoutes.tsx
-import { lazy, Suspense } from 'react'
+import { Component, lazy, Suspense, useEffect, type ErrorInfo, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from '../components/auth/wrapper/RequireAuth'
 import RequireMerchantReady from '../components/auth/wrapper/RequireMerchantReady'
@@ -98,13 +98,84 @@ const RtoList = lazy(() => import('../pages/ops/RtoList'))
 // API Integration
 const ApiIntegration = lazy(() => import('../pages/settings/ApiIntegration'))
 
+const ROUTE_RELOAD_KEY = 'choicemee-route-asset-reload'
+
+const isRouteAssetError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  return /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk/i.test(
+    message,
+  )
+}
+
+const reloadOnceForFreshAssets = () => {
+  if (typeof window === 'undefined') return
+  const alreadyReloaded = window.sessionStorage.getItem(ROUTE_RELOAD_KEY)
+  if (alreadyReloaded) return
+  window.sessionStorage.setItem(ROUTE_RELOAD_KEY, '1')
+  window.location.reload()
+}
+
+class RouteErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; chunkError: boolean }
+> {
+  state = { hasError: false, chunkError: false }
+
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, chunkError: isRouteAssetError(error) }
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    if (isRouteAssetError(error)) {
+      reloadOnceForFreshAssets()
+      return
+    }
+    console.error('Route render failed', error, info)
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children
+
+    return <FullScreenLoader />
+  }
+}
+
+function RouteAssetRecovery() {
+  useEffect(() => {
+    const clearReloadMarker = window.setTimeout(() => {
+      window.sessionStorage.removeItem(ROUTE_RELOAD_KEY)
+    }, 2500)
+
+    const handleRejectedImport = (event: PromiseRejectionEvent) => {
+      if (isRouteAssetError(event.reason)) reloadOnceForFreshAssets()
+    }
+
+    const handleScriptError = (event: ErrorEvent) => {
+      if (isRouteAssetError(event.error || event.message)) reloadOnceForFreshAssets()
+    }
+
+    window.addEventListener('unhandledrejection', handleRejectedImport)
+    window.addEventListener('error', handleScriptError)
+
+    return () => {
+      window.clearTimeout(clearReloadMarker)
+      window.removeEventListener('unhandledrejection', handleRejectedImport)
+      window.removeEventListener('error', handleScriptError)
+    }
+  }, [])
+
+  return null
+}
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <NavigationLoader />
       <GlobalRedirectHandler />
-      <Suspense fallback={<FullScreenLoader />}>
-        <Routes>
+      <RouteAssetRecovery />
+      <RouteErrorBoundary>
+        <Suspense fallback={<FullScreenLoader />}>
+          <Routes>
           {/* public */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
@@ -192,8 +263,9 @@ export default function AppRoutes() {
           </Route>
           {/* fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Suspense>
+          </Routes>
+        </Suspense>
+      </RouteErrorBoundary>
     </BrowserRouter>
   )
 }

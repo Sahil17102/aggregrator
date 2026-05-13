@@ -529,6 +529,18 @@ const getDefaultPickupTime = () => {
   return now.toTimeString().split(' ')[0]
 }
 
+const normalizeManifestPickupDate = (value: unknown) => {
+  const normalized = String(value || '').trim().slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : undefined
+}
+
+const normalizeManifestPickupTime = (value: unknown) => {
+  const normalized = String(value || '').trim()
+  if (/^\d{2}:\d{2}:\d{2}$/.test(normalized)) return normalized
+  if (/^\d{2}:\d{2}$/.test(normalized)) return `${normalized}:00`
+  return undefined
+}
+
 interface NimbusServiceabilityParams {
   origin: number
   destination: number
@@ -4724,6 +4736,8 @@ export const generateManifestService = async (params: {
   awbs: string[]
   type: 'b2c' | 'b2b'
   userId?: string
+  pickup_date?: string
+  pickup_time?: string
 }): Promise<{
   manifest_id: string | null
   manifest_url: string | null
@@ -4731,6 +4745,8 @@ export const generateManifestService = async (params: {
   warnings?: string[]
 }> => {
   const table = params.type === 'b2c' ? b2c_orders : b2b_orders
+  const scheduledPickupDate = normalizeManifestPickupDate(params.pickup_date)
+  const scheduledPickupTime = normalizeManifestPickupTime(params.pickup_time)
 
   return await db.transaction(
     async (
@@ -5845,9 +5861,14 @@ export const generateManifestService = async (params: {
             (order) => String(order.order_status || '').toLowerCase() === 'manifest_failed',
           )
           const pickupDateRaw =
-            pickupDetails?.pickup_date || fetchedOrders[0]?.order_date || new Date().toISOString()
+            scheduledPickupDate ||
+            pickupDetails?.pickup_date ||
+            fetchedOrders[0]?.order_date ||
+            new Date().toISOString()
           const pickupDate = normalizePickupDateForRetry(pickupDateRaw, isManifestRetry)
-          const pickupTimeRaw = String(pickupDetails?.pickup_time || '11:00:00').trim()
+          const pickupTimeRaw = String(
+            scheduledPickupTime || pickupDetails?.pickup_time || '11:00:00',
+          ).trim()
           const pickupTime = /^\d{2}:\d{2}:\d{2}$/.test(pickupTimeRaw)
             ? pickupTimeRaw
             : /^\d{2}:\d{2}$/.test(pickupTimeRaw)
@@ -6611,10 +6632,10 @@ export const generateManifestService = async (params: {
             ? await tx.select().from(b2c_orders).where(inArray(b2c_orders.id, orderIds))
             : []
           const defaultNow = new Date()
-          const defaultPickupDate = defaultNow.toISOString().split('T')[0]
-          const defaultPickupTime = new Date(defaultNow.getTime() + 60 * 60 * 1000)
-            .toTimeString()
-            .split(' ')[0]
+          const defaultPickupDate = scheduledPickupDate || defaultNow.toISOString().split('T')[0]
+          const defaultPickupTime =
+            scheduledPickupTime ||
+            new Date(defaultNow.getTime() + 60 * 60 * 1000).toTimeString().split(' ')[0]
           const pickupGroups = new Map<
             string,
             { pickupDate: string; pickupTime: string; expectedPackageCount: number }
@@ -6640,8 +6661,12 @@ export const generateManifestService = async (params: {
               existingGroup.expectedPackageCount += 1
             } else {
               pickupGroups.set(pickupLocation, {
-                pickupDate: String(pickupDetails?.pickup_date || defaultPickupDate).slice(0, 10),
-                pickupTime: String(pickupDetails?.pickup_time || defaultPickupTime),
+                pickupDate: String(
+                  scheduledPickupDate || pickupDetails?.pickup_date || defaultPickupDate,
+                ).slice(0, 10),
+                pickupTime: String(
+                  scheduledPickupTime || pickupDetails?.pickup_time || defaultPickupTime,
+                ),
                 expectedPackageCount: 1,
               })
             }

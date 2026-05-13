@@ -7,6 +7,9 @@ import type { B2BOrder } from '../../../types/generic.types'
 import StatusChip from '../../UI/chip/StatusChip'
 import DataTable, { type Column } from '../../UI/table/DataTable'
 import TableSkeleton from '../../UI/table/TableSkeleton'
+import ManifestScheduleDialog, {
+  type ManifestSchedulePayload,
+} from '../ManifestScheduleDialog'
 import { OrderExpandedRow } from '../OrderExpandedRow'
 
 export const statusColorMap: Record<string, 'success' | 'pending' | 'error' | 'info'> = {
@@ -37,18 +40,25 @@ const B2BOrdersList = ({
   const { data, isLoading, isError } = useB2BOrdersByUser(page, rowsPerPage, filters)
   const { mutate: triggerManifest, isPending: isGeneratingManifest } = useGenerateManifest()
   const [manifestingAwb, setManifestingAwb] = useState<string | null>(null)
+  const [manifestScheduleOrder, setManifestScheduleOrder] = useState<B2BOrder | null>(null)
 
-  const handleGenerateManifest = (order: B2BOrder) => {
+  const handleGenerateManifest = (order: B2BOrder, schedule: ManifestSchedulePayload) => {
     if (!order.awb_number) return
     setManifestingAwb(order.awb_number)
     triggerManifest(
-      { awbs: [order.awb_number], type: 'b2b' },
+      { awbs: [order.awb_number], type: 'b2b', ...schedule },
       {
         onSettled: () => {
           setManifestingAwb((current) => (current === order.awb_number ? null : current))
         },
       },
     )
+  }
+
+  const handleManifestScheduleConfirm = async (schedule: ManifestSchedulePayload) => {
+    if (!manifestScheduleOrder) return
+    handleGenerateManifest(manifestScheduleOrder, schedule)
+    setManifestScheduleOrder(null)
   }
 
   const hasLabelGenerated = (row: B2BOrder) =>
@@ -139,7 +149,7 @@ const B2BOrdersList = ({
               disabled={isThisManifesting}
               onClick={(e) => {
                 e.stopPropagation()
-                handleGenerateManifest(row)
+                setManifestScheduleOrder(row)
               }}
             >
               {isThisManifesting ? 'Manifesting…' : 'Manifest'}
@@ -198,6 +208,15 @@ const B2BOrdersList = ({
           }}
         />
       )}
+      <ManifestScheduleDialog
+        open={Boolean(manifestScheduleOrder)}
+        loading={isGeneratingManifest}
+        description="Choose the pickup date and time before sending this manifest to the courier."
+        onClose={() => {
+          if (!isGeneratingManifest) setManifestScheduleOrder(null)
+        }}
+        onConfirm={handleManifestScheduleConfirm}
+      />
     </Stack>
   )
 }

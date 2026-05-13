@@ -26,6 +26,9 @@ import {
   summarizeMessages,
   summarizeOrderNumbers,
 } from './bulkActionUtils'
+import ManifestScheduleDialog, {
+  type ManifestSchedulePayload,
+} from './ManifestScheduleDialog'
 import { OrderExpandedRow } from './OrderExpandedRow'
 
 interface Order {
@@ -82,6 +85,7 @@ const AllOrders = () => {
     null,
   )
   const [bulkManifesting, setBulkManifesting] = useState(false)
+  const [manifestScheduleOpen, setManifestScheduleOpen] = useState(false)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [filters, setFilters] = useState<OrdersFilters>({
     status: undefined,
@@ -179,7 +183,32 @@ const AllOrders = () => {
           ? 'Some selected orders are not ready for manifest yet.'
           : ''
 
-  const handleBulkManifest = async () => {
+  const openBulkManifestSchedule = () => {
+    if (!selectedOrders.length) {
+      const message = 'Select up to 5 eligible orders to manifest.'
+      setBulkFeedback({
+        severity: 'error',
+        title: 'No orders selected',
+        message,
+      })
+      toast.open({ message, severity: 'error' })
+      return
+    }
+
+    if (manifestValidationMessage) {
+      setBulkFeedback({
+        severity: 'error',
+        title: 'Manifest unavailable',
+        message: manifestValidationMessage,
+      })
+      toast.open({ message: manifestValidationMessage, severity: 'error' })
+      return
+    }
+
+    setManifestScheduleOpen(true)
+  }
+
+  const handleBulkManifest = async (schedule: ManifestSchedulePayload) => {
     if (!selectedOrders.length) {
       const message = 'Select up to 5 eligible orders to manifest.'
       setBulkFeedback({
@@ -234,7 +263,11 @@ const AllOrders = () => {
         if (!identifiers.length) continue
 
         try {
-          const response = await generateManifestService({ awbs: identifiers, type: 'b2c' })
+          const response = await generateManifestService({
+            awbs: identifiers,
+            type: 'b2c',
+            ...schedule,
+          })
           successCount += providerOrders.length
           if (response.warnings?.length) {
             warningMessages.push(...response.warnings)
@@ -303,6 +336,11 @@ const AllOrders = () => {
     } finally {
       setBulkManifesting(false)
     }
+  }
+
+  const handleManifestScheduleConfirm = async (schedule: ManifestSchedulePayload) => {
+    await handleBulkManifest(schedule)
+    setManifestScheduleOpen(false)
   }
 
   const handleBulkDownload = async (type: DocumentType) => {
@@ -605,7 +643,7 @@ const AllOrders = () => {
               <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} flexWrap="wrap">
                 <Button
                   variant="contained"
-                  onClick={handleBulkManifest}
+                  onClick={openBulkManifestSchedule}
                   disabled={bulkManifesting || Boolean(manifestValidationMessage)}
                   sx={{ textTransform: 'none', minWidth: 170 }}
                 >
@@ -706,6 +744,17 @@ const AllOrders = () => {
           />
         )}
       </Box>
+
+      <ManifestScheduleDialog
+        open={manifestScheduleOpen}
+        loading={bulkManifesting}
+        title="Schedule Selected Manifests"
+        description="Choose the pickup date and time before sending the selected manifests to the courier."
+        onClose={() => {
+          if (!bulkManifesting) setManifestScheduleOpen(false)
+        }}
+        onConfirm={handleManifestScheduleConfirm}
+      />
     </Stack>
   )
 }

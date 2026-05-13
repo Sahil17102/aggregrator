@@ -47,6 +47,9 @@ import {
   summarizeOrderNumbers,
 } from '../bulkActionUtils'
 import { OrderExpandedRow } from '../OrderExpandedRow'
+import ManifestScheduleDialog, {
+  type ManifestSchedulePayload,
+} from '../ManifestScheduleDialog'
 import ReverseModal from '../reverse/ReverseModal'
 import B2COrderFormSteps from './B2COrderForm'
 
@@ -68,6 +71,11 @@ type BulkFeedback = {
   title: string
   message: string
 }
+
+type PendingManifestRequest =
+  | { mode: 'single'; order: B2COrder }
+  | { mode: 'bulk' }
+  | null
 
 /* ───────────── Status Color Mapping ───────────── */
 export const statusColorMap: Record<string, 'success' | 'pending' | 'error' | 'info'> = {
@@ -125,6 +133,10 @@ const B2COrdersList = () => {
   const [selectionResetToken, setSelectionResetToken] = useState(0)
   const [downloadingDocumentType, setDownloadingDocumentType] = useState<DocumentType | null>(null)
   const [bulkManifesting, setBulkManifesting] = useState(false)
+  const [manifestingRef, setManifestingRef] = useState<string | null>(null)
+  const [pendingManifestRequest, setPendingManifestRequest] =
+    useState<PendingManifestRequest>(null)
+  const [manifestScheduleOpen, setManifestScheduleOpen] = useState(false)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [filters, setFilters] = useState<OrderFilters>({
     status: '',
@@ -167,7 +179,10 @@ const B2COrdersList = () => {
   }
 
   /* ───────────── Handlers ───────────── */
-  const handleGenerateManifest = async (order: B2COrder) => {
+  const handleGenerateManifest = async (
+    order: B2COrder,
+    schedule: ManifestSchedulePayload,
+  ) => {
     const manifestRef = getB2CManifestIdentifier(order)
     if (!manifestRef) {
       const message = `Manifest cannot be started for ${order.order_number} yet.`
@@ -180,12 +195,17 @@ const B2COrdersList = () => {
       return
     }
     try {
+      setManifestingRef(manifestRef)
       setBulkFeedback({
         severity: 'info',
         title: 'Manifest in progress',
         message: `Processing ${order.order_number}.`,
       })
-      const response = await generateManifestService({ awbs: [manifestRef], type: 'b2c' })
+      const response = await generateManifestService({
+        awbs: [manifestRef],
+        type: 'b2c',
+        ...schedule,
+      })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] }),
         queryClient.invalidateQueries({ queryKey: ['orders'] }),
@@ -223,6 +243,8 @@ const B2COrdersList = () => {
         message: `${order.order_number}: ${errorMessage}`,
         severity: 'error',
       })
+    } finally {
+      setManifestingRef((current) => (current === manifestRef ? null : current))
     }
   }
 
@@ -267,7 +289,58 @@ const B2COrdersList = () => {
     // Keep status filtering local; do not sync status to URL params.
   }
 
-  const handleBulkManifest = async () => {
+  const closeManifestSchedule = () => {
+    if (bulkManifesting || manifestingRef) return
+    setManifestScheduleOpen(false)
+    setPendingManifestRequest(null)
+  }
+
+  const openSingleManifestSchedule = (order: B2COrder) => {
+    setPendingManifestRequest({ mode: 'single', order })
+    setManifestScheduleOpen(true)
+  }
+
+  const openBulkManifestSchedule = () => {
+    if (!selectedOrders.length) {
+      const message = 'Select up to 5 eligible orders to manifest.'
+      setBulkFeedback({
+        severity: 'error',
+        title: 'No orders selected',
+        message,
+      })
+      toast.open({ message, severity: 'error' })
+      return
+    }
+
+    if (manifestValidationMessage) {
+      setBulkFeedback({
+        severity: 'error',
+        title: 'Manifest unavailable',
+        message: manifestValidationMessage,
+      })
+      toast.open({ message: manifestValidationMessage, severity: 'error' })
+      return
+    }
+
+    setPendingManifestRequest({ mode: 'bulk' })
+    setManifestScheduleOpen(true)
+  }
+
+  const handleManifestScheduleConfirm = async (schedule: ManifestSchedulePayload) => {
+    const request = pendingManifestRequest
+    if (!request) return
+
+    if (request.mode === 'single') {
+      await handleGenerateManifest(request.order, schedule)
+    } else {
+      await handleBulkManifest(schedule)
+    }
+
+    setManifestScheduleOpen(false)
+    setPendingManifestRequest(null)
+  }
+
+  const handleBulkManifest = async (schedule: ManifestSchedulePayload) => {
     if (!selectedOrders.length) {
       const message = 'Select up to 5 eligible orders to manifest.'
       setBulkFeedback({
@@ -320,7 +393,11 @@ const B2COrdersList = () => {
         if (!identifiers.length) continue
 
         try {
-          const response = await generateManifestService({ awbs: identifiers, type: 'b2c' })
+          const response = await generateManifestService({
+            awbs: identifiers,
+            type: 'b2c',
+            ...schedule,
+          })
           successCount += providerOrders.length
           if (response.warnings?.length) {
             warningMessages.push(...response.warnings)
@@ -681,16 +758,20 @@ const B2COrdersList = () => {
         }
 
         if (isB2CManifestEligible(row)) {
+          const rowManifestRef = getB2CManifestIdentifier(row)
+          const isThisManifesting = Boolean(
+            rowManifestRef && manifestingRef === rowManifestRef,
+          )
           actions.push(
             <Button
               key="manifest"
               size="small"
               variant="contained"
-              disabled={bulkManifesting}
-              onClick={() => handleGenerateManifest(row)}
+              disabled={bulkManifesting || isThisManifesting}
+              onClick={() => openSingleManifestSchedule(row)}
               sx={{ px: 1.25, minWidth: 0 }}
             >
-              Manifest
+              {isThisManifesting ? 'Manifesting...' : 'Manifest'}
             </Button>,
           )
         }
@@ -884,7 +965,7 @@ const B2COrdersList = () => {
             <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} flexWrap="wrap">
               <Button
                 variant="contained"
-                onClick={handleBulkManifest}
+                onClick={openBulkManifestSchedule}
                 disabled={bulkManifesting || Boolean(manifestValidationMessage)}
                 sx={{ textTransform: 'none', minWidth: 170 }}
               >
@@ -970,6 +1051,19 @@ const B2COrdersList = () => {
           createReverse(payload)
           setReverseOrder(null)
         }}
+      />
+
+      <ManifestScheduleDialog
+        open={manifestScheduleOpen}
+        loading={bulkManifesting || Boolean(manifestingRef)}
+        title={
+          pendingManifestRequest?.mode === 'bulk'
+            ? 'Schedule Selected Manifests'
+            : 'Schedule Manifest Pickup'
+        }
+        description="Choose the pickup date and time before sending this manifest to the courier."
+        onClose={closeManifestSchedule}
+        onConfirm={handleManifestScheduleConfirm}
       />
 
       <CustomDrawer

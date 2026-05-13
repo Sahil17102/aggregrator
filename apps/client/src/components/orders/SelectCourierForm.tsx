@@ -43,6 +43,8 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   const courierCod = Number(watch('courierCod') || 0)
   const forwardCharges = Number(watch('forwardCharges') || 0)
   const otherCharges = Number(watch('otherCharges') || 0)
+  const walletDebitPreview =
+    forwardCharges + otherCharges + (orderType === 'cod' ? courierCod : 0)
 
   // COMPUTE TOTAL WEIGHT AND PRICE
   let totalWeight = 0
@@ -147,6 +149,25 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   const formatWeightKg = (value?: number | null) =>
     value ? `${(Number(value) / 1000).toFixed(2)} kg` : '—'
   const getCourierDisplayName = (courier: { displayName?: string; name?: string }) => courier?.displayName || courier?.name || 'Courier'
+  const toChargeNumber = (value: unknown) => {
+    const parsed = Number(value ?? 0)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  const getCourierPlatformCharge = (courier: (typeof availableCouriers)[number]) =>
+    toChargeNumber(
+      courier?.rate !== undefined && courier?.rate !== null
+        ? courier.rate
+        : courier?.localRates?.forward?.rate,
+    )
+  const getCourierProviderCost = (courier: (typeof availableCouriers)[number]) =>
+    toChargeNumber(
+      courier?.provider_rate?.total ??
+        courier?.courier_cost_estimate ??
+        courier?.rateEstimate ??
+        0,
+    )
+  const getCourierFinalCharge = (courier: (typeof availableCouriers)[number]) =>
+    getCourierPlatformCharge(courier) + getCourierProviderCost(courier)
 
   const selectedCourierSummary = availableCouriers.find((courier) => {
     const courierOptionKey = String(
@@ -276,7 +297,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     </Typography>
                     {forwardCharges > 0 && (
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography sx={{ color: TEXT_SECONDARY }}>Forward Freight</Typography>
+                        <Typography sx={{ color: TEXT_SECONDARY }}>Final Courier Charge</Typography>
                         <Typography sx={{ fontWeight: 700, color: TEXT_PRIMARY }}>
                           {formatCurrency(forwardCharges)}
                         </Typography>
@@ -298,6 +319,15 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                         </Typography>
                       </Stack>
                     )}
+                    <Divider />
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography sx={{ color: TEXT_PRIMARY, fontWeight: 800 }}>
+                        Total Wallet Debit
+                      </Typography>
+                      <Typography sx={{ fontWeight: 900, color: TEXT_PRIMARY }}>
+                        {formatCurrency(walletDebitPreview)}
+                      </Typography>
+                    </Stack>
                   </Stack>
                 </>
               )}
@@ -372,7 +402,18 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                       {getCourierDisplayName(selectedCourierSummary)}
                     </Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
-                      <Chip size="small" label={`Freight ${formatCurrency(selectedCourierSummary.rate)}`} />
+                      <Chip
+                        size="small"
+                        label={`Final ${formatCurrency(getCourierFinalCharge(selectedCourierSummary))}`}
+                      />
+                      <Chip
+                        size="small"
+                        label={`Our ${formatCurrency(getCourierPlatformCharge(selectedCourierSummary))}`}
+                      />
+                      <Chip
+                        size="small"
+                        label={`Courier ${formatCurrency(getCourierProviderCost(selectedCourierSummary))}`}
+                      />
                       <Chip
                         size="small"
                         label={`Chargeable ${formatWeightKg(selectedCourierSummary.chargeable_weight)}`}
@@ -431,11 +472,9 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 ? selectedCourierOptionKey === courierOptionKey
                 : String(selectedCourierId) === String(courier?.id ?? courier?.courier_id ?? '')
 
-              const forwardCharge =
-                courier?.rate !== undefined && courier?.rate !== null
-                  ? Number(courier.rate)
-                  : local?.forward?.rate
-              const providerCost = courier?.provider_rate?.total ?? courier?.courier_cost_estimate
+              const platformCharge = getCourierPlatformCharge(courier)
+              const providerCost = getCourierProviderCost(courier)
+              const finalCharge = getCourierFinalCharge(courier)
 
               return (
                 <Paper
@@ -446,7 +485,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     setValue('courierOptionKey', courierOptionKey)
                     setValue('selectedMaxSlabWeight', courier?.max_slab_weight ?? null)
                     setValue('courierCod', local?.forward?.cod_charges ?? 0)
-                    setValue('forwardCharges', forwardCharge)
+                    setValue('forwardCharges', finalCharge)
                     setValue('otherCharges', local?.forward?.other_charges ?? 0)
                     setValue(
                       'shippingMode',
@@ -454,7 +493,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     )
                     setValue(
                       'courierCost',
-                      courier?.courier_cost_estimate ?? courier?.rateEstimate ?? null,
+                      providerCost > 0 ? providerCost : null,
                     ) // Estimated courier cost from serviceability
                     setValue('integrationType', courier?.integration_type)
                     setValue('zone', courier?.approxZone?.code ?? courier?.approxZone?.name ?? '')
@@ -542,23 +581,27 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
                       <Stack alignItems={{ xs: 'flex-start', sm: 'flex-end' }} spacing={0.25}>
                         <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
-                          Forward Freight
+                          Final Charge
                         </Typography>
                         <Typography sx={{ fontSize: 28, fontWeight: 900, color: TEXT_PRIMARY }}>
-                          {formatCurrency(forwardCharge)}
+                          {formatCurrency(finalCharge)}
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
+                          Our {formatCurrency(platformCharge)} + Courier {formatCurrency(providerCost)}
                         </Typography>
                       </Stack>
                     </Stack>
 
                     <Grid container spacing={1.1}>
                       {[
+                        ['Our Charge', formatCurrency(platformCharge)],
+                        ['Courier Charge', formatCurrency(providerCost)],
                         ['COD', formatCurrency(local?.forward?.cod_charges)],
                         ['Other', formatCurrency(local?.forward?.other_charges)],
-                        ['Provider Cost', providerCost != null ? formatCurrency(providerCost) : '—'],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
                         ['Volumetric', formatWeightKg(courier?.volumetric_weight)],
                       ].map(([label, value]) => (
-                        <Grid key={label} size={{ xs: 6, lg: 2.4 }}>
+                        <Grid key={label} size={{ xs: 6, lg: 2 }}>
                           <Box
                             sx={{
                               p: 1.25,
