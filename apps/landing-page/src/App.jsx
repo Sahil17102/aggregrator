@@ -1,56 +1,61 @@
-import { useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import AppShell from "./components/layout/AppShell";
 import PageLoader from "./components/common/PageLoader";
 
-const localClientOrigin = "http://localhost:5173";
-const productionClientOrigin = "https://app.choicemee.in";
+const clientAuthUrl = import.meta.env.VITE_CLIENT_AUTH_URL || "http://localhost:5173/login";
 
-const clientOrigin = (() => {
-  const explicitUrl = import.meta.env.VITE_CLIENT_APP_URL || import.meta.env.VITE_CLIENT_AUTH_URL;
-  if (explicitUrl) {
-    try {
-      return new URL(explicitUrl).origin;
-    } catch (_error) {
-      return explicitUrl.replace(/\/login\/?$/, "");
-    }
-  }
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const RateCalculatorPage = lazy(() => import("./pages/RateCalculatorPage"));
+const TrackingPage = lazy(() => import("./pages/TrackingPage"));
+const WeightCalculatorPage = lazy(() => import("./pages/WeightCalculatorPage"));
 
-  if (typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)) {
-    return localClientOrigin;
-  }
-
-  return productionClientOrigin;
-})();
-
-const targetPathMap = {
-  "/": "/",
-  "/login": "/login",
-  "/tracking": "/tracking",
-  "/rate-calculator": "/rate-calculator",
-  "/weight-calculator": "/weight-calculator",
-  "/contact": "/",
-};
-
-function LegacyForwarder() {
+function ScrollRestoration() {
   const location = useLocation();
 
   useEffect(() => {
-    const mappedPath = targetPathMap[location.pathname] || location.pathname || "/";
-    const target = new URL(`${mappedPath}${location.search}${location.hash}`, clientOrigin).toString();
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
 
-    if (window.location.href !== target) {
-      window.location.replace(target);
+      requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return;
     }
+
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location]);
+
+  return null;
+}
+
+function AuthRedirect() {
+  useEffect(() => {
+    window.location.assign(clientAuthUrl);
+  }, []);
 
   return <PageLoader />;
 }
 
 function App() {
   return (
-    <Routes>
-      <Route element={<LegacyForwarder />} path="*" />
-    </Routes>
+    <>
+      <ScrollRestoration />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route element={<AppShell />} path="/">
+            <Route element={<HomePage />} index />
+            <Route element={<TrackingPage />} path="tracking" />
+            <Route element={<RateCalculatorPage />} path="rate-calculator" />
+            <Route element={<WeightCalculatorPage />} path="weight-calculator" />
+            <Route element={<AuthRedirect />} path="login" />
+            <Route element={<ContactPage />} path="contact" />
+          </Route>
+          <Route element={<Navigate replace to="/" />} path="*" />
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

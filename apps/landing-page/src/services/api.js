@@ -65,3 +65,27 @@ export async function submitContact(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function getPublicLandingStats() {
+  if (!API_BASE_URL) {
+    return {
+      livePickups: 0,
+      todayPickups: 0,
+      monthlyDeliveredShipments: 0,
+      monthlyOrders: 0,
+      annualShipments: 0,
+      totalShipments: 0,
+      activeCouriers: 0,
+      enabledCouriers: 3,
+      trackingVisibilityRate: 0,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  const response = await request("/api/dashboard/public-stats");
+  if (!response.success) {
+    throw new Error(response.message || "Failed to fetch landing stats.");
+  }
+
+  return response.data;
+}
