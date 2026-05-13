@@ -6,7 +6,7 @@
 import { eq, sql } from 'drizzle-orm'
 import crypto from 'node:crypto'
 import { db } from '../models/client'
-import { walletOfUser } from '../models/services/walletTopupService'
+import { confirmSuccess, walletOfUser } from '../models/services/walletTopupService'
 import { wallets, walletTopups, walletTransactions } from '../schema/schema'
 import { razorpayApi } from '../utils/razorpay' // ← Axios client
 
@@ -61,15 +61,12 @@ export async function reconcileWalletTopups(): Promise<void> {
     if (!userId || description !== 'Wallet Top-up') continue
 
     /* 3️⃣  Skip if already credited */
-    const creditedAlready =
-      (
-        await db
-          .select({ id: walletTopups.id })
-          .from(walletTopups)
-          .where(eq(walletTopups.gatewayOrderId, order.id))
-          .limit(1)
-      ).length > 0
-    if (creditedAlready) continue
+    const [existingTopup] = await db
+      .select()
+      .from(walletTopups)
+      .where(eq(walletTopups.gatewayOrderId, order.id))
+      .limit(1)
+    if (existingTopup?.status === 'success') continue
 
     /* 4️⃣  GET /v1/orders/{orderId}/payments */
     const { data: paymentsRes } = await razorpayApi.get<PaymentsResponse>(
@@ -77,6 +74,16 @@ export async function reconcileWalletTopups(): Promise<void> {
     )
     const payment = paymentsRes.items.find((p) => p.status === 'captured')
     if (!payment) continue
+
+    if (existingTopup) {
+      await confirmSuccess(order.id, payment.id, order.amount, {
+        source: 'reconcile',
+        method: payment.method,
+        email: payment.email,
+        contact: payment.contact,
+      })
+      continue
+    }
 
     /* 5️⃣  Credit inside a DB transaction */
     await db.transaction(async (tx) => {

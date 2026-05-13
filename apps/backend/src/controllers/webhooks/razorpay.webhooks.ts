@@ -5,10 +5,17 @@ import { isValidSig } from '../../utils/razorpay'
 
 export const razorpayWebhook = async (req: Request, res: Response): Promise<any> => {
   const timestamp = new Date().toISOString()
-  const payload = req.body
+  const rawBody = Buffer.isBuffer(req.body)
+    ? req.body
+    : ((req as any).rawBody as Buffer | undefined) || Buffer.from(JSON.stringify(req.body ?? {}))
+  let payload: any
+  try {
+    payload = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body
+  } catch {
+    return res.status(400).send('Invalid JSON payload')
+  }
   const event = payload.event
   const sig = req.headers['x-razorpay-signature'] as string
-  const rawBody = JSON.stringify(payload)
 
   console.log('='.repeat(80))
   console.log(`📦 [${timestamp}] Razorpay Webhook Received`)

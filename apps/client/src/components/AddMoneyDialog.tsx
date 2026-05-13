@@ -72,7 +72,11 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen, currentB
       await recharge.mutateAsync({
         amount,
         prefill: {
-          name: user?.companyInfo?.businessName,
+          name:
+            user?.companyInfo?.businessName ||
+            user?.companyInfo?.contactPerson ||
+            user?.name ||
+            'ChoiceMee Customer',
           email: user.companyInfo?.contactEmail ?? '',
           contact: user.companyInfo?.contactNumber ?? '',
         },
