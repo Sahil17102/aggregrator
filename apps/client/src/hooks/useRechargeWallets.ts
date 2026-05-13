@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+﻿import { useMutation } from '@tanstack/react-query'
 import { confirmRecharge, createRechargeOrder } from '../api/wallet.api'
 
 interface RechargeOptions {
@@ -58,7 +58,7 @@ declare global {
 export const useRechargeWallet = () =>
   useMutation<void, Error, RechargeOptions>({
     mutationFn: async (options) => {
-      // Call backend → get Razorpay order details
+      // Call backend â†’ get Razorpay order details
       const orderData = await createRechargeOrder({
         amount: options.amount,
         name: options.prefill.name,
@@ -75,7 +75,7 @@ export const useRechargeWallet = () =>
         key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency || 'INR',
-        name: orderData.name || 'ChoiceMe Logistics',
+        name: orderData.name || 'ChoiceMee Logistics',
         description: orderData.description || 'Wallet Recharge',
         order_id: orderData.orderId,
         prefill: orderData.prefill,
@@ -106,3 +106,5 @@ export const useRechargeWallet = () =>
       razorpay.open()
     },
   })
+
+

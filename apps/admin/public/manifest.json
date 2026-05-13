@@ -1,6 +1,6 @@
-{
-  "short_name": "ChoiceMe Admin",
-  "name": "ChoiceMe Logistics Admin",
+﻿{
+  "short_name": "ChoiceMee Admin",
+  "name": "ChoiceMee Logistics Admin",
   "icons": [
     {
       "src": "brand/choiceme-logo.png",
@@ -13,3 +13,5 @@
   "theme_color": "#0D1B4D",
   "background_color": "#EEF3FB"
 }
+
+

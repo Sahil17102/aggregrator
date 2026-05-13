@@ -1,4 +1,4 @@
-import { Box, Container, Divider, Link, Typography } from '@mui/material'
+﻿import { Box, Container, Divider, Link, Typography } from '@mui/material'
 import { FiCreditCard, FiFileText, FiShield } from 'react-icons/fi'
 import TermsOfService from '../../components/terms/TermsOfService'
 import PageHeading from '../../components/UI/heading/PageHeading'
@@ -10,7 +10,7 @@ const PolicyPages = () => {
       <Box display={'flex'} justifyContent={'center'}>
         <PageHeading
           title="Legal & Policy Information"
-          subtitle="All policies, terms, and privacy information for ChoiceMe Logistics"
+          subtitle="All policies, terms, and privacy information for ChoiceMee Logistics"
         />{' '}
       </Box>
 
@@ -21,30 +21,30 @@ const PolicyPages = () => {
           <Typography variant="h4">Refund & Cancellation Policy</Typography>
         </Box>
         <Typography paragraph>
-          • You may cancel your account at any time by emailing us at{' '}
-          <Link href="mailto:ops@choiceme.com">ops@choiceme.com</Link>.
+          â€¢ You may cancel your account at any time by emailing us at{' '}
+          <Link href="mailto:ops@choicemee.com">ops@choicemee.com</Link>.
         </Typography>
         <Typography paragraph>
-          • Once your account is cancelled, all of your data and content will be permanently deleted
+          â€¢ Once your account is cancelled, all of your data and content will be permanently deleted
           from our Service. Since deletion is final and irreversible, please ensure you truly wish
           to cancel your account before proceeding.
         </Typography>
         <Typography paragraph>
-          • If you cancel the Service in the middle of a billing cycle, you will receive a final
+          â€¢ If you cancel the Service in the middle of a billing cycle, you will receive a final
           invoice via email. Once that invoice has been paid, no further charges will apply.
         </Typography>
         <Typography paragraph>
-          • ChoiceMe Logistics (ChoiceMe Logistics Pvt Ltd) reserves the right to modify, suspend, or terminate
+          â€¢ ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd) reserves the right to modify, suspend, or terminate
           the Service for any reason, without prior notice at any time.
         </Typography>
         <Typography paragraph>
-          • Fraud Prevention: Without limiting any other remedies, ChoiceMe Logistics may suspend or
+          â€¢ Fraud Prevention: Without limiting any other remedies, ChoiceMee Logistics may suspend or
           terminate your account if we suspect that you (through conviction, settlement,
           investigation, or otherwise) have engaged in fraudulent or unlawful activity in connection
           with the Platform.
         </Typography>
         <Typography paragraph>
-          • Note: No refunds are provided, even if a subscription or plan is cancelled mid-cycle.
+          â€¢ Note: No refunds are provided, even if a subscription or plan is cancelled mid-cycle.
         </Typography>
       </Box>
 
@@ -58,8 +58,8 @@ const PolicyPages = () => {
         </Box>
         <Typography paragraph>Last Updated: [Insert Date]</Typography>
         <Typography paragraph>
-          ChoiceMe Logistics (ChoiceMe Logistics Pvt Ltd) ("we," "our," or "us") operates the services offered
-          via our website and related platforms (collectively, the “Platform”). Please read this
+          ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd) ("we," "our," or "us") operates the services offered
+          via our website and related platforms (collectively, the â€œPlatformâ€). Please read this
           Privacy Policy carefully before accessing or using our Platform, as continued use
           indicates your acceptance of this Policy.
         </Typography>
@@ -73,8 +73,8 @@ const PolicyPages = () => {
         <Typography paragraph>
           2. Definitions
           <br />
-          • “Personal Information”: Any information that can identify you, directly or indirectly.
-          <br />• “Sensitive Personal Data or Information”: Includes passwords, payment details,
+          â€¢ â€œPersonal Informationâ€: Any information that can identify you, directly or indirectly.
+          <br />â€¢ â€œSensitive Personal Data or Informationâ€: Includes passwords, payment details,
           health data, biometric information, etc., excluding publicly available information or data
           disclosed under legal obligations.
         </Typography>
@@ -83,24 +83,24 @@ const PolicyPages = () => {
           <br />
           When you engage with our Platform, we may collect:
           <br />
-          • Contact details: name, email address, phone number, postal address.
+          â€¢ Contact details: name, email address, phone number, postal address.
           <br />
-          • Account credentials and profile information.
+          â€¢ Account credentials and profile information.
           <br />
-          • Transactional or usage data including order history or Platform activity.
+          â€¢ Transactional or usage data including order history or Platform activity.
           <br />
-          • Location information via IP address.
+          â€¢ Location information via IP address.
           <br />
-          • Sensitive documents you volunteer (e.g., identity proofs or tax documentation).
-          <br />• Technical details: browser type, device type, operating system, and usage metrics.
+          â€¢ Sensitive documents you volunteer (e.g., identity proofs or tax documentation).
+          <br />â€¢ Technical details: browser type, device type, operating system, and usage metrics.
         </Typography>
         <Typography paragraph>
           4. Method of Collection
           <br />
           Information is collected:
           <br />
-          • Directly from you when you fill out forms or communicate with us.
-          <br />• Automatically via technology (e.g. cookies, log files) during your use of the
+          â€¢ Directly from you when you fill out forms or communicate with us.
+          <br />â€¢ Automatically via technology (e.g. cookies, log files) during your use of the
           Platform.
         </Typography>
         <Typography paragraph>
@@ -108,30 +108,30 @@ const PolicyPages = () => {
           <br />
           We use your data to:
           <br />
-          • Register and manage your account.
+          â€¢ Register and manage your account.
           <br />
-          • Deliver services, process orders, and enable billing.
+          â€¢ Deliver services, process orders, and enable billing.
           <br />
-          • Notify you about updates, changes, or new services.
+          â€¢ Notify you about updates, changes, or new services.
           <br />
-          • Customize and improve the Platform experience.
+          â€¢ Customize and improve the Platform experience.
           <br />
-          • Conduct research, analytics, and business operations.
+          â€¢ Conduct research, analytics, and business operations.
           <br />
-          • Safeguard against fraud and enforce terms.
-          <br />• Comply with laws and regulatory obligations.
+          â€¢ Safeguard against fraud and enforce terms.
+          <br />â€¢ Comply with laws and regulatory obligations.
         </Typography>
         <Typography paragraph>
           6. Data Sharing & Disclosure
           <br />
           We may share your information with:
           <br />
-          • Service providers who help deliver our services (e.g., IT partners, analytics
+          â€¢ Service providers who help deliver our services (e.g., IT partners, analytics
           platforms).
           <br />
-          • Legal or governmental authorities, when required by law, to protect our rights, or to
+          â€¢ Legal or governmental authorities, when required by law, to protect our rights, or to
           prevent fraud.
-          <br />• Corporate transactions, such as mergers or asset transfers, where the acquiring
+          <br />â€¢ Corporate transactions, such as mergers or asset transfers, where the acquiring
           entity is bound to this Policy.
         </Typography>
         <Typography paragraph>
@@ -153,19 +153,19 @@ const PolicyPages = () => {
           <br />
           You may:
           <br />
-          • Review, update, or correct your personal details.
+          â€¢ Review, update, or correct your personal details.
           <br />
-          • Withdraw your consent for data use (upon which we may limit or discontinue certain
+          â€¢ Withdraw your consent for data use (upon which we may limit or discontinue certain
           services).
           <br />
           To do so, please contact us at{' '}
-          <Link href="mailto:ops@choiceme.com">ops@choiceme.com</Link>.
+          <Link href="mailto:ops@choicemee.com">ops@choicemee.com</Link>.
         </Typography>
         <Typography paragraph>
           10. Third-Party Links
           <br />
           Our Platform may contain links to external sites. We are not responsible for their privacy
-          practices—please review their individual policies separately.
+          practicesâ€”please review their individual policies separately.
         </Typography>
         <Typography paragraph>
           11. Changes to this Policy
@@ -203,3 +203,5 @@ const PolicyPages = () => {
 }
 
 export default PolicyPages
+
+

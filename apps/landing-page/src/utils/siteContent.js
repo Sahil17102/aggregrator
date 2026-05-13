@@ -1,4 +1,4 @@
-export const companyInfo = {
+﻿export const companyInfo = {
   name: "ChoiceMee",
   tagline: "Your trust, Our Commitment",
   email: "camplar11@gmail.com",
@@ -246,3 +246,5 @@ export const footerGroups = [
     })),
   },
 ];
+
+

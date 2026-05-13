@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Stack, Typography } from '@mui/material'
+﻿import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { getStaticPage } from '../../api/staticPages.service'
 import PageHeading from '../../components/UI/heading/PageHeading'
@@ -39,7 +39,7 @@ const AboutUs = () => {
 
   return (
     <Stack gap={3} sx={{ py: 4, px: 4 }}>
-      <PageHeading title="About Us – ChoiceMe Logistics" />
+      <PageHeading title="About Us â€“ ChoiceMee Logistics" />
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <CircularProgress />
@@ -78,3 +78,5 @@ const AboutUs = () => {
 }
 
 export default AboutUs
+
+

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { extractTextFromFile } from "../../api/user";
 
 export const useKycTextExtractor = () => {
-  const [extractedText, setExtractedText] = useState<Record<string, string>>(
+  const [extractedText, setExtractedText] = useState<Record<string, unknown>>(
     {}
   );
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
@@ -18,7 +18,14 @@ export const useKycTextExtractor = () => {
       setExtractedText((prev) => ({ ...prev, [field]: text }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      setErrorKey((prev) => ({ ...prev, [field]: error.message }));
+      setErrorKey((prev) => ({
+        ...prev,
+        [field]:
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to scan document",
+      }));
     } finally {
       setLoadingKey(null);
     }

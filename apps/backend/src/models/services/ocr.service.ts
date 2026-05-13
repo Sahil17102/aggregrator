@@ -2,6 +2,22 @@ import { createWorker } from "tesseract.js";
 import { HttpError } from "../../utils/classes";
 
 import sharp from "sharp";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require("pdf-parse");
+
+const normalizeExtractedText = (text: string): string =>
+  text
+    .toUpperCase()
+    .split("\n")
+    .map((line) =>
+      line
+        .normalize("NFKD")
+        .replace(/[^\x00-\x7F]+/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+    )
+    .filter(Boolean)
+    .join("\n");
 
 export const extractText = async (buffer: Buffer): Promise<string> => {
   const worker = await createWorker({
@@ -31,27 +47,30 @@ export const extractText = async (buffer: Buffer): Promise<string> => {
       );
     }
 
-    const cleaned = text
-      .toUpperCase()
-      .split("\n")
-      .map((line) =>
-        line
-          .normalize("NFKD")
-          .replace(/[^\x00-\x7F]+/g, "") // Remove diacritics
-          .replace(/\s{2,}/g, " ")
-          .trim()
-      )
-      .filter(Boolean)
-      .join("\n");
-
-    return cleaned;
+    return normalizeExtractedText(text);
   } finally {
     await worker.terminate();
   }
 };
 
+export const extractTextFromDocument = async (
+  buffer: Buffer,
+  options: { contentType?: string; fileName?: string } = {}
+): Promise<string> => {
+  const contentType = options.contentType?.toLowerCase() ?? "";
+  const fileName = options.fileName?.toLowerCase() ?? "";
+  const isPdf = contentType.includes("pdf") || fileName.split("?")[0].endsWith(".pdf");
+
+  if (!isPdf) return extractText(buffer);
+
+  const pdfData = await (pdfParse.default || pdfParse)(buffer);
+  return normalizeExtractedText(pdfData?.text ?? "");
+};
+
 export const parsePAN = (txt: string) =>
   txt.match(/[A-Z]{5}[0-9]{4}[A-Z]/)?.[0] ?? null;
+export const parseGSTIN = (txt: string) =>
+  txt.match(/[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]/)?.[0] ?? null;
 export const parseIFSC = (txt: string) =>
   txt.match(/[A-Z]{4}0[A-Z0-9]{6}/)?.[0] ?? null;
 export const parseAccountNo = (txt: string) =>

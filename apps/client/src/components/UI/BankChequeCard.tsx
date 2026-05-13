@@ -11,20 +11,20 @@ export default function BankChequeCard({ text }: Props) {
     <Card
       sx={{
         mt: 2,
-        backgroundColor: "#1f1f1f",
-        color: "#eee",
-        border: "1px solid #333",
+        backgroundColor: "#F8FAFC",
+        border: "1px solid #D9E2EC",
+        boxShadow: "none",
       }}
     >
       <CardContent>
         <Typography variant="subtitle1" gutterBottom>
-          🏦 Bank Extract
+          Bank extract
         </Typography>
         <Typography>
-          <strong>IFSC:</strong> {text?.ifsc}
+          <strong>IFSC:</strong> {text?.ifsc || "-"}
         </Typography>
         <Typography>
-          <strong>Account:</strong> {text?.accNo}
+          <strong>Account:</strong> {text?.accNo || "-"}
         </Typography>
       </CardContent>
     </Card>

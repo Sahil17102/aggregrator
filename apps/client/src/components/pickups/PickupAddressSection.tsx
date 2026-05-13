@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 // PickupAddressSection.tsx
 import { Box, Button, CircularProgress, Grid, IconButton, Typography } from '@mui/material'
 import axios from 'axios'
@@ -42,7 +42,7 @@ const GEOAPIFY_AUTOCOMPLETE_URL = 'https://api.geoapify.com/v1/geocode/autocompl
 const GEOAPIFY_REVERSE_URL = 'https://api.geoapify.com/v1/geocode/reverse'
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search'
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse'
-const NOMINATIM_EMAIL = 'ops@choiceme.com'
+const NOMINATIM_EMAIL = 'ops@choicemee.com'
 
 const mapGeoapifyFeatureToSuggestion = (feature: any): LocationSuggestion | null => {
   const props = feature?.properties
@@ -222,7 +222,7 @@ const PickupAddressSection = ({
     }
   }
 
-  // 🔹 Autocomplete using Geoapify (fallback to Nominatim)
+  // ðŸ”¹ Autocomplete using Geoapify (fallback to Nominatim)
   useDebouncedEffect(
     () => {
       if (inputValue.length < 3) {
@@ -246,7 +246,7 @@ const PickupAddressSection = ({
     setValue(`${prefix}.pincode` as Path<PickupFormValues>, getSafe(props.postcode))
   }
 
-  // 🔹 Handle selection from autocomplete
+  // ðŸ”¹ Handle selection from autocomplete
   const handlePlaceSelect = (key: string) => {
     const selected = suggestions.find((s) => s.key === key)
     if (!selected) return
@@ -259,7 +259,7 @@ const PickupAddressSection = ({
     applyGeoPropsToForm(selected.address, lat, lng)
   }
 
-  // 🔹 Reverse geocode confirm from map
+  // ðŸ”¹ Reverse geocode confirm from map
   const handleMapConfirm = async () => {
     const updatedLat = +coords.lat.toFixed(6)
     const updatedLng = +coords.lng.toFixed(6)
@@ -291,7 +291,7 @@ const PickupAddressSection = ({
     setStep(2)
   }
 
-  // 🔹 Spot Me (browser geolocation + reverse geocode)
+  // ðŸ”¹ Spot Me (browser geolocation + reverse geocode)
   const handleSpotMe = async () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported')
@@ -373,7 +373,7 @@ const PickupAddressSection = ({
               disabled={loadingLocation}
               startIcon={loadingLocation ? <CircularProgress size={18} /> : undefined}
             >
-              {loadingLocation ? 'Locating...' : '📍 Spot Me'}
+              {loadingLocation ? 'Locating...' : 'ðŸ“ Spot Me'}
             </Button>
             <Button
               variant="text"
@@ -381,7 +381,7 @@ const PickupAddressSection = ({
               onClick={() => setMapOpen(true)}
               sx={{ textTransform: 'none', fontStyle: 'italic' }}
             >
-              📍 Didn't find? Set on the map
+              ðŸ“ Didn't find? Set on the map
             </Button>
           </Grid>
 
@@ -417,7 +417,7 @@ const PickupAddressSection = ({
                 setStep(2)
               }}
             >
-              ✏️ Enter Manually
+              âœï¸ Enter Manually
             </Button>
             <Button
               variant="contained"
@@ -617,3 +617,4 @@ const PickupAddressSection = ({
 }
 
 export default PickupAddressSection
+

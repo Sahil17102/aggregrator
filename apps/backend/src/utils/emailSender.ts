@@ -1,4 +1,4 @@
-// utils/emailSender.ts
+﻿// utils/emailSender.ts
 import dotenv from 'dotenv'
 import fs from 'fs'
 import nodemailer from 'nodemailer'
@@ -370,15 +370,15 @@ const sendEmail = async (
         to,
         from: {
           email: config.sendGridFrom,
-          name: 'ChoiceMe Logistics',
+          name: 'ChoiceMee Logistics',
         },
         replyTo: config.sendGridFrom,
         subject,
         text,
         html: htmlContent,
         headers: {
-          'X-ChoiceMe-Message-Type': 'transactional',
-          'X-ChoiceMe-Mailer': 'choiceme-backend',
+          'X-ChoiceMee-Message-Type': 'transactional',
+          'X-ChoiceMee-Mailer': 'choiceme-backend',
         },
         attachments: resolvedAttachments?.map((attachment) => ({
           filename: attachment.filename,
@@ -415,7 +415,7 @@ const sendEmail = async (
   }
 
   const mailOptions: any = {
-    from: `"ChoiceMe Logistics" <${config.emailFrom}>`,
+    from: `"ChoiceMee Logistics" <${config.emailFrom}>`,
     sender: config.emailFrom,
     replyTo: config.emailFrom,
     to,
@@ -423,8 +423,8 @@ const sendEmail = async (
     text,
     html: htmlContent,
     headers: {
-      'X-ChoiceMe-Message-Type': 'transactional',
-      'X-ChoiceMe-Mailer': 'choiceme-backend',
+      'X-ChoiceMee-Message-Type': 'transactional',
+      'X-ChoiceMee-Mailer': 'choiceme-backend',
     },
   }
 
@@ -493,15 +493,15 @@ export const sendSmtpTestEmail = async (to?: string) => {
 
   await sendEmail(
     recipient,
-    'ChoiceMe Logistics SMTP test',
+    'ChoiceMee Logistics SMTP test',
     `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
         <h2 style="margin:0 0 12px;color:#0D1B4D">SMTP delivery is working</h2>
-        <p>This is a production mailer test from ChoiceMe Logistics.</p>
+        <p>This is a production mailer test from ChoiceMee Logistics.</p>
       </div>
     `,
     undefined,
-    'SMTP delivery is working. This is a production mailer test from ChoiceMe Logistics.',
+    'SMTP delivery is working. This is a production mailer test from ChoiceMee Logistics.',
   )
 }
 
@@ -544,7 +544,7 @@ export const sendVerificationEmail = async (to: string, token: string) => {
             letter-spacing:0.08em;
             text-transform:uppercase;
           ">
-            ChoiceMe
+            ChoiceMee
           </div>
 
           <h1 style="margin:18px 0 8px; font-size:28px; line-height:1.2; font-weight:800;">
@@ -611,10 +611,10 @@ export const sendVerificationEmail = async (to: string, token: string) => {
 
           <div style="margin-top:22px; padding-top:18px; border-top:1px solid #eadfd4;">
             <p style="margin:0; font-size:12px; line-height:1.7; color:#8c7b70;">
-              Sent by ChoiceMe Logistics
+              Sent by ChoiceMee Logistics
             </p>
             <p style="margin:4px 0 0; font-size:12px; line-height:1.7; color:#a19185;">
-              © ${new Date().getFullYear()} ChoiceMe Logistics. All rights reserved.
+              Â© ${new Date().getFullYear()} ChoiceMee Logistics. All rights reserved.
             </p>
           </div>
         </div>
@@ -624,10 +624,10 @@ export const sendVerificationEmail = async (to: string, token: string) => {
 
   await sendEmail(
     to,
-    'Your ChoiceMe Logistics verification code',
+    'Your ChoiceMee Logistics verification code',
     html,
     undefined,
-    `Your ChoiceMe Logistics verification code is ${token}. It expires in 5 minutes. If you did not request this code, you can ignore this email.`,
+    `Your ChoiceMee Logistics verification code is ${token}. It expires in 5 minutes. If you did not request this code, you can ignore this email.`,
   )
   return { delivered: true }
 }
@@ -642,7 +642,7 @@ export const sendEmployeeCredentials = async (
   const html = `
     <div style="font-family: 'Segoe UI', Roboto, Arial, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #fafafa;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="color: #1e293b; margin: 0;">Welcome to <span style="color:#2563eb;">ChoiceMe Logistics</span> 🚀</h2>
+        <h2 style="color: #1e293b; margin: 0;">Welcome to <span style="color:#2563eb;">ChoiceMee Logistics</span> ðŸš€</h2>
         <p style="font-size: 15px; color: #64748b; margin-top: 8px;">Your employee account has been created successfully.</p>
       </div>
 
@@ -664,17 +664,17 @@ export const sendEmployeeCredentials = async (
       </div>
 
       <p style="font-size: 14px; color: #64748b; margin-top: 28px; text-align: center;">
-        You can now log in to your ChoiceMe Logistics account using these credentials.<br/>
+        You can now log in to your ChoiceMee Logistics account using these credentials.<br/>
         If you face any issues, please contact your administrator.
       </p>
 
       <div style="text-align: center; margin-top: 32px; font-size: 13px; color: #94a3b8;">
-        — The ChoiceMe Logistics Team
+        â€” The ChoiceMee Logistics Team
       </div>
     </div>
   `
 
-  await sendEmail(to, 'Your ChoiceMe Logistics Employee Account', html)
+  await sendEmail(to, 'Your ChoiceMee Logistics Employee Account', html)
 }
 const escapeHtml = (unsafe: string) =>
   unsafe
@@ -690,7 +690,7 @@ export const sendTempPasswordEmail = async (to: string, tempPassword: string) =>
   const html = `
     <div style="font-family: 'Segoe UI', Roboto, Arial, sans-serif; max-width:600px; margin:auto; padding:32px; border:1px solid #e5e7eb; border-radius:12px; background-color:#f9fafb;">
       <div style="text-align:center; margin-bottom:24px;">
-        <h2 style="color:#1e293b; margin:0;">ChoiceMe Logistics Account Password Reset</h2>
+        <h2 style="color:#1e293b; margin:0;">ChoiceMee Logistics Account Password Reset</h2>
         <p style="font-size:15px; color:#64748b; margin-top:8px;">
           Your account password has been reset by our team.
         </p>
@@ -710,12 +710,12 @@ export const sendTempPasswordEmail = async (to: string, tempPassword: string) =>
 
       <p style="font-size:13px; color:#94a3b8; margin-top:28px; text-align:center;">
         If you did not request this, please contact our support immediately.<br/>
-        — The ChoiceMe Logistics Team
+        â€” The ChoiceMee Logistics Team
       </p>
     </div>
   `
 
-  await sendEmail(to, 'Your Temporary ChoiceMe Logistics Password', html)
+  await sendEmail(to, 'Your Temporary ChoiceMee Logistics Password', html)
 }
 
 export const sendInvoiceReadyEmail = async (opts: {
@@ -747,9 +747,9 @@ export const sendInvoiceReadyEmail = async (opts: {
 
   const html = `
   <div style="font-family: Arial, sans-serif; max-width:700px; margin:auto; padding:24px; color:#111">
-    <h2 style="margin-bottom: 8px;">Your invoice is ready — ${invoiceNo}</h2>
+    <h2 style="margin-bottom: 8px;">Your invoice is ready â€” ${invoiceNo}</h2>
     <p style="color:#555; margin-top:0;">Hello ${safeSeller},</p>
-    <p style="color:#555">Your invoice for the period <strong>${periodStart}</strong> — <strong>${periodEnd}</strong> has been generated.</p>
+    <p style="color:#555">Your invoice for the period <strong>${periodStart}</strong> â€” <strong>${periodEnd}</strong> has been generated.</p>
 
     <table style="width:100%; margin-top:12px; border-collapse: collapse;">
       <tr>
@@ -758,11 +758,11 @@ export const sendInvoiceReadyEmail = async (opts: {
       </tr>
       <tr>
         <td style="padding:8px; font-weight:600;">Period</td>
-        <td style="padding:8px;">${periodStart} — ${periodEnd}</td>
+        <td style="padding:8px;">${periodStart} â€” ${periodEnd}</td>
       </tr>
       <tr>
         <td style="padding:8px; font-weight:600;">Amount (GST inclusive)</td>
-        <td style="padding:8px;">₹${Number(totalAmount).toFixed(2)}</td>
+        <td style="padding:8px;">â‚¹${Number(totalAmount).toFixed(2)}</td>
       </tr>
     </table>
 
@@ -777,11 +777,11 @@ export const sendInvoiceReadyEmail = async (opts: {
     </div>
 
     <p style="color:#777; margin-top:20px; font-size:13px;">
-      If you have any questions or dispute an item on the invoice, please contact support or use the “raise dispute” option in your seller dashboard.
+      If you have any questions or dispute an item on the invoice, please contact support or use the â€œraise disputeâ€ option in your seller dashboard.
     </p>
 
     <div style="margin-top:22px; font-size:12px; color:#999;">
-      — ChoiceMe Logistics Team
+      â€” ChoiceMee Logistics Team
     </div>
   </div>
   `
@@ -816,14 +816,14 @@ export const sendInvoiceReminderEmail = async (opts: {
 
   const html = `
   <div style="font-family: Arial, sans-serif; max-width:700px; margin:auto; padding:24px; color:#111">
-    <h2 style="margin-bottom: 8px; color: #dc2626;">Payment Reminder — Invoice ${invoiceNo}</h2>
+    <h2 style="margin-bottom: 8px; color: #dc2626;">Payment Reminder â€” Invoice ${invoiceNo}</h2>
     <p style="color:#555; margin-top:0;">Hello,</p>
-    <p style="color:#555">This is a friendly reminder that your invoice <strong>${invoiceNo}</strong> with an outstanding amount of <strong>₹${Number(
+    <p style="color:#555">This is a friendly reminder that your invoice <strong>${invoiceNo}</strong> with an outstanding amount of <strong>â‚¹${Number(
     amount,
   ).toFixed(2)}</strong> is still pending payment.</p>
 
     <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px;">
-      <p style="margin: 0; font-weight: 600; color: #991b1b;">Outstanding Amount: ₹${Number(
+      <p style="margin: 0; font-weight: 600; color: #991b1b;">Outstanding Amount: â‚¹${Number(
         amount,
       ).toFixed(2)}</p>
     </div>
@@ -855,7 +855,7 @@ export const sendInvoiceReminderEmail = async (opts: {
     </p>
 
     <div style="margin-top:22px; font-size:12px; color:#999;">
-      — ChoiceMe Logistics Team
+      â€” ChoiceMee Logistics Team
     </div>
   </div>
   `
@@ -894,9 +894,11 @@ export const sendKycStatusEmail = async (opts: {
       <p style="margin: 14px 0 0 0; color: #6b7280; font-size: 13px;">
         If you need help, please contact support from your dashboard.
       </p>
-      <p style="margin: 20px 0 0 0; color: #9ca3af; font-size: 12px;">— ChoiceMe Logistics Team</p>
+      <p style="margin: 20px 0 0 0; color: #9ca3af; font-size: 12px;">â€” ChoiceMee Logistics Team</p>
     </div>
   `
 
   await sendEmail(to, subject, html)
 }
+
+

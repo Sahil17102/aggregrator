@@ -1,4 +1,4 @@
-import { alpha, Box, Grid, Stack, Typography } from '@mui/material'
+﻿import { alpha, Box, Grid, Stack, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
 import {
   TbRouteSquare,
@@ -21,7 +21,7 @@ const MUTED = brand.inkSoft
 const DISPLAY_FONT = brandFonts.display
 
 const commandNotes = [
-  'Sign in with your registered email to access your ChoiceMe account.',
+  'Sign in with your registered email to access your ChoiceMee account.',
   'Use OTP login or email and password based on your account access.',
   'Access orders, billing, support, channels, and courier tools after sign in.',
 ]
@@ -97,7 +97,7 @@ export default function LoginForm() {
               />
 
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {['ChoiceMe platform', 'ChoiceMe brand colors', 'Secure login system'].map((chip) => (
+                {['ChoiceMee platform', 'ChoiceMee brand colors', 'Secure login system'].map((chip) => (
                   <Box
                     key={chip}
                     sx={{
@@ -139,7 +139,7 @@ export default function LoginForm() {
                 >
                   Sign in to your
                   <Box component="span" sx={{ color: CLAY, display: 'block' }}>
-                    ChoiceMe account.
+                    ChoiceMee account.
                   </Box>
                 </Typography>
                 <Typography
@@ -151,7 +151,7 @@ export default function LoginForm() {
                   }}
                 >
                   Access your account and continue with orders, billing, support,
-                  and shipping operations in ChoiceMe.
+                  and shipping operations in ChoiceMee.
                 </Typography>
               </Stack>
             </Stack>
@@ -263,7 +263,7 @@ export default function LoginForm() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  ChoiceMe sign in
+                  ChoiceMee sign in
                 </Typography>
               </Stack>
 
@@ -288,7 +288,7 @@ export default function LoginForm() {
                     maxWidth: 470,
                   }}
                 >
-                  Sign in with OTP or password to access your ChoiceMe dashboard and account tools.
+                  Sign in with OTP or password to access your ChoiceMee dashboard and account tools.
                 </Typography>
               </Stack>
 
@@ -359,7 +359,7 @@ export default function LoginForm() {
               <Stack direction="row" spacing={0.8} alignItems="center" justifyContent="flex-start">
                 <TbTruckDelivery size={16} color={CLAY} />
                 <Typography sx={{ color: SKY, fontSize: '0.84rem', fontWeight: 700 }}>
-                  ChoiceMe account access
+                  ChoiceMee account access
                 </Typography>
               </Stack>
             </Stack>
@@ -369,3 +369,5 @@ export default function LoginForm() {
     </Box>
   )
 }
+
+

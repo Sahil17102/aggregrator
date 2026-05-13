@@ -1,4 +1,4 @@
-import {
+﻿import {
   alpha,
   Box,
   Collapse,
@@ -444,7 +444,7 @@ export default function Sidebar({ role = 'customer', pinned, hovered, setHovered
                 Seller panel
               </Typography>
               <Typography sx={{ fontWeight: 800, fontSize: '0.96rem', lineHeight: 1.1 }}>
-                ChoiceMe workspace
+                ChoiceMee workspace
               </Typography>
             </Box>
           )}
@@ -495,3 +495,5 @@ export default function Sidebar({ role = 'customer', pinned, hovered, setHovered
     </Box>
   )
 }
+
+

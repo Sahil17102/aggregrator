@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+﻿import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { loginUser } from "../services/api";
 
 const AppDataContext = createContext(null);
 
-const STORAGE_KEY = "choiceme-session";
+const STORAGE_KEY = "choicemee-session";
 
 export function AppDataProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -57,3 +57,4 @@ export function useAppData() {
 
   return context;
 }
+

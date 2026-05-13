@@ -125,7 +125,7 @@ const DEFAULT_LABEL_SETTINGS = {
     deadWeight: false,
     otherCharges: true,
   },
-  powered_by: 'ChoiceMe',
+  powered_by: 'ChoiceMee',
 }
 
 function mergeSettings(prefs: any) {
@@ -184,10 +184,10 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   }
 
   const adminPrefs = await getAdminInvoicePreferences()
-  // Always show ChoiceMe platform logo (Powered by ...)
+  // Always show ChoiceMee platform logo (Powered by ...)
   let platformLogoBase64: string | null = null
   try {
-    const platformLogoKey = adminPrefs?.logoFile ?? 'choiceme-logo.png'
+    const platformLogoKey = adminPrefs?.logoFile ?? 'ChoiceMee-logo.png'
     const logoUrl = await presignDownload(platformLogoKey)
     const finalUrl = Array.isArray(logoUrl) ? logoUrl[0] : logoUrl
     if (finalUrl) {
@@ -856,3 +856,4 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     throw new Error(`Label generation/upload failed: ${err?.message || err}`)
   }
 }
+

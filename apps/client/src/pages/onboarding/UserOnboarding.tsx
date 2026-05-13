@@ -1,4 +1,4 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material'
+﻿import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
@@ -173,7 +173,7 @@ export default function UserOnboarding() {
           variant="h6"
           sx={{ fontWeight: 900, color: DE_BLUE, letterSpacing: -0.5, fontSize: '1.4rem' }}
         >
-          ChoiceMe Seller Panel
+          ChoiceMee Seller Panel
         </Typography>
         <SwitchAccountButton />
       </Stack>
@@ -308,7 +308,7 @@ export default function UserOnboarding() {
                 mb: 0.75,
               }}
             >
-              ChoiceMe onboarding
+              ChoiceMee onboarding
             </Typography>
             <Typography
               sx={{ fontSize: { xs: '1.35rem', md: '1.8rem' }, fontWeight: 900, color: DE_BLUE }}
@@ -385,3 +385,5 @@ export default function UserOnboarding() {
     </Box>
   )
 }
+
+

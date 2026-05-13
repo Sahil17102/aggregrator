@@ -1,4 +1,4 @@
-type RawAuthError = {
+﻿type RawAuthError = {
   response?: { data?: unknown }
   code?: string
   message?: string
@@ -32,7 +32,7 @@ const extractMessages = (value: unknown): string[] => {
 export const getAuthErrorMessage = (err: unknown, fallback: string) => {
   const errObj = err as RawAuthError
   const messages = extractMessages(errObj.response?.data)
-  const message = messages.filter(Boolean).slice(0, 3).join(' • ') || errObj.message || fallback
+  const message = messages.filter(Boolean).slice(0, 3).join(' â€¢ ') || errObj.message || fallback
 
   if (errObj.code === 'ECONNABORTED') {
     return 'The server took too long to respond. Please try again in a minute.'
@@ -43,5 +43,6 @@ export const getAuthErrorMessage = (err: unknown, fallback: string) => {
 
   const base =
     import.meta.env.VITE_API_URL || 'https://api.choicemee.in/api'
-  return `Cannot reach the ChoiceMe API (${base}). Please try again in a minute.`
+  return `Cannot reach the ChoiceMee API (${base}). Please try again in a minute.`
 }
+

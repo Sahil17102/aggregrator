@@ -1,4 +1,4 @@
-import {
+﻿import {
   alpha,
   Box,
   Button,
@@ -78,7 +78,7 @@ const testimonials = [
   {
     initials: 'AK',
     quote:
-      'ChoiceMe gave us a premium control-tower feel without operational complexity. Our shipping team now books faster and escalates less.',
+      'ChoiceMee gave us a premium control-tower feel without operational complexity. Our shipping team now books faster and escalates less.',
     name: 'Aaliya Khan',
     role: 'Head of Operations, NorthGrid Commerce',
   },
@@ -549,7 +549,7 @@ export default function LandingPage() {
 
           <Box component={motion.section} {...fadeUp}>
             <Typography sx={sectionIntro.eyebrowSx}>Testimonials</Typography>
-            <Typography sx={sectionIntro.titleSx}>What customers love about ChoiceMe Logistics</Typography>
+            <Typography sx={sectionIntro.titleSx}>What customers love about ChoiceMee Logistics</Typography>
             <Typography sx={sectionIntro.copySx}>
               Shipping teams, store owners, and logistics managers all choose us because we make their day-to-day operations clearer and faster.
             </Typography>
@@ -629,3 +629,5 @@ export default function LandingPage() {
     </Box>
   )
 }
+
+

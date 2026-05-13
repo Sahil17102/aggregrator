@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 import { and, desc, eq, gte, ilike, lte, sql } from 'drizzle-orm'
 import fileType from 'file-type'
 import PdfPrinter from 'pdfmake'
@@ -153,7 +153,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   const bufferToDataUrl = async (buffer: Buffer): Promise<string | null> => {
     try {
       if (!buffer || buffer.length === 0) {
-        console.warn('⚠️ Empty buffer provided to bufferToDataUrl')
+        console.warn('âš ï¸ Empty buffer provided to bufferToDataUrl')
         return null
       }
 
@@ -163,13 +163,13 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       if (type) {
         // Only allow image types
         if (!type.mime.startsWith('image/')) {
-          console.warn(`⚠️ Invalid image type detected: ${type.mime}, skipping image`)
+          console.warn(`âš ï¸ Invalid image type detected: ${type.mime}, skipping image`)
           return null
         }
         const dataUrl = `data:${type.mime};base64,${buffer.toString('base64')}`
         // Validate the data URL format
         if (!dataUrl.startsWith('data:image/')) {
-          console.warn('⚠️ Invalid data URL format generated')
+          console.warn('âš ï¸ Invalid data URL format generated')
           return null
         }
         return dataUrl
@@ -180,11 +180,11 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
         // Check if buffer might be corrupted or incomplete
         if (buffer.length < 100) {
           console.warn(
-            `⚠️ Buffer too small (${buffer.length} bytes) - likely corrupted or incomplete download, skipping image`,
+            `âš ï¸ Buffer too small (${buffer.length} bytes) - likely corrupted or incomplete download, skipping image`,
           )
         } else {
           console.warn(
-            `⚠️ Could not detect image type and buffer does not appear to be a valid image format (PNG/JPEG/GIF/WebP), skipping image (buffer size: ${buffer.length} bytes)`,
+            `âš ï¸ Could not detect image type and buffer does not appear to be a valid image format (PNG/JPEG/GIF/WebP), skipping image (buffer size: ${buffer.length} bytes)`,
           )
         }
         return null
@@ -202,17 +202,17 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       }
 
       console.warn(
-        `⚠️ Could not detect image type via file-type, but buffer appears valid. Using ${mimeType}`,
+        `âš ï¸ Could not detect image type via file-type, but buffer appears valid. Using ${mimeType}`,
       )
       const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
 
       if (!dataUrl.startsWith('data:image/')) {
-        console.warn('⚠️ Invalid data URL format generated')
+        console.warn('âš ï¸ Invalid data URL format generated')
         return null
       }
       return dataUrl
     } catch (err) {
-      console.error('⚠️ Error converting buffer to data URL:', err)
+      console.error('âš ï¸ Error converting buffer to data URL:', err)
       return null
     }
   }
@@ -227,7 +227,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       }
     } catch (err) {
       console.warn(
-        '⚠️ Failed to process logo buffer, continuing without logo:',
+        'âš ï¸ Failed to process logo buffer, continuing without logo:',
         summarizeFetchError(err),
       )
     }
@@ -235,7 +235,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
 
   const adminPrefs = await getAdminInvoicePreferences()
 
-  // Platform (ChoiceMe) logo – try to load but don't fail if it doesn't work
+  // Platform (ChoiceMee) logo â€“ try to load but don't fail if it doesn't work
   let platformLogoDataUrl: string | undefined
   try {
     const logoKey = adminPrefs?.logoFile ?? 'choiceme-logo.png'
@@ -250,14 +250,14 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
         }
       } catch (err) {
         console.warn(
-          '⚠️ Failed to download platform logo, continuing without it:',
+          'âš ï¸ Failed to download platform logo, continuing without it:',
           summarizeFetchError(err),
         )
       }
     }
   } catch (err) {
     console.warn(
-      '⚠️ Failed to get platform logo URL, continuing without it:',
+      'âš ï¸ Failed to get platform logo URL, continuing without it:',
       summarizeFetchError(err),
     )
   }
@@ -265,22 +265,22 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   let signatureDataUrl: string | undefined
   if (invoice.signatureBuffer) {
     try {
-      console.log('📝 Processing signature buffer for invoice...')
+      console.log('ðŸ“ Processing signature buffer for invoice...')
       const dataUrl = await bufferToDataUrl(invoice.signatureBuffer)
       if (dataUrl) {
         signatureDataUrl = dataUrl
-        console.log('✅ Signature buffer successfully converted to data URL')
+        console.log('âœ… Signature buffer successfully converted to data URL')
       } else {
-        console.warn('⚠️ Signature buffer conversion returned null/undefined')
+        console.warn('âš ï¸ Signature buffer conversion returned null/undefined')
       }
     } catch (err) {
       console.warn(
-        '⚠️ Failed to process signature buffer, continuing without signature:',
+        'âš ï¸ Failed to process signature buffer, continuing without signature:',
         summarizeFetchError(err),
       )
     }
   } else {
-    console.log('ℹ️ No signature buffer provided for invoice')
+    console.log('â„¹ï¸ No signature buffer provided for invoice')
   }
 
 
@@ -295,12 +295,12 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       const base64Match = logoDataUrl.match(/^data:image\/[^;]+;base64,(.+)$/)
       if (base64Match && base64Match[1] && base64Match[1].length > 0) {
         images.logo = logoDataUrl
-        console.log('✅ Logo successfully added to invoice PDF')
+        console.log('âœ… Logo successfully added to invoice PDF')
       } else {
-        console.warn('⚠️ Logo data URL missing base64 data, skipping')
+        console.warn('âš ï¸ Logo data URL missing base64 data, skipping')
       }
     } catch (err) {
-      console.warn('⚠️ Error validating logo data URL, skipping:', err)
+      console.warn('âš ï¸ Error validating logo data URL, skipping:', err)
     }
   }
 
@@ -314,15 +314,15 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       const base64Match = signatureDataUrl.match(/^data:image\/[^;]+;base64,(.+)$/)
       if (base64Match && base64Match[1] && base64Match[1].length > 0) {
         images.signature = signatureDataUrl
-        console.log('✅ Signature successfully added to invoice PDF')
+        console.log('âœ… Signature successfully added to invoice PDF')
       } else {
-        console.warn('⚠️ Signature data URL missing base64 data, skipping')
+        console.warn('âš ï¸ Signature data URL missing base64 data, skipping')
       }
     } catch (err) {
-      console.warn('⚠️ Error validating signature data URL, skipping:', err)
+      console.warn('âš ï¸ Error validating signature data URL, skipping:', err)
     }
   } else if (invoice.signatureBuffer) {
-    console.warn('⚠️ Signature buffer provided but could not be converted to data URL')
+    console.warn('âš ï¸ Signature buffer provided but could not be converted to data URL')
   }
 
   // Validate and add platform logo
@@ -336,10 +336,10 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       if (base64Match && base64Match[1] && base64Match[1].length > 0) {
         images.platformLogo = platformLogoDataUrl
       } else {
-        console.warn('⚠️ Platform logo data URL missing base64 data, skipping')
+        console.warn('âš ï¸ Platform logo data URL missing base64 data, skipping')
       }
     } catch (err) {
-      console.warn('⚠️ Error validating platform logo data URL, skipping:', err)
+      console.warn('âš ï¸ Error validating platform logo data URL, skipping:', err)
     }
   }
 
@@ -360,7 +360,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   // Optional support line (avoid showing "null")
   const supportLine =
     invoice.supportEmail && invoice.supportEmail.trim().length > 0
-      ? `• For support contact: ${invoice.supportEmail}`
+      ? `â€¢ For support contact: ${invoice.supportEmail}`
       : null
 
   // -------------------
@@ -699,7 +699,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
           stack: [
             paymentIndicator,
             {
-              text: badgeIsCOD ? 'Payable on Delivery' : 'Prepaid · Paid',
+              text: badgeIsCOD ? 'Payable on Delivery' : 'Prepaid Â· Paid',
               fontSize: 9,
               color: '#000',
               alignment: 'center',
@@ -911,7 +911,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   // Thermal Layout
   // -------------------
   const contentThermal: any[] = [
-    { text: invoice.companyName ?? 'ChoiceMe', alignment: 'center', bold: true },
+    { text: invoice.companyName ?? 'ChoiceMee', alignment: 'center', bold: true },
     { text: 'TAX INVOICE', alignment: 'center', bold: true, margin: [0, 2, 0, 2] },
     {
       text: 'ORIGINAL FOR RECIPIENT',
@@ -1015,7 +1015,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       ? { image: 'platformLogo', width: 40, alignment: 'center', margin: [0, 4, 0, 0] }
       : null,
     {
-      text: 'Powered by ChoiceMe',
+      text: 'Powered by ChoiceMee',
       alignment: 'center',
       italics: true,
       margin: [0, 4, 0, 0],
@@ -1079,10 +1079,10 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
     },
   }
 
-  // Final safety: Helvetica can render ₹ incorrectly in some environments.
+  // Final safety: Helvetica can render â‚¹ incorrectly in some environments.
   // Normalize any remaining rupee glyphs in all PDF text nodes.
   const normalizeRupeeGlyphs = (node: any): any => {
-    if (typeof node === 'string') return node.replace(/₹/g, 'Rs.')
+    if (typeof node === 'string') return node.replace(/â‚¹/g, 'Rs.')
     if (Array.isArray(node)) return node.map(normalizeRupeeGlyphs)
     if (node && typeof node === 'object') {
       for (const key of Object.keys(node)) {
@@ -1101,7 +1101,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       pdfDoc.on('data', (chunk) => chunks.push(chunk))
       pdfDoc.on('end', () => resolve(Buffer.concat(chunks)))
       pdfDoc.on('error', (err) => {
-        console.error('❌ PDF generation error:', err)
+        console.error('âŒ PDF generation error:', err)
         // Provide more helpful error message
         if (err && typeof err === 'object' && 'message' in err) {
           const errorMsg = (err as any).message || String(err)
@@ -1120,7 +1120,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       })
       pdfDoc.end()
     } catch (err: any) {
-      console.error('❌ Error creating PDF document:', err)
+      console.error('âŒ Error creating PDF document:', err)
       reject(new Error(`Failed to create invoice PDF: ${err?.message || String(err)}`))
     }
   })
@@ -1202,3 +1202,5 @@ export const getInvoicesService = async ({
     data,
   }
 }
+
+

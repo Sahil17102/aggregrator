@@ -153,7 +153,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       const delhivery = new DelhiveryService()
       const delhiveryResp = await delhivery.createWarehouse({
         name: pickupAddr.addressNickname ?? pickupAddr.contactName ?? 'Default Warehouse',
-        registered_name: 'ChoiceMe',
+        registered_name: 'ChoiceMee',
         phone: pickupAddr.contactPhone,
         email: pickupAddr.contactEmail ?? '',
         address: pickupAddressText || pickupAddr.addressLine1,
@@ -225,7 +225,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       const deliveryOne = new DeliveryOneService()
       await deliveryOne.createWarehouse({
         name: pickupAddr.addressNickname ?? pickupAddr.contactName ?? 'Default Warehouse',
-        registered_name: 'ChoiceMe',
+        registered_name: 'ChoiceMee',
         phone: pickupAddr.contactPhone,
         email: pickupAddr.contactEmail ?? '',
         address: pickupAddressText || pickupAddr.addressLine1,
@@ -257,7 +257,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       }
       const payload = {
         alias,
-        contactName: pickupAddr.contactName || 'ChoiceMe',
+        contactName: pickupAddr.contactName || 'ChoiceMee',
         phone: Number(phoneDigits) || 0,
         email: pickupAddr.contactEmail || '',
         addressLine1: pickupAddr.addressLine1,
@@ -268,7 +268,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
         country: (pickupAddr.country || 'India').toUpperCase(),
         geo,
         returnAddress: {
-          contactName: pickupAddr.contactName || 'ChoiceMe',
+          contactName: pickupAddr.contactName || 'ChoiceMee',
           phone: Number(phoneDigits) || 0,
           addressLine1: pickupAddr.addressLine1,
           addressLine2: pickupAddr.addressLine2 || '',
@@ -535,3 +535,4 @@ export async function getPickupAddressesService(
 
   return { data: data as unknown as HydratedPickupAddress[], totalCount }
 }
+

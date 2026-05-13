@@ -1,6 +1,6 @@
-# ChoiceMe Main
+﻿# ChoiceMee Main
 
-Monorepo for the ChoiceMe admin dashboard, client portal, and backend API.
+Monorepo for the ChoiceMee admin dashboard, client portal, and backend API.
 
 ## Repository Layout
 
@@ -21,3 +21,5 @@ Monorepo for the ChoiceMe admin dashboard, client portal, and backend API.
 - Railway backend: root `apps/backend`, build `npm install && npm run build`, start `npm start`.
 
 Keep production environment variables and secrets in the hosting providers. Do not commit `.env` files.
+
+

@@ -1,4 +1,4 @@
-import { Box, Link, List, ListItem, ListItemText, Typography } from '@mui/material'
+﻿import { Box, Link, List, ListItem, ListItemText, Typography } from '@mui/material'
 import PageHeading from '../../components/UI/heading/PageHeading'
 
 const PrivacyPolicy = () => {
@@ -18,7 +18,7 @@ const PrivacyPolicy = () => {
         <ListItem sx={{ display: 'list-item' }}>
           <ListItemText
             primary={
-              'Definitions: “Personal Information” means any data that can identify you directly or indirectly. “Sensitive Personal Data” includes passwords, payment details, health data, and biometric information (excluding publicly available data or that disclosed under legal obligations).'
+              'Definitions: â€œPersonal Informationâ€ means any data that can identify you directly or indirectly. â€œSensitive Personal Dataâ€ includes passwords, payment details, health data, and biometric information (excluding publicly available data or that disclosed under legal obligations).'
             }
           />
         </ListItem>
@@ -53,7 +53,7 @@ const PrivacyPolicy = () => {
               <>
                 Your Privacy Rights: You may review, update, or correct your details, or withdraw
                 consent by contacting us at{' '}
-                <Link href="mailto:ops@choiceme.com">ops@choiceme.com</Link>.
+                <Link href="mailto:ops@choicemee.com">ops@choicemee.com</Link>.
               </>
             }
           />
@@ -73,10 +73,10 @@ const PrivacyPolicy = () => {
               <>
                 Grievance Officer: If you have queries or complaints, reach out to us at{' '}
                 <a
-                  href="mailto:ops@choiceme.com"
+                  href="mailto:ops@choicemee.com"
                   style={{ color: '#0052CC', textDecoration: 'none' }}
                 >
-                  ops@choiceme.com
+                  ops@choicemee.com
                 </a>
                 .
               </>
@@ -89,3 +89,4 @@ const PrivacyPolicy = () => {
 }
 
 export default PrivacyPolicy
+

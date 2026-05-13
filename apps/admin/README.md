@@ -1,6 +1,6 @@
-# ChoiceMe Logistics Admin
+﻿# ChoiceMee Logistics Admin
 
-React and Chakra UI admin workspace for managing ChoiceMe Logistics operations.
+React and Chakra UI admin workspace for managing ChoiceMee Logistics operations.
 
 ## Scripts
 
@@ -10,4 +10,6 @@ React and Chakra UI admin workspace for managing ChoiceMe Logistics operations.
 
 ## Brand
 
-The admin theme mirrors the client app brand tokens: navy ink, orange primary actions, pale blue surfaces, Poppins typography, and the ChoiceMe Logistics logo from `public/brand/choiceme-logo.png`.
+The admin theme mirrors the client app brand tokens: navy ink, orange primary actions, pale blue surfaces, Poppins typography, and the ChoiceMee Logistics logo from `public/brand/choiceme-logo.png`.
+
+

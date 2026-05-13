@@ -1,19 +1,19 @@
-export const sampleUsers = [
+﻿export const sampleUsers = [
   {
     name: "Operations Manager",
     email: "ops@choicemecourier.com",
-    password: "ChoiceMe@123",
+    password: "ChoiceMee@123",
     role: "admin",
     phone: "9906690088",
-    company: "ChoiceMe Courier",
+    company: "ChoiceMee Courier",
   },
   {
     name: "Dispatch Analyst",
     email: "dispatch@choicemecourier.com",
-    password: "ChoiceMe@123",
+    password: "ChoiceMee@123",
     role: "manager",
     phone: "9906690088",
-    company: "ChoiceMe Courier",
+    company: "ChoiceMee Courier",
   },
 ];
 
@@ -39,7 +39,7 @@ export function buildSampleShipments(userId) {
         {
           key: "placed",
           title: "Order placed",
-          note: "Shipment booked on the ChoiceMe dashboard",
+          note: "Shipment booked on the ChoiceMee dashboard",
           location: "Baramulla Hub",
           time: new Date("2026-04-09T09:12:00+05:30"),
         },
@@ -123,3 +123,5 @@ export const sampleContacts = [
     source: "landing-page",
   },
 ];
+
+

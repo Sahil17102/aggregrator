@@ -1,4 +1,4 @@
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
+﻿import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
 import {
   Box,
   Button,
@@ -212,7 +212,7 @@ function SignIn() {
             </Heading>
 
             <Text color={textSecondary} fontSize="sm" maxW="420px" lineHeight="1.8">
-              Review orders, monitor activity, and manage operations from a cleaner ChoiceMe admin
+              Review orders, monitor activity, and manage operations from a cleaner ChoiceMee admin
               workspace with stronger hierarchy and a calmer daily rhythm.
             </Text>
           </VStack>
@@ -359,3 +359,5 @@ function SignIn() {
 }
 
 export default SignIn
+
+

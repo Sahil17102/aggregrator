@@ -1,4 +1,4 @@
-const PINCODE_REGEX = /^\d{6}$/;
+﻿const PINCODE_REGEX = /^\d{6}$/;
 
 const courierProfiles = [
   { name: "ChoiceMee Priority", multiplier: 1.18, eta: "1-2 days", accent: "Best for urgent orders" },
@@ -125,3 +125,5 @@ export function formatWeight(value) {
 
   return `${Number(value).toFixed(2)} kg`;
 }
+
+

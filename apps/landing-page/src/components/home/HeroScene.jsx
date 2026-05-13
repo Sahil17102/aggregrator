@@ -1,4 +1,4 @@
-import {
+﻿import {
   Inventory2Rounded,
   LocalShippingRounded,
   LocationOnRounded,
@@ -24,7 +24,7 @@ export default function HeroScene() {
       >
         <div className="hero-scene__store-top">
           <StorefrontRounded />
-          <span>ChoiceMe Courier</span>
+          <span>ChoiceMee Courier</span>
         </div>
         <div className="hero-scene__store-body">
           <div className="hero-scene__door" />
@@ -104,3 +104,5 @@ export default function HeroScene() {
     </div>
   );
 }
+
+

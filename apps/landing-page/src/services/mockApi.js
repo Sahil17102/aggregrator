@@ -1,4 +1,4 @@
-import { trackingSamples } from "../data/siteData";
+﻿import { trackingSamples } from "../data/siteData";
 import { buildRateSummary, generateCourierQuotes } from "../utils/calculators";
 
 const validCredentials = {
@@ -79,3 +79,5 @@ export async function mockSubmitContact(payload) {
     message: "Your inquiry has been queued for the ChoiceMee team.",
   };
 }
+
+

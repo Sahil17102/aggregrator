@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Alert, Button, Chip, Paper, TextField, Typography } from "@mui/material";
 import MotionFade from "../components/common/MotionFade";
 import PageHero from "../components/common/PageHero";
@@ -72,7 +72,7 @@ export default function LoginPage() {
                 <div className="login-session">
                   <Typography variant="body1">{session.user.name}</Typography>
                   <Typography variant="body2">
-                    {session.user.email} • {session.user.role}
+                    {session.user.email} â€¢ {session.user.role}
                   </Typography>
                   <Button className="button-secondary" onClick={signOut} variant="outlined">
                     Sign out
@@ -100,3 +100,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+

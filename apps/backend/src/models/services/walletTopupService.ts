@@ -63,7 +63,7 @@ export async function createWalletOrder(
     amount: razorpayOrder.amount,
     currency: razorpayOrder.currency,
     key: keyId,
-    name: 'ChoiceMe',
+    name: 'ChoiceMee',
     description: 'Wallet Recharge',
     prefill: {
       name: details.name,
@@ -144,3 +144,4 @@ export async function markTopupProcessing(orderId: string, paymentId: string) {
     })
     .where(and(eq(walletTopups.gatewayOrderId, orderId), eq(walletTopups.status, 'created')))
 }
+

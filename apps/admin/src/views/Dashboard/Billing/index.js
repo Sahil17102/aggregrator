@@ -1,4 +1,4 @@
-// Chakra imports
+﻿// Chakra imports
 import { Box, Flex, Grid, Icon } from "@chakra-ui/react";
 // Assets
 import BackgroundCard1 from "assets/img/BackgroundCard1.png";
@@ -34,7 +34,7 @@ function Billing() {
             gap='26px'>
             <CreditCard
               backgroundImage={BackgroundCard1}
-              title={"ChoiceMe Logistics"}
+              title={"ChoiceMee Logistics"}
               number={"7812 2139 0823 XXXX"}
               validity={{
                 name: "VALID THRU",
@@ -94,3 +94,5 @@ function Billing() {
 }
 
 export default Billing;
+
+

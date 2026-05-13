@@ -1,4 +1,4 @@
-import { alpha, Box, Stack, Typography } from '@mui/material'
+﻿import { alpha, Box, Stack, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
 import React from 'react'
 import { brand, brandGradients } from '../../theme/brand'
@@ -53,7 +53,7 @@ const CarrierLogos: React.FC = () => {
             fontSize: '0.95rem',
           }}
         >
-          Connected carriers and commerce brands moving inside one ChoiceMe shipping flow.
+          Connected carriers and commerce brands moving inside one ChoiceMee shipping flow.
         </Typography>
       </Stack>
 
@@ -115,3 +115,4 @@ const CarrierLogos: React.FC = () => {
 }
 
 export default CarrierLogos
+

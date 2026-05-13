@@ -1,4 +1,4 @@
-import { Stack, Typography, alpha } from '@mui/material'
+﻿import { Stack, Typography, alpha } from '@mui/material'
 import { motion } from 'framer-motion'
 import { TbBolt } from 'react-icons/tb'
 import { brand } from '../../theme/brand'
@@ -48,7 +48,7 @@ const SectionHeading: React.FC<SectionHeadingProps> = ({
               letterSpacing: '0.16em',
             }}
           >
-            ChoiceMe workflow
+            ChoiceMee workflow
           </Typography>
           <Typography
             variant="h3"
@@ -84,3 +84,5 @@ const SectionHeading: React.FC<SectionHeadingProps> = ({
 }
 
 export default SectionHeading
+
+

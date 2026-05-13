@@ -1,4 +1,4 @@
-import { alpha, Box, Button, Stack, Typography } from '@mui/material'
+﻿import { alpha, Box, Button, Stack, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -107,7 +107,7 @@ export default function Home() {
     },
     {
       title: 'Recharge wallet',
-      note: 'Add balance so bookings and pickup flows don’t stall.',
+      note: 'Add balance so bookings and pickup flows donâ€™t stall.',
       path: '/billing/wallet_transactions',
       icon: <TbCreditCard size={19} />,
       tone: brand.sky,
@@ -157,7 +157,7 @@ export default function Home() {
                     mb: 1,
                   }}
                 >
-                  ChoiceMe shipping workspace
+                  ChoiceMee shipping workspace
                 </Typography>
                 <Typography
                   sx={{
@@ -413,7 +413,7 @@ export default function Home() {
       <Box>
         <SectionHeading
           title="Pickup Queue"
-          subtitle="Track the live pickup pipeline so dispatch doesn’t fall behind."
+          subtitle="Track the live pickup pipeline so dispatch doesnâ€™t fall behind."
           icon={<TbTruckDelivery size={22} />}
           color={TEAL}
         />
@@ -428,3 +428,5 @@ export default function Home() {
     </Stack>
   )
 }
+
+

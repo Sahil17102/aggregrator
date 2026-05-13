@@ -1743,7 +1743,7 @@ export class DeliveryOneService {
       .map((part) => sanitizeString(part))
       .filter(Boolean)
       .join(', ')
-    const sellerName = sanitizeString(params.company?.name || pickup.name || 'ChoiceMe')
+    const sellerName = sanitizeString(params.company?.name || pickup.name || 'ChoiceMee')
     const sellerGst = sanitizeString(params.company?.gst || pickup.gst_number || '')
     const returnAddress =
       rto && (params.is_rto_different === 'yes' || paymentMode === 'Pickup' || paymentMode === 'REPL')
@@ -2162,3 +2162,4 @@ export class DeliveryOneService {
     }
   }
 }
+

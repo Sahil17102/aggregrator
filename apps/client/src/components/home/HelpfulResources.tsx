@@ -1,4 +1,4 @@
-import { Box, Button, Card, Grid, Stack, Typography, useMediaQuery, useTheme } from '@mui/material'
+﻿import { Box, Button, Card, Grid, Stack, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import StatusChip from '../UI/chip/StatusChip'
 import PageHeading from '../UI/heading/PageHeading'
@@ -12,9 +12,9 @@ const HelpfulResources = () => {
     {
       image: '/images/blog.png',
       title: 'Explore Our Blog',
-      description: 'Get insights, product updates, and how-to guides to stay̦ ahead.',
+      description: 'Get insights, product updates, and how-to guides to stayÌ¦ ahead.',
       buttonText: 'Read Blogs',
-      onClick: () => window.open('https://www.choiceme.com/blogs', '_blank'),
+      onClick: () => window.open('https://www.choicemee.com/blogs', '_blank'),
     },
     {
       image: '/images/keyboard.png',
@@ -148,3 +148,4 @@ const HelpfulResources = () => {
 }
 
 export default HelpfulResources
+

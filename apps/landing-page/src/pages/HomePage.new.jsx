@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star } from "@mui/icons-material";
 import { FEATURES, TESTIMONIALS, STATS, HOW_IT_WORKS, COURIER_PARTNERS } from "../config/branding";
@@ -24,7 +24,7 @@ const itemVariants = {
 
 export default function HomePage() {
   useEffect(() => {
-    document.title = "ChoiceMe Courier - Fastest Shipping Across India";
+    document.title = "ChoiceMee Courier - Fastest Shipping Across India";
   }, []);
 
   return (
@@ -38,7 +38,7 @@ export default function HomePage() {
       >
         <motion.div className="hero-content" variants={itemVariants}>
           <div className="hero-badge">
-            <span>🚀 Welcome to Premium Logistics</span>
+            <span>ðŸš€ Welcome to Premium Logistics</span>
           </div>
 
           <h1 className="hero-title">
@@ -46,7 +46,7 @@ export default function HomePage() {
           </h1>
 
           <p className="hero-subtitle">
-            Ship Smarter. Deliver Faster. Trust ChoiceMe Courier for reliable
+            Ship Smarter. Deliver Faster. Trust ChoiceMee Courier for reliable
             logistics solutions with real-time tracking and transparent pricing.
           </p>
 
@@ -65,9 +65,9 @@ export default function HomePage() {
             variants={itemVariants}
           >
             {[
-              { label: "99% On-Time", icon: "✓" },
-              { label: "24/7 Support", icon: "🤝" },
-              { label: "Pan India Coverage", icon: "🗺️" },
+              { label: "99% On-Time", icon: "âœ“" },
+              { label: "24/7 Support", icon: "ðŸ¤" },
+              { label: "Pan India Coverage", icon: "ðŸ—ºï¸" },
             ].map((badge, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <span className="text-accent-500 font-bold text-lg">{badge.icon}</span>
@@ -100,7 +100,7 @@ export default function HomePage() {
               >
                 {/* Box Interior */}
                 <div className="absolute inset-8 bg-white/20 rounded-lg flex items-center justify-center">
-                  <span className="text-6xl">📦</span>
+                  <span className="text-6xl">ðŸ“¦</span>
                 </div>
               </motion.div>
 
@@ -110,7 +110,7 @@ export default function HomePage() {
                 animate={{ x: [0, 30, 0], y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity }}
               >
-                <div className="text-6xl">🚚</div>
+                <div className="text-6xl">ðŸšš</div>
               </motion.div>
 
               {/* Map Pin */}
@@ -119,7 +119,7 @@ export default function HomePage() {
                 animate={{ scale: [1, 1.2, 1], rotate: [0, 5, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
               >
-                <div className="text-5xl">📍</div>
+                <div className="text-5xl">ðŸ“</div>
               </motion.div>
 
               {/* Cursor/Route */}
@@ -304,7 +304,7 @@ export default function HomePage() {
           <motion.div className="mb-12" variants={itemVariants}>
             <h2 className="section-title">What Our Customers Say</h2>
             <p className="section-subtitle">
-              Real reviews from businesses using ChoiceMe Courier
+              Real reviews from businesses using ChoiceMee Courier
             </p>
           </motion.div>
 
@@ -354,7 +354,7 @@ export default function HomePage() {
           <motion.div variants={itemVariants}>
             <h2 className="section-title text-white">Ready to Ship?</h2>
             <p className="section-subtitle text-white/90 max-w-2xl mx-auto">
-              Join thousands of businesses that trust ChoiceMe Courier for their
+              Join thousands of businesses that trust ChoiceMee Courier for their
               shipping needs
             </p>
             <motion.a
@@ -371,3 +371,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+

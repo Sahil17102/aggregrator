@@ -36,7 +36,7 @@ export const DEFAULT_PREFERENCES = {
     otherCharges: true,
   },
   brand_logo: null,
-  powered_by: 'ChoiceMe',
+  powered_by: 'ChoiceMee',
   created_at: new Date(),
   updated_at: new Date(),
 }
@@ -82,3 +82,4 @@ export const labelPreferencesService = {
     }
   },
 }
+

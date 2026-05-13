@@ -1,6 +1,6 @@
-## Summary
+﻿## Summary
 
-Describe the issue clearly and include the affected ChoiceMe Logistics area.
+Describe the issue clearly and include the affected ChoiceMee Logistics area.
 
 ## Steps To Reproduce
 
@@ -21,3 +21,4 @@ What happened instead?
 - App:
 - Browser:
 - URL:
+

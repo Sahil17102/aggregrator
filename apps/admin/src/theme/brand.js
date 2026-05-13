@@ -1,4 +1,4 @@
-export const brand = {
+﻿export const brand = {
   ink: '#0D1B4D',
   inkSoft: '#607397',
   page: '#EEF3FB',
@@ -17,10 +17,10 @@ export const brand = {
 }
 
 export const brandIdentity = {
-  name: 'ChoiceMe Logistics',
-  shortName: 'ChoiceMe',
+  name: 'ChoiceMee Logistics',
+  shortName: 'ChoiceMee',
   tagline: 'Your Trust, Our Commitment.',
-  supportEmail: 'ops@choiceme.com',
+  supportEmail: 'ops@choicemee.com',
   supportPhone: '9906690088',
   supportAddress: 'Baramulla, Jammu & Kashmir, 193123',
   logoPath: '/brand/choiceme-logo.png',
@@ -42,3 +42,5 @@ export const brandGradients = {
   analytics:
     'linear-gradient(145deg, rgba(255,255,255,0.98) 0%, rgba(235,241,249,0.95) 56%, rgba(255,237,220,0.88) 100%)',
 }
+
+

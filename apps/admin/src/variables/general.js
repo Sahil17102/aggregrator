@@ -1,4 +1,4 @@
-// Assets
+﻿// Assets
 import avatar1 from "assets/img/avatars/avatar1.png";
 import avatar2 from "assets/img/avatars/avatar2.png";
 import avatar3 from "assets/img/avatars/avatar3.png";
@@ -32,7 +32,7 @@ import { SiDropbox } from "react-icons/si";
 export const dashboardTableData = [
   {
     logo: AdobexdLogo,
-    name: "ChoiceMe Logistics Version",
+    name: "ChoiceMee Logistics Version",
     members: [avatar1, avatar2, avatar3, avatar4, avatar5],
     budget: "$14,000",
     progression: 60,
@@ -114,42 +114,42 @@ export const timelineData = [
 export const rtlDashboardTableData = [
   {
     logo: AdobexdLogo,
-    name: "Ù†Ø³Ø®Ø© ChoiceMe Logistics",
+    name: "Ã™â€ Ã˜Â³Ã˜Â®Ã˜Â© ChoiceMee Logistics",
     members: [avatar1, avatar2, avatar3, avatar4, avatar5],
     budget: "$14,000",
     progression: 60,
   },
   {
     logo: AtlassianLogo,
-    name: "Ø¥Ø¶Ø§ÙØ© Ù…Ø³Ø§Ø± Ø§Ù„ØªÙ‚Ø¯Ù…",
+    name: "Ã˜Â¥Ã˜Â¶Ã˜Â§Ã™ÂÃ˜Â© Ã™â€¦Ã˜Â³Ã˜Â§Ã˜Â± Ã˜Â§Ã™â€žÃ˜ÂªÃ™â€šÃ˜Â¯Ã™â€¦",
     members: [avatar3, avatar2],
     budget: "$3,000",
     progression: 10,
   },
   {
     logo: SlackLogo,
-    name: "Ø¥ØµÙ„Ø§Ø­ Ø£Ø®Ø·Ø§Ø¡ Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ",
+    name: "Ã˜Â¥Ã˜ÂµÃ™â€žÃ˜Â§Ã˜Â­ Ã˜Â£Ã˜Â®Ã˜Â·Ã˜Â§Ã˜Â¡ Ã˜Â§Ã™â€žÃ™â€ Ã˜Â¸Ã˜Â§Ã™â€¦ Ã˜Â§Ã™â€žÃ˜Â£Ã˜Â³Ã˜Â§Ã˜Â³Ã™Å ",
     members: [avatar10, avatar4],
-    budget: "ØºÙŠØ± Ù…Ø¶Ø¨ÙˆØ·",
+    budget: "Ã˜ÂºÃ™Å Ã˜Â± Ã™â€¦Ã˜Â¶Ã˜Â¨Ã™Ë†Ã˜Â·",
     progression: 100,
   },
   {
     logo: SpotifyLogo,
-    name: "Ø¥Ø·Ù„Ø§Ù‚ ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„Ù‡Ø§ØªÙ Ø§Ù„Ù…Ø­Ù…ÙˆÙ„ Ø§Ù„Ø®Ø§Øµ Ø¨Ù†Ø§",
+    name: "Ã˜Â¥Ã˜Â·Ã™â€žÃ˜Â§Ã™â€š Ã˜ÂªÃ˜Â·Ã˜Â¨Ã™Å Ã™â€š Ã˜Â§Ã™â€žÃ™â€¡Ã˜Â§Ã˜ÂªÃ™Â Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â­Ã™â€¦Ã™Ë†Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â®Ã˜Â§Ã˜Âµ Ã˜Â¨Ã™â€ Ã˜Â§",
     members: [avatar2, avatar3, avatar7, avatar8],
     budget: "$32,000",
     progression: 100,
   },
   {
     logo: JiraLogo,
-    name: "Ø£Ø¶Ù ØµÙØ­Ø© Ø§Ù„ØªØ³Ø¹ÙŠØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©",
+    name: "Ã˜Â£Ã˜Â¶Ã™Â Ã˜ÂµÃ™ÂÃ˜Â­Ã˜Â© Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â³Ã˜Â¹Ã™Å Ã˜Â± Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯Ã˜Â©",
     members: [avatar10, avatar3, avatar7, avatar2, avatar8],
     budget: "$400",
     progression: 25,
   },
   {
     logo: InvisionLogo,
-    name: "Ø¥Ø¹Ø§Ø¯Ø© ØªØµÙ…ÙŠÙ… Ù…ØªØ¬Ø± Ø¬Ø¯ÙŠØ¯ Ø¹Ù„Ù‰ Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª",
+    name: "Ã˜Â¥Ã˜Â¹Ã˜Â§Ã˜Â¯Ã˜Â© Ã˜ÂªÃ˜ÂµÃ™â€¦Ã™Å Ã™â€¦ Ã™â€¦Ã˜ÂªÃ˜Â¬Ã˜Â± Ã˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â¥Ã™â€ Ã˜ÂªÃ˜Â±Ã™â€ Ã˜Âª",
     members: [avatar9, avatar3, avatar2],
     budget: "$7,600",
     progression: 40,
@@ -159,37 +159,37 @@ export const rtlDashboardTableData = [
 export const rtlTimelineData = [
   {
     logo: FaBell,
-    title: "$2400, ØªØºÙŠÙŠØ±Ø§Øª ÙÙŠ Ø§Ù„ØªØµÙ…ÙŠÙ…",
+    title: "$2400, Ã˜ÂªÃ˜ÂºÃ™Å Ã™Å Ã˜Â±Ã˜Â§Ã˜Âª Ã™ÂÃ™Å  Ã˜Â§Ã™â€žÃ˜ÂªÃ˜ÂµÃ™â€¦Ã™Å Ã™â€¦",
     date: "22 DEC 7:20 PM",
     color: "teal.300",
   },
   {
     logo: FaHtml5,
-    title: "Ø·Ù„Ø¨ Ø¬Ø¯ÙŠØ¯ #4219423",
+    title: "Ã˜Â·Ã™â€žÃ˜Â¨ Ã˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ #4219423",
     date: "21 DEC 11:21 PM",
     color: "orange",
   },
   {
     logo: FaShoppingCart,
-    title: "Ù…Ø¯ÙÙˆØ¹Ø§Øª Ø§Ù„Ø®Ø§Ø¯Ù… Ù„Ø´Ù‡Ø± Ø£Ø¨Ø±ÙŠÙ„",
+    title: "Ã™â€¦Ã˜Â¯Ã™ÂÃ™Ë†Ã˜Â¹Ã˜Â§Ã˜Âª Ã˜Â§Ã™â€žÃ˜Â®Ã˜Â§Ã˜Â¯Ã™â€¦ Ã™â€žÃ˜Â´Ã™â€¡Ã˜Â± Ã˜Â£Ã˜Â¨Ã˜Â±Ã™Å Ã™â€ž",
     date: "21 DEC 9:28 PM",
     color: "blue.400",
   },
   {
     logo: FaCreditCard,
-    title: "ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø¨Ø·Ø§Ù‚Ø© Ø¬Ø¯ÙŠØ¯Ø© Ù„Ù„Ø·Ù„Ø¨ #3210145",
+    title: "Ã˜ÂªÃ™â€¦Ã˜Âª Ã˜Â¥Ã˜Â¶Ã˜Â§Ã™ÂÃ˜Â© Ã˜Â¨Ã˜Â·Ã˜Â§Ã™â€šÃ˜Â© Ã˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯Ã˜Â© Ã™â€žÃ™â€žÃ˜Â·Ã™â€žÃ˜Â¨ #3210145",
     date: "20 DEC 3:52 PM",
     color: "orange.300",
   },
   {
     logo: SiDropbox,
-    title: "ÙØªØ­ Ø§Ù„Ø­Ø²Ù… Ù…Ù† Ø£Ø¬Ù„ Ø§Ù„ØªÙ†Ù…ÙŠØ©",
+    title: "Ã™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â²Ã™â€¦ Ã™â€¦Ã™â€  Ã˜Â£Ã˜Â¬Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ™â€ Ã™â€¦Ã™Å Ã˜Â©",
     date: "19 DEC 11:35 PM",
     color: "purple",
   },
   {
     logo: AdobexdLogo,
-    title: "Ø·Ù„Ø¨ Ø¬Ø¯ÙŠØ¯ #9851258",
+    title: "Ã˜Â·Ã™â€žÃ˜Â¨ Ã˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ #9851258",
     date: "18 DEC 4:41 PM",
   },
 ];
@@ -198,7 +198,7 @@ export const tablesTableData = [
   {
     logo: avatar1,
     name: "Esthera Jackson",
-    email: "ops@choiceme.com",
+    email: "ops@choicemee.com",
     subdomain: "Manager",
     domain: "Organization",
     status: "Online",
@@ -207,7 +207,7 @@ export const tablesTableData = [
   {
     logo: avatar2,
     name: "Alexa Liras",
-    email: "ops@choiceme.com",
+    email: "ops@choicemee.com",
     subdomain: "Programmer",
     domain: "Developer",
     status: "Offline",
@@ -216,7 +216,7 @@ export const tablesTableData = [
   {
     logo: avatar3,
     name: "Laurent Michael",
-    email: "ops@choiceme.com",
+    email: "ops@choicemee.com",
     subdomain: "Executive",
     domain: "Projects",
     status: "Online",
@@ -225,7 +225,7 @@ export const tablesTableData = [
   {
     logo: avatar4,
     name: "Freduardo Hill",
-    email: "ops@choiceme.com",
+    email: "ops@choicemee.com",
     subdomain: "Manager",
     domain: "Organization",
     status: "Online",
@@ -234,7 +234,7 @@ export const tablesTableData = [
   {
     logo: avatar5,
     name: "Daniel Thomas",
-    email: "ops@choiceme.com",
+    email: "ops@choicemee.com",
     subdomain: "Programmer",
     domain: "Developer",
     status: "Offline",
@@ -243,7 +243,7 @@ export const tablesTableData = [
   {
     logo: avatar7,
     name: "Mark Wilson",
-    email: "ops@choiceme.com",
+    email: "ops@choicemee.com",
     subdomain: "Designer",
     domain: "UI/UX Design",
     status: "Offline",
@@ -254,7 +254,7 @@ export const tablesTableData = [
 export const tablesProjectData = [
   {
     logo: AdobexdLogo,
-    name: "ChoiceMe Logistics Version",
+    name: "ChoiceMee Logistics Version",
     budget: "$14,000",
     status: "Working",
     progression: 60,
@@ -389,3 +389,5 @@ export const olderTransactions = [
     logo: FaArrowDown,
   },
 ];
+
+

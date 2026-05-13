@@ -1,4 +1,4 @@
-import { alpha } from '@mui/material/styles'
+﻿import { alpha } from '@mui/material/styles'
 
 export const brand = {
   ink: '#0D1B4D',
@@ -24,10 +24,10 @@ export const brandFonts = {
 }
 
 export const brandIdentity = {
-  name: 'ChoiceMe Logistics',
-  shortName: 'ChoiceMe',
+  name: 'ChoiceMee Logistics',
+  shortName: 'ChoiceMee',
   tagline: 'Your Trust, Our Commitment.',
-  supportEmail: 'ops@choiceme.com',
+  supportEmail: 'ops@choicemee.com',
   supportPhone: '9906690088',
   supportAddress: 'Baramulla, Jammu & Kashmir, 193123',
 }
@@ -51,3 +51,5 @@ export const brandEffects = {
   focusBorder: `1px solid ${alpha(brand.ink, 0.34)}`,
   mutedBorder: `1px solid ${alpha(brand.ink, 0.08)}`,
 }
+
+

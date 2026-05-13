@@ -1,4 +1,4 @@
-import cookieParser from 'cookie-parser'
+﻿import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
@@ -77,7 +77,7 @@ const env = resolveRuntimeEnv()
 dotenv.config({ path: path.resolve(__dirname, `../.env.${env}`) })
 
 const app = express()
-const server = http.createServer(app) // âœ… HTTP server for socket.io
+const server = http.createServer(app) // Ã¢Å“â€¦ HTTP server for socket.io
 
 // Init socket.io server
 initSocketServer(server)
@@ -108,7 +108,7 @@ const localOrigins = [
   'https://admin.choiceme.com',
   'https://app.choiceme.com',
   'https://choiceme.com',
-  'https://www.choiceme.com',
+  'https://www.choicemee.com',
 ]
 const configuredAllowedOrigins = `${process.env.CORS_ALLOWED_ORIGINS || ''},${process.env.CORS_ORIGINS || ''}`
   .split(',')
@@ -150,14 +150,14 @@ app.use(
 app.get('/', (_req, res) => {
   res.status(200).json({
     ok: true,
-    service: 'ChoiceMe Logistics backend',
+    service: 'ChoiceMee Logistics backend',
   })
 })
 
 app.get('/health', (_req, res) => {
   res.status(200).json({
     ok: true,
-    service: 'ChoiceMe Logistics backend',
+    service: 'ChoiceMee Logistics backend',
   })
 })
 
@@ -245,4 +245,6 @@ app.post('/api/webhook/delhivery/scan', express.json(), delhiveryScanPushHandler
 app.post('/api/webhook/delhivery/document', express.json(), delhiveryDocumentPushHandler) // Document Push (POD, Sorter Image, QC Image)
 // Legacy unified endpoint (auto-detects type) - kept for backward compatibility
 app.post('/api/webhook/delhivery/order', express.json(), delhiveryWebhookHandler)
-export { app, server } // âœ… named exports
+export { app, server } // Ã¢Å“â€¦ named exports
+
+

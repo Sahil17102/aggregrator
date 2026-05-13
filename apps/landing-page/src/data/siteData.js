@@ -1,4 +1,4 @@
-export const brand = {
+﻿export const brand = {
   name: "ChoiceMee Logistics",
   logoSrc: "/brand/choicemee-logistics-logo.png",
   logoAlt: "ChoiceMee Logistics logo",
@@ -363,3 +363,5 @@ export const socialLinks = [
   { label: "Instagram", href: "https://www.instagram.com/" },
   { label: "Facebook", href: "https://www.facebook.com/" },
 ];
+
+
