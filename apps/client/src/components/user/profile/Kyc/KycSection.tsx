@@ -1,9 +1,42 @@
 import { Box, Skeleton } from '@mui/material'
 import { useState } from 'react'
+import type { CompanyType } from '../../../../types/generic.types'
+import type { KycDetails } from '../../../../types/user.types'
 import { useUserKyc } from '../../../../hooks/User/Kyc/UseKyc'
 import { useUserProfile } from '../../../../hooks/User/useUserProfile'
+import { requiredKycDetails } from '../../../../utils/constants'
 import KycDetailsCard from './KycDetailsCard'
 import KYCVerificationStep from './KycVerificationSection'
+
+const resolveRequiredFields = (kyc?: Partial<KycDetails> | null) => {
+  if (!kyc?.structure) return []
+
+  const config = requiredKycDetails[kyc.structure]
+
+  if (
+    kyc.structure === 'company' &&
+    kyc.companyType &&
+    typeof config === 'object' &&
+    !Array.isArray(config)
+  ) {
+    return config[kyc.companyType as CompanyType] ?? []
+  }
+
+  return Array.isArray(config) ? config : []
+}
+
+const hasValue = (value: unknown) =>
+  typeof value === 'string' ? value.trim().length > 0 : Boolean(value)
+
+const isKycSubmissionComplete = (kyc?: Partial<KycDetails> | null) => {
+  if (!kyc?.structure || kyc.status === 'rejected') return false
+
+  const requiredFields = resolveRequiredFields(kyc)
+
+  if (!hasValue(kyc.selfieUrl)) return false
+
+  return requiredFields.every((field) => hasValue(kyc[field]))
+}
 
 const KycSection = () => {
   // Always fetch the authenticated user's profile inside protected routes
@@ -11,7 +44,7 @@ const KycSection = () => {
   const [editingKyc, setEditingKyc] = useState(false)
   const { data: kycData, isLoading: loadingKyc } = useUserKyc()
 
-  const hasKycDetails = !!kycData?.kyc && Object.keys(kycData.kyc).length > 0
+  const hasKycDetails = isKycSubmissionComplete(kycData?.kyc)
 
   // Once KYC is submitted, always show the details card (even if status is "pending"),
   // and only show the multi-step form when there are no details yet or when explicitly editing.

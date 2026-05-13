@@ -15,6 +15,30 @@ import ImageCaptureStep from './ImageCaptureStep'
 
 const steps = ['Business Structure', 'Selfie', 'Additional Details']
 
+const getInitialStep = (details?: Partial<KycDetails> | null) => {
+  if (!details?.structure || (details.structure === 'company' && !details.companyType)) {
+    return 0
+  }
+
+  if (!details.selfieUrl) {
+    return 1
+  }
+
+  return 2
+}
+
+const isStepReady = (step: number, details?: Partial<KycDetails> | null) => {
+  if (step === 0) {
+    return Boolean(details?.structure) && (details?.structure !== 'company' || Boolean(details?.companyType))
+  }
+
+  if (step === 1) {
+    return Boolean(details?.selfieUrl)
+  }
+
+  return true
+}
+
 const KYCVerificationStep: React.FC<{
   editing?: boolean
   onCancelEdit?: () => void
@@ -39,12 +63,15 @@ const KYCVerificationStep: React.FC<{
 
   // Prefill when editing mode is on
   useEffect(() => {
-    if (editing && existingKyc) {
-      const initial = { ...existingKyc }
-      setKycData(initial)
-      kycDataRef.current = initial
-      if (existingKyc.structure) setIsStepValid(true)
-    }
+    if (!existingKyc) return
+
+    const initial = { ...existingKyc }
+    const nextStep = editing ? 0 : getInitialStep(initial)
+
+    setKycData(initial)
+    kycDataRef.current = initial
+    setActiveStep(nextStep)
+    setIsStepValid(isStepReady(nextStep, initial))
   }, [editing, existingKyc])
 
   const handleBusinessStructureChange = (value: BusinessStructure | CompanyType, key: string) => {
