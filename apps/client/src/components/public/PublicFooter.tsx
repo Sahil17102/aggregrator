@@ -18,6 +18,10 @@ const companyLinks = [
   { label: 'Track Shipment', to: '/tracking' },
 ]
 
+const footerText = '#FFFFFF'
+const footerMuted = alpha('#FFFFFF', 0.78)
+const footerSoft = alpha('#FFFFFF', 0.66)
+
 export default function PublicFooter() {
   return (
     <Box component="footer" sx={{ mt: 10, pb: 4, px: { xs: 2, sm: 3 } }}>
@@ -25,9 +29,10 @@ export default function PublicFooter() {
         <Box
           sx={{
             borderRadius: { xs: '32px', md: '42px' },
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(246,248,252,0.96) 100%)',
-            border: `1px solid ${alpha(brand.ink, 0.08)}`,
-            boxShadow: '0 24px 60px rgba(68, 92, 138, 0.14)',
+            background:
+              'linear-gradient(145deg, #07143D 0%, #0D2A63 48%, #154585 100%)',
+            border: `1px solid ${alpha('#FFFFFF', 0.16)}`,
+            boxShadow: '0 24px 60px rgba(7, 20, 61, 0.28)',
             overflow: 'hidden',
           }}
         >
@@ -42,9 +47,20 @@ export default function PublicFooter() {
           >
             <Stack spacing={1.5}>
               <RouterLink to="/" aria-label={`${brandIdentity.name} home`}>
-                <BrandLogo sx={{ width: { xs: 164, sm: 184 } }} />
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    bgcolor: alpha('#FFFFFF', 0.96),
+                    borderRadius: 2,
+                    px: 1.2,
+                    py: 0.8,
+                    boxShadow: '0 14px 30px rgba(0, 0, 0, 0.18)',
+                  }}
+                >
+                  <BrandLogo sx={{ width: { xs: 148, sm: 166 } }} />
+                </Box>
               </RouterLink>
-              <Typography sx={{ color: brand.inkSoft, lineHeight: 1.75, maxWidth: 360 }}>
+              <Typography sx={{ color: footerMuted, lineHeight: 1.75, maxWidth: 360 }}>
                 {brandIdentity.tagline} Premium shipping infrastructure for teams that want better
                 courier visibility, cleaner rates, and modern delivery experiences.
               </Typography>
@@ -64,11 +80,12 @@ export default function PublicFooter() {
                       width: 40,
                       height: 40,
                       borderRadius: 999,
-                      color: brand.ink,
-                      bgcolor: alpha(brand.ink, 0.06),
+                      color: footerText,
+                      bgcolor: alpha('#FFFFFF', 0.12),
+                      border: `1px solid ${alpha('#FFFFFF', 0.12)}`,
                       '&:hover': {
-                        bgcolor: alpha(brand.accent, 0.12),
-                        color: brand.accent,
+                        bgcolor: alpha(brand.accent, 0.2),
+                        color: footerText,
                       },
                     }}
                   >
@@ -79,17 +96,17 @@ export default function PublicFooter() {
             </Stack>
 
             <Stack spacing={1.3}>
-              <Typography sx={{ fontWeight: 800, color: brand.ink }}>Platform</Typography>
+              <Typography sx={{ fontWeight: 800, color: footerText }}>Platform</Typography>
               {platformLinks.map((item) => (
                 <Box
                   key={item.to}
                   component={RouterLink}
                   to={item.to}
                   sx={{
-                    color: brand.inkSoft,
+                    color: footerMuted,
                     fontWeight: 600,
                     '&:hover': {
-                      color: brand.ink,
+                      color: footerText,
                     },
                   }}
                 >
@@ -99,17 +116,17 @@ export default function PublicFooter() {
             </Stack>
 
             <Stack spacing={1.3}>
-              <Typography sx={{ fontWeight: 800, color: brand.ink }}>Company</Typography>
+              <Typography sx={{ fontWeight: 800, color: footerText }}>Company</Typography>
               {companyLinks.map((item) => (
                 <Box
                   key={item.to}
                   component={RouterLink}
                   to={item.to}
                   sx={{
-                    color: brand.inkSoft,
+                    color: footerMuted,
                     fontWeight: 600,
                     '&:hover': {
-                      color: brand.ink,
+                      color: footerText,
                     },
                   }}
                 >
@@ -119,12 +136,12 @@ export default function PublicFooter() {
             </Stack>
 
             <Stack spacing={1.4}>
-              <Typography sx={{ fontWeight: 800, color: brand.ink }}>Contact</Typography>
+              <Typography sx={{ fontWeight: 800, color: footerText }}>Contact</Typography>
               <Stack direction="row" spacing={1.2} alignItems="flex-start">
                 <Box sx={{ color: brand.accent, mt: 0.15, lineHeight: 0 }}>
                   <FiPhone size={18} />
                 </Box>
-                <Box component="a" href={`tel:${brandIdentity.supportPhone}`} sx={{ color: brand.inkSoft }}>
+                <Box component="a" href={`tel:${brandIdentity.supportPhone}`} sx={{ color: footerMuted }}>
                   {brandIdentity.supportPhone}
                 </Box>
               </Stack>
@@ -132,7 +149,7 @@ export default function PublicFooter() {
                 <Box sx={{ color: brand.accent, mt: 0.15, lineHeight: 0 }}>
                   <FiMail size={18} />
                 </Box>
-                <Box component="a" href={`mailto:${brandIdentity.supportEmail}`} sx={{ color: brand.inkSoft }}>
+                <Box component="a" href={`mailto:${brandIdentity.supportEmail}`} sx={{ color: footerMuted }}>
                   {brandIdentity.supportEmail}
                 </Box>
               </Stack>
@@ -140,7 +157,7 @@ export default function PublicFooter() {
                 <Box sx={{ color: brand.accent, mt: 0.15, lineHeight: 0 }}>
                   <FiMapPin size={18} />
                 </Box>
-                <Typography sx={{ color: brand.inkSoft }}>{brandIdentity.supportAddress}</Typography>
+                <Typography sx={{ color: footerMuted }}>{brandIdentity.supportAddress}</Typography>
               </Stack>
             </Stack>
           </Box>
@@ -149,11 +166,11 @@ export default function PublicFooter() {
             sx={{
               px: { xs: 2.4, md: 4 },
               py: 1.5,
-              borderTop: `1px solid ${alpha(brand.ink, 0.08)}`,
-              bgcolor: alpha(brand.sky, 0.26),
+              borderTop: `1px solid ${alpha('#FFFFFF', 0.12)}`,
+              bgcolor: alpha('#031033', 0.32),
             }}
           >
-            <Typography sx={{ color: brand.inkSoft, fontSize: '0.9rem' }}>
+            <Typography sx={{ color: footerSoft, fontSize: '0.9rem' }}>
               © 2026 {brandIdentity.name}. Built for dependable logistics operations across India.
             </Typography>
           </Box>

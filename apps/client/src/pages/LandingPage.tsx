@@ -167,12 +167,12 @@ export default function LandingPage() {
             component={motion.section}
             {...fadeUp}
             sx={{
-              pt: { xs: 1.1, md: 3 },
+              pt: { xs: 0.7, md: 1.8 },
             }}
           >
-            <Grid container spacing={{ xs: 2.2, lg: 4 }} alignItems="center">
-              <Grid size={{ xs: 12, lg: 6 }}>
-                <Stack spacing={2.4}>
+            <Grid container spacing={{ xs: 2, md: 2.4 }}>
+              <Grid size={{ xs: 12 }}>
+                <Stack spacing={2.2} sx={{ maxWidth: 760 }}>
                   <Chip
                     icon={<TbBolt size={16} />}
                     label={`${brandIdentity.shortName} Logistics for modern shipping teams`}
@@ -194,8 +194,8 @@ export default function LandingPage() {
 
                   <Typography
                     sx={{
-                      fontSize: { xs: '2.7rem', sm: '4rem', lg: '5rem' },
-                      lineHeight: { xs: 1.03, lg: 0.95 },
+                      fontSize: { xs: '2.7rem', sm: '4rem', lg: '4.85rem' },
+                      lineHeight: { xs: 1.03, lg: 0.98 },
                       fontWeight: 900,
                       letterSpacing: '-0.06em',
                       color: brand.ink,
@@ -226,7 +226,7 @@ export default function LandingPage() {
                       to="/login"
                       variant="contained"
                       endIcon={<FiArrowRight size={18} />}
-                      sx={{ flex: 1, minHeight: { xs: 44, sm: 48 } }}
+                      sx={{ flex: { xs: 1, sm: 'initial' }, minWidth: { sm: 168 }, minHeight: { xs: 44, sm: 48 } }}
                     >
                       Start Shipping
                     </Button>
@@ -234,7 +234,7 @@ export default function LandingPage() {
                       component={RouterLink}
                       to="/tracking"
                       variant="outlined"
-                      sx={{ flex: 1, minHeight: { xs: 44, sm: 48 } }}
+                      sx={{ flex: { xs: 1, sm: 'initial' }, minWidth: { sm: 144 }, minHeight: { xs: 44, sm: 48 } }}
                     >
                       Track Order
                     </Button>
@@ -245,7 +245,7 @@ export default function LandingPage() {
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                       gap: { xs: 0.8, sm: 1.2 },
-                      maxWidth: '100%',
+                      maxWidth: { xs: '100%', md: 760 },
                     }}
                   >
                     {proofPoints.slice(0, 3).map((item) => (
@@ -266,12 +266,14 @@ export default function LandingPage() {
                 </Stack>
               </Grid>
 
-              <Grid size={{ xs: 12, lg: 6 }}>
+              <Grid size={{ xs: 12 }}>
                 <BrandSurface
                   variant="hero"
                   sx={{
-                    p: { xs: 1.7, md: 3 },
-                    minHeight: { lg: 520 },
+                    p: { xs: 1.7, md: 2.6 },
+                    mt: { xs: 0.5, md: 0.7 },
+                    minHeight: { md: 300 },
+                    width: '100%',
                     justifyContent: 'space-between',
                     background: `
                       radial-gradient(circle at 15% 10%, rgba(255,255,255,0.82), transparent 20%),
