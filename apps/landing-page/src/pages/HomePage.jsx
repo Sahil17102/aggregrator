@@ -46,7 +46,7 @@ export default function HomePage() {
             </p>
 
             <div className="home-theme__actions">
-              <Link className="home-theme__button home-theme__button--primary" to="/rate-calculator">
+              <Link className="home-theme__button home-theme__button--primary" to="/login">
                 Start Shipping
               </Link>
               <Link className="home-theme__button home-theme__button--soft" to="/tracking">
@@ -291,8 +291,8 @@ export default function HomePage() {
               </p>
             </div>
             <div className="home-theme__actions">
-              <Link className="home-theme__button home-theme__button--white" to="/rate-calculator">
-                Explore Rates
+              <Link className="home-theme__button home-theme__button--white" to="/login">
+                Open Portal
               </Link>
               <Link className="home-theme__button home-theme__button--ghost" to="/contact">
                 Contact Team

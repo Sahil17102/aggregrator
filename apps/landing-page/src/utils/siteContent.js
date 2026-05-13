@@ -5,7 +5,7 @@ export const companyInfo = {
   primaryPhone: "+91 9714079405",
   phones: ["+91 9714079405", "+91 9898907058", "+91 7046014625"],
   address: "C140 SoBo Centre South Bopal Ahmedabad - 380058 Gujarat India",
-  getStartedPath: "#rate-calculator",
+  getStartedPath: "/login",
   trackingUrl:
     "http://app.camplar.in/tracking/Tracking?Token=zjcUwirWIxf1yJGqQLWlv3aid&AwbNo",
   mapEmbed:

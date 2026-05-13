@@ -78,7 +78,6 @@ const TicketDetailsPage = lazy(
 )
 
 // Other
-const LandingPage = lazy(() => import('../pages/LandingPage'))
 const Home = lazy(() => import('../pages/home/Home'))
 const Couriers = lazy(() => import('../pages/couriers/Couriers'))
 const CodRemittancesList = lazy(() => import('../pages/cod-remittance/CodRemittancesList'))
@@ -107,7 +106,7 @@ export default function AppRoutes() {
       <Suspense fallback={<FullScreenLoader />}>
         <Routes>
           {/* public */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/app" element={<AppEntry />} />

@@ -40,7 +40,7 @@ export default function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex gap-4">
-          <Link to="/track" className="navbar-cta">
+          <Link to="/login" className="navbar-cta">
             Get Started
           </Link>
         </div>
@@ -77,7 +77,7 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            to="/track"
+            to="/login"
             className="btn-primary mt-4 block w-full text-center"
             onClick={() => setMobileOpen(false)}
           >

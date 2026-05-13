@@ -14,8 +14,11 @@ export default function SiteHeader({ onPrimaryAction }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const isContactPage = pathname === "/contact";
-  const getStartedHref =
-    pathname === "/" ? companyInfo.getStartedPath : `/${companyInfo.getStartedPath}`;
+  const getStartedHref = companyInfo.getStartedPath.startsWith("/")
+    ? companyInfo.getStartedPath
+    : pathname === "/"
+      ? companyInfo.getStartedPath
+      : `/${companyInfo.getStartedPath}`;
 
   return (
     <header className="sticky top-0 z-50 shadow-[0_10px_30px_rgba(0,29,103,0.08)]">
@@ -91,7 +94,7 @@ export default function SiteHeader({ onPrimaryAction }) {
                 Start Shipping
               </button>
             ) : (
-              <a className="outline-button" href="/#rate-calculator">
+              <a className="outline-button" href="/login">
                 Start Shipping
               </a>
             )}
@@ -148,7 +151,7 @@ export default function SiteHeader({ onPrimaryAction }) {
                     Start Shipping
                   </button>
                 ) : (
-                  <a className="outline-button" href="/#rate-calculator" onClick={() => setMenuOpen(false)}>
+                  <a className="outline-button" href="/login" onClick={() => setMenuOpen(false)}>
                     Start Shipping
                   </a>
                 )}

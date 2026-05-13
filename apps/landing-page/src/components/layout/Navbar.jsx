@@ -35,7 +35,7 @@ export default function Navbar() {
               className="button-primary"
               component={Link}
               endIcon={<NorthEastRounded />}
-              to="/rate-calculator"
+              to="/login"
               variant="contained"
             >
               Start Shipping
