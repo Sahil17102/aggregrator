@@ -17,7 +17,8 @@ LANDING_URL="https://${ROOT_DOMAIN}"
 APP_URL="https://${APP_DOMAIN}"
 ADMIN_URL="https://${ADMIN_DOMAIN}"
 API_URL="https://${API_DOMAIN}"
-BACKEND_PORT="${BACKEND_PORT:-5002}"
+BACKEND_PORT="${BACKEND_PORT:-5012}"
+PGADMIN_PORT="${PGADMIN_PORT:-5051}"
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
@@ -201,7 +202,7 @@ server {
   listen 80;
   server_name $PGADMIN_DOMAIN;
   location / {
-    proxy_pass http://127.0.0.1:5050;
+    proxy_pass http://127.0.0.1:$PGADMIN_PORT;
     proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -257,7 +258,7 @@ $API_DOMAIN {
 }
 
 $PGADMIN_DOMAIN {
-  reverse_proxy 127.0.0.1:5050
+  reverse_proxy 127.0.0.1:$PGADMIN_PORT
 }
 EOF
 
@@ -332,7 +333,7 @@ NODE
   docker run -d \
     --name choicemee-pgadmin \
     --restart unless-stopped \
-    -p 127.0.0.1:5050:80 \
+    -p 127.0.0.1:$PGADMIN_PORT:80 \
     -e "PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@$ROOT_DOMAIN}" \
     -e "PGADMIN_DEFAULT_PASSWORD=$PGADMIN_PASSWORD" \
     "${pgadmin_volume_args[@]}" \

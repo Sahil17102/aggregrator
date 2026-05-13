@@ -7,7 +7,8 @@ This repo deploys to isolated VPS paths only:
 - Static sites: `/var/www/choicemee/landing`, `/var/www/choicemee/app`, `/var/www/choicemee/admin`
 - PM2 process: `choicemee-api`
 - Proxy config: `/etc/nginx/sites-available/choicemee.conf` or `/etc/caddy/conf.d/choicemee.caddy`
-- Optional pgAdmin container: `choicemee-pgadmin`
+- Backend process: `choicemee-api` on `127.0.0.1:5012` through the proxy
+- Optional pgAdmin container: `choicemee-pgadmin` on `127.0.0.1:5051`
 
 Required GitHub Actions secrets:
 
