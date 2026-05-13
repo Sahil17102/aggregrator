@@ -404,15 +404,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
                       <Chip
                         size="small"
-                        label={`Final ${formatCurrency(getCourierFinalCharge(selectedCourierSummary))}`}
-                      />
-                      <Chip
-                        size="small"
-                        label={`Our ${formatCurrency(getCourierPlatformCharge(selectedCourierSummary))}`}
-                      />
-                      <Chip
-                        size="small"
-                        label={`Courier ${formatCurrency(getCourierProviderCost(selectedCourierSummary))}`}
+                        label={`Rate ${formatCurrency(getCourierFinalCharge(selectedCourierSummary))}`}
                       />
                       <Chip
                         size="small"
@@ -472,7 +464,6 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 ? selectedCourierOptionKey === courierOptionKey
                 : String(selectedCourierId) === String(courier?.id ?? courier?.courier_id ?? '')
 
-              const platformCharge = getCourierPlatformCharge(courier)
               const providerCost = getCourierProviderCost(courier)
               const finalCharge = getCourierFinalCharge(courier)
 
@@ -581,23 +572,17 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
                       <Stack alignItems={{ xs: 'flex-start', sm: 'flex-end' }} spacing={0.25}>
                         <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
-                          Final Charge
+                          Total Rate
                         </Typography>
                         <Typography sx={{ fontSize: 28, fontWeight: 900, color: TEXT_PRIMARY }}>
                           {formatCurrency(finalCharge)}
-                        </Typography>
-                        <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
-                          Our {formatCurrency(platformCharge)} + Courier {formatCurrency(providerCost)}
                         </Typography>
                       </Stack>
                     </Stack>
 
                     <Grid container spacing={1.1}>
                       {[
-                        ['Our Charge', formatCurrency(platformCharge)],
-                        ['Courier Charge', formatCurrency(providerCost)],
-                        ['COD', formatCurrency(local?.forward?.cod_charges)],
-                        ['Other', formatCurrency(local?.forward?.other_charges)],
+                        ['Total Rate', formatCurrency(finalCharge)],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
                         ['Volumetric', formatWeightKg(courier?.volumetric_weight)],
                       ].map(([label, value]) => (
