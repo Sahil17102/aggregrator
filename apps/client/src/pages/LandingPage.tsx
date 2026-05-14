@@ -627,13 +627,13 @@ export default function LandingPage() {
             >
               <Grid container spacing={2.2} alignItems="center">
                 <Grid size={{ xs: 12, md: 8 }}>
-                  <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: alpha('#FFFFFF', 0.72) }}>
+                  <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#FFE3C4' }}>
                     Get started today
                   </Typography>
-                  <Typography sx={{ mt: 1.2, fontSize: { xs: '2rem', md: '2.7rem' }, lineHeight: 1.02, fontWeight: 800, letterSpacing: '-0.05em' }}>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '2rem', md: '2.7rem' }, lineHeight: 1.02, fontWeight: 800, letterSpacing: '-0.05em', color: '#FFFFFF' }}>
                     Start shipping smarter with {brandIdentity.name}
                   </Typography>
-                  <Typography sx={{ mt: 1.4, color: alpha('#FFFFFF', 0.74), lineHeight: 1.8, maxWidth: 680 }}>
+                  <Typography sx={{ mt: 1.4, color: '#EAF1FB', lineHeight: 1.8, maxWidth: 680 }}>
                     Try the free rate calculator, compare couriers, track shipments live, or open the seller portal and move straight into the existing auth and dashboard flow.
                   </Typography>
                 </Grid>

@@ -178,7 +178,8 @@ export default function AppRoutes() {
         <Suspense fallback={<FullScreenLoader />}>
           <Routes>
           {/* public */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/app" element={<AppEntry />} />
