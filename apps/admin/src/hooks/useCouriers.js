@@ -166,6 +166,8 @@ export const useShippingRates = (filters = {}) => {
     queryFn: () => fetchShippingRates(filters),
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 15000,
   })
 }
 
@@ -223,7 +225,7 @@ export const useDeleteB2CZone = (planId) => {
         mode,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['shippingRates'])
+      queryClient.invalidateQueries({ queryKey: ['shippingRates'] })
       toast({ title: 'B2C zone rate deleted', status: 'success' })
     },
     onError: () => toast({ title: 'Failed to delete B2C zone rate', status: 'error' }),
@@ -239,7 +241,7 @@ export const useDeleteB2BZone = (planId) => {
     mutationFn: ({ courierId, zoneId }) =>
       deleteShippingRateAPI({ courierId, planId, businessType: 'b2b', zoneId }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['shippingRates'])
+      queryClient.invalidateQueries({ queryKey: ['shippingRates'] })
       toast({ title: 'B2B zone rate deleted', status: 'success' })
     },
     onError: () => toast({ title: 'Failed to delete B2B zone rate', status: 'error' }),
@@ -254,7 +256,7 @@ export const useDeleteB2BCourier = (planId) => {
   return useMutation({
     mutationFn: (courierId) => deleteShippingRateAPI({ courierId, planId, businessType: 'b2b' }), // no zoneId = delete whole courier
     onSuccess: () => {
-      queryClient.invalidateQueries(['shippingRates'])
+      queryClient.invalidateQueries({ queryKey: ['shippingRates'] })
       toast({ title: 'B2B courier deleted', status: 'success' })
     },
     onError: () => toast({ title: 'Failed to delete B2B courier', status: 'error' }),

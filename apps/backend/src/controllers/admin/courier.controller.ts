@@ -1,6 +1,7 @@
 import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { Request, Response } from 'express'
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 import { db } from '../../models/client'
 import {
   deleteCourierService,
@@ -32,6 +33,7 @@ export interface ShippingRateFilters {
   min_weight?: number
   plan_id?: string
   business_type?: 'b2b' | 'b2c'
+  zone?: string[]
 }
 
 export const fetchAvailableCouriersForAdmin = async (req: Request, res: Response) => {
@@ -85,12 +87,19 @@ export const getShippingRatesController = async (req: Request, res: Response) =>
     let courierNames: string[] = []
 
     const rawCourierNames = req.query['courier_name[]'] ?? req.query.courier_name
+    const rawZones = req.query['zone[]'] ?? req.query.zone
 
     if (Array.isArray(rawCourierNames)) {
       courierNames = rawCourierNames.flat().filter(Boolean).map(String)
     } else if (typeof rawCourierNames === 'string') {
       courierNames = [rawCourierNames]
     }
+
+    const zonesFilter = Array.isArray(rawZones)
+      ? rawZones.flat().filter(Boolean).map(String)
+      : typeof rawZones === 'string'
+        ? [rawZones]
+        : []
 
     const filters: ShippingRateFilters = {
       courier_name: courierNames.length ? courierNames : undefined,
@@ -103,6 +112,7 @@ export const getShippingRatesController = async (req: Request, res: Response) =>
             : undefined,
       plan_id: req.query.planId as string | undefined,
       business_type: (req.query.businessType as 'b2b' | 'b2c') || undefined,
+      zone: zonesFilter.length ? zonesFilter : undefined,
     }
 
     const rates = await getShippingRates(filters)
@@ -1133,6 +1143,47 @@ const parseSlabJsonCell = (value?: string) => {
 const isSlabValidationError = (err: unknown) =>
   /slab|overlap|extra_rate|extra_weight_unit/i.test(String((err as any)?.message || err || ''))
 
+const isImportFormatError = (err: unknown) =>
+  /csv|excel|sheet|format/i.test(String((err as any)?.message || err || ''))
+
+const parseShippingRateImportRows = (file: any): CSVRow[] => {
+  const filename = String(file?.originalname || '').toLowerCase()
+  const mimetype = String(file?.mimetype || '').toLowerCase()
+  const isExcel =
+    filename.endsWith('.xlsx') ||
+    filename.endsWith('.xls') ||
+    mimetype.includes('spreadsheet') ||
+    mimetype.includes('excel')
+
+  if (isExcel) {
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' })
+    const firstSheetName = workbook.SheetNames[0]
+    if (!firstSheetName) {
+      throw new Error('Uploaded Excel file does not contain any sheets')
+    }
+
+    const rows = XLSX.utils.sheet_to_json<CSVRow>(workbook.Sheets[firstSheetName], {
+      defval: '',
+      raw: false,
+    })
+    return rows
+  }
+
+  const csvContent = file.buffer.toString('utf8')
+  const { data, errors } = Papa.parse<CSVRow>(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+  })
+
+  if (errors.length) {
+    const error = new Error('Invalid CSV format') as Error & { details?: unknown }
+    error.details = errors
+    throw error
+  }
+
+  return data
+}
+
 export const importShippingRatesController = async (req: any, res: Response) => {
   try {
     if (!req.file) {
@@ -1144,17 +1195,7 @@ export const importShippingRatesController = async (req: any, res: Response) => 
       return res.status(400).json({ success: false, message: 'Missing plan_id or business_type' })
     }
 
-    const csvContent = req.file.buffer.toString('utf8')
-
-    const { data, errors } = Papa.parse<CSVRow>(csvContent, {
-      header: true,
-      skipEmptyLines: true,
-    })
-
-    if (errors.length) {
-      console.error('CSV parse errors:', errors)
-      return res.status(400).json({ success: false, message: 'Invalid CSV format', errors: errors })
-    }
+    const data = parseShippingRateImportRows(req.file)
 
     const zonesList = await getAllZones()
 
@@ -1166,6 +1207,12 @@ export const importShippingRatesController = async (req: any, res: Response) => 
       const mode = row['Mode'] || ''
 
       if (!courierId || !courierName) continue
+      if (String(business_type).toLowerCase() === 'b2c' && !String(mode).trim()) {
+        return res.status(400).json({
+          success: false,
+          message: `Mode is required for B2C rate import. Please set Mode as air or surface for courier ${courierName}.`,
+        })
+      }
 
       // Parse rates for each zone
       type RateItem = { zone_id: string; type: 'forward' | 'rto'; rate: number }
@@ -1240,10 +1287,10 @@ export const importShippingRatesController = async (req: any, res: Response) => 
     res.json({ success: true, message: 'Shipping rates imported successfully' })
   } catch (err) {
     console.error('Error importing shipping rates:', err)
-    const statusCode = isSlabValidationError(err) ? 400 : 500
+    const statusCode = isSlabValidationError(err) || isImportFormatError(err) ? 400 : 500
     res.status(statusCode).json({
       success: false,
-      message: isSlabValidationError(err)
+      message: isSlabValidationError(err) || isImportFormatError(err)
         ? String((err as any)?.message || 'Invalid slab configuration')
         : 'Internal Server Error',
     })

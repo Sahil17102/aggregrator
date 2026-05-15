@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { and, asc, desc, eq, gte, ilike, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, ilike, inArray, or, sql } from 'drizzle-orm'
 import { ShippingRateFilters } from '../../controllers/admin/courier.controller'
 import { db } from '../client'
 import { couriers } from '../schema/couriers'
@@ -126,6 +126,9 @@ export const getCourierSummary = async () => {
 export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
   const conditions: any[] = []
   const normalizedModeFilter = normalizeB2CShippingMode(filters.mode)
+  const zoneFilter = Array.isArray(filters.zone)
+    ? filters.zone.map((value) => String(value || '').trim()).filter(Boolean)
+    : []
 
   if (filters.courier_name?.length) {
     conditions.push(inArray(shippingRates.courier_name, filters.courier_name))
@@ -141,6 +144,16 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
 
   if (filters.business_type) {
     conditions.push(eq(shippingRates.business_type, filters.business_type))
+  }
+
+  if (zoneFilter.length > 0) {
+    conditions.push(
+      or(
+        inArray(zones.id, zoneFilter),
+        inArray(zones.code, zoneFilter),
+        inArray(zones.name, zoneFilter),
+      ),
+    )
   }
 
   // Fetch all rates matching filters - explicitly select service_provider

@@ -6,13 +6,16 @@ import type { TableCell } from 'pdfmake/interfaces'
 import { db } from '../client'
 import { invoices } from '../schema/invoices'
 import { presignDownload } from './upload.service'
-import { getAdminInvoicePreferences } from './invoicePreferences.service'
 
 const summarizeFetchError = (err: any) => {
   const message = err?.message || String(err)
   const status = err?.response?.status
   return status ? `${message} (status ${status})` : message
 }
+
+const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
+const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
 
 // Product + Invoice types
 // ----------------------
@@ -219,7 +222,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
 
   // Logo & Signature - handle errors gracefully, don't fail PDF generation
   let logoDataUrl: string | undefined
-  if (invoice.logoBuffer) {
+  if (ALLOW_MERCHANT_DOCUMENT_LOGOS && invoice.logoBuffer) {
     try {
       const dataUrl = await bufferToDataUrl(invoice.logoBuffer)
       if (dataUrl) {
@@ -233,13 +236,10 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
     }
   }
 
-  const adminPrefs = await getAdminInvoicePreferences()
-
   // Platform (ChoiceMee) logo â€“ try to load but don't fail if it doesn't work
   let platformLogoDataUrl: string | undefined
   try {
-    const logoKey = adminPrefs?.logoFile ?? 'choiceme-logo.png'
-    const logoUrl = await presignDownload(logoKey)
+    const logoUrl = await presignDownload(PLATFORM_LOGO_KEY)
     if (logoUrl && typeof logoUrl === 'string') {
       try {
         const resp = await axios.get(logoUrl, { responseType: 'arraybuffer', timeout: 5000 })
@@ -448,8 +448,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   }
 
   const toSafeString = (value?: string | null) => (value ? value.trim() : '')
-  const sellerDisplayName =
-    toSafeString(invoice.brandName) || toSafeString(invoice.sellerName) || toSafeString(invoice.companyName)
+  const sellerDisplayName = PLATFORM_BRAND_NAME
   const sellerAddressLines = (invoice.sellerAddress || '')
     .split('\n')
     .map((line) => line.trim())
@@ -546,7 +545,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
               images.logo
                 ? { image: 'logo', width: 110, margin: [0, 0, 0, 6] }
                 : {
-                    text: sellerDisplayName || invoice.companyName || 'Seller',
+                    text: sellerDisplayName,
                     fontSize: 20,
                     bold: true,
                     color: '#000',
@@ -911,7 +910,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   // Thermal Layout
   // -------------------
   const contentThermal: any[] = [
-    { text: invoice.companyName ?? 'ChoiceMee', alignment: 'center', bold: true },
+    { text: PLATFORM_BRAND_NAME, alignment: 'center', bold: true },
     { text: 'TAX INVOICE', alignment: 'center', bold: true, margin: [0, 2, 0, 2] },
     {
       text: 'ORIGINAL FOR RECIPIENT',
@@ -1015,7 +1014,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       ? { image: 'platformLogo', width: 40, alignment: 'center', margin: [0, 4, 0, 0] }
       : null,
     {
-      text: 'Powered by ChoiceMee',
+      text: `Powered by ${PLATFORM_BRAND_NAME}`,
       alignment: 'center',
       italics: true,
       margin: [0, 4, 0, 0],

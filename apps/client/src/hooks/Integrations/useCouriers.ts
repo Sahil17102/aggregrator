@@ -97,6 +97,8 @@ export const useAvailableCouriers = (params: UseAvailableCouriersParams) => {
     enabled: enabled && !!pickupPincode && !!deliveryPincode && (!!weight || !!cod),
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchInterval: enabled ? 15000 : false,
     retry: 1,
   })
 }
@@ -131,6 +133,8 @@ export const useShippingRates = (filters = {}) => {
     queryFn: () => fetchShippingRates(filters),
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 15000,
   })
 }
 

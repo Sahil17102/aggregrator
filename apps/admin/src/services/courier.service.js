@@ -9,6 +9,7 @@ export const fetchShippingRates = async (filters = {}) => {
   }
   if (filters.businessType) params.businessType = filters.businessType
   if (filters.planId) params.planId = filters.planId
+  if (filters.zone?.length) params.zone = filters.zone
   const response = await api.get('/admin/couriers/shipping-rates', { params })
   return response.data.data
 }

@@ -142,8 +142,8 @@ const downloadCSV = (allCouriers = [], allZones = [], existingData = [], filters
           row.courier_name ?? courier.name ?? '',
           row.service_provider || row.serviceProvider || courier.serviceProvider || '',
           row.mode || '',
-          row.min_weight || '',
           type,
+          row.min_weight || '',
           ...zoneValues,
           row.cod_charges ?? '',
           row.cod_percent ?? '',
@@ -224,6 +224,14 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
   }, [selectedBusinessType, selectedPlanId])
 
   const activePlanId = selectedPlanId || filters?.planId || plans?.[0]?.id || ''
+
+  const applyRateFilters = (nextFilters = {}) => {
+    setFilters({
+      ...nextFilters,
+      businessType: selectedBusinessType,
+      ...(selectedBusinessType === 'b2c' && activePlanId ? { planId: activePlanId } : {}),
+    })
+  }
 
   const openEditModal = (row) => {
     setSelectedRate(row)
@@ -368,7 +376,7 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
 
           {/* Filters and actions */}
           <Grid templateColumns="3fr 2fr" width="100%" gap={4} mb={4} alignItems="center">
-            <TableFilters filters={filterOptions} values={filters} onApply={setFilters} />
+            <TableFilters filters={filterOptions} values={filters} onApply={applyRateFilters} />
             <Flex justify="flex-end" gap={2}>
               <Button
                 size="sm"
@@ -423,7 +431,13 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
               <Button
                 size="sm"
                 colorScheme="blue"
-                onClick={() => downloadCSV(courierList || [], zones || [], data || [], filters)}
+                onClick={() =>
+                  downloadCSV(courierList || [], zones || [], data || [], {
+                    ...filters,
+                    businessType: selectedBusinessType,
+                    planId: activePlanId,
+                  })
+                }
               >
                 Download CSV
               </Button>

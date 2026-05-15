@@ -7,7 +7,6 @@ import PdfPrinter from 'pdfmake'
 import { db } from '../client'
 import { labelPreferences } from '../schema/labelPreferences'
 import { userProfiles } from '../schema/userProfile'
-import { getAdminInvoicePreferences } from './invoicePreferences.service'
 import { presignDownload, presignUpload } from './upload.service'
 
 const summarizeFetchError = (err: any) => {
@@ -82,6 +81,10 @@ const fonts = {
   },
 }
 
+const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
+const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
+
 const compactStorageToken = (...values: Array<string | number | null | undefined>) => {
   const raw = values.find((value) => value !== null && value !== undefined && String(value).trim())
   const cleaned = String(raw ?? Date.now())
@@ -125,7 +128,7 @@ const DEFAULT_LABEL_SETTINGS = {
     deadWeight: false,
     otherCharges: true,
   },
-  powered_by: 'ChoiceMee',
+  powered_by: PLATFORM_BRAND_NAME,
 }
 
 function mergeSettings(prefs: any) {
@@ -143,7 +146,7 @@ function mergeSettings(prefs: any) {
       ...(DEFAULT_LABEL_SETTINGS.product_info as any),
       ...(prefs.product_info || {}),
     },
-    powered_by: prefs.powered_by ?? DEFAULT_LABEL_SETTINGS.powered_by,
+    powered_by: PLATFORM_BRAND_NAME,
   }
 }
 
@@ -164,7 +167,11 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     .from(userProfiles)
     .where(eq(userProfiles.userId, userId))
   let logoBase64: string | null = null
-  if (settings.shipper_info?.brandLogo && profileOfUser?.companyInfo?.companyLogoUrl) {
+  if (
+    ALLOW_MERCHANT_DOCUMENT_LOGOS &&
+    settings.shipper_info?.brandLogo &&
+    profileOfUser?.companyInfo?.companyLogoUrl
+  ) {
     try {
       const logoUrl = await presignDownload(profileOfUser.companyInfo.companyLogoUrl)
       const finalUrl = Array.isArray(logoUrl) ? (logoUrl.length > 0 ? logoUrl[0] : null) : logoUrl
@@ -183,12 +190,10 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     }
   }
 
-  const adminPrefs = await getAdminInvoicePreferences()
   // Always show ChoiceMee platform logo (Powered by ...)
   let platformLogoBase64: string | null = null
   try {
-    const platformLogoKey = adminPrefs?.logoFile ?? 'ChoiceMee-logo.png'
-    const logoUrl = await presignDownload(platformLogoKey)
+    const logoUrl = await presignDownload(PLATFORM_LOGO_KEY)
     const finalUrl = Array.isArray(logoUrl) ? logoUrl[0] : logoUrl
     if (finalUrl) {
       const logoResp = await axios.get(finalUrl, {
@@ -252,7 +257,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   const showShipperPhone = isEnabled(settings.shipper_info?.shipperPhone)
   const showShipperGst = isEnabled(settings.shipper_info?.gstin)
   const showRto = isEnabled(settings.shipper_info?.rtoAddress)
-  const showBrandLogo = isEnabled(settings.shipper_info?.brandLogo)
+  const showBrandLogo = ALLOW_MERCHANT_DOCUMENT_LOGOS && isEnabled(settings.shipper_info?.brandLogo)
   const includeProductName = isEnabled(settings.product_info?.itemName)
   const includeCost = isEnabled(settings.product_info?.productCost)
   const includeQty = isEnabled(settings.product_info?.productQuantity)
@@ -260,7 +265,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   const includeDimension = isEnabled(settings.product_info?.dimension)
   const includeDeadWeight = isEnabled(settings.product_info?.deadWeight)
   const showOrderValueSection = isEnabled(settings.product_info?.otherCharges)
-  const showPlatformBranding = Boolean(settings.powered_by?.toString().trim())
+  const showPlatformBranding = true
   const charLimit = Math.max(10, Number(settings.char_limit ?? 25))
   const maxItems = Math.max(1, Number(settings.max_items ?? 3))
 
@@ -368,11 +373,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     return text.length > max ? `${text.slice(0, max)}...` : text
   }
 
-  const sellerBrandName =
-    profileOfUser?.companyInfo?.companyName ||
-    profileOfUser?.companyInfo?.displayName ||
-    pickup?.warehouse_name ||
-    ''
+  const sellerBrandName = PLATFORM_BRAND_NAME
   const normalizedSortCode = String(order?.sort_code ?? '').trim()
 
   const headerLeftStack: any[] = []

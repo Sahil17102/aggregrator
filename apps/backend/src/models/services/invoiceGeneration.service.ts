@@ -38,6 +38,9 @@ const BILLABLE_ORDER_STATUSES = [
   'rto_in_transit',
   'rto_delivered',
 ] as const
+const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
+const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
 
 export const generateInvoiceForUser = async (
   userId: string,
@@ -163,7 +166,6 @@ export const generateInvoiceForUser = async (
   const prefs = await getInvoicePreferences(userId)
 
   const adminPrefs = await getAdminInvoicePreferences()
-  const adminLogoFile = adminPrefs?.logoFile ?? null
   let adminSignatureBuffer: Buffer | undefined
   let adminIncludeSignature = adminPrefs?.includeSignature ?? false // Track if admin wants to include signature
   try {
@@ -238,7 +240,7 @@ export const generateInvoiceForUser = async (
     .where(eq(userProfiles.userId, userId))
     .limit(1)
 
-  const issuerName = adminPrefs?.brandName || 'ChoiceMee'
+  const issuerName = PLATFORM_BRAND_NAME
   const issuerAddress = adminPrefs?.sellerAddress || 'N/A'
   const issuerStateCode = adminPrefs?.stateCode || 'N/A'
   const issuerGST = adminPrefs?.gstNumber || 'N/A'
@@ -321,7 +323,7 @@ export const generateInvoiceForUser = async (
   // Optional seller logo from invoice preferences
   let logoDataUrl: string | undefined
   try {
-    if (prefs?.includeLogo && prefs?.logoFile) {
+    if (ALLOW_MERCHANT_DOCUMENT_LOGOS && prefs?.includeLogo && prefs?.logoFile) {
       const logoUrl = await presignDownload(prefs.logoFile)
       const finalUrl = Array.isArray(logoUrl) ? logoUrl[0] : logoUrl
       if (finalUrl) {
@@ -357,8 +359,7 @@ export const generateInvoiceForUser = async (
   // Platform (ChoiceMee) logo for footer branding
   let platformLogoDataUrl: string | undefined
   try {
-    const platformLogoKey = adminLogoFile || 'choiceme-logo.png'
-    const logoUrl = await presignDownload(platformLogoKey)
+    const logoUrl = await presignDownload(PLATFORM_LOGO_KEY)
     if (logoUrl && typeof logoUrl === 'string') {
       const resp = await axios.get(logoUrl, { responseType: 'arraybuffer' })
       const buffer = Buffer.from(resp.data)
@@ -588,7 +589,7 @@ export const generateInvoiceForUser = async (
             : null,
 
           {
-            text: 'Powered by ChoiceMee',
+            text: `Powered by ${PLATFORM_BRAND_NAME}`,
             alignment: 'center',
             italics: true,
             fontSize: fontSize - 1,
@@ -866,7 +867,7 @@ export const generateInvoiceForUser = async (
 
           // FOOTER
           {
-            text: 'Thank you for trusting and doing business with ChoiceMee.',
+            text: `Thank you for trusting and doing business with ${PLATFORM_BRAND_NAME}.`,
             style: 'footer',
           },
           // Show admin signature only if includeSignature is true
@@ -894,7 +895,7 @@ export const generateInvoiceForUser = async (
               }
             : null,
           {
-            text: 'Powered by ChoiceMee',
+            text: `Powered by ${PLATFORM_BRAND_NAME}`,
             alignment: 'center',
             italics: true,
             margin: [0, 6, 0, 0],
