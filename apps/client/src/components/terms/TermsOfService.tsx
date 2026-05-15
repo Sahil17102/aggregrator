@@ -3,6 +3,10 @@
 const TermsOfService = () => {
   return (
     <Container maxWidth="lg">
+      <Typography paragraph sx={{ mt: 2 }}>
+        This website is operated by ChoiceMee - Syed Muddasir.
+      </Typography>
+
       {/* Account Terms */}
       <Typography variant="h5" mt={3}>
         Account Terms
@@ -112,7 +116,7 @@ const TermsOfService = () => {
           the online store.
         </li>
         <li>All fees are exclusive of applicable taxes, fees, or charges.</li>
-        <li>ChoiceMee Logistics does not provide refunds.</li>
+        <li>Approved refunds will be credited to your bank account within 7 business days.</li>
       </ul>
 
       {/* Cancellation and Termination */}

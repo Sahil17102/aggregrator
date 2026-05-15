@@ -35,7 +35,7 @@ const CancellationPolicy = () => {
         </ListItem>
 
         <ListItem sx={{ display: 'list-item' }}>
-          <ListItemText primary="Note: No refunds are provided, even if a subscription or plan is cancelled mid-cycle." />
+          <ListItemText primary="Approved refunds will be credited to your bank account within 7 business days." />
         </ListItem>
       </List>
     </Box>

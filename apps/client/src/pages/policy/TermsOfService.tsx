@@ -5,6 +5,9 @@ const TermsOfService = () => {
   return (
     <Box sx={{ py: 2 }}>
       <PageHeading title="Terms of Service" />
+      <Typography paragraph sx={{ mt: 2 }}>
+        This website is operated by ChoiceMee - Syed Muddasir.
+      </Typography>
 
       {/* Account Terms */}
       <Typography variant="h6" mt={3} gutterBottom>
@@ -131,7 +134,7 @@ const TermsOfService = () => {
           <ListItemText primary="All fees are exclusive of all state and central taxes, service, sales tax or other taxes, fees or charges now in force or enacted in the future (â€œTaxesâ€)." />
         </ListItem>
         <ListItem sx={{ display: 'list-item' }}>
-          <ListItemText primary="ChoiceMee Logistics does not provide refunds." />
+          <ListItemText primary="Approved refunds will be credited to your bank account within 7 business days." />
         </ListItem>
       </List>
 

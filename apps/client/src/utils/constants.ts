@@ -1,6 +1,8 @@
 ﻿import type { AdditionalKYCForm } from '../components/user/profile/Kyc/AdditionalInfoStep'
 import type { BusinessStructure, CompanyType } from '../types/generic.types'
 export const TERMS_AND_CONDITIONS = `
+This website is operated by ChoiceMee - Syed Muddasir.
+
 Account Terms
 â€¢ You must be 18 years or older to use this Service.
 â€¢ You must provide your full legal name, current address, a valid email address, and any other information needed in order to complete the signup process.
@@ -36,7 +38,7 @@ Payment of Fees
 â€¢ There are different payment term options available, and depending on the payment term decided with ChoiceMee Logistics, the merchant has to pay on the pre-decided monthly, quarterly, half-yearly or yearly terms.
 â€¢ The merchant has to pay within 7 days from the date of Invoice, or he/she risks the chance of closure/termination of the online store.
 â€¢ All fees are exclusive of all state and central taxes, service, sales tax or other taxes, fees or charges now in force or enacted in the future (â€œTaxesâ€).
-â€¢ ChoiceMee Logistics does not provide refunds.
+â€¢ Approved refunds will be credited to your bank account within 7 business days.
 
 Cancellation and Termination
 â€¢ Once your account is cancelled all of your Content will be immediately deleted from the Service. Since deletion of all data is final please be sure that you do in fact want to cancel your account before doing so.
@@ -86,12 +88,20 @@ export const requiredKycDetails: Record<
   BusinessStructure,
   (keyof AdditionalKYCForm)[] | Record<CompanyType, (keyof AdditionalKYCForm)[]>
 > = {
-  individual: ['panCardUrl', 'aadhaarUrl', 'cancelledChequeUrl'],
-  sole_proprietor: ['panCardUrl', 'aadhaarUrl', 'cancelledChequeUrl', 'gstin', 'gstCertificateUrl'],
+  individual: ['panCardUrl', 'aadhaarFrontUrl', 'aadhaarBackUrl', 'cancelledChequeUrl'],
+  sole_proprietor: [
+    'panCardUrl',
+    'aadhaarFrontUrl',
+    'aadhaarBackUrl',
+    'cancelledChequeUrl',
+    'gstin',
+    'gstCertificateUrl',
+  ],
   partnership_firm: [
     'partnershipDeedUrl',
     'panCardUrl',
-    'aadhaarUrl',
+    'aadhaarFrontUrl',
+    'aadhaarBackUrl',
     'cancelledChequeUrl',
     'gstin',
     'gstCertificateUrl',
@@ -103,11 +113,13 @@ export const requiredKycDetails: Record<
       'gstCertificateUrl',
       'boardResolutionUrl',
       'businessPanUrl',
-      'aadhaarUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
     ],
     llp: [
       'businessPanUrl',
-      'aadhaarUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
       'companyAddressProofUrl',
       'cancelledChequeUrl',
       'llpAgreementUrl',
@@ -116,19 +128,27 @@ export const requiredKycDetails: Record<
     ],
     one_person_company: [
       'businessPanUrl',
-      'aadhaarUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
       'cin',
       'companyAddressProofUrl',
       'cancelledChequeUrl',
     ],
     section_8_company: [
       'businessPanUrl',
-      'aadhaarUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
       'companyAddressProofUrl',
       'boardResolutionUrl',
       'cancelledChequeUrl',
     ],
-    public_limited: ['businessPanUrl', 'aadhaarUrl', 'gstin', 'gstCertificateUrl'],
+    public_limited: [
+      'businessPanUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
+      'gstin',
+      'gstCertificateUrl',
+    ],
   },
 }
 
@@ -138,12 +158,14 @@ export const requiredKycFieldMap: Record<
 > = {
   individual: {
     panCardUrl: true,
-    aadhaarUrl: true,
+    aadhaarFrontUrl: true,
+    aadhaarBackUrl: true,
     cancelledChequeUrl: true,
   },
   sole_proprietor: {
     panCardUrl: true,
-    aadhaarUrl: true,
+    aadhaarFrontUrl: true,
+    aadhaarBackUrl: true,
     cancelledChequeUrl: true,
     gstin: false,
     gstCertificateUrl: false,
@@ -151,7 +173,8 @@ export const requiredKycFieldMap: Record<
   partnership_firm: {
     partnershipDeedUrl: true,
     panCardUrl: true,
-    aadhaarUrl: true,
+    aadhaarFrontUrl: true,
+    aadhaarBackUrl: true,
     cancelledChequeUrl: true,
     gstin: false,
     gstCertificateUrl: false,
@@ -163,11 +186,13 @@ export const requiredKycFieldMap: Record<
       gstCertificateUrl: true,
       boardResolutionUrl: true,
       businessPanUrl: true,
-      aadhaarUrl: true,
+      aadhaarFrontUrl: true,
+      aadhaarBackUrl: true,
     },
     llp: {
       businessPanUrl: true,
-      aadhaarUrl: true,
+      aadhaarFrontUrl: true,
+      aadhaarBackUrl: true,
       companyAddressProofUrl: true,
       cancelledChequeUrl: true,
       llpAgreementUrl: true,
@@ -176,21 +201,24 @@ export const requiredKycFieldMap: Record<
     },
     one_person_company: {
       businessPanUrl: true,
-      aadhaarUrl: true,
+      aadhaarFrontUrl: true,
+      aadhaarBackUrl: true,
       cin: true,
       companyAddressProofUrl: true,
       cancelledChequeUrl: true,
     },
     section_8_company: {
       businessPanUrl: true,
-      aadhaarUrl: true,
+      aadhaarFrontUrl: true,
+      aadhaarBackUrl: true,
       companyAddressProofUrl: true,
       boardResolutionUrl: true,
       cancelledChequeUrl: true,
     },
     public_limited: {
       businessPanUrl: true,
-      aadhaarUrl: true,
+      aadhaarFrontUrl: true,
+      aadhaarBackUrl: true,
       gstin: false,
       gstCertificateUrl: true,
     },

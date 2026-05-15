@@ -44,7 +44,7 @@ const PolicyPages = () => {
           with the Platform.
         </Typography>
         <Typography paragraph>
-          â€¢ Note: No refunds are provided, even if a subscription or plan is cancelled mid-cycle.
+          â€¢ Approved refunds will be credited to your bank account within 7 business days.
         </Typography>
       </Box>
 
