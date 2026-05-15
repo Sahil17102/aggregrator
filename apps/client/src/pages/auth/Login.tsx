@@ -1,7 +1,7 @@
 ﻿import { Box, Button, Stack } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useState } from 'react'
-import { Link as RouterLink, Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import AuthShell from '../../components/auth/AuthShell'
 import CredentialAuthForm from '../../components/auth/CredentialAuthForm'
 import OtpLoginPanel from '../../components/auth/OtpLoginPanel'
@@ -15,6 +15,7 @@ const AUTH_ORANGE = '#E86F00'
 export default function Login() {
   const { loading, isAuthenticated } = useAuth()
   const [mode, setMode] = useState<'otp' | 'password'>('otp')
+  const navigate = useNavigate()
 
   if (loading) return <FullScreenLoader />
   if (isAuthenticated) return <Navigate to="/app" replace />
@@ -87,12 +88,19 @@ export default function Login() {
         <Box component="p" sx={{ color: brand.inkSoft, textAlign: 'center', fontSize: '0.88rem', m: 0 }}>
           New user,{' '}
           <Box
-            component={RouterLink}
-            to="/signup"
+            component="a"
+            href="/signup"
+            onClick={(event) => {
+              event.preventDefault()
+              navigate('/signup')
+            }}
             sx={{
               color: AUTH_ORANGE,
               fontWeight: 800,
               textDecoration: 'none',
+              cursor: 'pointer',
+              position: 'relative',
+              zIndex: 2,
               '&:hover': { textDecoration: 'underline' },
             }}
           >
