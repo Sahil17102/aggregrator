@@ -3,6 +3,8 @@ import { Box, Divider, Paper, Stack, Typography } from '@mui/material'
 import Barcode from 'react-barcode'
 import type { LabelPreferences } from '../../../api/labelPreference.api'
 
+const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+
 const normalize = (value: unknown) => {
   if (value === undefined || value === null) return ''
   return typeof value === 'string' ? value.trim() : `${value}`
@@ -40,7 +42,7 @@ type LabelPreviewProps = {
   preferences?: LabelPreferences
 }
 
-export function LabelPreview({ values, order, preferences }: LabelPreviewProps) {
+export function LabelPreview({ values, order }: LabelPreviewProps) {
   const charsLimit = Math.max(5, Number(values?.charLimit ?? 25))
   const maxItems = Math.max(1, Number(values?.maxItems ?? 3))
 
@@ -60,8 +62,7 @@ export function LabelPreview({ values, order, preferences }: LabelPreviewProps) 
   const dimensionValue = buildDimensions(order)
   const weightValue = buildWeight(order)
 
-  const showSellerLogo = isEnabled(values.shipperInfo?.brandLogo) && Boolean(order.shipper?.logoUrl)
-  const showSellerName = isEnabled(values.shipperInfo?.sellerBrandName) && Boolean(order.shipper?.name)
+  const showSellerName = isEnabled(values.shipperInfo?.sellerBrandName)
   const showShipperAddress = isEnabled(values.shipperInfo?.shipperAddress) && Boolean(order.shipper?.address)
   const showShipperPhone = isEnabled(values.shipperInfo?.shipperPhone) && Boolean(order.shipper?.phone)
   const showShipperGst = isEnabled(values.shipperInfo?.gstin) && Boolean(order.shipper?.gst)
@@ -80,7 +81,7 @@ export function LabelPreview({ values, order, preferences }: LabelPreviewProps) 
   const showDimensions = isEnabled(values.productInfo?.dimension) && Boolean(dimensionValue)
   const showWeight = isEnabled(values.productInfo?.deadWeight) && Boolean(weightValue)
   const showTerms = isEnabled(values.orderInfo?.terms)
-  const showPlatformBranding = Boolean(preferences?.powered_by?.trim())
+  const showPlatformBranding = true
 
   const infoLineParts: string[] = []
   if (showOrderId) infoLineParts.push(`Order ID: ${orderId}`)
@@ -113,18 +114,10 @@ export function LabelPreview({ values, order, preferences }: LabelPreviewProps) 
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
           <Stack spacing={0.75} flex={1}>
             <Stack direction="row" alignItems="center" spacing={1}>
-              {showSellerLogo && (
-                <Box
-                  component="img"
-                  src={order.shipper?.logoUrl}
-                  alt="Seller Logo"
-                  sx={{ width: 60, height: 30, objectFit: 'contain', borderRadius: 1, border: '1px solid #cbd5f5' }}
-                />
-              )}
               <Stack spacing={0.25}>
                 {showSellerName && (
                   <Typography variant="subtitle1" fontWeight="700">
-                    {order.shipper?.name}
+                    {PLATFORM_BRAND_NAME}
                   </Typography>
                 )}
                 <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: 0.5 }}>
@@ -211,7 +204,7 @@ export function LabelPreview({ values, order, preferences }: LabelPreviewProps) 
             </Typography>
             {showSellerName && (
               <Typography variant="subtitle2" fontWeight="700">
-                {order.shipper?.name}
+                {PLATFORM_BRAND_NAME}
               </Typography>
             )}
             {showShipperAddress && (
@@ -371,7 +364,7 @@ export function LabelPreview({ values, order, preferences }: LabelPreviewProps) 
 
         {showPlatformBranding && (
           <Typography variant="caption" align="center" color="text.secondary" fontWeight="600">
-            Powered by {preferences?.powered_by}
+            Powered by {PLATFORM_BRAND_NAME}
           </Typography>
         )}
       </Stack>

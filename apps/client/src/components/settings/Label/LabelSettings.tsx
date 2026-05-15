@@ -81,14 +81,13 @@ const mockOrder = {
   declaredValue: '₹1350',
   courier: 'Bluedart',
   shipper: {
-    name: 'Seller Brand Name',
+    name: 'ChoiceMee Courier',
     phone: '011 4715 2407',
     gst: '9764713698798013',
     address:
       'XX/YY, ABC Apartments, Pitampura, Opp. Metro Pillar 36, New Delhi, Delhi, India. 110034',
     rtoAddress:
       'XX/YY, ABC Apartments, Pitampura, Opp. Metro Pillar 36, New Delhi, Delhi, India. 110034',
-    logoUrl: 'https://via.placeholder.com/120x40?text=Seller+Logo',
   },
   products: [
     { name: 'Navy Blue T-shirt', sku: '695095207050', qty: 2, price: '₹450' },

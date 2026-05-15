@@ -1146,7 +1146,7 @@ const isSlabValidationError = (err: unknown) =>
 const isImportFormatError = (err: unknown) =>
   /csv|excel|sheet|format/i.test(String((err as any)?.message || err || ''))
 
-const parseShippingRateImportRows = (file: any): CSVRow[] => {
+export const parseShippingRateImportRows = (file: any): CSVRow[] => {
   const filename = String(file?.originalname || '').toLowerCase()
   const mimetype = String(file?.mimetype || '').toLowerCase()
   const isExcel =

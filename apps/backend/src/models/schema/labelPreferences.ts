@@ -3,6 +3,7 @@ import { integer, jsonb, pgTableCreator, text, timestamp, uuid, varchar } from '
 import { users } from './users'
 
 const createTable = pgTableCreator((name) => `meracourierwala_${name}`)
+const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
 
 export const labelPreferences = createTable('label_preferences', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -62,7 +63,7 @@ export const labelPreferences = createTable('label_preferences', {
   max_items: integer('max_items').default(3).notNull(),
 
   brand_logo: text('brand_logo'), // S3 key or URL
-  powered_by: varchar('powered_by', { length: 120 }).default('ChoiceMee'),
+  powered_by: varchar('powered_by', { length: 120 }).default(PLATFORM_BRAND_NAME),
 
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true })

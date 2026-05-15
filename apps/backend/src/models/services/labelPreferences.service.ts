@@ -2,6 +2,8 @@ import { eq } from 'drizzle-orm'
 import { db } from '../client'
 import { labelPreferences } from '../schema/labelPreferences'
 
+const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+
 export const DEFAULT_PREFERENCES = {
   printer_type: 'thermal',
   char_limit: 25,
@@ -36,10 +38,16 @@ export const DEFAULT_PREFERENCES = {
     otherCharges: true,
   },
   brand_logo: null,
-  powered_by: 'ChoiceMee',
+  powered_by: PLATFORM_BRAND_NAME,
   created_at: new Date(),
   updated_at: new Date(),
 }
+
+const enforcePlatformBranding = <T extends Record<string, any>>(prefs: T) => ({
+  ...prefs,
+  brand_logo: null,
+  powered_by: PLATFORM_BRAND_NAME,
+})
 
 export const labelPreferencesService = {
   async getByUser(userId: string) {
@@ -49,7 +57,7 @@ export const labelPreferencesService = {
       .where(eq(labelPreferences.user_id, userId))
 
     if (prefs) {
-      return prefs
+      return enforcePlatformBranding(prefs)
     }
 
     // Fallback defaults
@@ -61,6 +69,7 @@ export const labelPreferencesService = {
   },
 
   async createOrUpdate(userId: string, data: any) {
+    const safeData = enforcePlatformBranding(data || {})
     const [existing] = await db
       .select()
       .from(labelPreferences)
@@ -69,16 +78,16 @@ export const labelPreferencesService = {
     if (existing) {
       const [updated] = await db
         .update(labelPreferences)
-        .set({ ...data, updated_at: new Date() })
+        .set({ ...safeData, updated_at: new Date() })
         .where(eq(labelPreferences.user_id, userId))
         .returning()
-      return updated
+      return enforcePlatformBranding(updated)
     } else {
       const [created] = await db
         .insert(labelPreferences)
-        .values({ user_id: userId, ...DEFAULT_PREFERENCES, ...data })
+        .values({ user_id: userId, ...DEFAULT_PREFERENCES, ...safeData })
         .returning()
-      return created
+      return enforcePlatformBranding(created)
     }
   },
 }
