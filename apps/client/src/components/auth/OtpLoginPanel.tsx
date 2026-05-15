@@ -237,16 +237,15 @@ export default function OtpLoginPanel({
               mt: 0.35,
             }}
           >
-            New user,{' '}
+            New users?{' '}
             <Link
               href="/signup"
-              underline="hover"
+              underline="always"
               onClick={handleSignupRedirect}
               sx={{ color: AUTH_ORANGE, fontWeight: 800 }}
             >
-              create your account
-            </Link>{' '}
-            here
+              Create Account here
+            </Link>
           </Typography>
         </Box>
       ) : (

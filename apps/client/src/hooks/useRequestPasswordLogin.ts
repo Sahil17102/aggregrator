@@ -9,11 +9,13 @@ export const useRequestPasswordLogin = () => {
       email,
       password,
       flow = "login",
+      name,
     }: {
       email: string;
       password?: string;
       flow?: AuthFlow;
-    }) => requestPasswordLoginApi(email, password, flow),
+      name?: string;
+    }) => requestPasswordLoginApi(email, password, flow, name),
   });
 };
 

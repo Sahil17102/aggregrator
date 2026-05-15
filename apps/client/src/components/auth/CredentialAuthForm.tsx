@@ -130,6 +130,7 @@ export default function CredentialAuthForm({
         email: email.trim().toLowerCase(),
         password,
         flow: authFlow,
+        name: mode === 'signup' ? name.trim() : undefined,
       },
       {
         onSuccess: (response: AuthResponse) => {
@@ -342,16 +343,15 @@ export default function CredentialAuthForm({
               'New users create an account here and continue to onboarding.'
             ) : (
               <>
-                New user,{' '}
+                New users?{' '}
                 <Link
                   href="/signup"
-                  underline="hover"
+                  underline="always"
                   onClick={handleSignupRedirect}
                   sx={{ color: AUTH_ORANGE, fontWeight: 800 }}
                 >
-                  create your account
-                </Link>{' '}
-                here
+                  Create Account here
+                </Link>
               </>
             )}
           </Typography>

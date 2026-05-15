@@ -346,22 +346,28 @@ export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
 }
 
 export const requestEmailVerification = async (req: Request, res: Response): Promise<any> => {
-  const { idToken, password, email, flow } = req.body
+  const { idToken, password, email, flow, name } = req.body
   const authFlow = flow === 'signup' ? 'signup' : 'login'
 
   try {
     let userEmail = email
     let googleId: string | null = null
+    let profileContactName = typeof name === 'string' ? name.trim() : ''
 
     // If idToken is provided, verify it to extract email and googleId
     if (idToken) {
       const googleUser = await verifyGoogleToken(idToken)
       userEmail = googleUser.email
       googleId = googleUser.googleId
+      profileContactName = profileContactName || googleUser.name || ''
     }
 
     if (!userEmail) {
       return res.status(400).json({ error: 'Email is required' })
+    }
+
+    if (authFlow === 'signup' && !profileContactName.trim()) {
+      return res.status(400).json({ error: 'Name is required' })
     }
 
     const result = await handleEmailVerificationRequest(
@@ -369,6 +375,7 @@ export const requestEmailVerification = async (req: Request, res: Response): Pro
       password,
       googleId, // null for password logins
       authFlow,
+      profileContactName,
     )
 
     const user = result.data?.user

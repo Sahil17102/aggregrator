@@ -394,9 +394,11 @@ export const handleEmailVerificationRequest = async (
   password: string | null,
   googleId: string | null,
   flow: AuthFlow = 'login',
+  profileContactName = '',
 ): Promise<{ status: number; data: any }> => {
   return await db.transaction(async (tx) => {
     const normalizedEmail = email.trim().toLowerCase()
+    const normalizedContactName = profileContactName.trim().replace(/\s+/g, ' ')
     const token = generate8DigitsVerificationToken()
     const expiresAt = new Date(Date.now() + OTP_EXPIRY)
     let shouldSendEmail = false
@@ -547,6 +549,7 @@ export const handleEmailVerificationRequest = async (
         googleId,
         emailVerified: true,
         onboardingStep: 0,
+        profileContactName: normalizedContactName,
       })
       return { status: 201, data: { message: 'Account created via Google' } }
     }
@@ -564,6 +567,7 @@ export const handleEmailVerificationRequest = async (
       emailVerificationTokenExpiresAt: expiresAt,
       emailVerified: false,
       onboardingStep: 0,
+      profileContactName: normalizedContactName,
     })
 
     shouldSendEmail = true
@@ -614,12 +618,18 @@ export const saveRefreshToken = async (
     .returning({ id: users.id })
 }
 
-export async function createUserWithWallet(data: Partial<IUser>, txn: any = db) {
+type CreateUserWithWalletData = Partial<IUser> & {
+  profileContactName?: string
+}
+
+export async function createUserWithWallet(data: CreateUserWithWalletData, txn: any = db) {
+  const { profileContactName, ...userData } = data
+
   return txn?.transaction(async (tx: any) => {
     // 1) insert user
     const [user] = await tx
       .insert(users)
-      .values(data as IUser)
+      .values(userData as IUser)
       .returning()
 
     // 2) insert wallet
@@ -707,9 +717,10 @@ export async function createUserWithWallet(data: Partial<IUser>, txn: any = db) 
 
     const companyInfo = {
       ...DEFAULT_PROFILE.companyInfo, // keeps required fields
-      contactEmail: data.email ?? '',
-      contactNumber: data.phone ?? '',
-      profilePicture: data?.profilePicture,
+      contactPerson: profileContactName ?? DEFAULT_PROFILE.companyInfo.contactPerson,
+      contactEmail: userData.email ?? '',
+      contactNumber: userData.phone ?? '',
+      profilePicture: userData?.profilePicture,
     }
 
     await tx.insert(schema.userProfiles).values({

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Box, FormControlLabel, Link, Stack, Tooltip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { useState, type Dispatch, type SetStateAction } from 'react'
+import { useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react'
 import { FiMail, FiShield } from 'react-icons/fi'
 import { MdInfoOutline, MdPassword } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
@@ -53,6 +53,11 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
   })
 
   const [termsChecked, setTermsChecked] = useState(false)
+
+  const handleSignupRedirect = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    navigate('/signup')
+  }
 
   const validateEmail = (email: string): string => {
     if (!email) return 'Email is required.'
@@ -253,7 +258,15 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
           mt: 0.35,
         }}
       >
-        Only existing users can sign in here.
+        New users?{' '}
+        <Link
+          href="/signup"
+          underline="always"
+          onClick={handleSignupRedirect}
+          sx={{ color: DE_AMBER, fontWeight: 800 }}
+        >
+          Create Account here
+        </Link>
       </Typography>
 
       <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
