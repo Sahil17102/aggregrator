@@ -323,13 +323,22 @@ export const updateShippingRate = async (
     min_weight,
     service_provider,
     previous_service_provider,
-    businessType = 'b2b',
+    businessType,
     rates,
     zone_slabs,
     previous_mode,
   } = updates
 
   console.log('MODE!', mode)
+
+  const normalizedBusinessType = String(businessType || '').trim().toLowerCase()
+  if (normalizedBusinessType !== 'b2b' && normalizedBusinessType !== 'b2c') {
+    throw new Error('businessType is required and must be either b2b or b2c')
+  }
+
+  if (!planId || planId === 'undefined' || planId === 'true' || planId === 'false') {
+    throw new Error('A valid plan ID is required to update a shipping rate')
+  }
 
   if (!courierId || !courier_name) {
     throw new Error('Both courierId and courier_name are required')
@@ -383,7 +392,7 @@ export const updateShippingRate = async (
             and(
               eq(shippingRates.courier_id, courierId),
               eq(shippingRates.plan_id, planId),
-              eq(shippingRates.business_type, businessType),
+              eq(shippingRates.business_type, normalizedBusinessType),
               eq(shippingRates.zone_id, zn.id),
               eq(shippingRates.type, type),
               eq(sql`LOWER(${shippingRates.mode})`, previousMode),
@@ -416,7 +425,7 @@ export const updateShippingRate = async (
           )
 
           await db.update(shippingRates).set(updateData).where(eq(shippingRates.id, existing.id))
-          if (businessType === 'b2c') {
+          if (normalizedBusinessType === 'b2c') {
             await replaceShippingRateSlabs(existing.id, explicitSlabs)
           }
           console.log(`[updateShippingRate] ✅ Updated rate ${existing.id} successfully`)
@@ -431,7 +440,7 @@ export const updateShippingRate = async (
             courier_name: String(courier_name),
             service_provider: normalizedServiceProvider,
             mode: normalizedMode,
-            business_type: businessType,
+            business_type: normalizedBusinessType,
             min_weight: toWeight(fallbackMinWeight),
             zone_id: zn.id,
             type,
@@ -445,7 +454,7 @@ export const updateShippingRate = async (
             `[updateShippingRate] Inserting with service_provider: "${insertData.service_provider}"`,
           )
           await db.insert(shippingRates).values(insertData)
-          if (businessType === 'b2c') {
+          if (normalizedBusinessType === 'b2c') {
             await replaceShippingRateSlabs(insertData.id, explicitSlabs)
           }
           console.log(`[updateShippingRate] ✅ Inserted new rate successfully`)

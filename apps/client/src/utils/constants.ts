@@ -226,7 +226,10 @@ export const requiredKycFieldMap: Record<
 }
 
 export const courierLogos: Record<string, string> = {
-  Delhivery: '/logo/integrations/delhivery.png',
+  Delhivery: '/logo/integrations/delhivery-one.webp',
+  'Delivery One': '/logo/integrations/delhivery-one.webp',
+  deliveryone: '/logo/integrations/delhivery-one.webp',
+  'Delhivery One': '/logo/integrations/delhivery-one.webp',
   Bluedart: '/logo/integrations/bluedart.png',
   Shadowfax: '/logo/integrations/shadowfax.png',
   DTDC: '/logo/integrations/dtdc.png',

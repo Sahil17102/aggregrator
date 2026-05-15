@@ -31,6 +31,7 @@ import { useImportShippingRates, useShippingRates } from 'hooks/useCouriers'
 import { useZones } from 'hooks/useZones'
 import { fetchAllCouriersList } from 'services/courier.service'
 import { PlansService } from 'services/plan.service'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 
 const normalizeProvider = (value) => String(value || '').trim().toLowerCase()
 
@@ -74,7 +75,7 @@ const downloadCSV = (allCouriers = [], allZones = [], existingData = [], filters
     ]
 
     rows = existingData
-      .filter((r) => r.business_type === type && r.plan_id === filters.planId)
+      .filter((r) => r.business_type === type && String(r.plan_id) === String(filters.planId))
       .map((row) => {
         const courier =
           allCouriers.find(
@@ -121,7 +122,7 @@ const downloadCSV = (allCouriers = [], allZones = [], existingData = [], filters
     ]
 
     rows = existingData
-      .filter((r) => r.business_type === type && r.plan_id === filters.planId)
+      .filter((r) => r.business_type === type && String(r.plan_id) === String(filters.planId))
       .map((row) => {
         const courier =
           allCouriers.find(
@@ -208,7 +209,7 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
   useEffect(() => {
     if (plans?.length > 0) {
       // Always set to first plan if not set, or if current selection is invalid
-      if (!selectedPlanId || !plans.find((p) => p.id === selectedPlanId)) {
+      if (!selectedPlanId || !plans.find((p) => String(p.id) === String(selectedPlanId))) {
         setSelectedPlanId(plans[0].id)
       }
     }
@@ -256,7 +257,7 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
           key: 'courier_name',
           label: 'Courier',
           type: 'multiselect',
-          options: courierList?.map((c) => ({ label: c?.name, value: c?.name })) || [],
+          options: courierList?.map((c) => ({ label: getCourierDisplayName(c), value: c?.name })) || [],
         },
         {
           key: 'mode',

@@ -101,17 +101,21 @@ export const getShippingRatesController = async (req: Request, res: Response) =>
         ? [rawZones]
         : []
 
+    const requestedBusinessType = (req.query.businessType as string | undefined)
+      ?.trim()
+      .toLowerCase() as 'b2b' | 'b2c' | undefined
+
     const filters: ShippingRateFilters = {
       courier_name: courierNames.length ? courierNames : undefined,
       mode: req.query.mode as string | undefined,
       min_weight:
-        (req.query.businessType as string | undefined)?.toLowerCase() === 'b2c'
+        requestedBusinessType === 'b2c'
           ? undefined
           : req.query.min_weight
             ? Number(req.query.min_weight)
             : undefined,
       plan_id: req.query.planId as string | undefined,
-      business_type: (req.query.businessType as 'b2b' | 'b2c') || undefined,
+      business_type: requestedBusinessType,
       zone: zonesFilter.length ? zonesFilter : undefined,
     }
 
@@ -1118,11 +1122,11 @@ export const updateShippingRateController = async (req: Request, res: Response) 
     res.json({ success: true, data: updated })
   } catch (err) {
     console.log('Error updating shipping rate:', err)
-    const statusCode = isSlabValidationError(err) ? 400 : 500
+    const statusCode = isRateUpdateValidationError(err) ? 400 : 500
     res.status(statusCode).json({
       success: false,
-      message: isSlabValidationError(err)
-        ? String((err as any)?.message || 'Invalid slab configuration')
+      message: isRateUpdateValidationError(err)
+        ? String((err as any)?.message || 'Invalid rate-card update')
         : 'Internal Server Error',
     })
   }
@@ -1142,6 +1146,12 @@ const parseSlabJsonCell = (value?: string) => {
 
 const isSlabValidationError = (err: unknown) =>
   /slab|overlap|extra_rate|extra_weight_unit/i.test(String((err as any)?.message || err || ''))
+
+const isRateUpdateValidationError = (err: unknown) =>
+  isSlabValidationError(err) ||
+  /businessType|business type|plan ID|courierId|courier_name|required|shipping mode/i.test(
+    String((err as any)?.message || err || ''),
+  )
 
 const isImportFormatError = (err: unknown) =>
   /csv|excel|sheet|format/i.test(String((err as any)?.message || err || ''))
@@ -1191,8 +1201,15 @@ export const importShippingRatesController = async (req: any, res: Response) => 
     }
 
     const { planId: plan_id, businessType: business_type } = req.query
-    if (!plan_id || !business_type) {
+    const normalizedBusinessType = String(business_type || '').trim().toLowerCase()
+    if (!plan_id || !normalizedBusinessType) {
       return res.status(400).json({ success: false, message: 'Missing plan_id or business_type' })
+    }
+    if (normalizedBusinessType !== 'b2b' && normalizedBusinessType !== 'b2c') {
+      return res.status(400).json({
+        success: false,
+        message: 'business_type must be either b2b or b2c',
+      })
     }
 
     const data = parseShippingRateImportRows(req.file)
@@ -1207,7 +1224,7 @@ export const importShippingRatesController = async (req: any, res: Response) => 
       const mode = row['Mode'] || ''
 
       if (!courierId || !courierName) continue
-      if (String(business_type).toLowerCase() === 'b2c' && !String(mode).trim()) {
+      if (normalizedBusinessType === 'b2c' && !String(mode).trim()) {
         return res.status(400).json({
           success: false,
           message: `Mode is required for B2C rate import. Please set Mode as air or surface for courier ${courierName}.`,
@@ -1219,7 +1236,7 @@ export const importShippingRatesController = async (req: any, res: Response) => 
 
       const rates: RateItem[] = Object.entries(row)
         .filter(([key]) =>
-          business_type === 'b2b'
+          normalizedBusinessType === 'b2b'
             ? key.toLowerCase().includes('forward') || key.toLowerCase().includes('rto')
             : key.includes('(Forward)') || key.includes('(RTO)'),
         )
@@ -1241,7 +1258,7 @@ export const importShippingRatesController = async (req: any, res: Response) => 
         })
 
       const zoneSlabs: Record<string, { forward?: any[]; rto?: any[] }> = {}
-      if (business_type === 'b2c') {
+      if (normalizedBusinessType === 'b2c') {
         for (const zone of zonesList) {
           const forwardSlabs = parseSlabJsonCell(row[`${zone.name} (Forward Slabs)`])
           const rtoSlabs = parseSlabJsonCell(row[`${zone.name} (RTO Slabs)`])
@@ -1274,13 +1291,13 @@ export const importShippingRatesController = async (req: any, res: Response) => 
         service_provider: serviceProvider,
         plan_id: plan_id as string,
         min_weight: minWeight,
-        business_type: business_type as 'b2b' | 'b2c',
+        business_type: normalizedBusinessType,
         mode,
         cod_charges: codCharges,
         cod_percent: codPercent,
         other_charges: otherCharges,
         rates,
-        zone_slabs: business_type === 'b2c' ? zoneSlabs : undefined,
+        zone_slabs: normalizedBusinessType === 'b2c' ? zoneSlabs : undefined,
       })
     }
 

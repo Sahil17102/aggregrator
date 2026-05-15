@@ -25,11 +25,14 @@ import DataTable from '../../components/UI/table/DataTable'
 import TableSkeleton from '../../components/UI/table/TableSkeleton'
 import { useAllCouriers, useShippingRates } from '../../hooks/Integrations/useCouriers'
 import { useZones } from '../../hooks/useZones'
-import { courierLogos, defaultLogo } from '../../utils/constants'
+import { getCourierDisplayName, getCourierLogo } from '../../utils/courierDisplay'
+import { defaultLogo } from '../../utils/constants'
 
 interface ShippingRate {
   id: string | number
   courier_name: string
+  service_provider?: string | null
+  serviceProvider?: string | null
   mode: string
   min_weight: number
   cod_charges?: number | string
@@ -55,18 +58,27 @@ const B2CClientTable = ({ data, zones }: { data: ShippingRate[]; zones: any[] })
       id: 'courier_name',
       label: 'Courier',
       render: (_, row) => {
-        const logoSrc =
-          Object.entries(courierLogos)?.find(([key]) =>
-            row?.courier_name?.toLowerCase().includes(key.toLowerCase()),
-          )?.[1] ?? defaultLogo
+        const displayName = getCourierDisplayName({
+          name: row.courier_name,
+          service_provider: row.service_provider,
+          serviceProvider: row.serviceProvider,
+        })
+        const logoSrc = getCourierLogo(
+          {
+            name: row.courier_name,
+            service_provider: row.service_provider,
+            serviceProvider: row.serviceProvider,
+          },
+          defaultLogo,
+        )
         return (
           <Stack direction="row" alignItems="center" spacing={1}>
             <Avatar
               src={logoSrc || defaultLogo}
-              alt={row.courier_name}
+              alt={displayName}
               sx={{ width: 24, height: 24 }}
             />
-            <Typography fontWeight={500}>{row.courier_name}</Typography>
+            <Typography fontWeight={500}>{displayName}</Typography>
           </Stack>
         )
       },
@@ -131,7 +143,13 @@ const B2BClientTable = ({
         <Card key={courier.courier_name} sx={{ p: 2 }}>
           <CardContent>
             <Stack spacing={1}>
-              <Typography variant="h6">{courier.courier_name}</Typography>
+              <Typography variant="h6">
+                {getCourierDisplayName({
+                  name: courier.courier_name,
+                  service_provider: courier.service_provider,
+                  serviceProvider: courier.serviceProvider,
+                })}
+              </Typography>
               <Typography variant="body2">Min Weight: {courier.min_weight} kg</Typography>
               <Typography variant="body2">
                 COD: ₹{courier.cod_charges ?? '0'} | {courier.cod_percent ?? '0'}%
@@ -191,7 +209,11 @@ const RateCard = () => {
     const csvData = rates.map((r) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const base: Record<string, any> = {
-        Courier: r.courier_name,
+        Courier: getCourierDisplayName({
+          name: r.courier_name,
+          service_provider: r.service_provider,
+          serviceProvider: r.serviceProvider,
+        }),
         Mode: r.mode,
         'Min Weight': r.min_weight,
       }
@@ -235,7 +257,7 @@ const RateCard = () => {
       name: 'courier',
       label: 'Courier',
       type: 'multiselect',
-      options: couriers?.map((c: string) => ({ label: c, value: c })) || [],
+      options: couriers?.map((c: string) => ({ label: getCourierDisplayName(c), value: c })) || [],
     },
     { name: 'min_weight', label: 'Min Weight (kg)', type: 'text', placeholder: 'Enter min weight' },
   ]

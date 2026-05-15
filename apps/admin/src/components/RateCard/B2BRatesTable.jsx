@@ -16,6 +16,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react'
 import { useDeleteB2BCourier, useDeleteB2BZone } from 'hooks/useCouriers'
+import { getCourierDisplayName, getProviderDisplayName } from 'utils/courierDisplay'
 
 export const B2BTable = ({ data, onEdit, planId }) => {
   const deleteB2BZoneMutation = useDeleteB2BZone(planId)
@@ -68,13 +69,13 @@ export const B2BTable = ({ data, onEdit, planId }) => {
             >
               <Box>
                 <Text fontWeight="bold" fontSize="lg">
-                  {courier.courier_name}
+                  {getCourierDisplayName(courier)}
                 </Text>
                 {(courier.service_provider || courier.serviceProvider) && (
                   <Text fontSize="sm" color="gray.600" mt={1}>
                     Service Provider:{' '}
                     <Badge variant="solid" colorScheme="green" ml={1}>
-                      {courier.service_provider || courier.serviceProvider}
+                      {getProviderDisplayName(courier.service_provider || courier.serviceProvider)}
                     </Badge>
                   </Text>
                 )}

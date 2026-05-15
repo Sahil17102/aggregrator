@@ -2,6 +2,7 @@ import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import { Badge, Box, Flex, IconButton, Text } from '@chakra-ui/react'
 import { useDeleteB2CZone } from 'hooks/useCouriers'
 import { useMemo } from 'react'
+import { getCourierDisplayName, getProviderDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 export const B2CTable = ({ data, zones, onEdit, planId, loading }) => {
@@ -36,10 +37,13 @@ export const B2CTable = ({ data, zones, onEdit, planId, loading }) => {
           const serviceProvider = row.service_provider || row.serviceProvider
           return (
             <Box>
-              <Text fontWeight="semibold">{row.courier_name || 'N/A'}</Text>
+              <Text fontWeight="semibold">{getCourierDisplayName(row)}</Text>
               {serviceProvider && (
                 <Text fontSize="xs" color="gray.600" mt={0.5}>
-                  Provider: <Badge colorScheme="green" fontSize="xs">{serviceProvider}</Badge>
+                  Provider:{' '}
+                  <Badge colorScheme="green" fontSize="xs">
+                    {getProviderDisplayName(serviceProvider)}
+                  </Badge>
                 </Text>
               )}
             </Box>

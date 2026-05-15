@@ -14,7 +14,7 @@ import {
 import { BiPackage, BiRupee, BiTimeFive } from 'react-icons/bi'
 import { FaShippingFast, FaWeight } from 'react-icons/fa'
 import { brand, brandGradients } from '../theme/brand'
-import { courierLogos } from '../utils/constants'
+import { getCourierDisplayName, getCourierLogo, isDelhiveryCourier } from '../utils/courierDisplay'
 
 type ForwardRate = {
   mode?: string | null
@@ -29,13 +29,28 @@ type LocalRates = {
   forward?: ForwardRate | null
 }
 
+type ProviderRate = {
+  provider?: string | null
+  total?: number | string | null
+  freight?: number | string | null
+  cod?: number | string | null
+  chargeable_weight?: number | string | null
+}
+
 export type Courier = {
   id: string
   name?: string | null
+  displayName?: string | null
   chargeable_weight?: number | null
   volumetric_weight?: number | null
   slabs?: number | null
   rate?: number | null
+  rateEstimate?: number | null
+  courier_cost_estimate?: number | null
+  provider_rate?: ProviderRate | null
+  serviceProvider?: string | null
+  service_provider?: string | null
+  integration_type?: string | null
   edd?: string | null
   localRates?: LocalRates | null
   special_zone?: boolean | null
@@ -49,6 +64,14 @@ type Props = {
   onSelect?: (courier: Courier) => void
   shipmentType?: string
 }
+
+const toChargeNumber = (value: unknown) => {
+  const numeric = Number(value ?? 0)
+  return Number.isFinite(numeric) ? numeric : 0
+}
+
+const formatAmount = (value: number) =>
+  value > 0 ? value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : 'N/A'
 
 export default function CourierRateList({
   availableCouriers = [],
@@ -111,21 +134,28 @@ export default function CourierRateList({
 
       <Grid container spacing={2}>
         {availableCouriers.map((courier) => {
-          const logo =
-            Object.entries(courierLogos || {}).find(([key]) =>
-              courier?.name?.toLowerCase().includes(key.toLowerCase()),
-            )?.[1] ?? defaultLogo
+          const displayName = getCourierDisplayName(courier)
+          const logo = getCourierLogo(courier, defaultLogo)
 
           const forward: ForwardRate = courier?.localRates?.forward ?? {}
           const freight =
             courier?.rate !== undefined && courier?.rate !== null
-              ? Number(courier.rate)
+              ? toChargeNumber(courier.rate)
               : forward?.rate
-                ? Number(forward.rate)
+                ? toChargeNumber(forward.rate)
                 : 0
-          const codCharges = forward?.cod_charges ? Number(forward.cod_charges) : 0
+          const codCharges = toChargeNumber(forward?.cod_charges)
           const isCOD = shipmentType === 'cod'
-          const totalCharges = isCOD ? freight + codCharges : freight
+          const platformTotal = isCOD ? freight + codCharges : freight
+          const providerFreight = toChargeNumber(courier?.provider_rate?.freight)
+          const providerCod = toChargeNumber(courier?.provider_rate?.cod)
+          const providerParts = providerFreight + providerCod
+          const providerTotal =
+            toChargeNumber(courier?.provider_rate?.total) ||
+            providerParts ||
+            toChargeNumber(courier?.courier_cost_estimate ?? courier?.rateEstimate)
+          const hasProviderQuote = providerTotal > 0
+          const providerRateLabel = isDelhiveryCourier(courier) ? 'Delhivery rate' : 'Provider rate'
           const eddText = courier?.edd ?? '-'
           const isClickable = Boolean(onSelect)
 
@@ -155,7 +185,7 @@ export default function CourierRateList({
                   <Stack direction="row" spacing={2} alignItems="center" mb={2.5}>
                     <Avatar
                       src={logo}
-                      alt={courier?.name ?? 'logo'}
+                      alt={displayName}
                       variant="rounded"
                       sx={{
                         width: 56,
@@ -176,7 +206,7 @@ export default function CourierRateList({
                         }}
                         noWrap
                       >
-                        {courier?.name ?? 'Unknown Courier'}
+                        {displayName}
                       </Typography>
                       {courier?.approxZone?.name ? (
                         <Chip
@@ -204,31 +234,60 @@ export default function CourierRateList({
                       border: `1px solid ${alpha(brand.accent, 0.16)}`,
                     }}
                   >
-                    <Stack direction="row" alignItems="baseline" spacing={1}>
-                      <BiRupee size={20} color={brand.accent} />
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          fontWeight: 900,
-                          color: brand.ink,
-                          fontSize: '2rem',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {totalCharges > 0 ? totalCharges.toLocaleString('en-IN') : 'N/A'}
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: brand.inkSoft,
-                        fontWeight: 600,
-                        mt: 0.5,
-                        display: 'block',
-                      }}
-                    >
-                      {isCOD ? 'Including COD charges' : 'Prepaid rate'}
-                    </Typography>
+                    <Grid container spacing={1.4}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Stack spacing={0.8}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: brand.inkSoft, fontWeight: 800, display: 'block' }}
+                          >
+                            ChoiceMee rate
+                          </Typography>
+                          <Stack direction="row" alignItems="baseline" spacing={0.5}>
+                            <BiRupee size={18} color={brand.accent} />
+                            <Typography
+                              sx={{
+                                fontWeight: 900,
+                                color: brand.ink,
+                                fontSize: '1.65rem',
+                                lineHeight: 1,
+                              }}
+                            >
+                              {formatAmount(platformTotal)}
+                            </Typography>
+                          </Stack>
+                          <Typography variant="caption" sx={{ color: brand.inkSoft, fontWeight: 600 }}>
+                            {isCOD ? 'Includes COD charges' : 'Prepaid platform rate'}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Stack spacing={0.8}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: brand.inkSoft, fontWeight: 800, display: 'block' }}
+                          >
+                            {providerRateLabel}
+                          </Typography>
+                          <Stack direction="row" alignItems="baseline" spacing={0.5}>
+                            <BiRupee size={18} color={hasProviderQuote ? brand.accent : brand.inkSoft} />
+                            <Typography
+                              sx={{
+                                fontWeight: 900,
+                                color: hasProviderQuote ? brand.ink : brand.inkSoft,
+                                fontSize: '1.65rem',
+                                lineHeight: 1,
+                              }}
+                            >
+                              {formatAmount(providerTotal)}
+                            </Typography>
+                          </Stack>
+                          <Typography variant="caption" sx={{ color: brand.inkSoft, fontWeight: 600 }}>
+                            {hasProviderQuote ? 'Live provider quote' : 'Quote unavailable'}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                    </Grid>
                   </Box>
 
                   <Grid container spacing={1.4} mb={2}>

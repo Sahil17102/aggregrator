@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react'
 import { useUpdateShippingRate } from 'hooks/useCouriers'
 import { useEffect, useState } from 'react'
+import { getCourierDisplayName, getProviderDisplayName } from 'utils/courierDisplay'
 import CustomModal from './CustomModal'
 
 const normalizeProvider = (value) => String(value || '').trim().toLowerCase()
@@ -40,7 +41,12 @@ export const RateCardEditModal = ({
 }) => {
   const { mutate: updateRate, isLoading } = useUpdateShippingRate()
   const [form, setForm] = useState({})
-  const isB2C = businessType?.toLowerCase() === 'b2c'
+  const resolvedBusinessType = String(
+    businessType || data?.business_type || data?.businessType || '',
+  )
+    .trim()
+    .toLowerCase()
+  const isB2C = resolvedBusinessType === 'b2c'
 
   const buildLegacySlabs = (zoneName, type, minWeight, ratesObj) => {
     const rate = ratesObj?.[zoneName]?.[type]
@@ -141,6 +147,11 @@ export const RateCardEditModal = ({
     const resolvedCourierId = form.courier_id || data?.courier_id
     const resolvedMode = String(form.mode || data?.mode || '').trim()
 
+    if (!['b2b', 'b2c'].includes(resolvedBusinessType)) {
+      alert('Business type is missing. Please open this rate from the B2B or B2C rate card.')
+      return
+    }
+
     if (!resolvedCourierId) {
       alert('Please select a courier before saving rates.')
       return
@@ -197,10 +208,8 @@ export const RateCardEditModal = ({
       previous_service_provider: data?.service_provider || data?.serviceProvider,
       rates,
       zone_slabs: isB2C ? form.zone_slabs : undefined,
-      businessType,
+      businessType: resolvedBusinessType,
     }
-
-    if (onSave) onSave(payload)
 
     // Validate planId before making the request
     // Ensure planId is a valid string or number, not a boolean or empty string
@@ -261,6 +270,8 @@ export const RateCardEditModal = ({
       alert('Invalid Plan ID. Please select a plan first.')
       return
     }
+
+    if (onSave) onSave(payload)
 
     updateRate(
       {
@@ -354,7 +365,10 @@ export const RateCardEditModal = ({
                 Courier Name:
               </Text>
               <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>
-                {displayCourierName || 'Not selected'}
+                {getCourierDisplayName({
+                  courier_name: displayCourierName,
+                  service_provider: displayServiceProvider,
+                })}
               </Badge>
             </Flex>
             <Flex align="center" gap={2}>
@@ -362,7 +376,7 @@ export const RateCardEditModal = ({
                 Service Provider:
               </Text>
               <Badge colorScheme="green" fontSize="sm" px={2} py={1}>
-                {displayServiceProvider || 'Not selected'}
+                {getProviderDisplayName(displayServiceProvider)}
               </Badge>
             </Flex>
           </Stack>
@@ -397,7 +411,8 @@ export const RateCardEditModal = ({
                   key={makeCourierKey(c.id, c.serviceProvider || c.service_provider || '')}
                   value={makeCourierKey(c.id, c.serviceProvider || c.service_provider || '')}
                 >
-                  {c.name} {c.serviceProvider ? `(${c.serviceProvider})` : ''}
+                  {getCourierDisplayName(c)}{' '}
+                  {c.serviceProvider ? `(${getProviderDisplayName(c.serviceProvider)})` : ''}
                 </option>
               ))}
             </Select>
