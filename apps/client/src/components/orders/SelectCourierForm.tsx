@@ -19,6 +19,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   const { watch, setValue, clearErrors } = useFormContext<B2BFormData | B2CFormData>()
 
   const products = watch('products') ?? []
+  const b2bBoxes = watch('boxes') as B2BBox[] | undefined
   const deliveryPincode = watch('pincode') ?? ''
   const pickupPincode = watch('pickupLocationPincode') ?? ''
   const pickupName = watch('pickupLocationName') ?? ''
@@ -52,9 +53,8 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
   if (shipment_type === 'b2b') {
     // B2B uses flat boxes array, not nested in products
-    const boxes = watch('boxes') as B2BBox[] | undefined
-    if (boxes && Array.isArray(boxes)) {
-      boxes.forEach((box: B2BBox) => {
+    if (b2bBoxes && Array.isArray(b2bBoxes)) {
+      b2bBoxes.forEach((box: B2BBox) => {
         // Calculate chargeable weight per box (max of actual and volumetric)
         const actualWeightKg = Number(box.weightKg ?? 0) // in kg
         const length = Number(box.lengthCm ?? 0) // in cm
@@ -153,12 +153,35 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
     const parsed = Number(value ?? 0)
     return Number.isFinite(parsed) ? parsed : 0
   }
-  const getCourierPlatformCharge = (courier: (typeof availableCouriers)[number]) =>
-    toChargeNumber(
-      courier?.rate !== undefined && courier?.rate !== null
-        ? courier.rate
-        : courier?.localRates?.forward?.rate,
-    )
+  const getB2BChargeableWeightKg = (courier: (typeof availableCouriers)[number]) => {
+    const factor = toChargeNumber(courier?.localRates?.forward?.volumetricFactor) || 5000
+    if (!b2bBoxes?.length) return Number(totalWeight || 0) / 1000
+
+    return b2bBoxes.reduce((sum, box) => {
+      const actualWeightKg = toChargeNumber(box.weightKg)
+      const volumetricWeightKg =
+        box.lengthCm && box.breadthCm && box.heightCm
+          ? (toChargeNumber(box.lengthCm) * toChargeNumber(box.breadthCm) * toChargeNumber(box.heightCm)) /
+            factor
+          : 0
+
+      return sum + Math.max(actualWeightKg, volumetricWeightKg)
+    }, 0)
+  }
+  const getCourierFreightCharge = (courier: (typeof availableCouriers)[number]) => {
+    const directRate = toChargeNumber(courier?.rate)
+    if (directRate > 0) return directRate
+
+    const forwardRate = toChargeNumber(courier?.localRates?.forward?.rate)
+    if (forwardRate > 0) return forwardRate
+
+    const b2bRatePerKg = toChargeNumber(courier?.localRates?.forward?.ratePerKg)
+    if (shipment_type === 'b2b' && b2bRatePerKg > 0) {
+      return b2bRatePerKg * getB2BChargeableWeightKg(courier)
+    }
+
+    return 0
+  }
   const getCourierProviderCost = (courier: (typeof availableCouriers)[number]) => {
     const providerTotal = toChargeNumber(courier?.provider_rate?.total)
     const providerFreight = toChargeNumber(courier?.provider_rate?.freight)
@@ -171,8 +194,6 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
       toChargeNumber(courier?.courier_cost_estimate ?? courier?.rateEstimate ?? 0)
     )
   }
-  const getCourierFinalCharge = (courier: (typeof availableCouriers)[number]) =>
-    getCourierPlatformCharge(courier) + getCourierProviderCost(courier)
 
   const selectedCourierSummary = availableCouriers.find((courier) => {
     const courierOptionKey = String(
@@ -407,10 +428,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                       {getCourierDisplayName(selectedCourierSummary)}
                     </Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
-                      <Chip
-                        size="small"
-                        label={`Rate ${formatCurrency(getCourierFinalCharge(selectedCourierSummary))}`}
-                      />
+                      <Chip size="small" label={`Rate ${formatCurrency(getCourierFreightCharge(selectedCourierSummary))}`} />
                       <Chip
                         size="small"
                         label={`Chargeable ${formatWeightKg(selectedCourierSummary.chargeable_weight)}`}
@@ -470,7 +488,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 : String(selectedCourierId) === String(courier?.id ?? courier?.courier_id ?? '')
 
               const providerCost = getCourierProviderCost(courier)
-              const finalCharge = getCourierFinalCharge(courier)
+              const freightCharge = getCourierFreightCharge(courier)
 
               return (
                 <Paper
@@ -481,7 +499,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     setValue('courierOptionKey', courierOptionKey)
                     setValue('selectedMaxSlabWeight', courier?.max_slab_weight ?? null)
                     setValue('courierCod', local?.forward?.cod_charges ?? 0)
-                    setValue('forwardCharges', finalCharge)
+                    setValue('forwardCharges', freightCharge)
                     setValue('otherCharges', local?.forward?.other_charges ?? 0)
                     setValue(
                       'shippingMode',
@@ -580,14 +598,14 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                           Total Rate
                         </Typography>
                         <Typography sx={{ fontSize: 28, fontWeight: 900, color: TEXT_PRIMARY }}>
-                          {formatCurrency(finalCharge)}
+                          {formatCurrency(freightCharge)}
                         </Typography>
                       </Stack>
                     </Stack>
 
                     <Grid container spacing={1.1}>
                       {[
-                        ['Total Rate', formatCurrency(finalCharge)],
+                        ['Total Rate', formatCurrency(freightCharge)],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
                         ['Volumetric', formatWeightKg(courier?.volumetric_weight)],
                       ].map(([label, value]) => (

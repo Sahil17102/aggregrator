@@ -189,6 +189,16 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
 
   const totalOrderValue = subtotal + transactionFee - discount
   const totalCollectable = totalOrderValue - prepaidAmount
+  const getPackageSummary = (boxes: Box[] = []) => {
+    const validBoxes = boxes.filter(Boolean)
+    return {
+      packageWeight: validBoxes.reduce((sum, box) => sum + Number(box.weightKg || 0), 0),
+      packageLength: Math.max(0, ...validBoxes.map((box) => Number(box.lengthCm || 0))),
+      packageBreadth: Math.max(0, ...validBoxes.map((box) => Number(box.breadthCm || 0))),
+      packageHeight: Math.max(0, ...validBoxes.map((box) => Number(box.heightCm || 0))),
+    }
+  }
+
   const onSubmit = async (data: B2BFormData) => {
     try {
       const normalizedOrderId = data.orderId.trim()
@@ -201,12 +211,18 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
         return
       }
 
+      const packageSummary = getPackageSummary(data.boxes)
+
       // Prepare B2B shipment payload
       const payload: CreateB2BShipmentParams = {
         order_number: normalizedOrderId,
         order_date: data.orderDate,
         payment_type: data.orderType,
         order_amount: totalCollectable,
+        package_weight: packageSummary.packageWeight,
+        package_length: packageSummary.packageLength,
+        package_breadth: packageSummary.packageBreadth,
+        package_height: packageSummary.packageHeight,
         shipping_charges: 0,
         freight_charges: data.forwardCharges ?? 0, // What platform charges seller (based on rate card)
         courier_cost: data.courierCost ? Number(data.courierCost) : undefined, // Estimated courier cost from serviceability (what platform pays courier)
@@ -313,7 +329,7 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
 
   useEffect(() => {
     setValue('orderAmount', totalCollectable, { shouldValidate: true })
-  }, [totalCollectable])
+  }, [setValue, totalCollectable])
 
   return (
     <FormProvider {...methods}>

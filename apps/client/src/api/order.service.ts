@@ -96,6 +96,10 @@ export type CreateB2BShipmentParams = {
   order_date: string
   payment_type: 'prepaid' | 'cod'
   order_amount: number
+  package_weight?: number
+  package_length?: number
+  package_breadth?: number
+  package_height?: number
   shipping_charges?: number
   freight_charges?: number // What platform charges seller (based on rate card)
   courier_cost?: number // Estimated courier cost from serviceability (what platform pays courier - can be updated via webhook)

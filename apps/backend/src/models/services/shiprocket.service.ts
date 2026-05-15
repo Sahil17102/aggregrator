@@ -4437,6 +4437,22 @@ export const createB2BShipmentService = async (
   const normalizedOrderNumber = await ensureUniqueMerchantOrderNumber(db as any, userId, params.order_number)
 
   const invoiceValue = Number(params.invoice_amount ?? params.order_amount ?? 0)
+  const b2bBoxes = Array.isArray(params.boxes) ? params.boxes : []
+  const packageWeightKg =
+    Number(params.package_weight ?? 0) ||
+    b2bBoxes.reduce((sum: number, box: any) => sum + Number(box?.weightKg ?? box?.weight ?? 0), 0)
+  const packageLengthCm =
+    Number(params.package_length ?? 0) ||
+    Math.max(0, ...b2bBoxes.map((box: any) => Number(box?.lengthCm ?? box?.length ?? 0)))
+  const packageBreadthCm =
+    Number(params.package_breadth ?? 0) ||
+    Math.max(
+      0,
+      ...b2bBoxes.map((box: any) => Number(box?.breadthCm ?? box?.breadth ?? box?.width ?? 0)),
+    )
+  const packageHeightCm =
+    Number(params.package_height ?? 0) ||
+    Math.max(0, ...b2bBoxes.map((box: any) => Number(box?.heightCm ?? box?.height ?? 0)))
 
   // Derive actual courier + service provider + user's active plan for ROV
   const courierId =
@@ -4481,15 +4497,16 @@ export const createB2BShipmentService = async (
     demurrage: number
     total: number
   } | null = null
+  let calculatedFreightCharges: number | null = null
 
   try {
     const rateResult = await calculateB2BRate({
       originPincode: params.pickup?.pincode ?? '',
       destinationPincode: params.consignee.pincode,
-      weightKg: Number(params.package_weight ?? 0),
-      length: Number(params.package_length ?? 0) || undefined,
-      width: Number(params.package_breadth ?? 0) || undefined,
-      height: Number(params.package_height ?? 0) || undefined,
+      weightKg: packageWeightKg,
+      length: packageLengthCm || undefined,
+      width: packageBreadthCm || undefined,
+      height: packageHeightCm || undefined,
       invoiceValue,
       paymentMode: (params.payment_type ?? 'prepaid').toUpperCase() === 'COD' ? 'COD' : 'PREPAID',
       courierScope: {
@@ -4502,6 +4519,7 @@ export const createB2BShipmentService = async (
     })
 
     if (rateResult?.charges) {
+      calculatedFreightCharges = Number(rateResult.charges.total ?? 0)
       chargesBreakdown = {
         baseFreight: rateResult.charges.baseFreight,
         overheads: rateResult.charges.overheads,
@@ -4513,6 +4531,10 @@ export const createB2BShipmentService = async (
     console.error('⚠️ Failed to compute B2B charges breakdown for order', params.order_number, err)
     chargesBreakdown = null
   }
+  const resolvedFreightCharges =
+    calculatedFreightCharges !== null && Number.isFinite(calculatedFreightCharges)
+      ? calculatedFreightCharges
+      : Number(params.freight_charges ?? params.shipping_charges ?? 0)
 
   // 1️⃣ Insert local B2B order as 'pending'
   const [pendingOrder] = await db
@@ -4543,7 +4565,7 @@ export const createB2BShipmentService = async (
       rov_charge: params.is_insurance === 1 ? rovCharge : null,
       charges_breakdown: chargesBreakdown,
       shipping_charges: params.shipping_charges ?? 0,
-      freight_charges: params.freight_charges ?? params.shipping_charges ?? 0, // What platform charges seller
+      freight_charges: resolvedFreightCharges, // What platform charges seller
       courier_cost: params.courier_cost ?? null, // What platform pays courier (will be updated via webhook)
       transaction_fee: params.transaction_fee ?? 0,
       discount: params.discount ?? 0,
@@ -4561,19 +4583,29 @@ export const createB2BShipmentService = async (
     .returning({ id: b2b_orders.id })
 
   // 2️⃣ Calculate package weight and dimensions
-  const boxes = params?.order_items ?? []
+  const boxes = b2bBoxes.length ? b2bBoxes : params?.order_items ?? []
 
-  const totalDeadWeight = boxes.reduce((sum: number, b: any) => sum + Number(b.weight ?? 0), 0)
+  const totalDeadWeight = boxes.reduce(
+    (sum: number, b: any) => sum + Number(b.weightKg ?? b.weight ?? 0),
+    0,
+  )
   const totalVolumetricWeight = boxes.reduce(
     (sum: number, b: any) =>
-      sum + (Number(b.length ?? 0) * Number(b.breadth ?? 0) * Number(b.height ?? 0)) / 5000,
+      sum +
+      (Number(b.lengthCm ?? b.length ?? 0) *
+        Number(b.breadthCm ?? b.breadth ?? b.width ?? 0) *
+        Number(b.heightCm ?? b.height ?? 0)) /
+        5000,
     0,
   )
 
   const package_weight = Math.ceil(Math.max(totalDeadWeight, totalVolumetricWeight))
-  const package_length = Math.max(...boxes.map((b: any) => Number(b.length ?? 0)))
-  const package_breadth = Math.max(...boxes.map((b: any) => Number(b.breadth ?? 0)))
-  const package_height = Math.max(...boxes.map((b: any) => Number(b.height ?? 0)))
+  const package_length = Math.max(0, ...boxes.map((b: any) => Number(b.lengthCm ?? b.length ?? 0)))
+  const package_breadth = Math.max(
+    0,
+    ...boxes.map((b: any) => Number(b.breadthCm ?? b.breadth ?? b.width ?? 0)),
+  )
+  const package_height = Math.max(0, ...boxes.map((b: any) => Number(b.heightCm ?? b.height ?? 0)))
 
   // 3️⃣ Prepare payload for Delhivery
   const payload: ShipmentParams = {
