@@ -94,7 +94,16 @@ export const getShippingRatesController = async (req: any, res: Response) => {
       courier_option_key: courier.courier_option_key || null,
       courier_id: courier.id,
       courier_name: courier.displayName || courier.name,
-      rate: courier.rate || courier.freight_charges || courier.charge || 0,
+      rate:
+        courier.final_courier_charge ??
+        courier.seller_freight_charge ??
+        courier.rate ??
+        courier.freight_charges ??
+        courier.charge ??
+        0,
+      final_courier_charge: courier.final_courier_charge ?? null,
+      platform_rate: courier.platform_rate ?? null,
+      provider_quote: courier.provider_quote ?? null,
       courier_cost_estimate: courier.courier_cost_estimate ?? null,
       provider_rate: courier.provider_rate ?? null,
       chargeable_weight_g: courier.chargeable_weight ?? null,

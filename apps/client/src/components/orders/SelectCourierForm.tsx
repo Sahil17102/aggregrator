@@ -147,9 +147,6 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   }
 
   const formatCurrency = (value?: number | string | null) => `₹${Number(value || 0).toFixed(2)}`
-  const formatOptionalCurrency = (value?: number | string | null) =>
-    toChargeNumber(value) > 0 ? formatCurrency(value) : 'Unavailable'
-
   const formatWeightKg = (value?: number | null) =>
     value ? `${(Number(value) / 1000).toFixed(2)} kg` : '—'
   const getCourierDisplayName = (courier: { displayName?: string; name?: string }) => courier?.displayName || courier?.name || 'Courier'
@@ -198,6 +195,22 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
       toChargeNumber(courier?.courier_cost_estimate ?? courier?.rateEstimate ?? 0)
     )
   }
+  const getCourierCodCharge = (courier: (typeof availableCouriers)[number]) =>
+    orderType === 'cod' ? toChargeNumber(courier?.localRates?.forward?.cod_charges) : 0
+  const getSellerFreightCharge = (courier: (typeof availableCouriers)[number]) => {
+    const directFreight = toChargeNumber(courier?.seller_freight_charge ?? courier?.final_freight_charge)
+    if (directFreight > 0) return directFreight
+    return getCourierFreightCharge(courier) + getCourierProviderCost(courier)
+  }
+  const getFinalCourierCharge = (courier: (typeof availableCouriers)[number]) => {
+    const directFinal = toChargeNumber(courier?.final_courier_charge)
+    if (directFinal > 0) return directFinal
+    return (
+      getSellerFreightCharge(courier) +
+      toChargeNumber(courier?.localRates?.forward?.other_charges) +
+      getCourierCodCharge(courier)
+    )
+  }
 
   const selectedCourierSummary = availableCouriers.find((courier) => {
     const courierOptionKey = String(
@@ -207,16 +220,8 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
       ? selectedCourierOptionKey === courierOptionKey
       : String(selectedCourierId) === String(courier?.id ?? courier?.courier_id ?? '')
   })
-  const selectedCourierFreight = selectedCourierSummary
-    ? getCourierFreightCharge(selectedCourierSummary)
-    : 0
-  const selectedCourierCod =
-    selectedCourierSummary && orderType === 'cod'
-      ? toChargeNumber(selectedCourierSummary?.localRates?.forward?.cod_charges)
-      : 0
-  const selectedChoiceMeeRate = selectedCourierFreight + selectedCourierCod
-  const selectedProviderCost = selectedCourierSummary
-    ? getCourierProviderCost(selectedCourierSummary)
+  const selectedFinalCourierCharge = selectedCourierSummary
+    ? getFinalCourierCharge(selectedCourierSummary)
     : 0
 
   return (
@@ -329,42 +334,15 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 )}
               </Stack>
 
-              {(forwardCharges > 0 || (orderType === 'cod' && courierCod > 0) || otherCharges > 0) && (
+              {walletDebitPreview > 0 && (
                 <>
                   <Divider sx={{ my: 2 }} />
                   <Stack spacing={1.2}>
                     <Typography sx={{ fontSize: 12, fontWeight: 800, color: TEXT_SECONDARY }}>
                       Wallet Debit Preview
                     </Typography>
-                    {forwardCharges > 0 && (
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography sx={{ color: TEXT_SECONDARY }}>Final Courier Charge</Typography>
-                        <Typography sx={{ fontWeight: 700, color: TEXT_PRIMARY }}>
-                          {formatCurrency(forwardCharges)}
-                        </Typography>
-                      </Stack>
-                    )}
-                    {orderType === 'cod' && courierCod > 0 && (
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography sx={{ color: TEXT_SECONDARY }}>Courier COD</Typography>
-                        <Typography sx={{ fontWeight: 700, color: TEXT_PRIMARY }}>
-                          {formatCurrency(courierCod)}
-                        </Typography>
-                      </Stack>
-                    )}
-                    {otherCharges > 0 && (
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography sx={{ color: TEXT_SECONDARY }}>Other Charges</Typography>
-                        <Typography sx={{ fontWeight: 700, color: TEXT_PRIMARY }}>
-                          {formatCurrency(otherCharges)}
-                        </Typography>
-                      </Stack>
-                    )}
-                    <Divider />
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography sx={{ color: TEXT_PRIMARY, fontWeight: 800 }}>
-                        Total Wallet Debit
-                      </Typography>
+                      <Typography sx={{ color: TEXT_PRIMARY, fontWeight: 800 }}>Courier Charge</Typography>
                       <Typography sx={{ fontWeight: 900, color: TEXT_PRIMARY }}>
                         {formatCurrency(walletDebitPreview)}
                       </Typography>
@@ -443,10 +421,9 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                       {getCourierDisplayName(selectedCourierSummary)}
                     </Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
-                      <Chip size="small" label={`ChoiceMee ${formatCurrency(selectedChoiceMeeRate)}`} />
                       <Chip
                         size="small"
-                        label={`Courier service ${formatOptionalCurrency(selectedProviderCost)}`}
+                        label={`Courier Charge ${formatCurrency(selectedFinalCourierCharge)}`}
                       />
                       <Chip
                         size="small"
@@ -507,10 +484,10 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 : String(selectedCourierId) === String(courier?.id ?? courier?.courier_id ?? '')
 
               const providerCost = getCourierProviderCost(courier)
-              const freightCharge = getCourierFreightCharge(courier)
-              const codCharge =
-                orderType === 'cod' ? toChargeNumber(local?.forward?.cod_charges) : 0
-              const choiceMeeRate = freightCharge + codCharge
+              const freightCharge = getSellerFreightCharge(courier)
+              const codCharge = getCourierCodCharge(courier)
+              const otherCharge = toChargeNumber(local?.forward?.other_charges)
+              const finalCourierCharge = getFinalCourierCharge(courier)
 
               return (
                 <Paper
@@ -520,9 +497,9 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     setValue('courierPartnerId', courier?.id ?? '')
                     setValue('courierOptionKey', courierOptionKey)
                     setValue('selectedMaxSlabWeight', courier?.max_slab_weight ?? null)
-                    setValue('courierCod', local?.forward?.cod_charges ?? 0)
+                    setValue('courierCod', codCharge)
                     setValue('forwardCharges', freightCharge)
-                    setValue('otherCharges', local?.forward?.other_charges ?? 0)
+                    setValue('otherCharges', otherCharge)
                     setValue(
                       'shippingMode',
                       courier?.shipping_mode ?? courier?.mode ?? local?.forward?.mode ?? '',
@@ -617,24 +594,20 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
                       <Stack alignItems={{ xs: 'flex-start', sm: 'flex-end' }} spacing={0.25}>
                         <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
-                          ChoiceMee Rate
+                          Courier Charge
                         </Typography>
                         <Typography sx={{ fontSize: 28, fontWeight: 900, color: TEXT_PRIMARY }}>
-                          {formatCurrency(choiceMeeRate)}
-                        </Typography>
-                        <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY, fontWeight: 700 }}>
-                          Courier service {formatOptionalCurrency(providerCost)}
+                          {formatCurrency(finalCourierCharge)}
                         </Typography>
                       </Stack>
                     </Stack>
 
                     <Grid container spacing={1.1}>
                       {[
-                        ['ChoiceMee Rate', formatCurrency(choiceMeeRate)],
-                        ['Courier Service Rate', formatOptionalCurrency(providerCost)],
-                        ...(codCharge > 0 ? [['COD Charge', formatCurrency(codCharge)]] : []),
+                        ['Courier Charge', formatCurrency(finalCourierCharge)],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
                         ['Volumetric', formatWeightKg(courier?.volumetric_weight)],
+                        ['Mode', local?.forward?.mode || courier?.shipping_mode || courier?.mode || '-'],
                       ].map(([label, value]) => (
                         <Grid key={label} size={{ xs: 6, lg: 3 }}>
                           <Box

@@ -152,8 +152,11 @@ export interface B2COrder {
   order_type: 'prepaid' | 'cod'
   prepaid_amount?: number | null
   shipping_charges?: number | null
+  freight_charges?: number | null
   cod_charges?: number | null
   other_charges?: number | null
+  final_courier_charge?: number | null
+  courier_charge?: number | null
   transaction_fee?: number | null
   gift_wrap?: number | null
   discount?: number | null

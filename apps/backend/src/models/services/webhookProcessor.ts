@@ -597,18 +597,10 @@ export async function applyCancellationRefundOnce(
     0,
   )
 
-  let refundAmount = originalWalletDebit
-  if (refundAmount <= 0) {
-    if (order.order_type === 'prepaid') {
-      const orderAmount = Number(order.order_amount ?? 0)
-      refundAmount = orderAmount + freightCharges + otherCharges
-    } else {
-      refundAmount = freightCharges + otherCharges + codCharges
-    }
-  }
+  const refundAmount = originalWalletDebit
 
   if (refundAmount <= 0) {
-    console.warn(`⚠️ No refundable amount resolved for cancelled order ${order.order_number}`, {
+    console.warn(`⚠️ No wallet debit found for cancelled order ${order.order_number}; skipping refund`, {
       source,
       order_type: order.order_type,
       order_amount: Number(order.order_amount ?? 0),

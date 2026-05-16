@@ -30,6 +30,11 @@ export interface Courier {
   volumetric_weight?: number | null
   slabs?: number | null
   courier_cost_estimate?: number | null
+  platform_rate?: number | null
+  provider_quote?: number | null
+  seller_freight_charge?: number | null
+  final_freight_charge?: number | null
+  final_courier_charge?: number | null
   localRates?: Record<string, unknown>
   approxZone?: { id?: string; code?: string; name?: string } | null
   integration_type?: string | null

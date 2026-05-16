@@ -391,8 +391,10 @@ const debitManifestSuccessChargeIfNeeded = async ({
       order_number: order.order_number,
       payment_type: order.order_type,
       freight_charges: Number(order.freight_charges ?? 0),
+      provider_quote_charge: Number(order.courier_cost ?? 0),
       other_charges: Number(order.other_charges ?? 0),
       cod_charges: String(order.order_type || '').toLowerCase() === 'cod' ? Number(order.cod_charges ?? 0) : 0,
+      final_courier_charge: getExpectedWalletDebitFromOrder(order),
       triggered_by: 'manifest_success',
       debit_recovery_after_refund: totalManifestRefund > 0,
       total_wallet_debit: amountToDebit,
@@ -1100,6 +1102,49 @@ const getProviderRateAmount = (providerRate?: { total?: unknown; freight?: unkno
   const cod = numberOrNull(providerRate.cod)
   if (freight !== null && cod !== null) return freight + cod
   return freight ?? cod
+}
+
+const QUOTE_BACKED_PROVIDER_KEYS = new Set(['delhivery', 'deliveryone'])
+
+const roundMoneyValue = (value: unknown) => {
+  const parsed = Number(value ?? 0)
+  return Math.round((Number.isFinite(parsed) ? parsed : 0) * 100) / 100
+}
+
+const isQuoteBackedProvider = (value?: string | null) =>
+  QUOTE_BACKED_PROVIDER_KEYS.has(normalizeServiceProviderKey(value))
+
+export const calculateFinalCourierCharge = ({
+  platformFreight,
+  providerQuote,
+  codCharge,
+  otherCharges,
+  paymentType,
+}: {
+  platformFreight?: unknown
+  providerQuote?: unknown
+  codCharge?: unknown
+  otherCharges?: unknown
+  paymentType?: string | null
+}) => {
+  const platformFreightCharge = roundMoneyValue(platformFreight)
+  const providerQuoteCharge = roundMoneyValue(providerQuote)
+  const otherChargeAmount = roundMoneyValue(otherCharges)
+  const codChargeAmount =
+    String(paymentType || '').toLowerCase() === 'cod' ? roundMoneyValue(codCharge) : 0
+  const sellerFreightCharge = roundMoneyValue(platformFreightCharge + providerQuoteCharge)
+  const finalCourierCharge = roundMoneyValue(
+    sellerFreightCharge + otherChargeAmount + codChargeAmount,
+  )
+
+  return {
+    platform_freight_charge: platformFreightCharge,
+    provider_quote_charge: providerQuoteCharge,
+    seller_freight_charge: sellerFreightCharge,
+    other_charges: otherChargeAmount,
+    cod_charges: codChargeAmount,
+    final_courier_charge: finalCourierCharge,
+  }
 }
 
 const getDeliveryOneQuoteAmount = (quote?: DeliveryOneShippingCostResponse | null) => {
@@ -2359,6 +2404,57 @@ export const fetchAvailableCouriersWithRates = async (
     }
 
     // 🔹 Sorting and tagging
+    const finalRateType = isReverseShipment ? 'rto' : 'forward'
+    combined = combined.map((courier: any) => {
+      const providerKey = normalizeProviderKey(
+        courier.integration_type || courier.serviceProvider || '',
+      )
+      const localRate = courier.localRates?.[finalRateType] ?? null
+      const providerQuote = isQuoteBackedProvider(providerKey)
+        ? getProviderRateAmount(courier.provider_rate) ?? numberOrNull(courier.courier_cost_estimate)
+        : 0
+      const finalCharge = calculateFinalCourierCharge({
+        platformFreight: localRate?.rate ?? courier.rate ?? 0,
+        providerQuote,
+        codCharge: localRate?.cod_charges ?? 0,
+        otherCharges: localRate?.other_charges ?? 0,
+        paymentType: normalizedPaymentType,
+      })
+
+      return {
+        ...courier,
+        platform_rate: finalCharge.platform_freight_charge,
+        provider_quote: finalCharge.provider_quote_charge,
+        seller_freight_charge: finalCharge.seller_freight_charge,
+        final_freight_charge: finalCharge.seller_freight_charge,
+        final_courier_charge: finalCharge.final_courier_charge,
+        final_rate_breakdown: {
+          platform_freight: finalCharge.platform_freight_charge,
+          provider_quote: finalCharge.provider_quote_charge,
+          other_charges: finalCharge.other_charges,
+          cod_charges: finalCharge.cod_charges,
+        },
+      }
+    })
+
+    if (params.shipment_type === 'b2c' && !params.isCalculator) {
+      combined = combined.filter((courier: any) => {
+        const providerKey = normalizeProviderKey(
+          courier.integration_type || courier.serviceProvider || '',
+        )
+        if (!isQuoteBackedProvider(providerKey)) return true
+        const hasLiveQuote = Number(courier.provider_quote ?? 0) > 0
+        if (!hasLiveQuote) {
+          console.warn('[Serviceability] Removing quote-backed courier without live quote', {
+            provider: providerKey,
+            courierId: courier.id,
+            mode: courier.shipping_mode ?? courier.mode ?? null,
+          })
+        }
+        return hasLiveQuote
+      })
+    }
+
     if (userId && combined?.length) {
       const [profile] = await db
         .select()
@@ -2404,12 +2500,14 @@ export const fetchAvailableCouriersWithRates = async (
         } else if (profile.name === 'economy') {
           combined = combined.sort(
             (a: any, b: any) =>
-              (a.localRates.forward?.rate ?? Infinity) - (b.localRates.forward?.rate ?? Infinity),
+              (a.final_courier_charge ?? a.localRates.forward?.rate ?? Infinity) -
+              (b.final_courier_charge ?? b.localRates.forward?.rate ?? Infinity),
           )
         } else {
           combined = combined.sort(
             (a: any, b: any) =>
-              (a.localRates.forward?.rate ?? Infinity) - (b.localRates.forward?.rate ?? Infinity),
+              (a.final_courier_charge ?? a.localRates.forward?.rate ?? Infinity) -
+              (b.final_courier_charge ?? b.localRates.forward?.rate ?? Infinity),
           )
         }
       }
@@ -2425,7 +2523,8 @@ export const fetchAvailableCouriersWithRates = async (
 
       const sortedByRate = [...combined].sort(
         (a, b) =>
-          (a.localRates.forward?.rate ?? Infinity) - (b.localRates.forward?.rate ?? Infinity),
+          (a.final_courier_charge ?? a.localRates.forward?.rate ?? Infinity) -
+          (b.final_courier_charge ?? b.localRates.forward?.rate ?? Infinity),
       )
       if (sortedByRate.length) cheapestCourierId = makeCourierIdentityKey(sortedByRate[0])
 
@@ -3700,6 +3799,63 @@ export const createB2CShipmentService = async (
             ? 'Delivery One'
             : 'Xpressbees'
 
+    let providerQuoteForBooking = 0
+    if (!isReverseShipment && isQuoteBackedProvider(integrationType)) {
+      try {
+        const quoteParams = {
+          courierId: params.courier_id,
+          mode: selectedProviderShippingMode ?? params.shipping_mode,
+          originPincode: bookingPickupPincode,
+          destinationPincode: bookingDestinationPincode,
+          paymentType: params.payment_type,
+          weightG: normalizeServiceabilityWeightToGrams(params.package_weight ?? params.weight ?? 0),
+          chargeableWeightG: slabbedFreight.chargeable_weight,
+          lengthCm: Number(params.package_length ?? params.length ?? 0),
+          breadthCm: Number(params.package_breadth ?? params.breadth ?? 0),
+          heightCm: Number(params.package_height ?? params.height ?? 0),
+        }
+        const estimate =
+          integrationType === 'deliveryone'
+            ? await fetchDeliveryOneShippingCostEstimate({
+                deliveryOne: new DeliveryOneService(),
+                ...quoteParams,
+              })
+            : await fetchDelhiveryShippingCostEstimate({
+                delhivery: new DelhiveryService(),
+                ...quoteParams,
+              })
+        const quoteAmount = roundMoneyValue(estimate?.amount)
+        if (quoteAmount <= 0) {
+          throw new HttpError(
+            502,
+            `${providerName} live courier rate is unavailable for the selected shipment. Please recheck serviceability and select a courier with a live rate.`,
+          )
+        }
+        providerQuoteForBooking = quoteAmount
+        params.courier_cost = quoteAmount
+        console.log(`[${providerName}] Live provider quote locked before order save`, {
+          order_number: params.order_number,
+          courier_id: params.courier_id,
+          mode: selectedProviderShippingMode ?? params.shipping_mode,
+          provider_quote: quoteAmount,
+        })
+      } catch (quoteErr: any) {
+        if (quoteErr instanceof HttpError) {
+          throw quoteErr
+        }
+        console.error(`[${providerName}] Live provider quote failed before booking`, {
+          order_number: params.order_number,
+          courier_id: params.courier_id,
+          mode: selectedProviderShippingMode ?? params.shipping_mode,
+          error: quoteErr?.message || quoteErr,
+        })
+        throw new HttpError(
+          502,
+          `${providerName} live courier rate is unavailable for the selected shipment. Please recheck serviceability and try again.`,
+        )
+      }
+    }
+
     let manifestFailure: DelhiveryManifestError | null = null
     let shipmentSuccessPackage: any = null
     let providerCourierCost: number | null = null
@@ -4179,9 +4335,9 @@ export const createB2CShipmentService = async (
       const shippingCharges = Number(params?.shipping_charges ?? 0) // What seller charges customer (base shipping)
       // Total shipping charges = base shipping + other charges (from serviceability API)
       const totalShippingCharges = shippingCharges + otherCharges
-      const freightCharges = Number(
+      const platformFreightCharge = Number(
         finalSlabbedFreight?.freight ?? params?.freight_charges ?? totalShippingCharges,
-      ) // What platform charges seller (based on rate card)
+      ) // ChoiceMee configured platform freight from the rate card
       // Extract courier_cost from shipment response or use estimated from params
       const courierCost =
         shipmentMeta?.courier_cost !== undefined && shipmentMeta?.courier_cost !== null
@@ -4189,6 +4345,30 @@ export const createB2CShipmentService = async (
           : params?.courier_cost
             ? Number(params.courier_cost)
             : null // Use estimated cost from serviceability if available
+      const providerQuoteCharge = isQuoteBackedProvider(integrationType)
+        ? roundMoneyValue(courierCost ?? providerQuoteForBooking)
+        : 0
+
+      if (isQuoteBackedProvider(integrationType) && providerQuoteCharge <= 0) {
+        throw new HttpError(
+          502,
+          `${providerName} live courier rate is unavailable for this order. Please recheck serviceability and select a courier with a live rate.`,
+        )
+      }
+
+      const finalCharge = calculateFinalCourierCharge({
+        platformFreight: platformFreightCharge,
+        providerQuote: providerQuoteCharge,
+        codCharge: codCharges,
+        otherCharges,
+        paymentType: params.payment_type,
+      })
+      const freightCharges = finalCharge.seller_freight_charge
+      const finalCourierCharge = finalCharge.final_courier_charge
+      params.freight_charges = freightCharges
+      if (providerQuoteCharge > 0) {
+        params.courier_cost = providerQuoteCharge
+      }
 
       console.log('💰 Courier Cost Summary:', {
         order_number: params.order_number,
@@ -4196,7 +4376,10 @@ export const createB2CShipmentService = async (
         from_shipment_response: shipmentMeta?.courier_cost,
         from_params: params?.courier_cost,
         final_courier_cost: courierCost,
+        platform_freight_charge: platformFreightCharge,
+        provider_quote_charge: providerQuoteCharge,
         freight_charges: freightCharges, // What platform charges seller
+        final_courier_charge: finalCourierCharge,
         shipping_charges: shippingCharges, // Base shipping (what seller charges customer)
         other_charges: otherCharges, // Other charges from serviceability API
         total_shipping_charges: totalShippingCharges, // Total shipping (base + other)
@@ -4229,7 +4412,10 @@ export const createB2CShipmentService = async (
         discount: discount,
         prepaid_amount: prepaidAmt,
         total_amount: totalAmount,
+        platform_freight_charge: platformFreightCharge,
+        provider_quote_charge: providerQuoteCharge,
         freight_charges: freightCharges, // What platform charges seller
+        final_courier_charge: finalCourierCharge,
         courier_cost: courierCost, // What platform pays courier
       })
 
@@ -4355,9 +4541,12 @@ export const createB2CShipmentService = async (
             integration_type: params.integration_type,
             boxes: params.order_items,
             payment_type: params.payment_type,
+            platform_freight_charge: platformFreightCharge,
+            provider_quote_charge: providerQuoteCharge,
             freight_charges: freightCharges,
             other_charges: otherCharges,
             cod_charges: isCodOrder ? codCharges : 0,
+            final_courier_charge: finalCourierCharge,
             charged_weight: finalSlabbedFreight.chargeable_weight,
             volumetric_weight: finalSlabbedFreight.volumetric_weight,
             charged_slabs: finalSlabbedFreight.slabs,
@@ -6068,6 +6257,7 @@ export const generateManifestService = async (params: {
           }
         }
         if (integrationType === 'delhivery') {
+          const delhiveryPickupWarnings: string[] = []
           const fetchedOrders: any[] = []
           let expectedPackageCount = 0
           for (const order of orders) {
@@ -6284,12 +6474,27 @@ export const generateManifestService = async (params: {
             })
           }
 
-          await delhivery.createPickupRequest({
-            pickup_date: pickupDate,
-            pickup_time: pickupTime,
-            pickup_location: pickupLocationName,
-            expected_package_count: expectedPackageCount,
-          })
+          try {
+            await delhivery.createPickupRequest({
+              pickup_date: pickupDate,
+              pickup_time: pickupTime,
+              pickup_location: pickupLocationName,
+              expected_package_count: expectedPackageCount,
+            })
+          } catch (pickupErr: any) {
+            const warning =
+              pickupErr?.message ||
+              'Delhivery pickup request could not be scheduled automatically.'
+            console.error('[Manifest] Delhivery pickup request failed after shipment creation', {
+              pickup_location: pickupLocationName,
+              pickup_date: pickupDate,
+              pickup_time: pickupTime,
+              error: warning,
+            })
+            delhiveryPickupWarnings.push(
+              `Delhivery pickup scheduling warning: ${warning}`,
+            )
+          }
 
           const createManifestCard = (order: any) => ({
             width: '48%',
@@ -6693,6 +6898,7 @@ export const generateManifestService = async (params: {
             manifest_id: manifestKey,
             manifest_url: manifestDownloadUrl,
             manifest_key: manifestKey,
+            warnings: delhiveryPickupWarnings.length ? delhiveryPickupWarnings : undefined,
           }
         }
 

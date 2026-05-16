@@ -51,9 +51,19 @@ export const sanitizeOrderForCustomer = async (order: any): Promise<any> => {
   const manifestRetryCount = Number(order?.manifest_retry_count ?? 0)
   const manifestRetriesRemaining = Math.max(0, 3 - manifestRetryCount)
   const provider = normalizeServiceProviderKey(order?.integration_type)
+  const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100
+  const freightCharges = Number(order?.freight_charges ?? 0)
+  const otherCharges = Number(order?.other_charges ?? 0)
+  const codCharges =
+    String(order?.order_type || '').toLowerCase() === 'cod'
+      ? Number(order?.cod_charges ?? 0)
+      : 0
+  const finalCourierCharge = roundMoney(freightCharges + otherCharges + codCharges)
 
   delete sanitized.courier_cost
 
+  sanitized.final_courier_charge = finalCourierCharge
+  sanitized.courier_charge = finalCourierCharge
   sanitized.manifest_retry_count = manifestRetryCount
   sanitized.manifest_retries_remaining = manifestRetriesRemaining
   sanitized.can_retry_manifest =

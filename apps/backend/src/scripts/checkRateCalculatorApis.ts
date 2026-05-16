@@ -50,7 +50,17 @@ const run = async () => {
   try {
     shiprocketService.fetchAvailableCouriersWithRates = async (params: any, userId: string) => {
       b2cCall = { params, userId }
-      return [{ id: 1, name: 'Mock B2C', rate: 100, edd: '2 Days' }]
+      return [
+        {
+          id: 1,
+          name: 'Mock B2C',
+          rate: 100,
+          edd: '2 Days',
+          provider_quote: 95,
+          seller_freight_charge: 195,
+          final_courier_charge: 245,
+        },
+      ]
     }
 
     shiprocketService.fetchAvailableCouriersWithRatesB2B = async (params: any, userId: string) => {
@@ -76,6 +86,9 @@ const run = async () => {
           edd: '2 Days',
           localRates: { forward: { rate: 110, cod_charges: 40 } },
           provider_rate: { provider: 'delhivery', total: 95, freight: 55, cod: 40 },
+          provider_quote: 95,
+          seller_freight_charge: 205,
+          final_courier_charge: 245,
         },
       ]
     }
@@ -127,6 +140,7 @@ const run = async () => {
       assert.equal(res.body?.data?.[0]?.name, 'Mock Guest B2C')
       assert.equal(res.body?.data?.[0]?.localRates?.forward?.rate, 110)
       assert.equal(res.body?.data?.[0]?.provider_rate?.total, 95)
+      assert.equal(res.body?.data?.[0]?.final_courier_charge, 245)
       assert.equal(guestCall?.params?.shipment_type, 'b2c')
       assert.equal(guestCall?.params?.isCalculator, true)
     }
@@ -203,6 +217,8 @@ const run = async () => {
       assert.equal(res.body?.success, true)
       assert.ok(Array.isArray(res.body?.data?.rates))
       assert.equal(res.body?.data?.rates?.[0]?.courier_name, 'Mock B2C')
+      assert.equal(res.body?.data?.rates?.[0]?.rate, 245)
+      assert.equal(res.body?.data?.rates?.[0]?.final_courier_charge, 245)
     }
 
     {

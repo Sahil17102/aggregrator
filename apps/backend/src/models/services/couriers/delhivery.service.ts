@@ -41,6 +41,7 @@ export class DelhiveryService {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+      timeout: 30000,
     })
   }
 
@@ -49,7 +50,7 @@ export class DelhiveryService {
     try {
       await this.ensureCredentials()
       const url = `${this.apiBase}/c/api/pin-codes/json/?filter_codes=${pincode}`
-      const res = await axios.get(url, { headers: this.headers })
+      const res = await axios.get(url, { headers: this.headers, timeout: 20000 })
 
       // Log the full response structure
       console.log('📦 Delhivery Serviceability API Response:', {
@@ -83,7 +84,7 @@ export class DelhiveryService {
     try {
       await this.ensureCredentials()
       const url = `${this.apiBase}/api/dc/expected_tat?origin_pin=${origin}&destination_pin=${destination}&mot=${mot}&pdt=${pdt}`
-      const res = await axios.get(url, { headers: this.headers })
+      const res = await axios.get(url, { headers: this.headers, timeout: 20000 })
       const tat = res.data?.data?.tat
       return typeof tat === 'number' || typeof tat === 'string' ? Number(tat) : null
     } catch (err: any) {
@@ -714,6 +715,7 @@ export class DelhiveryService {
         { waybill, cancellation: 'true' },
         {
           headers: this.headers,
+          timeout: 20000,
         },
       )
 
@@ -992,7 +994,7 @@ export class DelhiveryService {
         phone: data.phone,
       }
 
-      const res = await axios.post(url, payload, { headers })
+      const res = await axios.post(url, payload, { headers, timeout: 30000 })
       return res.data
     } catch (err: any) {
       console.error('❌ Delhivery warehouse update error:', err.response?.data || err.message)

@@ -38,13 +38,42 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
     currentStatus: order.order_status,
   })
 
-  const cancellableStatuses = new Set(['pending', 'booked', 'confirmed', 'pickup_initiated'])
+  const cancellableStatuses = new Set([
+    'pending',
+    'booked',
+    'confirmed',
+    'pickup_initiated',
+    'manifest_failed',
+  ])
   const currentStatus = String(order.order_status || '').toLowerCase()
   if (!cancellableStatuses.has(currentStatus)) {
     throw new Error(`Order with status "${order.order_status}" cannot be cancelled`)
   }
 
   const integration = normalizeServiceProviderKey(order.integration_type)
+  if (!order.awb_number) {
+    console.log('Cancelling local pending order without provider AWB', {
+      orderId,
+      integration,
+      currentStatus: order.order_status,
+    })
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(b2c_orders)
+        .set({ order_status: 'cancelled', updated_at: new Date() })
+        .where(eq(b2c_orders.id, orderId))
+
+      await applyCancellationRefundOnce(tx, order, 'pickup_cancel_api')
+    })
+
+    return {
+      success: true,
+      status: 'cancelled',
+      message: 'Order cancelled before courier AWB generation',
+      local_only: true,
+    }
+  }
   if (!INTEGRATED_SERVICE_PROVIDERS.includes(integration as any)) {
     console.error('❌ Unsupported integration type:', { orderId, integration })
     throw new Error(`Supported cancellation providers: ${supportedServiceProviderList()}`)

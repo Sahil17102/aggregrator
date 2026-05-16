@@ -331,14 +331,14 @@ const B2COrdersList = () => {
     const request = pendingManifestRequest
     if (!request) return
 
+    setManifestScheduleOpen(false)
+    setPendingManifestRequest(null)
+
     if (request.mode === 'single') {
       await handleGenerateManifest(request.order, schedule)
     } else {
       await handleBulkManifest(schedule)
     }
-
-    setManifestScheduleOpen(false)
-    setPendingManifestRequest(null)
   }
 
   const handleBulkManifest = async (schedule: ManifestSchedulePayload) => {
@@ -683,25 +683,20 @@ const B2COrdersList = () => {
       id: 'order_amount',
       render: (_v, row) => {
         const orderAmount = Number(row.order_amount ?? 0)
-        const cod = Number(row.cod_charges ?? 0)
-        const customerTotal = Math.max(orderAmount - cod, 0)
-        return `₹${customerTotal.toFixed(2)}`
+        return `₹${orderAmount.toFixed(2)}`
       },
     },
     {
-      label: 'Shipping Charge',
-      id: 'shipping_charges',
-      render: (v) => `₹${Number(v ?? 0).toFixed(2)}`,
-    },
-    {
-      label: 'COD Charge',
-      id: 'cod_charges',
-      render: (v) => `₹${Number(v ?? 0).toFixed(2)}`,
-    },
-    {
-      label: 'Other Charge',
-      id: 'other_charges',
-      render: (v) => `₹${Number(v ?? 0).toFixed(2)}`,
+      label: 'Courier Charge',
+      id: 'final_courier_charge',
+      render: (_v, row) => {
+        const fallback =
+          Number(row.freight_charges ?? 0) +
+          Number(row.other_charges ?? 0) +
+          ((row.order_type || '').toLowerCase() === 'cod' ? Number(row.cod_charges ?? 0) : 0)
+        const finalCharge = Number(row.final_courier_charge ?? row.courier_charge ?? fallback)
+        return `₹${finalCharge.toFixed(2)}`
+      },
     },
     { label: 'Courier', id: 'courier_partner' },
 

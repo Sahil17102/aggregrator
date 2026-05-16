@@ -49,6 +49,11 @@ export type Courier = {
   rate?: number | null
   rateEstimate?: number | null
   courier_cost_estimate?: number | null
+  platform_rate?: number | null
+  provider_quote?: number | null
+  seller_freight_charge?: number | null
+  final_freight_charge?: number | null
+  final_courier_charge?: number | null
   provider_rate?: ProviderRate | null
   serviceProvider?: string | null
   service_provider?: string | null
@@ -157,7 +162,11 @@ export default function CourierRateList({
             providerParts ||
             toChargeNumber(courier?.courier_cost_estimate ?? courier?.rateEstimate)
           const hasProviderQuote = providerTotal > 0
-          const providerRateLabel = isDelhiveryCourier(courier) ? 'Delhivery rate' : 'Provider rate'
+          const finalCourierCharge =
+            toChargeNumber(courier?.final_courier_charge) ||
+            (toChargeNumber(courier?.seller_freight_charge ?? courier?.final_freight_charge) +
+              (isCOD ? codCharges : 0)) ||
+            platformTotal + providerTotal
           const eddText = courier?.edd ?? '-'
           const isClickable = Boolean(onSelect)
 
@@ -237,13 +246,13 @@ export default function CourierRateList({
                     }}
                   >
                     <Grid container spacing={1.4}>
-                      <Grid size={{ xs: 12, sm: 6 }}>
+                      <Grid size={{ xs: 12 }}>
                         <Stack spacing={0.8}>
                           <Typography
                             variant="caption"
                             sx={{ color: brand.inkSoft, fontWeight: 800, display: 'block' }}
                           >
-                            ChoiceMee rate
+                            Courier charge
                           </Typography>
                           <Stack direction="row" alignItems="baseline" spacing={0.5}>
                             <BiRupee size={18} color={brand.accent} />
@@ -255,37 +264,13 @@ export default function CourierRateList({
                                 lineHeight: 1,
                               }}
                             >
-                              {formatAmount(platformTotal)}
+                              {formatAmount(finalCourierCharge)}
                             </Typography>
                           </Stack>
                           <Typography variant="caption" sx={{ color: brand.inkSoft, fontWeight: 600 }}>
-                            {isCOD ? 'Includes COD charges' : 'Prepaid platform rate'}
-                          </Typography>
-                        </Stack>
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <Stack spacing={0.8}>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: brand.inkSoft, fontWeight: 800, display: 'block' }}
-                          >
-                            {providerRateLabel}
-                          </Typography>
-                          <Stack direction="row" alignItems="baseline" spacing={0.5}>
-                            <BiRupee size={18} color={hasProviderQuote ? brand.accent : brand.inkSoft} />
-                            <Typography
-                              sx={{
-                                fontWeight: 900,
-                                color: hasProviderQuote ? brand.ink : brand.inkSoft,
-                                fontSize: '1.65rem',
-                                lineHeight: 1,
-                              }}
-                            >
-                              {formatAmount(providerTotal)}
-                            </Typography>
-                          </Stack>
-                          <Typography variant="caption" sx={{ color: brand.inkSoft, fontWeight: 600 }}>
-                            {hasProviderQuote ? 'Live provider quote' : 'Quote unavailable'}
+                            {hasProviderQuote || !isDelhiveryCourier(courier)
+                              ? 'Final payable courier rate'
+                              : 'Live Delhivery quote unavailable'}
                           </Typography>
                         </Stack>
                       </Grid>
@@ -350,14 +335,6 @@ export default function CourierRateList({
                         <BiPackage size={14} color={brand.inkSoft} />
                         <Typography sx={{ color: brand.inkSoft, fontSize: '0.75rem' }}>
                           Mode: <strong>{forward.mode}</strong>
-                        </Typography>
-                      </Stack>
-                    ) : null}
-                    {isCOD && codCharges > 0 ? (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <BiRupee size={14} color={brand.inkSoft} />
-                        <Typography sx={{ color: brand.inkSoft, fontSize: '0.75rem' }}>
-                          COD Charges: <strong>INR {codCharges.toLocaleString('en-IN')}</strong>
                         </Typography>
                       </Stack>
                     ) : null}
