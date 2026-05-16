@@ -47,6 +47,8 @@ export const kyc = pgTable("kyc", {
   selfieUrl: text("selfieUrl"),
   panCardUrl: text("panCardUrl"),
   aadhaarUrl: text("aadhaarUrl"),
+  aadhaarFrontUrl: text("aadhaarFrontUrl"),
+  aadhaarBackUrl: text("aadhaarBackUrl"),
   cancelledChequeUrl: text("cancelledChequeUrl"),
   boardResolutionUrl: text("boardResolutionUrl"),
   partnershipDeedUrl: text("partnershipDeedUrl"),
@@ -61,6 +63,14 @@ export const kyc = pgTable("kyc", {
 
   aadhaarStatus: kycDocStatusEnum("aadhaarStatus").default("pending").notNull(),
   aadhaarRejectionReason: text("aadhaarRejectionReason"),
+  aadhaarFrontStatus: kycDocStatusEnum("aadhaarFrontStatus")
+    .default("pending")
+    .notNull(),
+  aadhaarFrontRejectionReason: text("aadhaarFrontRejectionReason"),
+  aadhaarBackStatus: kycDocStatusEnum("aadhaarBackStatus")
+    .default("pending")
+    .notNull(),
+  aadhaarBackRejectionReason: text("aadhaarBackRejectionReason"),
 
   cancelledChequeStatus: kycDocStatusEnum("cancelledChequeStatus")
     .default("pending")
@@ -83,6 +93,8 @@ export const kyc = pgTable("kyc", {
   partnershipDeedRejectionReason: text("partnershipDeedRejectionReason"),
 
   aadhaarMime: varchar("aadhaarMime", { length: 100 }),
+  aadhaarFrontMime: varchar("aadhaarFrontMime", { length: 100 }),
+  aadhaarBackMime: varchar("aadhaarBackMime", { length: 100 }),
   panCardMime: varchar("panCardMime", { length: 100 }),
   selfieMime: varchar("selfieMime", { length: 100 }),
   cancelledChequeMime: varchar("cancelledChequeMime", { length: 100 }),

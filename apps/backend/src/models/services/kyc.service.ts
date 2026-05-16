@@ -58,6 +58,8 @@ export const UpdateKYCDetails = async (userId: string, details: KycDetails): Pro
 
     const docFields: (keyof KycDetails)[] = [
       'aadhaarUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
       'panCardUrl',
       'partnershipDeedUrl',
       'companyAddressProofUrl',
@@ -73,6 +75,8 @@ export const UpdateKYCDetails = async (userId: string, details: KycDetails): Pro
 
     const fieldToStatusMap: Partial<Record<keyof KycDetails, keyof KycDetails>> = {
       aadhaarUrl: 'aadhaarStatus',
+      aadhaarFrontUrl: 'aadhaarFrontStatus',
+      aadhaarBackUrl: 'aadhaarBackStatus',
       cancelledChequeUrl: 'cancelledChequeStatus',
       selfieUrl: 'selfieStatus',
       businessPanUrl: 'businessPanStatus',
@@ -87,6 +91,8 @@ export const UpdateKYCDetails = async (userId: string, details: KycDetails): Pro
 
     const mimeFieldsMap: Partial<Record<keyof KycDetails, keyof KycDetails>> = {
       aadhaarUrl: 'aadhaarMime',
+      aadhaarFrontUrl: 'aadhaarFrontMime',
+      aadhaarBackUrl: 'aadhaarBackMime',
       panCardUrl: 'panCardMime',
       llpAgreementUrl: 'llpAgreementMime',
       companyAddressProofUrl: 'companyAddressProofMime',
@@ -198,6 +204,8 @@ export const updateKycStatus = async (
     // Approving KYC: reset all document statuses to verified and rejection reasons to empty string
     const docFields = [
       'aadhaar',
+      'aadhaarFront',
+      'aadhaarBack',
       'panCard',
       'partnershipDeed',
       'companyAddressProof',
@@ -284,7 +292,18 @@ export const updateDocumentStatus = async (
 
     if (!requiredStatusFields.length) return
 
-    const allVerified = requiredStatusFields.every((field) => updatedKyc[field] === 'verified')
+    const allVerified = requiredStatusFields.every((field) => {
+      const isAadhaarSide =
+        field === 'aadhaarFrontStatus' || field === 'aadhaarBackStatus'
+      const hasLegacyAadhaar =
+        !updatedKyc.aadhaarFrontUrl && !updatedKyc.aadhaarBackUrl && updatedKyc.aadhaarUrl
+
+      if (isAadhaarSide && hasLegacyAadhaar) {
+        return updatedKyc.aadhaarStatus === 'verified'
+      }
+
+      return updatedKyc[field] === 'verified'
+    })
     if (allVerified && updatedKyc.status !== 'verified') {
       await tx
         .update(kyc)

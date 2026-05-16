@@ -35,7 +35,18 @@ const isKycSubmissionComplete = (kyc?: Partial<KycDetails> | null) => {
 
   if (!hasValue(kyc.selfieUrl)) return false
 
-  return requiredFields.every((field) => hasValue(kyc[field]))
+  return requiredFields.every((field) => {
+    if (
+      (field === 'aadhaarFrontUrl' || field === 'aadhaarBackUrl') &&
+      !hasValue(kyc.aadhaarFrontUrl) &&
+      !hasValue(kyc.aadhaarBackUrl) &&
+      hasValue(kyc.aadhaarUrl)
+    ) {
+      return true
+    }
+
+    return hasValue(kyc[field])
+  })
 }
 
 const KycSection = () => {

@@ -36,6 +36,8 @@ import type { AdditionalKYCForm } from './AdditionalInfoStep'
 const iconMap: Record<string, JSX.Element> = {
   panCardUrl: <MdBadge />,
   aadhaarUrl: <MdVerifiedUser />,
+  aadhaarFrontUrl: <MdVerifiedUser />,
+  aadhaarBackUrl: <MdVerifiedUser />,
   cancelledChequeUrl: <MdAccountBalance />,
   partnershipDeedUrl: <MdGavel />,
   boardResolutionUrl: <MdDescription />,
@@ -47,6 +49,8 @@ const getLabel = (key: string) => {
   const map: Record<string, string> = {
     panCardUrl: 'PAN Card',
     aadhaarUrl: 'Aadhaar Card',
+    aadhaarFrontUrl: 'Aadhaar Front Side',
+    aadhaarBackUrl: 'Aadhaar Back Side',
     businessPanUrl: 'Business PAN',
     llpAgreementUrl: 'LLP Agreement',
     gstCertificateUrl: 'GST Certificate',
@@ -99,11 +103,13 @@ const StatusChip = ({ status }: { status?: string }) => {
 const PreviewBlock = ({
   labelKey,
   url,
+  mime,
   loading,
   kyc,
 }: {
   labelKey: string
   url?: string | null
+  mime?: string | null
   loading?: boolean
   kyc?: KycDetails
 }) => {
@@ -111,7 +117,7 @@ const PreviewBlock = ({
   const icon = iconMap[labelKey] || <MdImage />
   const status = getStatus(kyc, labelKey)
   const rejectionReason = getRejection(kyc, labelKey)
-  const mimeType = url ? getMimeType(url) : ''
+  const mimeType = mime || (url ? getMimeType(url) : '')
   const isPdf = mimeType.includes('pdf')
 
   if (loading) {
@@ -290,6 +296,8 @@ const KycDetailsCard = ({
   const isFileField = (f: keyof AdditionalKYCForm) =>
     [
       'aadhaarUrl',
+      'aadhaarFrontUrl',
+      'aadhaarBackUrl',
       'selfieUrl',
       'panCardUrl',
       'partnershipDeedUrl',
@@ -301,7 +309,11 @@ const KycDetailsCard = ({
       'gstCertificateUrl',
     ].includes(f)
 
-  const fileFieldsToShow = allFields.filter(isFileField)
+  const legacyAadhaarFields =
+    !kyc?.aadhaarFrontUrl && !kyc?.aadhaarBackUrl && kyc?.aadhaarUrl
+      ? (['aadhaarUrl'] as (keyof AdditionalKYCForm)[])
+      : []
+  const fileFieldsToShow = Array.from(new Set([...legacyAadhaarFields, ...allFields.filter(isFileField)]))
   const textFieldsToShow = allFields.filter(
     (f: keyof AdditionalKYCForm) => !isFileField(f) && f !== 'cin',
   )
@@ -413,6 +425,7 @@ const KycDetailsCard = ({
           <PreviewBlock
             labelKey="selfieUrl"
             url={urlMap['selfieUrl']}
+            mime={mimeMap['selfieUrl']}
             loading={loading}
             kyc={kyc}
           />
@@ -447,6 +460,7 @@ const KycDetailsCard = ({
                   key={field}
                   labelKey={field}
                   url={urlMap[field]}
+                  mime={mimeMap[field]}
                   loading={loading}
                   kyc={kyc}
                 />

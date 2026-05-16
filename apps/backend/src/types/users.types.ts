@@ -135,6 +135,8 @@ export interface KycDetails {
   selfieUrl?: string;
 
   aadhaarUrl?: string;
+  aadhaarFrontUrl?: string;
+  aadhaarBackUrl?: string;
   businessPanUrl?: string;
   companyAddressProofUrl?: string;
   gstCertificateUrl?: string;
@@ -149,6 +151,8 @@ export interface KycDetails {
   selfieMime?: string;
   panCardMime?: string;
   aadhaarMime?: string;
+  aadhaarFrontMime?: string;
+  aadhaarBackMime?: string;
   cancelledChequeMime?: string;
   businessPanMime?: string;
   gstCertificateMime: string;
@@ -163,6 +167,8 @@ export interface KycDetails {
   panCardStatus?: "pending" | "verified" | "rejected";
   businessPanStatus: "pending" | "verified" | "rejected";
   aadhaarStatus?: "pending" | "verified" | "rejected";
+  aadhaarFrontStatus?: "pending" | "verified" | "rejected";
+  aadhaarBackStatus?: "pending" | "verified" | "rejected";
   gstCertificateStatus?: "pending" | "verified" | "rejected";
   cancelledChequeStatus?: "pending" | "verified" | "rejected";
   boardResolutionStatus?: "pending" | "verified" | "rejected";
@@ -175,6 +181,8 @@ export interface KycDetails {
   selfieRejectionReason?: string;
   panCardRejectionReason?: string;
   aadhaarRejectionReason?: string;
+  aadhaarFrontRejectionReason?: string;
+  aadhaarBackRejectionReason?: string;
   cancelledChequeRejectionReason?: string;
   boardResolutionRejectionReason?: string;
   partnershipDeedRejectionReason?: string;

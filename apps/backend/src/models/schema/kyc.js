@@ -35,6 +35,8 @@ exports.kyc = (0, pg_core_1.pgTable)("kyc", {
     selfieUrl: (0, pg_core_1.text)("selfieUrl"),
     panCardUrl: (0, pg_core_1.text)("panCardUrl"),
     aadhaarUrl: (0, pg_core_1.text)("aadhaarUrl"),
+    aadhaarFrontUrl: (0, pg_core_1.text)("aadhaarFrontUrl"),
+    aadhaarBackUrl: (0, pg_core_1.text)("aadhaarBackUrl"),
     cancelledChequeUrl: (0, pg_core_1.text)("cancelledChequeUrl"),
     boardResolutionUrl: (0, pg_core_1.text)("boardResolutionUrl"),
     partnershipDeedUrl: (0, pg_core_1.text)("partnershipDeedUrl"),
@@ -46,6 +48,14 @@ exports.kyc = (0, pg_core_1.pgTable)("kyc", {
     panCardRejectionReason: (0, pg_core_1.text)("panCardRejectionReason"),
     aadhaarStatus: (0, exports.kycDocStatusEnum)("aadhaarStatus").default("pending").notNull(),
     aadhaarRejectionReason: (0, pg_core_1.text)("aadhaarRejectionReason"),
+    aadhaarFrontStatus: (0, exports.kycDocStatusEnum)("aadhaarFrontStatus")
+        .default("pending")
+        .notNull(),
+    aadhaarFrontRejectionReason: (0, pg_core_1.text)("aadhaarFrontRejectionReason"),
+    aadhaarBackStatus: (0, exports.kycDocStatusEnum)("aadhaarBackStatus")
+        .default("pending")
+        .notNull(),
+    aadhaarBackRejectionReason: (0, pg_core_1.text)("aadhaarBackRejectionReason"),
     cancelledChequeStatus: (0, exports.kycDocStatusEnum)("cancelledChequeStatus")
         .default("pending")
         .notNull(),
@@ -64,6 +74,8 @@ exports.kyc = (0, pg_core_1.pgTable)("kyc", {
         .notNull(),
     partnershipDeedRejectionReason: (0, pg_core_1.text)("partnershipDeedRejectionReason"),
     aadhaarMime: (0, pg_core_1.varchar)("aadhaarMime", { length: 100 }),
+    aadhaarFrontMime: (0, pg_core_1.varchar)("aadhaarFrontMime", { length: 100 }),
+    aadhaarBackMime: (0, pg_core_1.varchar)("aadhaarBackMime", { length: 100 }),
     panCardMime: (0, pg_core_1.varchar)("panCardMime", { length: 100 }),
     selfieMime: (0, pg_core_1.varchar)("selfieMime", { length: 100 }),
     cancelledChequeMime: (0, pg_core_1.varchar)("cancelledChequeMime", { length: 100 }),
