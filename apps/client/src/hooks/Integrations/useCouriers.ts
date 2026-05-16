@@ -69,6 +69,8 @@ export const useAvailableCouriers = (params: UseAvailableCouriersParams) => {
     typeof codChargeBasis === 'number' && codChargeBasis >= 0
       ? codChargeBasis
       : normalizedOrderAmount
+  const hasRequiredShipmentInputs =
+    !!pickupPincode && !!deliveryPincode && typeof weight === 'number' && weight > 0
 
   return useQuery({
     queryKey: [
@@ -105,11 +107,11 @@ export const useAvailableCouriers = (params: UseAvailableCouriersParams) => {
         height,
         useGuest: params.useGuest === true,
     }),
-    enabled: enabled && !!pickupPincode && !!deliveryPincode && (!!weight || !!cod),
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: 'always',
-    refetchInterval: enabled ? 15000 : false,
+    enabled: enabled && hasRequiredShipmentInputs,
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
     retry: 1,
   })
 }

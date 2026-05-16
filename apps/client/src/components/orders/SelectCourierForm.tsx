@@ -127,7 +127,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   if (!pickupPincode || !deliveryPincode || !totalWeight) {
     return <Typography>Fill pickup, delivery, and weight first to fetch couriers</Typography>
   }
-  if (isLoading || isFetching)
+  if (isLoading || (isFetching && !availableCouriers.length))
     return (
       <Paper sx={{ p: 4, textAlign: 'center' }}>
         <CircularProgress color="primary" size={28} sx={{ mb: 2 }} />
