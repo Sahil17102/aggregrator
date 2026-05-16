@@ -1,5 +1,6 @@
-﻿import { Box, Link, List, ListItem, ListItemText } from '@mui/material'
+﻿import { Box, Link, List, ListItem, ListItemText, Typography } from '@mui/material'
 import PageHeading from '../../components/UI/heading/PageHeading'
+import { TERMS_REFUND_POLICY_LINE } from '../../utils/constants'
 
 const CancellationPolicy = () => {
   return (
@@ -35,7 +36,25 @@ const CancellationPolicy = () => {
         </ListItem>
 
         <ListItem sx={{ display: 'list-item' }}>
-          <ListItemText primary="Refund policy: Once the refund is approved, it will take 7 business days to credit to your bank account." />
+          <ListItemText
+            primary={
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 800,
+                  color: '#171310',
+                  bgcolor: 'rgba(245, 124, 0, 0.12)',
+                  borderLeft: '4px solid #F57C00',
+                  borderRadius: '8px',
+                  px: 1.25,
+                  py: 0.85,
+                  display: 'inline-block',
+                }}
+              >
+                {TERMS_REFUND_POLICY_LINE}
+              </Typography>
+            }
+          />
         </ListItem>
       </List>
     </Box>

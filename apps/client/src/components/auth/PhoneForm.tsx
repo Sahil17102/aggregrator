@@ -12,12 +12,12 @@ import { alpha } from '@mui/material/styles'
 import { useCallback, useEffect, useState } from 'react'
 import { FiMail, FiShield } from 'react-icons/fi'
 import { useRequestOtp } from '../../hooks/useOTP'
-import { TERMS_AND_CONDITIONS } from '../../utils/constants'
 import { TEXT } from '../../theme/theme'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import CustomCheckbox from '../UI/inputs/CustomCheckbox'
 import CustomInput from '../UI/inputs/CustomInput'
 import CustomModal from '../UI/modal/CustomModal'
+import TermsAndConditionsText from '../terms/TermsAndConditionsText'
 import { toast } from '../UI/Toast'
 import OtpForm from './OtpForm'
 import PasswordLoginForm from './PasswordLoginForm'
@@ -248,17 +248,7 @@ export default function PhoneForm() {
         onClose={() => setOpenTerms(false)}
         title="Terms and Conditions"
       >
-        <Typography
-          variant="body2"
-          sx={{
-            whiteSpace: 'pre-line',
-            maxHeight: '60vh',
-            overflowY: 'auto',
-            pr: 1,
-          }}
-        >
-          {TERMS_AND_CONDITIONS}
-        </Typography>
+        <TermsAndConditionsText />
       </CustomModal>
     </Stack>
   )

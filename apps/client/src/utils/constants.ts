@@ -1,7 +1,13 @@
 ﻿import type { AdditionalKYCForm } from '../components/user/profile/Kyc/AdditionalInfoStep'
 import type { BusinessStructure, CompanyType } from '../types/generic.types'
+
+export const TERMS_OPERATOR_LINE = 'This website is operated by choice me - Syed Muddasir.'
+export const TERMS_REFUND_POLICY_LINE =
+  'Refund policy: Once the refund is approved it will 7 business days to credit to your bank account.'
+export const TERMS_HIGHLIGHT_LINES = [TERMS_OPERATOR_LINE, TERMS_REFUND_POLICY_LINE]
+
 export const TERMS_AND_CONDITIONS = `
-This website is operated by choice me - Syed Muddasir.
+${TERMS_OPERATOR_LINE}
 
 Account Terms
 â€¢ You must be 18 years or older to use this Service.
@@ -38,7 +44,7 @@ Payment of Fees
 â€¢ There are different payment term options available, and depending on the payment term decided with ChoiceMee Logistics, the merchant has to pay on the pre-decided monthly, quarterly, half-yearly or yearly terms.
 â€¢ The merchant has to pay within 7 days from the date of Invoice, or he/she risks the chance of closure/termination of the online store.
 â€¢ All fees are exclusive of all state and central taxes, service, sales tax or other taxes, fees or charges now in force or enacted in the future (â€œTaxesâ€).
-â€¢ Refund policy: Once the refund is approved, it will take 7 business days to credit to your bank account.
+â€¢ ${TERMS_REFUND_POLICY_LINE}
 
 Cancellation and Termination
 â€¢ Once your account is cancelled all of your Content will be immediately deleted from the Service. Since deletion of all data is final please be sure that you do in fact want to cancel your account before doing so.
@@ -73,7 +79,7 @@ Refund & Cancellation Policy
 â€¢ If you cancel the Service in the middle of a billing cycle, you will receive a final invoice via email. Once that invoice has been paid, no further charges will apply.
 â€¢ ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd) reserves the right to modify, suspend, or terminate the Service for any reason, without prior notice at any time.
 â€¢ Fraud Prevention: Without limiting any other remedies, ChoiceMee Logistics may suspend or terminate your account if we suspect that you (through conviction, settlement, investigation, or otherwise) have engaged in fraudulent or unlawful activity in connection with the Platform.
-â€¢ Refund policy: Once the refund is approved, it will take 7 business days to credit to your bank account.
+â€¢ ${TERMS_REFUND_POLICY_LINE}
 `
 
 // components/layout/constants.ts

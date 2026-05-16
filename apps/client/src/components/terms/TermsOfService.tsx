@@ -1,10 +1,24 @@
 ﻿import { Container, Link, Typography } from '@mui/material'
 
+import { TERMS_OPERATOR_LINE, TERMS_REFUND_POLICY_LINE } from '../../utils/constants'
+
 const TermsOfService = () => {
   return (
     <Container maxWidth="lg">
-      <Typography paragraph sx={{ mt: 2 }}>
-        This website is operated by choice me - Syed Muddasir.
+      <Typography
+        paragraph
+        sx={{
+          mt: 2,
+          fontWeight: 800,
+          color: '#171310',
+          bgcolor: 'rgba(245, 124, 0, 0.12)',
+          borderLeft: '4px solid #F57C00',
+          borderRadius: '8px',
+          px: 1.25,
+          py: 0.85,
+        }}
+      >
+        {TERMS_OPERATOR_LINE}
       </Typography>
 
       {/* Account Terms */}
@@ -117,8 +131,21 @@ const TermsOfService = () => {
         </li>
         <li>All fees are exclusive of applicable taxes, fees, or charges.</li>
         <li>
-          Refund policy: Once the refund is approved, it will take 7 business days to credit to
-          your bank account.
+          <Typography
+            component="span"
+            sx={{
+              fontWeight: 800,
+              color: '#171310',
+              bgcolor: 'rgba(245, 124, 0, 0.12)',
+              borderLeft: '4px solid #F57C00',
+              borderRadius: '8px',
+              px: 1.25,
+              py: 0.85,
+              display: 'inline-block',
+            }}
+          >
+            {TERMS_REFUND_POLICY_LINE}
+          </Typography>
         </li>
       </ul>
 

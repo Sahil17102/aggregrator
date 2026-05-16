@@ -6,11 +6,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useRequestOtp, useVerifyOtp } from '../../hooks/useOTP'
 import { getPostAuthRedirect } from '../../utils/authRedirect'
-import { TERMS_AND_CONDITIONS } from '../../utils/constants'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import CustomCheckbox from '../UI/inputs/CustomCheckbox'
 import CustomInput from '../UI/inputs/CustomInput'
 import CustomModal from '../UI/modal/CustomModal'
+import TermsAndConditionsText from '../terms/TermsAndConditionsText'
 import { toast } from '../UI/Toast'
 import { getAuthErrorMessage } from './getAuthErrorMessage'
 import AuthCodePreview from './AuthCodePreview'
@@ -299,17 +299,7 @@ export default function OtpLoginPanel({
         onClose={() => setOpenTerms(false)}
         title="Terms and Conditions"
       >
-        <Typography
-          variant="body2"
-          sx={{
-            whiteSpace: 'pre-line',
-            maxHeight: '60vh',
-            overflowY: 'auto',
-            pr: 1,
-          }}
-        >
-          {TERMS_AND_CONDITIONS}
-        </Typography>
+        <TermsAndConditionsText />
       </CustomModal>
     </Stack>
   )

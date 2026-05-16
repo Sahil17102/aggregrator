@@ -2,6 +2,7 @@
 import { FiCreditCard, FiFileText, FiShield } from 'react-icons/fi'
 import TermsOfService from '../../components/terms/TermsOfService'
 import PageHeading from '../../components/UI/heading/PageHeading'
+import { TERMS_REFUND_POLICY_LINE } from '../../utils/constants'
 import CompanyDetails from './CompanyDetails'
 
 const PolicyPages = () => {
@@ -43,8 +44,19 @@ const PolicyPages = () => {
           investigation, or otherwise) have engaged in fraudulent or unlawful activity in connection
           with the Platform.
         </Typography>
-        <Typography paragraph>
-          â€¢ Refund policy: Once the refund is approved, it will take 7 business days to credit to your bank account.
+        <Typography
+          paragraph
+          sx={{
+            fontWeight: 800,
+            color: '#171310',
+            bgcolor: 'rgba(245, 124, 0, 0.12)',
+            borderLeft: '4px solid #F57C00',
+            borderRadius: '8px',
+            px: 1.25,
+            py: 0.85,
+          }}
+        >
+          â€¢ {TERMS_REFUND_POLICY_LINE}
         </Typography>
       </Box>
 
