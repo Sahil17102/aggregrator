@@ -675,11 +675,16 @@ const fetchLocationByPincode = async (pincode: string): Promise<LocRow | null> =
 const hasTag = (loc: LocRow | null, tag: string) =>
   !!loc && Array.isArray(loc.tags) && loc.tags.includes(tag.toLowerCase())
 
+const isKashmirLocation = (loc: LocRow | null) => {
+  const state = (loc?.state ?? '').toLowerCase().trim()
+  return state.includes('kashmir') || state.includes('ladakh')
+}
+
 /**
  * Determine B2C zone classification for a shipment
  *
  * Priority order (most specific → broadest):
- *  1. Special Zones
+ *  1. Kashmir
  *  2. Within City (city + state must both match)
  *  3. Within State (same state, different city)
  *  4. Metro to Metro (different metro cities, cross-state or same state)
@@ -693,16 +698,9 @@ const determineB2CZoneKey = (
   if (!origin || !destination) {
     return { key: 'ROI', reason: 'origin or destination missing' }
   }
-  // 1. Special Zones (always override)
-  if (
-    hasTag(origin, 'special_zones') ||
-    hasTag(origin, 'special_zone') ||
-    hasTag(destination, 'special_zones') ||
-    hasTag(destination, 'special_zone') ||
-    hasTag(origin, 'special') ||
-    hasTag(destination, 'special')
-  ) {
-    return { key: 'SPECIAL_ZONE', reason: 'special zone tag present' }
+  // 1. Kashmir gets its own rate bucket; other special-zone tags continue below.
+  if (isKashmirLocation(origin) || isKashmirLocation(destination)) {
+    return { key: 'KASHMIR', reason: 'Kashmir/Ladakh origin or destination' }
   }
 
   // 2. Within City (requires same city + same state)
@@ -753,6 +751,7 @@ const determineB2CZoneKey = (
  * Adjust the right-hand values if your zones.code uses different wording.
  */
 const ZONE_KEY_TO_DB_CODE: Record<string, string> = {
+  KASHMIR: 'KASHMIR',
   METRO_TO_METRO: 'Metro to Metro',
   ROI: 'ROI',
   SPECIAL_ZONE: 'Special Zone',

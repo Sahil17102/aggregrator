@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto'
-import { inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db, pool } from '../models/client'
 import { plans } from '../models/schema/plans'
 import { userPlans } from '../models/schema/userPlans'
 import { users } from '../models/schema/users'
+import { zones } from '../models/schema/zones'
 import { computeB2CFreightForOrder } from '../models/services/shiprocket.service'
 
 type PlanRow = {
@@ -89,6 +90,16 @@ function assertFreight(label: string, actual: number, expected: number) {
   }
 }
 
+async function zoneCodeFor(zoneId: string) {
+  const [zone] = await db
+    .select({ code: zones.code, name: zones.name })
+    .from(zones)
+    .where(eq(zones.id, zoneId))
+    .limit(1)
+
+  return zone?.code ?? zone?.name ?? 'missing'
+}
+
 async function main() {
   const { basic, premium } = await getRequiredPlans()
   const createdUserIds: string[] = []
@@ -106,6 +117,7 @@ async function main() {
         destinationPincode: '110001',
         mode: 'surface' as const,
         expected: [80, 100, 150, 200, 230, 260, 280],
+        expectedZoneCode: 'KASHMIR',
       },
       {
         label: 'Premium within Kashmir surface',
@@ -114,6 +126,7 @@ async function main() {
         destinationPincode: '110001',
         mode: 'surface' as const,
         expected: [70, 85, 115, 165, 200, 225, 250],
+        expectedZoneCode: 'KASHMIR',
       },
       {
         label: 'Basic outside Kashmir surface',
@@ -130,6 +143,24 @@ async function main() {
         destinationPincode: '400001',
         mode: 'surface' as const,
         expected: [85, 115, 180, 250, 300, 360, 400],
+      },
+      {
+        label: 'Basic non-Kashmir special-zone surface',
+        userId: basicUserId,
+        originPincode: '781321',
+        destinationPincode: '110001',
+        mode: 'surface' as const,
+        expected: [95, 140, 195, 260, 320, 380, 430],
+        expectedZoneCode: 'ROI',
+      },
+      {
+        label: 'Premium non-Kashmir special-zone surface',
+        userId: premiumUserId,
+        originPincode: '781321',
+        destinationPincode: '110001',
+        mode: 'surface' as const,
+        expected: [85, 115, 180, 250, 300, 360, 400],
+        expectedZoneCode: 'ROI',
       },
       {
         label: 'Basic outside Kashmir express',
@@ -167,8 +198,18 @@ async function main() {
         assertFreight(`${group.label} ${weights[index]}kg`, quote.freight, group.expected[index])
       })
 
+      const zoneCode = await zoneCodeFor(String(quotes[0]?.zone_id ?? ''))
+      if (
+        group.expectedZoneCode &&
+        zoneCode.trim().toUpperCase() !== group.expectedZoneCode
+      ) {
+        throw new Error(
+          `${group.label}: expected zone ${group.expectedZoneCode}, received ${zoneCode}`,
+        )
+      }
+
       outputRows.push(
-        `${group.label}: ${quotes
+        `${group.label} [zone=${zoneCode}]: ${quotes
           .map((quote, index) => `${weights[index]}kg=${money(quote.freight)}`)
           .join(', ')}`,
       )
