@@ -2425,6 +2425,15 @@ export const fetchAvailableCouriersWithRates = async (
         ...courier,
         platform_rate: finalCharge.platform_freight_charge,
         provider_quote: finalCharge.provider_quote_charge,
+        quote_required: isQuoteBackedProvider(providerKey),
+        quote_available:
+          !isQuoteBackedProvider(providerKey) || finalCharge.provider_quote_charge > 0,
+        is_bookable:
+          !isQuoteBackedProvider(providerKey) || finalCharge.provider_quote_charge > 0,
+        unavailable_reason:
+          isQuoteBackedProvider(providerKey) && finalCharge.provider_quote_charge <= 0
+            ? 'Live courier quote is currently unavailable. Please retry serviceability.'
+            : null,
         seller_freight_charge: finalCharge.seller_freight_charge,
         final_freight_charge: finalCharge.seller_freight_charge,
         final_courier_charge: finalCharge.final_courier_charge,
@@ -2438,22 +2447,24 @@ export const fetchAvailableCouriersWithRates = async (
     })
 
     if (params.shipment_type === 'b2c' && !params.isCalculator) {
-      combined = combined.filter((courier: any) => {
+      combined.forEach((courier: any) => {
         const providerKey = normalizeProviderKey(
           courier.integration_type || courier.serviceProvider || '',
         )
-        if (!isQuoteBackedProvider(providerKey)) return true
+        if (!isQuoteBackedProvider(providerKey)) return
         const hasLiveQuote = Number(courier.provider_quote ?? 0) > 0
         if (!hasLiveQuote) {
-          console.warn('[Serviceability] Removing quote-backed courier without live quote', {
+          console.warn('[Serviceability] Returning quote-backed courier as unavailable', {
             provider: providerKey,
             courierId: courier.id,
             mode: courier.shipping_mode ?? courier.mode ?? null,
           })
         }
-        return hasLiveQuote
       })
     }
+
+    const compareBookableFirst = (a: any, b: any) =>
+      (a?.is_bookable === false ? 1 : 0) - (b?.is_bookable === false ? 1 : 0)
 
     if (userId && combined?.length) {
       const [profile] = await db
@@ -2495,17 +2506,20 @@ export const fetchAvailableCouriersWithRates = async (
           combined = ordered
         } else if (profile.name === 'fastest') {
           combined = combined.sort(
-            (a: any, b: any) => parseEddToDays(a.edd) - parseEddToDays(b.edd),
+            (a: any, b: any) =>
+              compareBookableFirst(a, b) || parseEddToDays(a.edd) - parseEddToDays(b.edd),
           )
         } else if (profile.name === 'economy') {
           combined = combined.sort(
             (a: any, b: any) =>
+              compareBookableFirst(a, b) ||
               (a.final_courier_charge ?? a.localRates.forward?.rate ?? Infinity) -
               (b.final_courier_charge ?? b.localRates.forward?.rate ?? Infinity),
           )
         } else {
           combined = combined.sort(
             (a: any, b: any) =>
+              compareBookableFirst(a, b) ||
               (a.final_courier_charge ?? a.localRates.forward?.rate ?? Infinity) -
               (b.final_courier_charge ?? b.localRates.forward?.rate ?? Infinity),
           )
@@ -2517,12 +2531,13 @@ export const fetchAvailableCouriersWithRates = async (
       let cheapestCourierId: string | null = null
 
       const sortedByEdd = [...combined].sort(
-        (a, b) => parseEddToDays(a.edd) - parseEddToDays(b.edd),
+        (a, b) => compareBookableFirst(a, b) || parseEddToDays(a.edd) - parseEddToDays(b.edd),
       )
       if (sortedByEdd.length) fastestCourierId = makeCourierIdentityKey(sortedByEdd[0])
 
       const sortedByRate = [...combined].sort(
         (a, b) =>
+          compareBookableFirst(a, b) ||
           (a.final_courier_charge ?? a.localRates.forward?.rate ?? Infinity) -
           (b.final_courier_charge ?? b.localRates.forward?.rate ?? Infinity),
       )
@@ -2536,6 +2551,8 @@ export const fetchAvailableCouriersWithRates = async (
         return { ...c, tag }
       })
     }
+
+    combined = combined.sort(compareBookableFirst)
 
     // Cache the final combined list before returning
     return combined

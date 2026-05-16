@@ -54,6 +54,10 @@ export type Courier = {
   seller_freight_charge?: number | null
   final_freight_charge?: number | null
   final_courier_charge?: number | null
+  quote_required?: boolean | null
+  quote_available?: boolean | null
+  is_bookable?: boolean | null
+  unavailable_reason?: string | null
   provider_rate?: ProviderRate | null
   serviceProvider?: string | null
   service_provider?: string | null

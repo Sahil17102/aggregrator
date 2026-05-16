@@ -7,6 +7,7 @@ import {
   type UseAvailableCouriersParams,
 } from '../../hooks/Integrations/useCouriers'
 import { courierLogos, defaultLogo } from '../../utils/constants'
+import { toast } from '../UI/Toast'
 import type { Box as B2BBox, B2BFormData } from './b2b/B2BOrderForm'
 import type { B2CFormData } from './b2c/B2COrderForm'
 
@@ -488,11 +489,22 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
               const codCharge = getCourierCodCharge(courier)
               const otherCharge = toChargeNumber(local?.forward?.other_charges)
               const finalCourierCharge = getFinalCourierCharge(courier)
+              const isBookable = courier?.is_bookable !== false
+              const finalChargeLabel = isBookable ? formatCurrency(finalCourierCharge) : 'Unavailable'
 
               return (
                 <Paper
                   key={courierOptionKey}
                   onClick={() => {
+                    if (!isBookable) {
+                      toast.open({
+                        message:
+                          courier?.unavailable_reason ||
+                          'Live courier quote is unavailable. Please retry serviceability.',
+                        severity: 'warning',
+                      })
+                      return
+                    }
                     setValue('courierPartner', courier?.name ?? '')
                     setValue('courierPartnerId', courier?.id ?? '')
                     setValue('courierOptionKey', courierOptionKey)
@@ -518,20 +530,23 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                   }}
                   sx={{
                     p: 2,
-                    cursor: 'pointer',
+                    cursor: isBookable ? 'pointer' : 'not-allowed',
+                    opacity: isBookable ? 1 : 0.72,
                     borderRadius: 4,
                     border: isSelected
                       ? `2px solid ${alpha(ACCENT, 0.42)}`
-                      : `1px solid ${alpha('#102A54', 0.12)}`,
+                      : `1px solid ${alpha(isBookable ? '#102A54' : '#8A1F11', isBookable ? 0.12 : 0.2)}`,
                     bgcolor: isSelected ? alpha(ACCENT, 0.045) : '#fff',
                     boxShadow: isSelected
                       ? '0 18px 36px rgba(13,59,142,0.14)'
                       : '0 8px 22px rgba(16,42,84,0.06)',
                     transition: '0.25s ease',
                     '&:hover': {
-                      borderColor: alpha(ACCENT, 0.38),
-                      boxShadow: '0 18px 36px rgba(13,59,142,0.12)',
-                      transform: 'translateY(-1px)',
+                      borderColor: alpha(isBookable ? ACCENT : '#8A1F11', isBookable ? 0.38 : 0.2),
+                      boxShadow: isBookable
+                        ? '0 18px 36px rgba(13,59,142,0.12)'
+                        : '0 8px 22px rgba(16,42,84,0.06)',
+                      transform: isBookable ? 'translateY(-1px)' : 'none',
                     },
                   }}
                 >
@@ -571,14 +586,14 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                             <Typography sx={{ fontWeight: 800, color: TEXT_PRIMARY }}>
                               {getCourierDisplayName(courier)}
                             </Typography>
-                            {courier?.tag === 'fastest' && (
+                            {isBookable && courier?.tag === 'fastest' && (
                               <Chip
                                 size="small"
                                 label="Fastest"
                                 sx={{ bgcolor: '#E8F1FF', color: ACCENT, fontWeight: 700 }}
                               />
                             )}
-                            {courier?.tag === 'economy' && (
+                            {isBookable && courier?.tag === 'economy' && (
                               <Chip
                                 size="small"
                                 label="Best Rate"
@@ -597,14 +612,14 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                           Courier Charge
                         </Typography>
                         <Typography sx={{ fontSize: 28, fontWeight: 900, color: TEXT_PRIMARY }}>
-                          {formatCurrency(finalCourierCharge)}
+                          {finalChargeLabel}
                         </Typography>
                       </Stack>
                     </Stack>
 
                     <Grid container spacing={1.1}>
                       {[
-                        ['Courier Charge', formatCurrency(finalCourierCharge)],
+                        ['Courier Charge', finalChargeLabel],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
                         ['Volumetric', formatWeightKg(courier?.volumetric_weight)],
                         ['Mode', local?.forward?.mode || courier?.shipping_mode || courier?.mode || '-'],
@@ -634,9 +649,12 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                       {courier?.cod === false && (
                         <Chip size="small" variant="outlined" color="error" label="COD N/A" />
                       )}
+                      {!isBookable && (
+                        <Chip size="small" variant="outlined" color="warning" label="Live rate unavailable" />
+                      )}
                     </Stack>
 
-                    {isSelected && (
+                    {isSelected && isBookable && (
                       <Stack direction="row" spacing={1} alignItems="center">
                         <BiCheckCircle size={20} color={ACCENT} />
                         <Typography sx={{ fontWeight: 800, color: ACCENT }}>

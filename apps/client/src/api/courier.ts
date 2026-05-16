@@ -35,6 +35,10 @@ export interface Courier {
   seller_freight_charge?: number | null
   final_freight_charge?: number | null
   final_courier_charge?: number | null
+  quote_required?: boolean | null
+  quote_available?: boolean | null
+  is_bookable?: boolean | null
+  unavailable_reason?: string | null
   localRates?: Record<string, unknown>
   approxZone?: { id?: string; code?: string; name?: string } | null
   integration_type?: string | null
