@@ -23,6 +23,7 @@
     "verify:smtp": "tsx src/scripts/verifySmtp.ts",
     "verify:delivery-one-api-calls": "tsx src/scripts/verifyDeliveryOneApiCalls.ts",
     "smoke:delivery-one": "tsx src/scripts/smokeDeliveryOneApis.ts",
+    "smoke:delivery-one-booking": "tsx src/scripts/smokeDeliveryOneBookingFlow.ts",
     "sync:xpressbees-couriers": "ts-node src/scripts/syncXpressbeesCouriers.ts"
   },
   "keywords": [],

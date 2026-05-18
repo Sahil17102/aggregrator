@@ -1379,6 +1379,52 @@ type FetchCouriersOptions =
       planFallbackName?: string | null
     }
 
+const DEFAULT_SERVICEABILITY_PLAN_FALLBACK = 'Basic'
+
+async function resolveServiceabilityPlanId({
+  userId,
+  planIdOverride,
+  planFallbackName,
+  fallbackToBasicForUser = false,
+}: {
+  userId?: string
+  planIdOverride?: string | null
+  planFallbackName?: string | null
+  fallbackToBasicForUser?: boolean
+}) {
+  let activePlanId: string | null | undefined = planIdOverride ?? null
+
+  if (!activePlanId && userId) {
+    const [returnedUser] = await db
+      .select({ planId: userPlans.plan_id })
+      .from(userPlans)
+      .where(and(eq(userPlans.userId, userId), eq(userPlans.is_active, true)))
+      .limit(1)
+    activePlanId = returnedUser?.planId ?? null
+  }
+
+  const fallbackName =
+    planFallbackName || (fallbackToBasicForUser ? DEFAULT_SERVICEABILITY_PLAN_FALLBACK : null)
+  if (!activePlanId && fallbackName) {
+    const normalizedFallback = fallbackName.toLowerCase()
+    const [fallbackPlan] = await db
+      .select({ id: plans.id })
+      .from(plans)
+      .where(sql`lower(${plans.name}) = ${normalizedFallback}`)
+      .limit(1)
+    activePlanId = fallbackPlan?.id ?? null
+
+    if (activePlanId && userId && !planFallbackName) {
+      console.warn('[Serviceability] User has no active plan; using Basic rates for courier lookup', {
+        userId,
+        fallbackPlanId: activePlanId,
+      })
+    }
+  }
+
+  return activePlanId
+}
+
 export const fetchAvailableCouriersWithRates = async (
   params: NimbusServiceabilityParams & { pickupId?: string },
   userOrOptions?: FetchCouriersOptions,
@@ -1970,26 +2016,12 @@ export const fetchAvailableCouriersWithRates = async (
       const zoneRow = await fetchZoneIdByKey(zoneKey)
       approxZone = { id: zoneRow.id, code: zoneRow.code, name: zoneRow.name }
 
-      let activePlanId: string | null | undefined = planIdOverride ?? null
-
-      if (!activePlanId && userId) {
-        const [returnedUser] = await db
-          .select({ planId: userPlans.plan_id })
-          .from(userPlans)
-          .where(and(eq(userPlans.userId, userId), eq(userPlans.is_active, true)))
-          .limit(1)
-        activePlanId = returnedUser?.planId ?? null
-      }
-
-      if (!activePlanId && planFallbackName) {
-        const normalizedFallback = planFallbackName.toLowerCase()
-        const [fallbackPlan] = await db
-          .select({ id: plans.id })
-          .from(plans)
-          .where(sql`lower(${plans.name}) = ${normalizedFallback}`)
-          .limit(1)
-        activePlanId = fallbackPlan?.id ?? null
-      }
+      const activePlanId = await resolveServiceabilityPlanId({
+        userId,
+        planIdOverride,
+        planFallbackName,
+        fallbackToBasicForUser: true,
+      })
 
       if (activePlanId) {
         localRates = await fetchResolvedB2CRateCards({
@@ -2696,25 +2728,12 @@ export const fetchAvailableCouriersWithRatesB2B = async (
     })
 
     // Step 4: Get active plan (similar to B2C flow)
-    let activePlanId: string | null | undefined = planIdOverride ?? null
-
-    if (!activePlanId && userId) {
-      const [returnedUser] = await db
-        .select({ planId: userPlans.plan_id })
-        .from(userPlans)
-        .where(eq(userPlans.userId, userId))
-      activePlanId = returnedUser?.planId ?? null
-    }
-
-    if (!activePlanId && planFallbackName) {
-      const normalizedFallback = planFallbackName.toLowerCase()
-      const [fallbackPlan] = await db
-        .select({ id: plans.id })
-        .from(plans)
-        .where(sql`lower(${plans.name}) = ${normalizedFallback}`)
-        .limit(1)
-      activePlanId = fallbackPlan?.id ?? null
-    }
+    const activePlanId = await resolveServiceabilityPlanId({
+      userId,
+      planIdOverride,
+      planFallbackName,
+      fallbackToBasicForUser: true,
+    })
 
     // Step 5: Fetch B2B zone-to-zone rates
     // Get enabled couriers first - filter by business type for B2B
