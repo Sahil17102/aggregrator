@@ -2,16 +2,21 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
   AlertTitle,
+  alpha,
   Box,
   Button,
+  CircularProgress,
+  IconButton,
   Link,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
 import moment from 'moment'
 import { useState, type ReactNode } from 'react'
+import { MdAssignment, MdLocalOffer, MdReceipt } from 'react-icons/md'
 import { Link as RouterLink } from 'react-router-dom'
 import { generateManifestService } from '../../../api/order.service'
 import { useAllCouriersWithDetails } from '../../../hooks/Integrations/useCouriers'
@@ -80,6 +85,12 @@ type PendingManifestRequest =
   | null
 
 /* ───────────── Status Color Mapping ───────────── */
+const documentButtonMeta: Record<DocumentType, { label: string; icon: ReactNode }> = {
+  label: { label: 'Label', icon: <MdLocalOffer /> },
+  invoice: { label: 'Invoice', icon: <MdReceipt /> },
+  manifest: { label: 'Manifest', icon: <MdAssignment /> },
+}
+
 export const statusColorMap: Record<string, 'success' | 'pending' | 'error' | 'info'> = {
   pending: 'pending',
   booked: 'info',
@@ -134,6 +145,7 @@ const B2COrdersList = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<Array<B2COrder['id']>>([])
   const [selectionResetToken, setSelectionResetToken] = useState(0)
   const [downloadingDocumentType, setDownloadingDocumentType] = useState<DocumentType | null>(null)
+  const [downloadingRowDocument, setDownloadingRowDocument] = useState<string | null>(null)
   const [bulkManifesting, setBulkManifesting] = useState(false)
   const [manifestingRef, setManifestingRef] = useState<string | null>(null)
   const [pendingManifestRequest, setPendingManifestRequest] =
@@ -470,7 +482,63 @@ const B2COrdersList = () => {
     }
   }
 
+  const getDocumentEntriesForOrders = (targetOrders: B2COrder[], type: DocumentType) =>
+    targetOrders.reduce((entries: DocumentEntry[], order: B2COrder) => {
+      const { key, url } = getDocumentReference(order, type)
+      if (!key && !url) return entries
+
+      const source = key || url
+      entries.push({
+        key,
+        url,
+        fileName: getDownloadFileName(order, type, source),
+      })
+      return entries
+    }, [])
+
+  const downloadDocumentEntries = async (documentEntries: DocumentEntry[]) => {
+    const uniqueEntries = Array.from(
+      new Map<string, DocumentEntry>(
+        documentEntries.map((entry) => [entry.key || entry.url || entry.fileName, entry]),
+      ).values(),
+    )
+
+    const keyEntries = uniqueEntries.filter(
+      (entry): entry is DocumentEntry & { key: string } => Boolean(entry.key),
+    )
+    const directEntries = uniqueEntries.filter(
+      (entry): entry is DocumentEntry & { url: string } => !entry.key && Boolean(entry.url),
+    )
+    const presignedUrls = keyEntries.length
+      ? await presignDownloads({ keys: keyEntries.map((entry) => String(entry.key)) })
+      : []
+
+    let downloadedCount = 0
+    let skippedCount = documentEntries.length - uniqueEntries.length
+
+    for (const entry of directEntries) {
+      await downloadFile(String(entry.url), entry.fileName)
+      downloadedCount += 1
+    }
+
+    for (const [index, entry] of keyEntries.entries()) {
+      const resolvedUrl = Array.isArray(presignedUrls) ? presignedUrls[index] : null
+      if (!resolvedUrl) {
+        skippedCount += 1
+        continue
+      }
+
+      await downloadFile(resolvedUrl, entry.fileName)
+      downloadedCount += 1
+    }
+
+    return { downloadedCount, skippedCount }
+  }
+
   const handleBulkDownload = async (type: DocumentType) => {
+    const typeLabel = documentButtonMeta[type].label
+    const typePlural = `${typeLabel.toLowerCase()}s`
+
     if (!selectedOrders.length) {
       const message = 'Select at least one order to download documents.'
       setBulkFeedback({
@@ -485,75 +553,31 @@ const B2COrdersList = () => {
     setDownloadingDocumentType(type)
     setBulkFeedback({
       severity: 'info',
-      title: `Downloading ${type}s`,
-      message: `Preparing ${selectedOrders.length} selected order(s) for ${type} download.`,
+      title: `Downloading ${typePlural}`,
+      message: `Preparing ${selectedOrders.length} selected order(s) for ${typeLabel.toLowerCase()} download.`,
     })
 
     try {
-      const documentEntries = selectedOrders.reduce((entries: DocumentEntry[], order: B2COrder) => {
-        const { key, url } = getDocumentReference(order, type)
-        if (!key && !url) return entries
-
-        const source = key || url
-        entries.push({
-          key,
-          url,
-          fileName: getDownloadFileName(order, type, source),
-        })
-        return entries
-      }, [])
+      const documentEntries = getDocumentEntriesForOrders(selectedOrders, type)
 
       if (!documentEntries.length) {
-        const message = `No ${type} files are available for the selected orders.`
+        const message = `No ${typeLabel.toLowerCase()} files are available for the selected orders.`
         setBulkFeedback({
           severity: 'error',
-          title: `No ${type} files found`,
+          title: `No ${typeLabel.toLowerCase()} files found`,
           message,
         })
         toast.open({ message, severity: 'error' })
         return
       }
 
-      const uniqueEntries = Array.from(
-        new Map<string, DocumentEntry>(
-          documentEntries.map((entry) => [entry.key || entry.url || entry.fileName, entry]),
-        ).values(),
-      )
-
-      const keyEntries = uniqueEntries.filter(
-        (entry): entry is DocumentEntry & { key: string } => Boolean(entry.key),
-      )
-      const directEntries = uniqueEntries.filter(
-        (entry): entry is DocumentEntry & { url: string } => !entry.key && Boolean(entry.url),
-      )
-      const presignedUrls = keyEntries.length
-        ? await presignDownloads({ keys: keyEntries.map((entry) => String(entry.key)) })
-        : []
-
-      let downloadedCount = 0
-      let skippedCount = documentEntries.length - uniqueEntries.length
-
-      for (const entry of directEntries) {
-        await downloadFile(String(entry.url), entry.fileName)
-        downloadedCount += 1
-      }
-
-      for (const [index, entry] of keyEntries.entries()) {
-        const resolvedUrl = Array.isArray(presignedUrls) ? presignedUrls[index] : null
-        if (!resolvedUrl) {
-          skippedCount += 1
-          continue
-        }
-
-        await downloadFile(resolvedUrl, entry.fileName)
-        downloadedCount += 1
-      }
+      const { downloadedCount, skippedCount } = await downloadDocumentEntries(documentEntries)
 
       if (!downloadedCount) {
-        const message = `No ${type} files could be downloaded for the selected orders.`
+        const message = `No ${typeLabel.toLowerCase()} files could be downloaded for the selected orders.`
         setBulkFeedback({
           severity: 'error',
-          title: `${type[0].toUpperCase()}${type.slice(1)} download failed`,
+          title: `${typeLabel} download failed`,
           message,
         })
         toast.open({ message, severity: 'error' })
@@ -562,15 +586,15 @@ const B2COrdersList = () => {
 
       const summaryMessage =
         skippedCount > 0
-          ? `Downloaded ${downloadedCount} ${type} file(s). Skipped ${skippedCount} missing or duplicate file(s).`
-          : `Downloaded ${downloadedCount} ${type} file(s).`
+          ? `Downloaded ${downloadedCount} ${typeLabel.toLowerCase()} file(s). Skipped ${skippedCount} missing or duplicate file(s).`
+          : `Downloaded ${downloadedCount} ${typeLabel.toLowerCase()} file(s).`
 
       setBulkFeedback({
         severity: skippedCount > 0 ? 'warning' : 'success',
         title:
           skippedCount > 0
-            ? `${type[0].toUpperCase()}${type.slice(1)} download completed with skips`
-            : `${type[0].toUpperCase()}${type.slice(1)} download completed`,
+            ? `${typeLabel} download completed with skips`
+            : `${typeLabel} download completed`,
         message: summaryMessage,
       })
       toast.open({ message: summaryMessage, severity: skippedCount > 0 ? 'info' : 'success' })
@@ -578,16 +602,58 @@ const B2COrdersList = () => {
       console.error(`Bulk ${type} download failed:`, error)
       const message = getActionableErrorMessage(
         error,
-        `Failed to download selected ${type} files. Please try again.`,
+        `Failed to download selected ${typeLabel.toLowerCase()} files. Please try again.`,
       )
       setBulkFeedback({
         severity: 'error',
-        title: `${type[0].toUpperCase()}${type.slice(1)} download failed`,
+        title: `${typeLabel} download failed`,
         message,
       })
       toast.open({ message, severity: 'error' })
     } finally {
       setDownloadingDocumentType(null)
+    }
+  }
+
+  const handleSingleDocumentDownload = async (order: B2COrder, type: DocumentType) => {
+    const typeLabel = documentButtonMeta[type].label
+    const rowDownloadKey = `${order.id}-${type}`
+
+    try {
+      setDownloadingRowDocument(rowDownloadKey)
+      const documentEntries = getDocumentEntriesForOrders([order], type)
+
+      if (!documentEntries.length) {
+        toast.open({
+          message: `${typeLabel} is not available for ${order.order_number} yet.`,
+          severity: 'error',
+        })
+        return
+      }
+
+      const { downloadedCount } = await downloadDocumentEntries(documentEntries)
+
+      if (!downloadedCount) {
+        toast.open({
+          message: `${typeLabel} could not be downloaded for ${order.order_number}.`,
+          severity: 'error',
+        })
+        return
+      }
+
+      toast.open({
+        message: `${typeLabel} downloaded for ${order.order_number}.`,
+        severity: 'success',
+      })
+    } catch (error) {
+      console.error(`${typeLabel} download failed:`, error)
+      const message = getActionableErrorMessage(
+        error,
+        `Failed to download ${typeLabel.toLowerCase()} for ${order.order_number}. Please try again.`,
+      )
+      toast.open({ message, severity: 'error' })
+    } finally {
+      setDownloadingRowDocument(null)
     }
   }
 
@@ -640,14 +706,26 @@ const B2COrdersList = () => {
   }
 
   /* ───────────── Columns ───────────── */
-  const hasLabelGenerated = (row: B2COrder) =>
-    Boolean(String(row.label_url || row.label_key || row.label || '').trim())
+  const formatCurrency = (value?: number | string | null) => `Rs ${Number(value ?? 0).toFixed(2)}`
 
-  const hasInvoiceGenerated = (row: B2COrder) =>
-    Boolean(String(row.invoice_url || row.invoice_key || row.invoice_link || '').trim())
+  const getFinalCourierCharge = (row: B2COrder) => {
+    const fallback =
+      Number(row.freight_charges ?? 0) +
+      Number(row.other_charges ?? 0) +
+      ((row.order_type || '').toLowerCase() === 'cod' ? Number(row.cod_charges ?? 0) : 0)
+    return Number(row.final_courier_charge ?? row.courier_charge ?? fallback)
+  }
+
+  const formatCompactDate = (value?: string | null) =>
+    value ? moment(value).format('DD MMM, hh:mm A') : '-'
+
+  const hasDocument = (row: B2COrder, type: DocumentType) => {
+    const { key, url } = getDocumentReference(row, type)
+    return Boolean(key || url)
+  }
   const renderAwbLink = (value?: string | null) => {
     const awb = String(value || '').trim()
-    if (!awb) return <Typography color="text.secondary">-</Typography>
+    if (!awb) return <Typography sx={{ color: 'text.secondary', fontSize: 12 }}>No AWB</Typography>
 
     return (
       <Link
@@ -655,10 +733,67 @@ const B2COrdersList = () => {
         to={`/tracking?awb=${encodeURIComponent(awb)}`}
         underline="hover"
         onClick={(event) => event.stopPropagation()}
-        sx={{ fontWeight: 800 }}
+        sx={{ fontWeight: 800, fontSize: 12, lineHeight: 1.25 }}
       >
         {awb}
       </Link>
+    )
+  }
+
+  const renderDocumentDownloadButton = (row: B2COrder, type: DocumentType) => {
+    const meta = documentButtonMeta[type]
+    const isAvailable = hasDocument(row, type)
+    const rowDownloadKey = `${row.id}-${type}`
+    const isDownloading = downloadingRowDocument === rowDownloadKey
+    const isDisabled =
+      !isAvailable || Boolean(downloadingDocumentType) || Boolean(downloadingRowDocument)
+
+    return (
+      <Tooltip
+        key={type}
+        title={
+          isAvailable
+            ? isDownloading
+              ? `Downloading ${meta.label}...`
+              : `Download ${meta.label}`
+            : `${meta.label} not available`
+        }
+        arrow
+      >
+        <Box component="span" sx={{ display: 'inline-flex' }}>
+          <IconButton
+            size="small"
+            aria-label={`Download ${meta.label}`}
+            disabled={isDisabled}
+            onClick={(event) => {
+              event.stopPropagation()
+              handleSingleDocumentDownload(row, type)
+            }}
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1,
+              color: isAvailable ? '#0D3B8E' : 'text.disabled',
+              border: `1px solid ${
+                isAvailable
+                  ? alpha(theme.palette.primary.main, 0.22)
+                  : alpha(theme.palette.text.primary, 0.08)
+              }`,
+              backgroundColor: isAvailable
+                ? alpha(theme.palette.primary.main, 0.06)
+                : alpha(theme.palette.text.primary, 0.04),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.12),
+              },
+              '& svg': {
+                fontSize: 16,
+              },
+            }}
+          >
+            {isDownloading ? <CircularProgress size={14} /> : meta.icon}
+          </IconButton>
+        </Box>
+      </Tooltip>
     )
   }
 
@@ -666,6 +801,7 @@ const B2COrdersList = () => {
     {
       label: 'Source',
       id: 'is_external_api',
+      minWidth: 68,
       render: (_, row) => (
         <StatusChip
           label={row.is_external_api ? 'API' : 'Local'}
@@ -673,81 +809,89 @@ const B2COrdersList = () => {
         />
       ),
     },
-    { label: 'Order #', id: 'order_number' },
-    { label: 'AWB', id: 'awb_number', render: (value) => renderAwbLink(value) },
     {
-      label: 'Docs',
-      id: 'id',
-      minWidth: 220,
-      sticky: 'right',
-      stickyOffset: 140,
+      label: 'Shipment',
+      id: 'order_number',
+      minWidth: 148,
+      truncate: false,
       render: (_v, row) => (
-        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-          <StatusChip
-            label={hasLabelGenerated(row) ? 'Label Generated' : 'Label Pending'}
-            status={hasLabelGenerated(row) ? 'success' : 'pending'}
-          />
-          <StatusChip
-            label={hasInvoiceGenerated(row) ? 'Invoice Generated' : 'Invoice Pending'}
-            status={hasInvoiceGenerated(row) ? 'success' : 'pending'}
-          />
+        <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.25 }} noWrap>
+            {row.order_number || '-'}
+          </Typography>
+          {renderAwbLink(row.awb_number)}
         </Stack>
       ),
     },
-    { label: 'Buyer', id: 'buyer_name' },
     {
-      label: 'Order Total',
-      id: 'order_amount',
-      render: (_v, row) => {
-        const orderAmount = Number(row.order_amount ?? 0)
-        return `₹${orderAmount.toFixed(2)}`
-      },
-    },
-    {
-      label: 'Courier Charge',
-      id: 'final_courier_charge',
-      render: (_v, row) => {
-        const fallback =
-          Number(row.freight_charges ?? 0) +
-          Number(row.other_charges ?? 0) +
-          ((row.order_type || '').toLowerCase() === 'cod' ? Number(row.cod_charges ?? 0) : 0)
-        const finalCharge = Number(row.final_courier_charge ?? row.courier_charge ?? fallback)
-        return `₹${finalCharge.toFixed(2)}`
-      },
-    },
-    { label: 'Courier', id: 'courier_partner' },
-
-    {
-      label: 'Source',
-      id: 'is_external_api',
-      render: (_v, row) => (
-        <StatusChip
-          label={row.is_external_api ? 'API' : 'Local'}
-          status={row.is_external_api ? 'info' : 'success'}
-        />
+      label: 'Buyer',
+      id: 'buyer_name',
+      minWidth: 126,
+      render: (value) => (
+        <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 130 }} noWrap>
+          {String(value || '-')}
+        </Typography>
       ),
     },
     {
-      label: 'Status',
-      id: 'order_status',
-      minWidth: 150,
-      sticky: 'right',
-      stickyOffset: 360,
-      render: (v) => <StatusChip label={v} status={statusColorMap[v] || 'info'} />,
+      label: 'Amount',
+      id: 'order_amount',
+      minWidth: 110,
+      truncate: false,
+      render: (_v, row) => {
+        const finalCharge = getFinalCourierCharge(row)
+        return (
+          <Stack spacing={0.2}>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 800 }}>
+              {formatCurrency(row.order_amount)}
+            </Typography>
+            <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
+              Ship {formatCurrency(finalCharge)}
+            </Typography>
+          </Stack>
+        )
+      },
     },
-    { label: 'Created At', id: 'created_at', render: (v) => moment(v).format('DD MMM YYYY, hh:mm A') },
-    { label: 'Last Updated', id: 'updated_at', render: (v) => moment(v).format('DD MMM YYYY, hh:mm A') },
+    {
+      label: 'Courier / Status',
+      id: 'courier_partner',
+      minWidth: 150,
+      truncate: false,
+      render: (_v, row) => (
+        <Stack spacing={0.35} alignItems="flex-start">
+          <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 150 }} noWrap>
+            {row.courier_partner || '-'}
+          </Typography>
+          <StatusChip label={row.order_status} status={statusColorMap[row.order_status] || 'info'} />
+        </Stack>
+      ),
+    },
+    {
+      label: 'Dates',
+      id: 'created_at',
+      minWidth: 122,
+      truncate: false,
+      render: (_v, row) => (
+        <Stack spacing={0.2}>
+          <Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1.25 }}>
+            {formatCompactDate(row.created_at)}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
+            Upd {formatCompactDate(row.updated_at)}
+          </Typography>
+        </Stack>
+      ),
+    },
     {
       label: 'Actions',
       id: 'id',
       minWidth: 140,
       sticky: 'right',
-      stickyOffset: 0,
+      stickyOffset: 160,
+      truncate: false,
       render: (_, row) => {
-        // 1) Build actions compactly; include Reverse + Manifest + Cancel where applicable
         const actions: ReactNode[] = []
 
-        // Show Reverse for delivered (all providers)
         if ((row.order_status || '').toLowerCase() === 'delivered') {
           actions.push(
             <Button
@@ -755,7 +899,7 @@ const B2COrdersList = () => {
               size="small"
               variant="outlined"
               onClick={() => setReverseOrder(row)}
-              sx={{ px: 1.25, minWidth: 0 }}
+              sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
             >
               Reverse
             </Button>,
@@ -774,7 +918,7 @@ const B2COrdersList = () => {
               variant="contained"
               disabled={bulkManifesting || isThisManifesting}
               onClick={() => openSingleManifestSchedule(row)}
-              sx={{ px: 1.25, minWidth: 0 }}
+              sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
             >
               {isThisManifesting ? 'Manifesting...' : 'Manifest'}
             </Button>,
@@ -795,7 +939,7 @@ const B2COrdersList = () => {
               color="warning"
               disabled={retryingManifest}
               onClick={() => handleRetryManifest(row)}
-              sx={{ px: 1.25, minWidth: 0 }}
+              sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
             >
               {retryingManifest ? 'Retrying...' : `Retry (${retriesRemaining} left)`}
             </Button>,
@@ -810,14 +954,20 @@ const B2COrdersList = () => {
               variant="outlined"
               color="error"
               onClick={() => cancelShipment(row.id as unknown as string)}
-              sx={{ px: 1.25, minWidth: 0, border: '1px solid red', color: 'red' }}
+              sx={{
+                px: 0.85,
+                py: 0.2,
+                minWidth: 0,
+                fontSize: 11.5,
+                border: '1px solid red',
+                color: 'red',
+              }}
             >
               Cancel
             </Button>,
           )
         }
 
-        // If the provider already returned a manifest/label flow and there are no direct actions, show info text
         if (
           actions.length === 0 &&
           String(row.order_status || '').toLowerCase() !== 'manifest_failed' &&
@@ -826,7 +976,7 @@ const B2COrdersList = () => {
           )
         ) {
           return (
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 700 }}>
               Auto-Manifested{' '}
               {/* {row.manifest && (
                 <Typography component="span" color="primary" fontWeight={500}>
@@ -843,7 +993,7 @@ const B2COrdersList = () => {
           String(row.integration_type || '').toLowerCase() === 'delhivery'
         ) {
           return (
-            <Typography variant="body2" color="error.main">
+            <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 700 }}>
               Retry limit reached
             </Typography>
           )
@@ -864,11 +1014,26 @@ const B2COrdersList = () => {
         }
 
         return (
-          <Stack direction="row" spacing={0.75}>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
             {actions}
           </Stack>
         )
       },
+    },
+    {
+      label: 'PDFs',
+      id: 'manifest',
+      minWidth: 116,
+      sticky: 'right',
+      stickyOffset: 44,
+      truncate: false,
+      render: (_v, row) => (
+        <Stack direction="row" spacing={0.35}>
+          {renderDocumentDownloadButton(row, 'label')}
+          {renderDocumentDownloadButton(row, 'invoice')}
+          {renderDocumentDownloadButton(row, 'manifest')}
+        </Stack>
+      ),
     },
   ]
 
@@ -890,10 +1055,10 @@ const B2COrdersList = () => {
   }
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={1.1} sx={{ pt: 0 }}>
       {/* Top row: Create button */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={2}>
-        <Box sx={{ width: { xs: '100%', sm: 220 } }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={1}>
+        <Box sx={{ width: { xs: '100%', sm: 190 } }}>
           <CustomSelect
             label="Sort by Created At"
             value={filters.sortOrder || 'desc'}
@@ -910,13 +1075,18 @@ const B2COrdersList = () => {
             ]}
           />
         </Box>
-        <Button variant="contained" color="primary" onClick={handleCreateB2COrder}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleCreateB2COrder}
+          sx={{ minHeight: 36, px: 1.6, textTransform: 'none', fontWeight: 700 }}
+        >
           Create B2C Order
         </Button>
       </Stack>
 
       {/* 🔹 Status Tabs Row */}
-      <SmartTabs tabs={tabs} value={selectedTab} onChange={handleTabChange} />
+      <SmartTabs tabs={tabs} value={selectedTab} onChange={handleTabChange} compact />
 
       {/* 🔹 Advanced Filter Bar */}
       <FilterBar
@@ -924,6 +1094,7 @@ const B2COrdersList = () => {
         onApply={handleApplyFilters}
         defaultValues={defaultFilterValues}
         appliedCount={Object.values(filters).filter(Boolean).length}
+        compact
       />
 
       {bulkFeedback && (
@@ -940,8 +1111,8 @@ const B2COrdersList = () => {
       {selectedOrders.length > 0 && (
         <Box
           sx={{
-            p: 2,
-            borderRadius: '10px',
+            p: 1.25,
+            borderRadius: '8px',
             border: '1px solid rgba(51, 51, 105, 0.14)',
             backgroundColor: 'rgba(51, 51, 105, 0.04)',
           }}
@@ -950,29 +1121,29 @@ const B2COrdersList = () => {
             direction={{ xs: 'column', lg: 'row' }}
             alignItems={{ xs: 'flex-start', lg: 'center' }}
             justifyContent="space-between"
-            gap={2}
+            gap={1.25}
           >
             <Box>
-              <Typography sx={{ fontWeight: 700, color: '#333369', fontSize: '15px' }}>
+              <Typography sx={{ fontWeight: 700, color: '#333369', fontSize: '14px' }}>
                 {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
               </Typography>
-              <Typography sx={{ color: '#6B7280', fontSize: '13px', mt: 0.5 }}>
+              <Typography sx={{ color: '#6B7280', fontSize: '12px', mt: 0.25 }}>
                 Manifest up to {BULK_MANIFEST_LIMIT} eligible orders at once. Bulk label, invoice,
                 and manifest downloads have no selection limit.
               </Typography>
               {manifestValidationMessage && (
-                <Typography sx={{ color: '#C0392B', fontSize: '12px', mt: 0.75 }}>
+                <Typography sx={{ color: '#C0392B', fontSize: '12px', mt: 0.5 }}>
                   {manifestValidationMessage}
                 </Typography>
               )}
             </Box>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} flexWrap="wrap">
+            <Stack direction={{ xs: 'column', sm: 'row' }} gap={0.75} flexWrap="wrap">
               <Button
                 variant="contained"
                 onClick={openBulkManifestSchedule}
                 disabled={bulkManifesting || Boolean(manifestValidationMessage)}
-                sx={{ textTransform: 'none', minWidth: 170 }}
+                sx={{ textTransform: 'none', minWidth: 150, minHeight: 34, fontSize: 12 }}
               >
                 {bulkManifesting ? 'Manifesting...' : 'Manifest Selected'}
               </Button>
@@ -980,7 +1151,7 @@ const B2COrdersList = () => {
                 variant="outlined"
                 onClick={() => handleBulkDownload('label')}
                 disabled={downloadingDocumentType !== null}
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
               >
                 {downloadingDocumentType === 'label' ? 'Downloading...' : 'Download Labels'}
               </Button>
@@ -988,7 +1159,7 @@ const B2COrdersList = () => {
                 variant="outlined"
                 onClick={() => handleBulkDownload('invoice')}
                 disabled={downloadingDocumentType !== null}
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
               >
                 {downloadingDocumentType === 'invoice' ? 'Downloading...' : 'Download Invoices'}
               </Button>
@@ -996,7 +1167,7 @@ const B2COrdersList = () => {
                 variant="outlined"
                 onClick={() => handleBulkDownload('manifest')}
                 disabled={downloadingDocumentType !== null}
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
               >
                 {downloadingDocumentType === 'manifest' ? 'Downloading...' : 'Download Manifests'}
               </Button>
@@ -1006,7 +1177,7 @@ const B2COrdersList = () => {
                   clearSelection()
                   setBulkFeedback(null)
                 }}
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
               >
                 Clear
               </Button>
@@ -1022,11 +1193,14 @@ const B2COrdersList = () => {
         <DataTable<B2COrder>
           rows={orders}
           columns={columns}
-          title="My B2C Orders"
+          title="B2C Orders"
           pagination
           selectable
+          density="compact"
+          maxHeight={640}
           currentPage={page}
           defaultRowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[10, 25, 50]}
           totalCount={data?.totalCount || 0}
           onPageChange={(newPage) => {
             setPage(newPage + 1)

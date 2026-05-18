@@ -52,6 +52,7 @@ interface GlassFilterBarProps<T extends Record<string, any>> {
   bgOverlayImg?: string
   loading?: boolean
   appliedCount?: number
+  compact?: boolean
 }
 
 const DE_BLUE = '#0052CC'
@@ -64,6 +65,7 @@ export const FilterBar = <T extends Record<string, any>>({
   bgOverlayImg,
   loading,
   appliedCount,
+  compact = false,
 }: GlassFilterBarProps<T>) => {
   const { control, handleSubmit, reset } = useForm<T>({
     defaultValues: defaultValues as DefaultValues<T>,
@@ -129,11 +131,11 @@ export const FilterBar = <T extends Record<string, any>>({
 
   const renderSkeletonContent = () => (
     <Box>
-      <Grid container spacing={2}>
+      <Grid container spacing={compact ? 1 : 2}>
         {fields?.slice(0, 3).map((_, idx) => (
           <Grid key={idx} size={{ md: 4, xs: 12 }}>
-            <Skeleton variant="text" height={20} sx={{ mb: 1 }} />
-            <Skeleton variant="rectangular" height={42} sx={{ borderRadius: 2 }} />
+            <Skeleton variant="text" height={compact ? 16 : 20} sx={{ mb: compact ? 0.5 : 1 }} />
+            <Skeleton variant="rectangular" height={compact ? 36 : 42} sx={{ borderRadius: 2 }} />
           </Grid>
         ))}
       </Grid>
@@ -159,14 +161,14 @@ export const FilterBar = <T extends Record<string, any>>({
 
   const renderFormContent = () => (
     <form onSubmit={handleSubmit(submit)}>
-      <Stack gap={1.2}>
+      <Stack gap={compact ? 0.8 : 1.2}>
         <Stack
           direction={{ xs: 'column', lg: 'row' }}
           alignItems={{ xs: 'stretch', lg: 'center' }}
           justifyContent="space-between"
-          gap={1.2}
+          gap={compact ? 0.9 : 1.2}
         >
-          <Grid container spacing={1.4} sx={{ flex: 1 }}>
+          <Grid container spacing={compact ? 1 : 1.4} sx={{ flex: 1 }}>
             {primaryFields.map((field) => (
               <Grid size={{ md: 4, xs: 12 }} key={field.name}>
                 <Controller
@@ -179,7 +181,7 @@ export const FilterBar = <T extends Record<string, any>>({
           </Grid>
 
           {!isMobile ? (
-            <Stack mt={{ lg: 1.6 }} gap={0.8} direction="row" alignItems="center">
+            <Stack mt={{ lg: compact ? 1.2 : 1.6 }} gap={compact ? 0.55 : 0.8} direction="row" alignItems="center">
               {advancedFields.length ? (
                 <Tooltip title={showAdvanced ? 'Hide advanced filters' : 'Show advanced filters'}>
                   <IconButton
@@ -200,7 +202,7 @@ export const FilterBar = <T extends Record<string, any>>({
                   fontWeight: 700,
                   borderRadius: 1,
                   minWidth: 92,
-                  py: 1,
+                  py: compact ? 0.75 : 1,
                   background: `linear-gradient(135deg, ${DE_BLUE} 0%, #2a5fbe 100%)`,
                 }}
               >
@@ -227,13 +229,13 @@ export const FilterBar = <T extends Record<string, any>>({
           <Collapse in={showAdvanced} timeout="auto" unmountOnExit>
             <Box
               sx={{
-                p: { xs: 0.4, md: 1.1 },
+                p: compact ? { xs: 0.25, md: 0.8 } : { xs: 0.4, md: 1.1 },
                 borderRadius: 1,
                 border: `1px solid ${alpha(DE_BLUE, 0.14)}`,
                 backgroundColor: alpha(DE_BLUE, 0.03),
               }}
             >
-              <Grid container spacing={1.4}>
+              <Grid container spacing={compact ? 1 : 1.4}>
                 {advancedFields.map((field) => (
                   <Grid size={{ md: 3, xs: 12 }} key={field.name}>
                     <Controller
@@ -291,9 +293,9 @@ export const FilterBar = <T extends Record<string, any>>({
             `,
             border: `1px solid ${alpha(DE_BLUE, 0.16)}`,
             borderRadius: 1,
-            boxShadow: '0 6px 18px rgba(0, 82, 204, 0.1)',
-            px: { xs: 1.25, md: 1.5 },
-            py: { xs: 1.1, md: 1.3 },
+            boxShadow: compact ? '0 3px 10px rgba(0, 82, 204, 0.08)' : '0 6px 18px rgba(0, 82, 204, 0.1)',
+            px: compact ? { xs: 1, md: 1.15 } : { xs: 1.25, md: 1.5 },
+            py: compact ? { xs: 0.8, md: 0.9 } : { xs: 1.1, md: 1.3 },
           }}
         >
           {bgOverlayImg && (

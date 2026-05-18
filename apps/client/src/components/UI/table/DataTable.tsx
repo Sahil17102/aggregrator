@@ -30,6 +30,7 @@ export interface Column<T> {
   label_desc?: string
   label: JSX.Element | string
   align?: 'right' | 'left' | 'center'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render?: (value: any, row: T) => React.ReactNode
   minWidth?: number
   hiddenOnMobile?: boolean
@@ -60,6 +61,7 @@ export interface DataTableProps<T extends { id: string | number }> {
   totalCount?: number
   onRowClick?: (row: T) => void
   selectionResetToken?: number | string
+  density?: 'regular' | 'compact'
 }
 
 export default function DataTable<T extends { id: string | number }>(props: DataTableProps<T>) {
@@ -84,6 +86,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
     totalCount,
     onRowClick,
     selectionResetToken,
+    density = 'regular',
   } = props
 
   const theme = useTheme()
@@ -97,6 +100,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
   const tableBg = '#FFFCF8'
   const rowHover = alpha(primary, 0.045)
   const mobileCardBg = 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,244,238,0.96) 100%)'
+  const isCompact = density === 'compact'
 
   const [localPage, setLocalPage] = React.useState(0)
   const [localRowsPerPage, setLocalRowsPerPage] = React.useState(defaultRowsPerPage)
@@ -183,10 +187,12 @@ export default function DataTable<T extends { id: string | number }>(props: Data
         position: 'relative',
         width: '100%',
         overflow: 'hidden',
-        borderRadius: '14px',
+        borderRadius: isCompact ? '8px' : '14px',
         border: `1px solid ${borderColor}`,
         background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(252,247,241,0.98) 100%)',
-        boxShadow: `0 20px 42px ${alpha(textPrimary, 0.07)}`,
+        boxShadow: isCompact
+          ? `0 8px 20px ${alpha(textPrimary, 0.06)}`
+          : `0 20px 42px ${alpha(textPrimary, 0.07)}`,
         p: 0,
       }}
     >
@@ -205,26 +211,32 @@ export default function DataTable<T extends { id: string | number }>(props: Data
         />
       )}
 
-      <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 1.6, sm: 2.1, md: 2.4 } }}>
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 2,
+          p: isCompact ? { xs: 1, sm: 1.15, md: 1.25 } : { xs: 1.6, sm: 2.1, md: 2.4 },
+        }}
+      >
         {(title || subTitle || pagination) && (
           <Stack
-            mb={2}
+            mb={isCompact ? 1 : 2}
             direction={{ xs: 'column', sm: 'row' }}
             alignItems={{ xs: 'flex-start', sm: 'center' }}
             justifyContent="space-between"
-            spacing={1.5}
+            spacing={isCompact ? 0.75 : 1.5}
             sx={{
-              px: { xs: 0.4, sm: 0.6 },
-              py: { xs: 0.5, sm: 0.8 },
+              px: isCompact ? { xs: 0.1, sm: 0.2 } : { xs: 0.4, sm: 0.6 },
+              py: isCompact ? { xs: 0.1, sm: 0.25 } : { xs: 0.5, sm: 0.8 },
             }}
           >
-            <Stack spacing={0.8}>
+            <Stack spacing={isCompact ? 0.3 : 0.8}>
               {title && (
                 <Typography
                   sx={{
-                    fontSize: { xs: '1.02rem', sm: '1.18rem' },
+                    fontSize: isCompact ? { xs: '0.95rem', sm: '1.02rem' } : { xs: '1.02rem', sm: '1.18rem' },
                     fontWeight: 800,
-                    letterSpacing: '-0.03em',
+                    letterSpacing: 0,
                     color: textPrimary,
                   }}
                 >
@@ -256,12 +268,16 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 sx={{
                   borderRadius: '10px',
-                  px: 1.2,
+                  px: isCompact ? 0.4 : 1.2,
                   backgroundColor: alpha('#ffffff', 0.92),
                   border: `1px solid ${borderColor}`,
-                  boxShadow: `0 10px 24px ${alpha(textPrimary, 0.05)}`,
+                  boxShadow: isCompact ? 'none' : `0 10px 24px ${alpha(textPrimary, 0.05)}`,
+                  '& .MuiToolbar-root': {
+                    minHeight: isCompact ? 34 : undefined,
+                    px: isCompact ? 0.5 : undefined,
+                  },
                   '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                    fontSize: '12px',
+                    fontSize: isCompact ? '11px' : '12px',
                     color: textSecondary,
                     fontWeight: 600,
                   },
@@ -287,9 +303,9 @@ export default function DataTable<T extends { id: string | number }>(props: Data
             justifyContent="center"
             spacing={1.3}
             sx={{
-              minHeight: 300,
-              py: 5,
-              borderRadius: '12px',
+              minHeight: isCompact ? 220 : 300,
+              py: isCompact ? 3 : 5,
+              borderRadius: isCompact ? '8px' : '12px',
               border: `1px dashed ${alpha(primary, 0.16)}`,
               background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(247,241,235,0.92) 100%)',
             }}
@@ -308,7 +324,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
             </Typography>
           </Stack>
         ) : isMobile ? (
-          <Stack spacing={1.6}>
+          <Stack spacing={isCompact ? 1 : 1.6}>
             {selectable && (
               <Stack
                 direction="row"
@@ -340,14 +356,14 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                   key={row.id}
                   variant="outlined"
                   sx={{
-                    borderRadius: '12px',
+                    borderRadius: isCompact ? '8px' : '12px',
                     border: `1px solid ${borderColor}`,
                     background: mobileCardBg,
                     boxShadow: `0 14px 28px ${alpha(textPrimary, 0.05)}`,
                   }}
                 >
-                  <CardContent sx={{ px: 2, py: 1.8 }}>
-                    <Stack spacing={1.35}>
+                  <CardContent sx={{ px: isCompact ? 1.4 : 2, py: isCompact ? 1.25 : 1.8 }}>
+                    <Stack spacing={isCompact ? 1 : 1.35}>
                       {selectable && (
                         <Stack direction="row" alignItems="center" justifyContent="space-between">
                           <Stack direction="row" alignItems="center" spacing={1}>
@@ -418,7 +434,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
             })}
           </Stack>
         ) : (
-          <Box sx={{ overflowX: 'auto', borderRadius: '14px' }}>
+          <Box sx={{ overflowX: 'auto', borderRadius: isCompact ? '8px' : '14px' }}>
             <TableContainer
               component={Paper}
               sx={{
@@ -427,7 +443,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                 minWidth: '100%',
                 maxHeight,
                 boxShadow: 'none',
-                borderRadius: '12px',
+                borderRadius: isCompact ? '8px' : '12px',
                 backdropFilter: 'none',
               }}
             >
@@ -443,7 +459,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           background: headerBg,
                           borderBottom: `1px solid ${borderColor}`,
                           zIndex: theme.zIndex.appBar + 1,
-                          py: 1.4,
+                          py: isCompact ? 0.75 : 1.4,
                         }}
                       >
                         <CustomCheckbox
@@ -464,15 +480,15 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                             top: 0,
                             background: headerBg,
                             color: alpha(textPrimary, 0.86),
-                            minWidth: col.minWidth || 100,
+                            minWidth: col.minWidth || (isCompact ? 80 : 100),
                             fontWeight: 800,
-                            fontSize: '11px',
+                            fontSize: isCompact ? '10.5px' : '11px',
                             textTransform: 'uppercase',
-                            letterSpacing: '0.09em',
+                            letterSpacing: isCompact ? '0.04em' : '0.09em',
                             zIndex: col.sticky ? theme.zIndex.appBar + 3 : theme.zIndex.appBar + 1,
                             borderBottom: `1px solid ${borderColor}`,
-                            py: 1.4,
-                            px: 2,
+                            py: isCompact ? 0.75 : 1.4,
+                            px: isCompact ? 1 : 2,
                             ...(col.sticky === 'right'
                               ? {
                                   right: col.stickyOffset ?? 0,
@@ -575,9 +591,9 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                                   whiteSpace: shouldTruncate ? 'nowrap' : 'normal',
                                   overflow: shouldTruncate ? 'hidden' : 'visible',
                                   textOverflow: shouldTruncate ? 'ellipsis' : 'clip',
-                                  maxWidth: shouldTruncate ? 240 : 'none',
-                                  py: 1.45,
-                                  px: 2,
+                                  maxWidth: shouldTruncate ? (isCompact ? 180 : 240) : 'none',
+                                  py: isCompact ? 0.85 : 1.45,
+                                  px: isCompact ? 1 : 2,
                                   borderBottom: 'none',
                                   backgroundColor: col.sticky ? '#FFFFFF' : undefined,
                                   zIndex: col.sticky ? 2 : 1,
@@ -610,7 +626,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           })}
 
                           {expandable && renderExpandedRow && (
-                            <TableCell sx={{ py: 1.5, px: 2 }}>
+                            <TableCell sx={{ py: isCompact ? 0.75 : 1.5, px: isCompact ? 1 : 2 }}>
                               <IconButton
                                 size="small"
                                 onClick={() => toggleExpand(row.id)}
@@ -640,7 +656,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                               <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                                 <Box
                                   ref={expandedRef}
-                                  p={2.8}
+                                  p={isCompact ? 1.75 : 2.8}
                                   sx={{
                                     background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)',
                                   }}

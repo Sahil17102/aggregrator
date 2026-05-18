@@ -33,6 +33,7 @@ interface SmartTabsProps<T extends string = string> {
   value: T
   onChange: (value: T) => void
   muiTabsProps?: Omit<TabsProps, 'value' | 'onChange'>
+  compact?: boolean
 }
 
 const StyledTabs = styled(Tabs)(() => ({
@@ -85,6 +86,7 @@ export function SmartTabs<T extends string = string>({
   value,
   onChange,
   muiTabsProps,
+  compact = false,
 }: SmartTabsProps<T>) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -217,15 +219,27 @@ export function SmartTabs<T extends string = string>({
       <Box
         sx={{
           p: 1,
-          borderRadius: '12px',
+          borderRadius: compact ? '8px' : '12px',
           display: 'inline-flex',
           alignItems: 'center',
           background: alpha('#fff9f3', 0.86),
           border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-          boxShadow: `0 18px 32px ${alpha(theme.palette.text.primary, 0.06)}`,
+          boxShadow: compact
+            ? `0 8px 18px ${alpha(theme.palette.text.primary, 0.05)}`
+            : `0 18px 32px ${alpha(theme.palette.text.primary, 0.06)}`,
+          ...(compact ? { p: 0.55 } : {}),
         }}
       >
-        <StyledTabs value={controlledValue} onChange={handleChange} {...muiTabsProps}>
+        <StyledTabs
+          value={controlledValue}
+          onChange={handleChange}
+          sx={{
+            '& .MuiTabs-flexContainer': {
+              gap: compact ? 0.75 : 1.25,
+            },
+          }}
+          {...muiTabsProps}
+        >
           {visibleTabs.map((tab) => {
             const labelContent = (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -234,7 +248,24 @@ export function SmartTabs<T extends string = string>({
                 {typeof tab.badgeCount === 'number' && <CounterChip>{tab.badgeCount}</CounterChip>}
               </Box>
             )
-            return <StyledTab key={tab.value} value={tab.value} label={labelContent} disableRipple />
+            return (
+              <StyledTab
+                key={tab.value}
+                value={tab.value}
+                label={labelContent}
+                disableRipple
+                sx={
+                  compact
+                    ? {
+                        borderRadius: '8px',
+                        px: 1.35,
+                        py: 0.75,
+                        fontSize: '0.82rem',
+                      }
+                    : undefined
+                }
+              />
+            )
           })}
 
           {overflowTabs.length > 0 && (
@@ -249,6 +280,21 @@ export function SmartTabs<T extends string = string>({
                     ? {
                         color: theme.palette.text.primary,
                         background: alpha(theme.palette.primary.main, 0.12),
+                        ...(compact
+                          ? {
+                              borderRadius: '8px',
+                              px: 1.35,
+                              py: 0.75,
+                              fontSize: '0.82rem',
+                            }
+                          : {}),
+                      }
+                    : compact
+                      ? {
+                          borderRadius: '8px',
+                          px: 1.35,
+                          py: 0.75,
+                          fontSize: '0.82rem',
                       }
                     : undefined
                 }
@@ -289,7 +335,7 @@ export function SmartTabs<T extends string = string>({
           )}
         </StyledTabs>
       </Box>
-      <Divider sx={{ mt: 1.4, borderColor: alpha(theme.palette.primary.main, 0.08) }} />
+      <Divider sx={{ mt: compact ? 0.8 : 1.4, borderColor: alpha(theme.palette.primary.main, 0.08) }} />
     </Box>
   )
 }
