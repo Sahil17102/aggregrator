@@ -16,6 +16,8 @@ const platformLinks = [
 const companyLinks = [
   { label: 'Portal Login', to: '/login' },
   { label: 'Track Shipment', to: '/tracking' },
+  { label: 'Terms & Conditions', to: '/terms-and-conditions' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
 ]
 
 const footerText = '#FFFFFF'

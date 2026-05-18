@@ -196,6 +196,8 @@ function RoutedApp() {
           <Route path="/tracking" element={<OrderTracking />} />
           <Route path="/rate-calculator" element={<RateCalculator publicView="rate" />} />
           <Route path="/weight-calculator" element={<RateCalculator publicView="weight" />} />
+          <Route path="/terms-and-conditions" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* onboarding */}
           <Route
             path="/onboarding-questions"

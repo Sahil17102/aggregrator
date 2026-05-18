@@ -1,85 +1,99 @@
 ﻿import type { AdditionalKYCForm } from '../components/user/profile/Kyc/AdditionalInfoStep'
 import type { BusinessStructure, CompanyType } from '../types/generic.types'
 
-export const TERMS_OPERATOR_LINE = 'This website is operated by choice me - Syed Muddasir.'
+export const TERMS_OPERATOR_LINE = 'These terms are issued by ChoiceMee Logistics for use of the ChoiceMee platform.'
 export const TERMS_REFUND_POLICY_LINE =
-  'Refund policy: Once the refund is approved it will 7 business days to credit to your bank account.'
-export const TERMS_HIGHLIGHT_LINES = [TERMS_OPERATOR_LINE, TERMS_REFUND_POLICY_LINE]
+  'Refund policy: approved refunds are credited to the original payment method or verified bank account within 7 business days.'
+export const TERMS_PRIVACY_POLICY_LINE =
+  'Privacy policy: we collect, use, store, and share account, KYC, shipment, billing, tracking, and support information only to operate the platform, meet courier and legal requirements, prevent fraud, improve services, and communicate with you.'
+export const TERMS_HIGHLIGHT_LINES = [
+  TERMS_OPERATOR_LINE,
+  TERMS_REFUND_POLICY_LINE,
+  TERMS_PRIVACY_POLICY_LINE,
+]
+export const TERMS_SECTION_TITLES = [
+  'Account Eligibility',
+  'Platform Use',
+  'Shipping and Courier Services',
+  'Rates, Wallet, and Payments',
+  'COD and Remittance',
+  'Cancellations and Refunds',
+  'Restricted and Prohibited Shipments',
+  'Data and Privacy',
+  'Service Availability and Liability',
+  'Suspension and Termination',
+  'Updates to These Terms',
+  'Contact and Grievance',
+]
 
 export const TERMS_AND_CONDITIONS = `
 ${TERMS_OPERATOR_LINE}
 
-Account Terms
-â€¢ You must be 18 years or older to use this Service.
-â€¢ You must provide your full legal name, current address, a valid email address, and any other information needed in order to complete the signup process.
-â€¢ You are responsible for keeping your password secure. ChoiceMee Logistics cannot and will not be liable for any loss or damage from your failure to maintain the security of your account and password.
-â€¢ You may not use the ChoiceMee Logistics service for any illegal or unauthorized purpose nor may you, in the use of the Service, violate any laws in your jurisdiction (including but not limited to copyright laws) as well as the laws of India.
-â€¢ You are responsible for all activity and content (data, graphics, photos, links) that is uploaded under your ChoiceMee Logistics account.
-â€¢ You must not transmit any worms or viruses or any code of a destructive nature.
-â€¢ A breach or violation of any of the Account Terms as determined in the sole discretion of ChoiceMee Logistics will result in an immediate termination of your services.
+Last updated: 18 May 2026
 
-General Conditions
-â€¢ You must read, agree with and accept all of the terms and conditions contained in this User Agreement and the Privacy Policy before you may become a member of ChoiceMee Logistics.
-â€¢ We reserve the right to modify or terminate the Service for any reason, without notice at any time.
-â€¢ We reserve the right to refuse service to anyone for any reason at any time.
-â€¢ Your use of the Service is at your sole risk. The Service is provided on an â€œas isâ€ and â€œas availableâ€ basis without any warranty or condition, express, implied or statutory.
-â€¢ ChoiceMee Logistics does not warrant that the service will be uninterrupted, timely, secure, or error-free.
-â€¢ ChoiceMee Logistics does not warrant that the results that may be obtained from the use of the service will be accurate or reliable.
-â€¢ You understand that your Content (not including credit card information), may be transferred unencrypted and involve (a) transmissions over various networks; and (b) changes to conform and adapt to technical requirements of connecting networks or devices.
-â€¢ We may, but have no obligation to, remove Content and Accounts containing Content that we determine in our sole discretion are unlawful, offensive, threatening, libellous, defamatory, pornographic, obscene or otherwise objectionable or violates any partyâ€™s intellectual property or these Terms of Service.
-â€¢ ChoiceMee Logistics does not warrant that the quality of any products, services, information, or other material purchased or obtained by you through the Service will meet your expectations, or that any errors in the Service will be corrected.
-â€¢ You expressly understand and agree that ChoiceMee Logistics shall not be liable for any direct, indirect, incidental, special, consequential or exemplary damages, including but not limited to, damages for loss of profits, goodwill, use, data or other intangible losses resulting from the use of or inability to use the service.
-â€¢ In no event shall ChoiceMee Logistics or our suppliers be liable for lost profits or any special, incidental or consequential damages arising out of or in connection with our site, our services or this agreement (however arising including negligence). You agree to indemnify and hold us and (as applicable) our parent, subsidiaries, affiliates, ChoiceMee Logistics partners, officers, directors, agents, and employees, harmless from any claim or demand, including reasonable attorneysâ€™ fees, made by any third party due to or arising out of your breach of this Agreement or the documents it incorporates by reference, or your violation of any law or the rights of a third party.
-â€¢ Technical support is only provided to paying account holders and is only available via email (ops@choicemee.com) and if agreed upon earlier via phone (9217553934) and request ticketing system.
-â€¢ You agree not to reproduce, duplicate, copy, sell, resell or exploit any portion of the Service, use of the Service, or access to the Service without the express written permission by ChoiceMee Logistics.
-â€¢ Verbal or written abuse of any kind (including threats of abuse or retribution) of any ChoiceMee Logistics customer, employee, member, or officer will result in immediate account termination.
-â€¢ We do not claim any intellectual property rights over the material you provide to the ChoiceMee Logistics service.
-â€¢ By uploading images and item description content to ChoiceMee Logistics, you agree to allow other internet users to view them and you agree to allow ChoiceMee Logistics to display and store them and you agree that ChoiceMee Logistics can, at any time, review all the content submitted by you to its Service.
-â€¢ The failure of ChoiceMee Logistics to exercise or enforce any right or provision of the Terms of Service shall not constitute a waiver of such right or provision. The Terms of Service constitutes the entire agreement between you and ChoiceMee Logistics and govern your use of the Service, superseding any prior agreements between you and ChoiceMee Logistics (including, but not limited to, any prior versions of the Terms of Service).
-â€¢ You shall not purchase search engine or other pay per click keywords (such as Google AdWords), or domain names that use ChoiceMee Logistics trademarks and/or variations and misspellings thereof.
-â€¢ ChoiceMee Logistics does not pre-screen Content and it is in their sole discretion to refuse or remove any Content that is available via the Service.
-â€¢ Questions about the Terms of Service should be sent to: ops@choicemee.com
+Account Eligibility
+- You must be at least 18 years old and legally able to enter into a binding agreement.
+- You must provide accurate registration, contact, business, KYC, pickup, billing, and bank details when requested.
+- You are responsible for all activity under your account and for keeping your login credentials secure.
+- If any information changes, you must update it promptly so shipments, invoices, remittances, and support communication remain accurate.
 
-Payment of Fees
-â€¢ There are different payment term options available, and depending on the payment term decided with ChoiceMee Logistics, the merchant has to pay on the pre-decided monthly, quarterly, half-yearly or yearly terms.
-â€¢ The merchant has to pay within 7 days from the date of Invoice, or he/she risks the chance of closure/termination of the online store.
-â€¢ All fees are exclusive of all state and central taxes, service, sales tax or other taxes, fees or charges now in force or enacted in the future (â€œTaxesâ€).
-â€¢ ${TERMS_REFUND_POLICY_LINE}
+Platform Use
+- ChoiceMee Logistics provides tools for shipment booking, rate calculation, label generation, courier allocation, tracking, wallet management, COD visibility, NDR/RTO workflows, reports, and related support.
+- You must use the platform only for lawful business shipping activity and in line with applicable Indian laws, courier rules, and these terms.
+- You must not misuse the platform, attempt unauthorized access, upload harmful code, interfere with systems, or use the service for fraudulent or misleading activity.
+- You remain responsible for the accuracy of order details, pickup and delivery addresses, parcel dimensions, parcel weight, product descriptions, invoice values, and payment mode.
 
-Cancellation and Termination
-â€¢ Once your account is cancelled all of your Content will be immediately deleted from the Service. Since deletion of all data is final please be sure that you do in fact want to cancel your account before doing so.
-â€¢ We reserve the right to modify or terminate the ChoiceMee Logistics service for any reason, without notice at any time.
-â€¢ Fraud: Without limiting any other remedies, ChoiceMee Logistics may suspend or terminate your account if we suspect that you (by conviction, settlement, insurance or escrow investigation, or otherwise) have engaged in fraudulent activity in connection with the Site.
+Shipping and Courier Services
+- Courier serviceability, pickup availability, transit time, delivery attempt rules, RTO handling, weight disputes, and tracking updates depend on the integrated courier and lane.
+- A shipment is accepted for processing only after required shipment data, courier allocation, and manifest requirements are completed.
+- AWB generation, manifesting, pickup scans, transit scans, and final delivery events may be delayed by courier systems, network conditions, address issues, weather, strikes, holidays, or regulatory checks.
+- You agree to cooperate with support requests for invoices, product proofs, KYC documents, customer details, weight evidence, or other information required to resolve courier exceptions.
 
-Modifications to the Service and Prices
-â€¢ Prices for using ChoiceMee Logistics are subject to change upon 14 daysâ€™ notice from ChoiceMee Logistics. Such notice may be provided at any time by posting the changes to the ChoiceMee Logistics Site or via an announcement.
-â€¢ ChoiceMee Logistics reserves the right at any time to modify or discontinue the Service (or any part thereof) with or without notice.
-â€¢ ChoiceMee Logistics shall not be liable to you or to any third party for any modification, price change, suspension or discontinuance of the Service.
+Rates, Wallet, and Payments
+- Rate calculator amounts are estimates until the shipment is validated, manifested, scanned, and billed using the final applicable weight, zone, plan, payment mode, and charges.
+- You must maintain sufficient wallet balance or approved payment terms before shipment processing where payment is required.
+- Applicable charges may include freight, COD charges, fuel surcharge, GST, weight discrepancy charges, RTO charges, address correction fees, remote area charges, and other courier or platform charges.
+- Invoices and statements must be reviewed promptly. Any billing concern should be raised with supporting details within the timeline communicated by ChoiceMee Logistics.
 
-Banned Restricted Products and Services
-â€¢ You shall not, directly or indirectly, offer, attempt to offer, trade or attempt to trade in any item, the dealing of which is prohibited or restricted in any manner under the provisions of any applicable law, rule, regulation or guideline for the time being in force.
-â€¢ Without prejudice to the generality of the above, ChoiceMee Logistics does not permit hosting of the following items:
-  â€¢ â€œSecuritiesâ€ within the meaning of the Securities Contract Regulation Act, 1956, including shares, bonds, debentures, etc. and/or any other financial instruments/assets of any description.
-  â€¢ Living, dead creatures and/or the whole or any part of any animal which has been kept or preserved by any means whether artificial or natural including rugs, skins, specimens of animals, antlers, horns, hair, feathers, nails, teeth, musk, eggs, nests, other animal products prohibited under The Wildlife Protection Act, 1972.
-  â€¢ Weapons of any description.
-  â€¢ Liquor, tobacco products, drugs, psychotropic substances, narcotics, intoxicants of any description, medicines, palliative/curative substances.
-  â€¢ Religious items, including books, artifacts, etc. of any description or any other such item which is likely to affect the religious sentiments of any person.
-  â€¢ â€œAntiquitiesâ€ and â€œArt Treasuresâ€ in violation of the provisions of the Antiquities and Art Treasures Act, 1972.
-  â€¢ Used cellular phone SIM Cards.
-â€¢ Furthermore, you agree to display and adhere to a terms of use or other user-type agreement, as well as a privacy policy, governing your operation of your store and your conduct with your storeâ€™s customers.
+COD and Remittance
+- COD collections are handled according to courier confirmations, remittance cycles, reconciliation data, deductions, and platform records.
+- COD remittance may be adjusted for shipping charges, RTO charges, disputes, penalties, refunds, negative wallet balance, or other valid dues.
+- You are responsible for providing correct bank and settlement details and for reviewing remittance reports.
 
-ðŸ“ Company Details
-ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd)
-ðŸ“§ Email: ops@choicemee.com
-ðŸ“ž Contact: 9217553934
+Cancellations and Refunds
+- You may request cancellation of shipments or services through the available platform flow or by contacting support.
+- Cancellation is subject to shipment status, courier acceptance, manifest status, pickup status, and charges already incurred.
+- Once an account cancellation is completed, access may be disabled and retained data may be deleted or archived as required by law, courier reconciliation, accounting, fraud prevention, or dispute handling.
+- ${TERMS_REFUND_POLICY_LINE}
 
-Refund & Cancellation Policy
-â€¢ You may cancel your account at any time by emailing us at ops@choicemee.com.
-â€¢ Once your account is cancelled, all of your data and content will be permanently deleted from our Service. Since deletion is final and irreversible, please ensure you truly wish to cancel your account before proceeding.
-â€¢ If you cancel the Service in the middle of a billing cycle, you will receive a final invoice via email. Once that invoice has been paid, no further charges will apply.
-â€¢ ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd) reserves the right to modify, suspend, or terminate the Service for any reason, without prior notice at any time.
-â€¢ Fraud Prevention: Without limiting any other remedies, ChoiceMee Logistics may suspend or terminate your account if we suspect that you (through conviction, settlement, investigation, or otherwise) have engaged in fraudulent or unlawful activity in connection with the Platform.
-â€¢ ${TERMS_REFUND_POLICY_LINE}
+Restricted and Prohibited Shipments
+- You must not ship illegal, unsafe, counterfeit, misdeclared, restricted, or prohibited goods.
+- Restricted categories include weapons, explosives, narcotics, psychotropic substances, liquor, tobacco where restricted, hazardous materials, live or dead animals or protected animal products, cash, negotiable instruments, securities, antiques, art treasures, used SIM cards, and any item prohibited by law or courier policy.
+- You are responsible for product declarations, invoices, tax compliance, packaging, and customer communication for every shipment.
+- ChoiceMee Logistics may hold, cancel, reject, or report shipments if the parcel or declaration appears suspicious, unsafe, restricted, unlawful, or non-compliant.
+
+Data and Privacy
+- ${TERMS_PRIVACY_POLICY_LINE}
+- By using the platform, you consent to this processing and to sharing relevant shipment, customer, KYC, billing, and tracking information with couriers, payment processors, technology providers, auditors, legal authorities, and support teams where necessary.
+- You must provide your customers with appropriate notices and permissions before sharing their personal data with ChoiceMee Logistics for shipment processing, tracking, COD, NDR, RTO, support, and communication.
+- You can request correction, access, or deletion of eligible personal information by contacting ops@choicemee.com, subject to legal, accounting, courier, fraud-prevention, and dispute-retention requirements.
+
+Service Availability and Liability
+- The platform is provided on an as-is and as-available basis. We work to keep it reliable, but we do not guarantee uninterrupted, error-free, or delay-free operation.
+- ChoiceMee Logistics is not liable for indirect, incidental, special, consequential, or loss-of-profit damages arising from platform use, courier delays, failed pickups, delivery exceptions, third-party outages, or inaccurate information submitted by you.
+- Nothing in these terms limits liability that cannot legally be limited.
+
+Suspension and Termination
+- We may suspend or restrict access if we detect fraud risk, abusive behavior, unpaid dues, prohibited shipments, policy violations, courier complaints, security concerns, or unlawful activity.
+- You may stop using the platform or request account closure by contacting ops@choicemee.com.
+- Outstanding charges, reconciliation items, claims, disputes, and legal obligations survive account closure.
+
+Updates to These Terms
+- We may update these terms to reflect service changes, courier requirements, legal obligations, pricing changes, or operational improvements.
+- Continued use of the platform after an update means you accept the revised terms.
+
+Contact and Grievance
+- For terms, privacy, billing, shipment, refund, or grievance questions, contact ChoiceMee Logistics at ops@choicemee.com or 9906690088.
 `
 
 // components/layout/constants.ts

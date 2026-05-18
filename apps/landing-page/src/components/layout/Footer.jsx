@@ -12,6 +12,8 @@ import { Link as RouterLink } from "react-router-dom";
 import BrandLogo from "../brand/BrandLogo";
 import { brand, brandIdentity } from "../../theme/brand";
 
+const platformBaseUrl = (import.meta.env.VITE_PLATFORM_URL || "https://app.camplar.in").replace(/\/+$/, "");
+
 const platformLinks = [
   { label: "Portal Login", to: "/login" },
   { label: "Tracking", to: "/tracking" },
@@ -22,6 +24,8 @@ const platformLinks = [
 const companyLinks = [
   { label: "Portal Login", to: "/login" },
   { label: "Track Shipment", to: "/tracking" },
+  { label: "Terms & Conditions", href: `${platformBaseUrl}/terms-and-conditions` },
+  { label: "Privacy Policy", href: `${platformBaseUrl}/privacy-policy` },
 ];
 
 const socialLinks = [
@@ -111,8 +115,10 @@ export default function Footer() {
               <Typography sx={{ fontWeight: 800, color: brand.ink }}>Company</Typography>
               {companyLinks.map((item) => (
                 <Box
-                  component={RouterLink}
-                  key={item.to}
+                  component={item.href ? "a" : RouterLink}
+                  href={item.href}
+                  key={item.href || item.to}
+                  rel={item.href ? "noreferrer" : undefined}
                   sx={{
                     color: brand.inkSoft,
                     fontWeight: 600,
@@ -120,6 +126,7 @@ export default function Footer() {
                       color: brand.ink,
                     },
                   }}
+                  target={item.href ? "_blank" : undefined}
                   to={item.to}
                 >
                   {item.label}

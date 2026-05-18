@@ -202,7 +202,6 @@ const PolicyPages = () => {
           <Typography variant="h4">Terms of Service</Typography>
         </Box>
 
-        {/* Paste your full Terms of Service text exactly as you provided */}
         <TermsOfService />
       </Box>
 
