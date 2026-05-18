@@ -34,6 +34,6 @@ Domain targets:
 - API: `https://api.choicemee.in`
 - pgAdmin: `https://pgadmin.choicemee.in`
 
-`choicemee.in` and `app.choicemee.in` are both served from the client bundle, with `/` now resolving to the public landing experience and `/login` continuing into the portal flow.
+`choicemee.in` is served from `apps/landing-page`, while `app.choicemee.in` is served from `apps/client`. The landing app hands `/login` off to the client auth flow.
 
 `pgadmin.choicemee.in` needs its own DNS A record or wildcard DNS pointing to the VPS.

@@ -92,8 +92,19 @@ build_backend() {
   npm run build
 }
 
+build_landing() {
+  log "Building landing page"
+  cd "$SOURCE_DIR/apps/landing-page"
+  npm_clean_install
+  VITE_API_BASE_URL="$PUBLIC_API_URL" \
+    VITE_CLIENT_AUTH_URL="$PUBLIC_APP_URL/login" \
+    npm run build
+  $SUDO mkdir -p "$WEB_ROOT/landing"
+  $SUDO rsync -a --delete dist/ "$WEB_ROOT/landing/"
+}
+
 build_client() {
-  log "Building client app and public landing"
+  log "Building client app"
   cd "$SOURCE_DIR/apps/client"
   npm_clean_install
   VITE_API_URL="$PUBLIC_API_URL/api" \
@@ -154,7 +165,7 @@ map \$http_upgrade \$connection_upgrade {
 server {
   listen 80;
   server_name $ROOT_DOMAIN www.$ROOT_DOMAIN;
-  root $WEB_ROOT/app;
+  root $WEB_ROOT/landing;
   index index.html;
   location / {
     try_files \$uri \$uri/ /index.html;
@@ -231,7 +242,7 @@ configure_caddy() {
   $SUDO tee /etc/caddy/conf.d/choicemee.caddy >/dev/null <<EOF
 $ROOT_DOMAIN, www.$ROOT_DOMAIN {
   encode gzip zstd
-  root * $WEB_ROOT/app
+  root * $WEB_ROOT/landing
   try_files {path} /index.html
   file_server
 }
@@ -345,6 +356,7 @@ main() {
   ensure_pm2
   ensure_backend_env
   build_backend
+  build_landing
   build_client
   build_admin
   start_backend

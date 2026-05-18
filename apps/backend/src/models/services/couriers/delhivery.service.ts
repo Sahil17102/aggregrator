@@ -20,12 +20,13 @@ export class DelhiveryService {
     this.clientName = credentials.clientName
   }
 
-  private get headers() {
-    return {
+  private getHeaders({ includeContentType = true }: { includeContentType?: boolean } = {}) {
+    const headers: Record<string, string> = {
       Authorization: `Token ${this.token}`,
-      'Content-Type': 'application/json',
       Accept: 'application/json',
     }
+    if (includeContentType) headers['Content-Type'] = 'application/json'
+    return headers
   }
 
   private async postFormEncoded(path: string, payload: unknown) {
@@ -50,7 +51,7 @@ export class DelhiveryService {
     try {
       await this.ensureCredentials()
       const url = `${this.apiBase}/c/api/pin-codes/json/?filter_codes=${pincode}`
-      const res = await axios.get(url, { headers: this.headers, timeout: 20000 })
+      const res = await axios.get(url, { headers: this.getHeaders({ includeContentType: false }), timeout: 20000 })
 
       // Log the full response structure
       console.log('📦 Delhivery Serviceability API Response:', {
@@ -84,7 +85,7 @@ export class DelhiveryService {
     try {
       await this.ensureCredentials()
       const url = `${this.apiBase}/api/dc/expected_tat?origin_pin=${origin}&destination_pin=${destination}&mot=${mot}&pdt=${pdt}`
-      const res = await axios.get(url, { headers: this.headers, timeout: 20000 })
+      const res = await axios.get(url, { headers: this.getHeaders({ includeContentType: false }), timeout: 20000 })
       const tat = res.data?.data?.tat
       return typeof tat === 'number' || typeof tat === 'string' ? Number(tat) : null
     } catch (err: any) {
@@ -223,7 +224,7 @@ export class DelhiveryService {
 
     try {
       const response = await axios.get(`${this.apiBase}/api/kinko/v1/invoice/charges/.json`, {
-        headers: this.headers,
+        headers: this.getHeaders({ includeContentType: false }),
         params: requestParams,
         timeout: 30000,
       })
@@ -299,7 +300,7 @@ export class DelhiveryService {
         ...(isBulk ? { count: normalizedCount } : {}),
       })
       const url = `${this.apiBase}${path}?${query}`
-      const res = await axios.get(url, { headers: this.headers })
+      const res = await axios.get(url, { headers: this.getHeaders({ includeContentType: false }) })
       return res.data?.waybill ?? res.data?.waybills ?? res.data
     } catch (err: any) {
       console.error('Delhivery waybill fetch error:', err.response?.data || err.message)
@@ -714,7 +715,7 @@ export class DelhiveryService {
         `${this.apiBase}/api/p/edit`,
         { waybill, cancellation: 'true' },
         {
-          headers: this.headers,
+          headers: this.getHeaders(),
           timeout: 20000,
         },
       )
@@ -745,7 +746,7 @@ export class DelhiveryService {
   async trackShipment(awb: string) {
     await this.ensureCredentials()
     const res = await axios.get(`${this.apiBase}/api/v1/packages/json/?waybill=${awb}`, {
-      headers: this.headers,
+      headers: this.getHeaders({ includeContentType: false }),
     })
     return res.data
   }
@@ -781,7 +782,7 @@ export class DelhiveryService {
           ...(Object.keys(actionData).length ? { action_data: actionData } : {}),
         }
       })
-      const res = await axios.post(url, { data: payload }, { headers: this.headers })
+      const res = await axios.post(url, { data: payload }, { headers: this.getHeaders() })
       return res.data // contains UPL id(s)
     } catch (err: any) {
       console.error('Delhivery NDR action error:', err.response?.data || err.message)
@@ -796,7 +797,7 @@ export class DelhiveryService {
       const url = `${this.apiBase}/api/cmu/get_bulk_upl/${encodeURIComponent(uplId)}?verbose=${
         verbose ? 'true' : 'false'
       }`
-      const res = await axios.get(url, { headers: this.headers })
+      const res = await axios.get(url, { headers: this.getHeaders({ includeContentType: false }) })
       return res.data
     } catch (err: any) {
       console.error('Delhivery NDR status error:', err.response?.data || err.message)
@@ -808,7 +809,7 @@ export class DelhiveryService {
   async requestPickup(pickupData: any) {
     await this.ensureCredentials()
     const res = await axios.post(`${this.apiBase}/fm/request/new/`, pickupData, {
-      headers: this.headers,
+      headers: this.getHeaders(),
     })
     return res.data
   }
@@ -1065,7 +1066,7 @@ export class DelhiveryService {
     }`
     const responseType = format === 'pdf' ? 'arraybuffer' : 'json'
     const res = await axios.get(url, {
-      headers: this.headers,
+      headers: this.getHeaders({ includeContentType: false }),
       responseType,
     })
 

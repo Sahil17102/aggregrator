@@ -3,9 +3,29 @@ import axios from 'axios'
 const isLocalhost =
   typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL ||
-  (isLocalhost ? 'http://127.0.0.1:5002/api' : 'https://api.choicemee.in/api')
+const DEFAULT_API_BASE_URL = isLocalhost
+  ? 'http://127.0.0.1:5002/api'
+  : 'https://api.choicemee.in/api'
+const LEGACY_RAILWAY_API_HOST = 'choiceme-backend-production.up.railway.app'
+
+const normalizeApiBaseUrl = (rawBaseUrl) => {
+  if (!rawBaseUrl) return DEFAULT_API_BASE_URL
+
+  try {
+    const candidate = new URL(rawBaseUrl)
+    if (candidate.hostname === LEGACY_RAILWAY_API_HOST) {
+      return DEFAULT_API_BASE_URL
+    }
+
+    const normalized = candidate.href.replace(/\/+$/, '')
+    if (normalized.endsWith('/api') || normalized.includes('/api/')) return normalized
+    return `${normalized}/api`
+  } catch {
+    return DEFAULT_API_BASE_URL
+  }
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(process.env.REACT_APP_API_BASE_URL)
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -6,7 +6,7 @@ Monorepo for the ChoiceMee admin dashboard, client portal, and backend API.
 
 - `apps/admin` - React and Chakra UI operations dashboard.
 - `apps/client` - Vite, React, and MUI customer shipping portal.
-- `apps/landing-page` - Legacy standalone landing app, now kept only as a forwarder for stale deployments.
+- `apps/landing-page` - Standalone public landing app connected to the client auth flow.
 - `apps/backend` - Node, Express, and Drizzle backend services.
 
 ## Run Locally
@@ -19,9 +19,10 @@ Monorepo for the ChoiceMee admin dashboard, client portal, and backend API.
 
 - Netlify admin: root `apps/admin`, build `npm run build:netlify`, publish `build`, Node `20`, `NPM_FLAGS=--legacy-peer-deps`.
 - Netlify client: root `apps/client`, build `npm run build:netlify`, publish `dist`, Node `20`.
+- Netlify landing: root `apps/landing-page`, build `npm run build`, publish `dist`, Node `20`.
 - Railway backend: root `apps/backend`, build `npm install && npm run build`, start `npm start`.
 
-The client bundle now owns the public landing route at `/`, so the same app can power both `choicemee.in` and the portal-facing routes.
+The public landing app serves `choicemee.in`, while the client app continues to own the portal flow at `app.choicemee.in` and `/login`.
 
 Keep production environment variables and secrets in the hosting providers. Do not commit `.env` files.
 
