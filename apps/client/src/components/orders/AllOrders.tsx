@@ -1,6 +1,18 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, AlertTitle, Box, Button, Stack, Typography } from '@mui/material'
-import { useEffect, useState } from 'react'
+import {
+  Alert,
+  AlertTitle,
+  alpha,
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material'
+import { useEffect, useState, type ReactNode } from 'react'
+import { MdAssignment, MdLocalOffer, MdReceipt } from 'react-icons/md'
 import { TbFilter, TbPlus, TbRefresh } from 'react-icons/tb'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { generateManifestService } from '../../api/order.service'
@@ -51,24 +63,12 @@ type BulkFeedback = {
   message: string
 }
 
-const hasLabelGenerated = (order: Order) =>
-  Boolean(String(order.label_url || order.label_key || order.label || '').trim())
+const documentButtonMeta: Record<DocumentType, { label: string; icon: ReactNode }> = {
+  label: { label: 'Label', icon: <MdLocalOffer /> },
+  invoice: { label: 'Invoice', icon: <MdReceipt /> },
+  manifest: { label: 'Manifest', icon: <MdAssignment /> },
+}
 
-const hasInvoiceGenerated = (order: Order) =>
-  Boolean(String(order.invoice_url || order.invoice_key || order.invoice_link || '').trim())
-
-const renderDocumentTags = (order: Order) => (
-  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-    <StatusChip
-      label={hasLabelGenerated(order) ? 'Label Generated' : 'Label Pending'}
-      status={hasLabelGenerated(order) ? 'success' : 'pending'}
-    />
-    <StatusChip
-      label={hasInvoiceGenerated(order) ? 'Invoice Generated' : 'Invoice Pending'}
-      status={hasInvoiceGenerated(order) ? 'success' : 'pending'}
-    />
-  </Stack>
-)
 const isManifestEligible = (order: Order) => {
   return order.type === 'b2c' ? isB2CManifestEligible(order) : false
 }
@@ -84,6 +84,7 @@ const AllOrders = () => {
   const [downloadingDocumentType, setDownloadingDocumentType] = useState<DocumentType | null>(
     null,
   )
+  const [downloadingRowDocument, setDownloadingRowDocument] = useState<string | null>(null)
   const [bulkManifesting, setBulkManifesting] = useState(false)
   const [manifestScheduleOpen, setManifestScheduleOpen] = useState(false)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
@@ -167,7 +168,7 @@ const AllOrders = () => {
       </Box>
     )
 
-  const normalizedOrders: Order[] = (activeQuery.data?.orders ?? []).map((order: any) => ({
+  const normalizedOrders: Order[] = (activeQuery.data?.orders ?? []).map((order: Order) => ({
     ...order,
     type: order.type || (currentOrderView === 'b2c' ? 'b2c' : currentOrderView === 'b2b' ? 'b2b' : order.type),
   }))
@@ -343,7 +344,63 @@ const AllOrders = () => {
     setManifestScheduleOpen(false)
   }
 
+  const getDocumentEntriesForOrders = (targetOrders: Order[], type: DocumentType) =>
+    targetOrders.reduce<DocumentEntry[]>((entries, order) => {
+      const { key, url } = getDocumentReference(order, type)
+      if (!key && !url) return entries
+
+      const source = key || url
+      entries.push({
+        key,
+        url,
+        fileName: getDownloadFileName(order, type, source),
+      })
+      return entries
+    }, [])
+
+  const downloadDocumentEntries = async (documentEntries: DocumentEntry[]) => {
+    const uniqueEntries = Array.from(
+      new Map<string, DocumentEntry>(
+        documentEntries.map((entry) => [entry.key || entry.url || entry.fileName, entry]),
+      ).values(),
+    )
+
+    const keyEntries = uniqueEntries.filter(
+      (entry): entry is DocumentEntry & { key: string } => Boolean(entry.key),
+    )
+    const directEntries = uniqueEntries.filter(
+      (entry): entry is DocumentEntry & { url: string } => !entry.key && Boolean(entry.url),
+    )
+    const presignedUrls = keyEntries.length
+      ? await presignDownloads({ keys: keyEntries.map((entry) => String(entry.key)) })
+      : []
+
+    let downloadedCount = 0
+    let skippedCount = documentEntries.length - uniqueEntries.length
+
+    for (const entry of directEntries) {
+      await downloadFile(String(entry.url), entry.fileName)
+      downloadedCount += 1
+    }
+
+    for (const [index, entry] of keyEntries.entries()) {
+      const resolvedUrl = Array.isArray(presignedUrls) ? presignedUrls[index] : null
+      if (!resolvedUrl) {
+        skippedCount += 1
+        continue
+      }
+
+      await downloadFile(resolvedUrl, entry.fileName)
+      downloadedCount += 1
+    }
+
+    return { downloadedCount, skippedCount }
+  }
+
   const handleBulkDownload = async (type: DocumentType) => {
+    const typeLabel = documentButtonMeta[type].label
+    const typePlural = `${typeLabel.toLowerCase()}s`
+
     if (!selectedOrders.length) {
       const message = 'Select at least one order to download documents.'
       setBulkFeedback({
@@ -358,75 +415,31 @@ const AllOrders = () => {
     setDownloadingDocumentType(type)
     setBulkFeedback({
       severity: 'info',
-      title: `Downloading ${type}s`,
-      message: `Preparing ${selectedOrders.length} selected order(s) for ${type} download.`,
+      title: `Downloading ${typePlural}`,
+      message: `Preparing ${selectedOrders.length} selected order(s) for ${typeLabel.toLowerCase()} download.`,
     })
 
     try {
-      const documentEntries = selectedOrders.reduce<DocumentEntry[]>((entries, order) => {
-        const { key, url } = getDocumentReference(order, type)
-        if (!key && !url) return entries
-
-        const source = key || url
-        entries.push({
-          key,
-          url,
-          fileName: getDownloadFileName(order, type, source),
-        })
-        return entries
-      }, [])
+      const documentEntries = getDocumentEntriesForOrders(selectedOrders, type)
 
       if (!documentEntries.length) {
-        const message = `No ${type} files are available for the selected orders.`
+        const message = `No ${typeLabel.toLowerCase()} files are available for the selected orders.`
         setBulkFeedback({
           severity: 'error',
-          title: `No ${type} files found`,
+          title: `No ${typeLabel.toLowerCase()} files found`,
           message,
         })
         toast.open({ message, severity: 'error' })
         return
       }
 
-      const uniqueEntries = Array.from(
-        new Map<string, DocumentEntry>(
-          documentEntries.map((entry) => [entry.key || entry.url || entry.fileName, entry]),
-        ).values(),
-      )
-
-      const keyEntries = uniqueEntries.filter(
-        (entry): entry is DocumentEntry & { key: string } => Boolean(entry.key),
-      )
-      const directEntries = uniqueEntries.filter(
-        (entry): entry is DocumentEntry & { url: string } => !entry.key && Boolean(entry.url),
-      )
-      const presignedUrls = keyEntries.length
-        ? await presignDownloads({ keys: keyEntries.map((entry) => String(entry.key)) })
-        : []
-
-      let downloadedCount = 0
-      let skippedCount = documentEntries.length - uniqueEntries.length
-
-      for (const entry of directEntries) {
-        await downloadFile(String(entry.url), entry.fileName)
-        downloadedCount += 1
-      }
-
-      for (const [index, entry] of keyEntries.entries()) {
-        const resolvedUrl = Array.isArray(presignedUrls) ? presignedUrls[index] : null
-        if (!resolvedUrl) {
-          skippedCount += 1
-          continue
-        }
-
-        await downloadFile(resolvedUrl, entry.fileName)
-        downloadedCount += 1
-      }
+      const { downloadedCount, skippedCount } = await downloadDocumentEntries(documentEntries)
 
       if (!downloadedCount) {
-        const message = `No ${type} files could be downloaded for the selected orders.`
+        const message = `No ${typeLabel.toLowerCase()} files could be downloaded for the selected orders.`
         setBulkFeedback({
           severity: 'error',
-          title: `${type[0].toUpperCase()}${type.slice(1)} download failed`,
+          title: `${typeLabel} download failed`,
           message,
         })
         toast.open({ message, severity: 'error' })
@@ -435,15 +448,15 @@ const AllOrders = () => {
 
       const summaryMessage =
         skippedCount > 0
-          ? `Downloaded ${downloadedCount} ${type} file(s). Skipped ${skippedCount} missing or duplicate file(s).`
-          : `Downloaded ${downloadedCount} ${type} file(s).`
+          ? `Downloaded ${downloadedCount} ${typeLabel.toLowerCase()} file(s). Skipped ${skippedCount} missing or duplicate file(s).`
+          : `Downloaded ${downloadedCount} ${typeLabel.toLowerCase()} file(s).`
 
       setBulkFeedback({
         severity: skippedCount > 0 ? 'warning' : 'success',
         title:
           skippedCount > 0
-            ? `${type[0].toUpperCase()}${type.slice(1)} download completed with skips`
-            : `${type[0].toUpperCase()}${type.slice(1)} download completed`,
+            ? `${typeLabel} download completed with skips`
+            : `${typeLabel} download completed`,
         message: summaryMessage,
       })
       toast.open({ message: summaryMessage, severity: skippedCount > 0 ? 'info' : 'success' })
@@ -451,11 +464,11 @@ const AllOrders = () => {
       console.error(`Bulk ${type} download failed:`, error)
       const message = getActionableErrorMessage(
         error,
-        `Failed to download selected ${type} files. Please try again.`,
+        `Failed to download selected ${typeLabel.toLowerCase()} files. Please try again.`,
       )
       setBulkFeedback({
         severity: 'error',
-        title: `${type[0].toUpperCase()}${type.slice(1)} download failed`,
+        title: `${typeLabel} download failed`,
         message,
       })
       toast.open({ message, severity: 'error' })
@@ -464,28 +477,173 @@ const AllOrders = () => {
     }
   }
 
+  const handleSingleDocumentDownload = async (order: Order, type: DocumentType) => {
+    const typeLabel = documentButtonMeta[type].label
+    const rowDownloadKey = `${order.id}-${type}`
+
+    try {
+      setDownloadingRowDocument(rowDownloadKey)
+      const documentEntries = getDocumentEntriesForOrders([order], type)
+
+      if (!documentEntries.length) {
+        toast.open({
+          message: `${typeLabel} is not available for ${order.order_number || 'this order'} yet.`,
+          severity: 'error',
+        })
+        return
+      }
+
+      const { downloadedCount } = await downloadDocumentEntries(documentEntries)
+
+      if (!downloadedCount) {
+        toast.open({
+          message: `${typeLabel} could not be downloaded for ${order.order_number || 'this order'}.`,
+          severity: 'error',
+        })
+        return
+      }
+
+      toast.open({
+        message: `${typeLabel} downloaded for ${order.order_number || 'this order'}.`,
+        severity: 'success',
+      })
+    } catch (error) {
+      console.error(`${typeLabel} download failed:`, error)
+      const message = getActionableErrorMessage(
+        error,
+        `Failed to download ${typeLabel.toLowerCase()} for ${order.order_number || 'this order'}. Please try again.`,
+      )
+      toast.open({ message, severity: 'error' })
+    } finally {
+      setDownloadingRowDocument(null)
+    }
+  }
+
+  const formatCurrency = (value?: number | string | null) => `Rs ${Number(value ?? 0).toFixed(2)}`
+
+  const hasDocument = (order: Order, type: DocumentType) => {
+    const { key, url } = getDocumentReference(order, type)
+    return Boolean(key || url)
+  }
+
+  const renderDocumentDownloadButton = (order: Order, type: DocumentType) => {
+    const meta = documentButtonMeta[type]
+    const isAvailable = hasDocument(order, type)
+    const rowDownloadKey = `${order.id}-${type}`
+    const isDownloading = downloadingRowDocument === rowDownloadKey
+    const isDisabled =
+      !isAvailable || Boolean(downloadingDocumentType) || Boolean(downloadingRowDocument)
+
+    return (
+      <Tooltip
+        key={type}
+        title={
+          isAvailable
+            ? isDownloading
+              ? `Downloading ${meta.label}...`
+              : `Download ${meta.label}`
+            : `${meta.label} not available`
+        }
+        arrow
+      >
+        <Box component="span" sx={{ display: 'inline-flex' }}>
+          <IconButton
+            size="small"
+            aria-label={`Download ${meta.label}`}
+            disabled={isDisabled}
+            onClick={(event) => {
+              event.stopPropagation()
+              handleSingleDocumentDownload(order, type)
+            }}
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1,
+              color: isAvailable ? '#0D3B8E' : 'text.disabled',
+              border: `1px solid ${
+                isAvailable ? alpha('#0D3B8E', 0.22) : alpha('#1D2842', 0.08)
+              }`,
+              backgroundColor: isAvailable ? alpha('#0D3B8E', 0.06) : alpha('#1D2842', 0.04),
+              '&:hover': {
+                backgroundColor: alpha('#0D3B8E', 0.12),
+              },
+              '& svg': {
+                fontSize: 16,
+              },
+            }}
+          >
+            {isDownloading ? <CircularProgress size={14} /> : meta.icon}
+          </IconButton>
+        </Box>
+      </Tooltip>
+    )
+  }
+
   const columns: Column<Order>[] = [
-    { id: 'order_number', label: 'Order #' },
-    { id: 'type', label: 'Type' },
-    { id: 'buyer_name', label: 'Buyer Name' },
-    { id: 'city', label: 'City' },
-    { id: 'state', label: 'State' },
-    { id: 'order_amount', label: 'Amount' },
     {
-      id: 'id',
-      label: 'Docs',
-      minWidth: 220,
-      sticky: 'right',
-      stickyOffset: 0,
-      render: (_v, row) => renderDocumentTags(row),
+      id: 'order_number',
+      label: 'Shipment',
+      minWidth: 150,
+      truncate: false,
+      render: (_v, row) => (
+        <Stack spacing={0.25}>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.25 }} noWrap>
+            {row.order_number || '-'}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase' }}>
+            {row.type || 'order'}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      id: 'buyer_name',
+      label: 'Buyer / Location',
+      minWidth: 150,
+      truncate: false,
+      render: (_v, row) => (
+        <Stack spacing={0.25}>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 150 }} noWrap>
+            {row.buyer_name || '-'}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', maxWidth: 150 }} noWrap>
+            {[row.city, row.state].filter(Boolean).join(', ') || '-'}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      id: 'order_amount',
+      label: 'Amount',
+      minWidth: 105,
+      render: (value) => (
+        <Typography sx={{ fontSize: 12.5, fontWeight: 800 }}>
+          {formatCurrency(value)}
+        </Typography>
+      ),
     },
     {
       label: 'Status',
       id: 'order_status',
-      minWidth: 150,
+      minWidth: 142,
       sticky: 'right',
-      stickyOffset: 220,
+      stickyOffset: 116,
       render: (v) => <StatusChip label={v} status={statusColorMap[v] || 'info'} />,
+    },
+    {
+      label: 'PDFs',
+      id: 'manifest',
+      minWidth: 116,
+      sticky: 'right',
+      stickyOffset: 0,
+      truncate: false,
+      render: (_v, row) => (
+        <Stack direction="row" spacing={0.35}>
+          {renderDocumentDownloadButton(row, 'label')}
+          {renderDocumentDownloadButton(row, 'invoice')}
+          {renderDocumentDownloadButton(row, 'manifest')}
+        </Stack>
+      ),
     },
   ]
 
@@ -511,13 +669,13 @@ const AllOrders = () => {
   ]
 
   return (
-    <Stack gap={3}>
+    <Stack gap={1.2}>
       <Box
         sx={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
+          borderRadius: '8px',
           border: '1px solid rgba(29, 40, 66, 0.1)',
-          boxShadow: '0 12px 28px rgba(29, 40, 66, 0.08)',
+          boxShadow: '0 6px 18px rgba(29, 40, 66, 0.06)',
           overflow: 'hidden',
         }}
       >
@@ -525,10 +683,10 @@ const AllOrders = () => {
           direction={{ xs: 'column', lg: 'row' }}
           alignItems={{ xs: 'flex-start', lg: 'center' }}
           justifyContent="space-between"
-          gap={1.5}
+          gap={1}
           sx={{
-            px: { xs: 1.4, md: 2.1 },
-            py: 1.5,
+            px: { xs: 1.15, md: 1.5 },
+            py: 1,
             borderBottom: '1px solid rgba(29, 40, 66, 0.08)',
             bgcolor: '#ffffff',
           }}
@@ -538,7 +696,7 @@ const AllOrders = () => {
             sx={{
               fontWeight: 700,
               color: '#1D2842',
-              fontSize: '20px',
+              fontSize: '17px',
             }}
           >
             Orders Management
@@ -550,7 +708,7 @@ const AllOrders = () => {
               startIcon={<TbRefresh size={16} />}
               onClick={() => activeQuery.refetch()}
               disabled={activeQuery.isRefetching}
-              sx={{ borderRadius: 1.2 }}
+              sx={{ borderRadius: 1, minHeight: 34, fontSize: 12 }}
             >
               {activeQuery.isRefetching ? 'Refreshing' : 'Refresh'}
             </Button>
@@ -563,7 +721,7 @@ const AllOrders = () => {
                   block: 'start',
                 })
               }
-              sx={{ borderRadius: 1.2 }}
+              sx={{ borderRadius: 1, minHeight: 34, fontSize: 12 }}
             >
               Filters
             </Button>
@@ -572,7 +730,9 @@ const AllOrders = () => {
               startIcon={<TbPlus size={16} />}
               onClick={() => navigate('/orders/create')}
               sx={{
-                borderRadius: 1.2,
+                borderRadius: 1,
+                minHeight: 34,
+                fontSize: 12,
                 bgcolor: '#1D2842',
                 '&:hover': {
                   bgcolor: '#152038',
@@ -584,7 +744,7 @@ const AllOrders = () => {
           </Stack>
         </Stack>
 
-        <Box sx={{ px: { xs: 1.4, md: 2.1 }, pt: 1.6 }} id="orders-filter-bar">
+        <Box sx={{ px: { xs: 1.15, md: 1.5 }, pt: 1 }} id="orders-filter-bar">
           <FilterBar
             fields={filterFields}
             defaultValues={filters}
@@ -594,6 +754,7 @@ const AllOrders = () => {
               clearSelection()
               setBulkFeedback(null)
             }}
+            compact
           />
         </Box>
 
@@ -601,7 +762,7 @@ const AllOrders = () => {
           <Alert
             severity={bulkFeedback.severity}
             onClose={() => setBulkFeedback(null)}
-            sx={{ mt: 2, mx: { xs: 1.4, md: 2.1 }, alignItems: 'flex-start' }}
+            sx={{ mt: 1, mx: { xs: 1.15, md: 1.5 }, alignItems: 'flex-start' }}
           >
             <AlertTitle>{bulkFeedback.title}</AlertTitle>
             {bulkFeedback.message}
@@ -611,10 +772,10 @@ const AllOrders = () => {
         {selectedOrders.length > 0 && (
           <Box
             sx={{
-              mt: 2,
-              mx: { xs: 1.4, md: 2.1 },
-              p: 2,
-              borderRadius: '10px',
+              mt: 1,
+              mx: { xs: 1.15, md: 1.5 },
+              p: 1.25,
+              borderRadius: '8px',
               border: '1px solid rgba(29, 40, 66, 0.14)',
               backgroundColor: 'rgba(29, 40, 66, 0.04)',
             }}
@@ -623,29 +784,29 @@ const AllOrders = () => {
               direction={{ xs: 'column', lg: 'row' }}
               alignItems={{ xs: 'flex-start', lg: 'center' }}
               justifyContent="space-between"
-              gap={2}
+              gap={1.25}
             >
               <Box>
-                <Typography sx={{ fontWeight: 700, color: '#333369', fontSize: '15px' }}>
+                <Typography sx={{ fontWeight: 700, color: '#333369', fontSize: '14px' }}>
                   {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
                 </Typography>
-                <Typography sx={{ color: '#6B7280', fontSize: '13px', mt: 0.5 }}>
+                <Typography sx={{ color: '#6B7280', fontSize: '12px', mt: 0.25 }}>
                   Manifest up to {BULK_MANIFEST_LIMIT} eligible orders at once. Bulk label, invoice,
                   and manifest downloads have no selection limit.
                 </Typography>
                 {manifestValidationMessage && (
-                  <Typography sx={{ color: '#C0392B', fontSize: '12px', mt: 0.75 }}>
+                  <Typography sx={{ color: '#C0392B', fontSize: '12px', mt: 0.5 }}>
                     {manifestValidationMessage}
                   </Typography>
                 )}
               </Box>
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} flexWrap="wrap">
+              <Stack direction={{ xs: 'column', sm: 'row' }} gap={0.75} flexWrap="wrap">
                 <Button
                   variant="contained"
                   onClick={openBulkManifestSchedule}
                   disabled={bulkManifesting || Boolean(manifestValidationMessage)}
-                  sx={{ textTransform: 'none', minWidth: 170 }}
+                  sx={{ textTransform: 'none', minWidth: 150, minHeight: 34, fontSize: 12 }}
                 >
                   {bulkManifesting ? 'Manifesting...' : 'Manifest Selected'}
                 </Button>
@@ -653,7 +814,7 @@ const AllOrders = () => {
                   variant="outlined"
                   onClick={() => handleBulkDownload('label')}
                   disabled={downloadingDocumentType !== null}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
                 >
                   {downloadingDocumentType === 'label' ? 'Downloading...' : 'Download Labels'}
                 </Button>
@@ -661,7 +822,7 @@ const AllOrders = () => {
                   variant="outlined"
                   onClick={() => handleBulkDownload('invoice')}
                   disabled={downloadingDocumentType !== null}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
                 >
                   {downloadingDocumentType === 'invoice' ? 'Downloading...' : 'Download Invoices'}
                 </Button>
@@ -669,7 +830,7 @@ const AllOrders = () => {
                   variant="outlined"
                   onClick={() => handleBulkDownload('manifest')}
                   disabled={downloadingDocumentType !== null}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
                 >
                   {downloadingDocumentType === 'manifest' ? 'Downloading...' : 'Download Manifests'}
                 </Button>
@@ -679,7 +840,7 @@ const AllOrders = () => {
                     clearSelection()
                     setBulkFeedback(null)
                   }}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
                 >
                   Clear
                 </Button>
@@ -692,14 +853,14 @@ const AllOrders = () => {
       <Box
         sx={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
+          borderRadius: '8px',
           border: '1px solid rgba(29, 40, 66, 0.1)',
-          boxShadow: '0 12px 28px rgba(29, 40, 66, 0.08)',
+          boxShadow: '0 6px 18px rgba(29, 40, 66, 0.06)',
           overflow: 'hidden',
         }}
       >
         {activeQuery.isLoading ? (
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: 1.5 }}>
             <TableSkeleton />
           </Box>
         ) : (
@@ -713,15 +874,10 @@ const AllOrders = () => {
                   ? `${totalCount} total B2B orders`
                   : `${totalCount} total orders`
             }
-            subTitle={
-              currentOrderView === 'b2c'
-                ? 'Track and action your B2C shipping pipeline.'
-                : currentOrderView === 'b2b'
-                  ? 'Track and action your B2B shipping pipeline.'
-                  : 'Track, filter, and action your order pipeline in a consistent workspace.'
-            }
             pagination
             selectable
+            density="compact"
+            maxHeight={640}
             currentPage={page}
             onPageChange={(newPage) => {
               setPage(newPage + 1)
@@ -735,6 +891,7 @@ const AllOrders = () => {
               setBulkFeedback(null)
             }}
             defaultRowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[10, 25, 50]}
             totalCount={totalCount}
             onSelectRows={(ids) => setSelectedOrderIds(ids as Array<Order['id']>)}
             selectedRowIds={selectedOrderIds}
