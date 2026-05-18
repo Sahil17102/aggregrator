@@ -499,6 +499,7 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
             <Stack direction="row" justifyContent="space-between">
               {currentStep > 0 && (
                 <Button
+                  type="button"
                   loading={createShipmentMutation?.isPending}
                   variant="outlined"
                   onClick={prevStep}
@@ -507,7 +508,7 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
                 </Button>
               )}
               {currentStep < 2 ? (
-                <Button variant="contained" onClick={nextStep}>
+                <Button type="button" variant="contained" onClick={nextStep}>
                   Next
                 </Button>
               ) : (

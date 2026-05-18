@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { MdAdd } from 'react-icons/md'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import AllOrders from '../../components/orders/AllOrders'
+import B2BOrderForm from '../../components/orders/b2b/B2BOrderForm'
 import B2COrderFormSteps from '../../components/orders/b2c/B2COrderForm'
 import CustomDrawer from '../../components/UI/drawer/CustomDrawer'
 import { useMerchantReadiness } from '../../hooks/useMerchantReadiness'
@@ -240,7 +241,11 @@ export default function Orders() {
         onClose={() => setDrawerOpen(false)}
         title={orderType === 'b2c' ? 'Create New B2C Order' : 'Create New B2B Order'}
       >
-        {orderType === 'b2c' ? <B2COrderFormSteps onClose={() => setDrawerOpen(false)} /> : null}
+        {orderType === 'b2c' ? (
+          <B2COrderFormSteps onClose={() => setDrawerOpen(false)} />
+        ) : orderType === 'b2b' ? (
+          <B2BOrderForm onClose={() => setDrawerOpen(false)} />
+        ) : null}
       </CustomDrawer>
     </Container>
   )

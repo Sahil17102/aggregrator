@@ -15,6 +15,7 @@ export default function Layout() {
   const [pinned, setPinned] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const routeContentKey = `${location.pathname}${location.search}${location.hash}`
 
   const handleDrawerToggle = () => {
     if (isMobile) setMobileOpen(!mobileOpen)
@@ -124,7 +125,7 @@ export default function Layout() {
               }}
             >
               <Suspense fallback={<FullScreenLoader />}>
-                <Outlet />
+                <Outlet key={routeContentKey} />
               </Suspense>
             </Container>
           </Box>
