@@ -894,6 +894,16 @@ export const createCourier = async (data: {
       `Service provider must be one of: ${supportedServiceProviderList()}. Received: ${data.serviceProvider}`
     )
   }
+  const courierId = Number(data?.courierId)
+  if (!Number.isFinite(courierId)) {
+    throw new Error('Courier ID must be a valid number')
+  }
+  if (
+    normalizedProvider === 'deliveryone' &&
+    !DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(courierId)
+  ) {
+    throw new Error('Delivery One supports only courier ID 99 (Surface) and 100 (Express)')
+  }
 
   console.log('data', data)
   // Check if courier already exists for this service provider
@@ -903,7 +913,7 @@ export const createCourier = async (data: {
     .from(couriers)
     .where(
       and(
-        eq(couriers.id, Number(data?.courierId)),
+        eq(couriers.id, courierId),
         eq(couriers.serviceProvider, normalizedProvider),
       ),
     )
@@ -918,7 +928,7 @@ export const createCourier = async (data: {
     .insert(couriers)
     .values({
       name: data?.courierName?.trim(),
-      id: Number(data?.courierId),
+      id: courierId,
       serviceProvider: normalizedProvider,
       businessType: businessType,
     } as any)

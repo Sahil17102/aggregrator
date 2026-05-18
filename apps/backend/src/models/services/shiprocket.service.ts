@@ -83,6 +83,7 @@ import {
   formatCourierSlabDisplayName,
   normalizeB2CShippingMode,
 } from './b2cRateCard.service'
+import { ensureDeliveryOneCouriers } from './deliveryOneCourierCatalog.service'
 import { calculateFreight } from './pricing/chargeableFreight'
 
 // Load correct .env based on NODE_ENV
@@ -1465,6 +1466,9 @@ export const fetchAvailableCouriersWithRates = async (
     // Build registry of enabled couriers by service provider
     // Filter by business type: check if business_type JSONB array contains 'b2c'
     const SUPPORTED_PROVIDERS = [...INTEGRATED_SERVICE_PROVIDERS]
+    if (SUPPORTED_PROVIDERS.includes('deliveryone' as any)) {
+      await ensureDeliveryOneCouriers()
+    }
     const systemCourierRows = await db
       .select({
         id: couriers.id,
@@ -3466,13 +3470,13 @@ export const createB2CShipmentService = async (
     if (selectedDeliveryOneCourierId === null) {
       throw new HttpError(
         400,
-        'Delivery One courier_id is required. Use 99 for the available Surface service.',
+        'Delivery One courier_id is required. Use 99 for Surface or 100 for Express.',
       )
     }
     if (!isSupportedDeliveryOneCourierId(selectedDeliveryOneCourierId)) {
       throw new HttpError(
         400,
-        `Invalid Delivery One courier_id: ${selectedDeliveryOneCourierId}. Allowed ID is 99 (Surface).`,
+        `Invalid Delivery One courier_id: ${selectedDeliveryOneCourierId}. Allowed IDs are 99 (Surface) and 100 (Express).`,
       )
     }
     selectedProviderShippingMode =

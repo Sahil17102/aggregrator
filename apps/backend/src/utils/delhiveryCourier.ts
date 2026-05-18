@@ -8,7 +8,10 @@ export const DELHIVERY_ALLOWED_COURIER_IDS: number[] = [
   DELHIVERY_COURIER_IDS.SURFACE,
 ]
 
-export const DELIVERY_ONE_ALLOWED_COURIER_IDS: number[] = [DELHIVERY_COURIER_IDS.SURFACE]
+export const DELIVERY_ONE_ALLOWED_COURIER_IDS: number[] = [
+  DELHIVERY_COURIER_IDS.SURFACE,
+  DELHIVERY_COURIER_IDS.EXPRESS,
+]
 
 export const normalizeCourierId = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isFinite(value)) return Number(value)

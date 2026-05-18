@@ -13,14 +13,15 @@ import { zones } from '../models/schema/zones'
 const TARGET_PROVIDER = String(process.env.B2C_RATECARD_PROVIDER || 'delhivery')
   .trim()
   .toLowerCase()
-const TARGET_SURFACE_COURIER_ID = Number(process.env.B2C_RATECARD_COURIER_ID || 99)
-const TARGET_SURFACE_COURIER_NAME =
+const TARGET_COURIER_ID = Number(process.env.B2C_RATECARD_COURIER_ID || 99)
+const MODE = String(process.env.B2C_RATECARD_MODE || 'Surface').trim() || 'Surface'
+const TARGET_MODE_FILTER = MODE.toLowerCase()
+const TARGET_COURIER_NAME =
   process.env.B2C_RATECARD_COURIER_NAME ||
-  (TARGET_PROVIDER === 'deliveryone' ? 'Delivery One Surface' : 'Delhivery Surface')
+  (TARGET_PROVIDER === 'deliveryone' ? `Delivery One ${MODE}` : `Delhivery ${MODE}`)
 const TARGET_LEGACY_COURIER_NAME_PATTERN =
   TARGET_PROVIDER === 'deliveryone' ? '%delivery%one%' : '%delhivery%'
 const BUSINESS_TYPE = 'B2C'
-const MODE = 'Surface'
 const forceReseed =
   process.argv.includes('--force') ||
   ['1', 'true', 'yes'].includes(
@@ -183,12 +184,12 @@ async function ensurePlans() {
   return planMap
 }
 
-async function ensureSurfaceCourier() {
+async function ensureTargetCourier() {
   await db
     .insert(couriers)
     .values({
-      id: TARGET_SURFACE_COURIER_ID,
-      name: TARGET_SURFACE_COURIER_NAME,
+      id: TARGET_COURIER_ID,
+      name: TARGET_COURIER_NAME,
       serviceProvider: TARGET_PROVIDER,
       businessType: ['b2c'],
       isEnabled: true,
@@ -198,7 +199,7 @@ async function ensureSurfaceCourier() {
     .onConflictDoUpdate({
       target: [couriers.id, couriers.serviceProvider],
       set: {
-        name: TARGET_SURFACE_COURIER_NAME,
+        name: TARGET_COURIER_NAME,
         businessType: ['b2c'],
         isEnabled: true,
         updatedAt: new Date(),
@@ -240,7 +241,7 @@ async function ensureZones() {
     .where(sql`lower(trim(${zones.business_type})) = 'b2c'`)
 }
 
-async function purgeExistingSurfaceRates(planIds: string[], zoneIds: string[]) {
+async function purgeExistingTargetRates(planIds: string[], zoneIds: string[]) {
   if (!planIds.length || !zoneIds.length) return 0
 
   const existingRates = await db
@@ -251,7 +252,7 @@ async function purgeExistingSurfaceRates(planIds: string[], zoneIds: string[]) {
         eq(shippingRates.business_type, 'b2c'),
         inArray(shippingRates.plan_id, planIds),
         inArray(shippingRates.zone_id, zoneIds),
-        eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
+        eq(shippingRates.courier_id, TARGET_COURIER_ID),
         sql`(
           lower(trim(coalesce(${shippingRates.service_provider}, ''))) = ${TARGET_PROVIDER}
           or (
@@ -259,7 +260,7 @@ async function purgeExistingSurfaceRates(planIds: string[], zoneIds: string[]) {
             and lower(trim(${shippingRates.courier_name})) like ${TARGET_LEGACY_COURIER_NAME_PATTERN}
           )
         )`,
-        sql`lower(trim(${shippingRates.mode})) = 'surface'`,
+        sql`lower(trim(${shippingRates.mode})) = ${TARGET_MODE_FILTER}`,
       ),
     )
 
@@ -289,10 +290,10 @@ async function normalizeLegacyBlankProviderRows(planIds: string[], zoneIds: stri
         eq(shippingRates.business_type, 'b2c'),
         inArray(shippingRates.plan_id, planIds),
         inArray(shippingRates.zone_id, zoneIds),
-        eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
+        eq(shippingRates.courier_id, TARGET_COURIER_ID),
         sql`trim(coalesce(${shippingRates.service_provider}, '')) = ''`,
         sql`lower(trim(${shippingRates.courier_name})) like ${TARGET_LEGACY_COURIER_NAME_PATTERN}`,
-        sql`lower(trim(${shippingRates.mode})) = 'surface'`,
+        sql`lower(trim(${shippingRates.mode})) = ${TARGET_MODE_FILTER}`,
       ),
     )
 
@@ -308,10 +309,10 @@ async function normalizeLegacyBlankProviderRows(planIds: string[], zoneIds: stri
           eq(shippingRates.business_type, 'b2c'),
           eq(shippingRates.plan_id, row.plan_id),
           eq(shippingRates.zone_id, row.zone_id),
-          eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
+          eq(shippingRates.courier_id, TARGET_COURIER_ID),
           eq(shippingRates.type, row.type),
           sql`lower(trim(${shippingRates.service_provider})) = ${TARGET_PROVIDER}`,
-          sql`lower(trim(${shippingRates.mode})) = 'surface'`,
+          sql`lower(trim(${shippingRates.mode})) = ${TARGET_MODE_FILTER}`,
         ),
       )
       .limit(1)
@@ -327,7 +328,7 @@ async function normalizeLegacyBlankProviderRows(planIds: string[], zoneIds: stri
     await db
       .update(shippingRates)
       .set({
-        courier_name: TARGET_SURFACE_COURIER_NAME,
+        courier_name: TARGET_COURIER_NAME,
         service_provider: TARGET_PROVIDER,
         mode: MODE,
         last_updated: new Date(),
@@ -394,10 +395,10 @@ async function seedRates(
               eq(shippingRates.plan_id, plan.id),
               eq(shippingRates.business_type, 'b2c'),
               eq(shippingRates.zone_id, zone.id),
-              eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
+              eq(shippingRates.courier_id, TARGET_COURIER_ID),
               eq(shippingRates.type, type),
               sql`lower(trim(${shippingRates.service_provider})) = ${TARGET_PROVIDER}`,
-              sql`lower(trim(${shippingRates.mode})) = 'surface'`,
+              sql`lower(trim(${shippingRates.mode})) = ${TARGET_MODE_FILTER}`,
             ),
           )
           .limit(1)
@@ -412,8 +413,8 @@ async function seedRates(
           .values({
             id: randomUUID(),
             plan_id: plan.id,
-            courier_id: TARGET_SURFACE_COURIER_ID,
-            courier_name: TARGET_SURFACE_COURIER_NAME,
+            courier_id: TARGET_COURIER_ID,
+            courier_name: TARGET_COURIER_NAME,
             service_provider: TARGET_PROVIDER,
             mode: MODE,
             business_type: 'b2c',
@@ -442,26 +443,28 @@ async function seedRates(
 async function main() {
   try {
     const planMap = await ensurePlans()
-    await ensureSurfaceCourier()
+    await ensureTargetCourier()
     const zoneRows = await ensureZones()
     const planIds = Array.from(planMap.values()).map((plan) => plan.id)
     const zoneIds = zoneRows.map((zone) => zone.id)
     const legacyCleanup = await normalizeLegacyBlankProviderRows(planIds, zoneIds)
-    const removed = forceReseed ? await purgeExistingSurfaceRates(planIds, zoneIds) : 0
+    const removed = forceReseed ? await purgeExistingTargetRates(planIds, zoneIds) : 0
     const { inserted, skippedExisting } = await seedRates(planMap, zoneRows)
 
     console.log(
-      `Updated ${TARGET_SURFACE_COURIER_NAME} image rate card: removed ${removed} old rows, inserted ${inserted} missing Basic/Premium forward/RTO rows, skipped ${skippedExisting} existing manual rows.`,
+      `Updated ${TARGET_COURIER_NAME} image rate card: removed ${removed} old rows, inserted ${inserted} missing Basic/Premium forward/RTO rows, skipped ${skippedExisting} existing manual rows.`,
     )
     console.log(
       `Legacy blank-provider cleanup: normalized ${legacyCleanup.normalized}, removed ${legacyCleanup.removedDuplicates} duplicates.`,
     )
     if (!forceReseed) {
-      console.log(`Existing ${TARGET_SURFACE_COURIER_NAME} rows were preserved so manual admin edits are not overwritten.`)
+      console.log(`Existing ${TARGET_COURIER_NAME} rows were preserved so manual admin edits are not overwritten.`)
     }
-    console.log('Express/Air rates were not changed.')
+    if (TARGET_MODE_FILTER === 'surface') {
+      console.log('Express/Air rates were not changed.')
+    }
   } catch (error) {
-    console.error(`${TARGET_SURFACE_COURIER_NAME} B2C image rate card seed failed:`, error)
+    console.error(`${TARGET_COURIER_NAME} B2C image rate card seed failed:`, error)
     process.exitCode = 1
   } finally {
     await pool.end()

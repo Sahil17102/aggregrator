@@ -17,12 +17,9 @@ import {
   getShippingRatesController,
   importShippingRatesController,
   trackDeliveryOneShipmentController,
-  updateDelhiveryCredentialsController,
   updateDeliveryOneCredentialsController,
   updateDeliveryOneEWaybillController,
   updateDeliveryOneWarehouseController,
-  updateEkartCredentialsController,
-  updateXpressbeesCredentialsController,
   updateShippingRateController,
 } from '../../controllers/admin/courier.controller'
 import { isAdminMiddleware } from '../../middlewares/isAdmin'
@@ -49,12 +46,6 @@ router.post(
 )
 router.post('/available', requireAuth, fetchAvailableCouriersForAdmin)
 router.get('/credentials', requireAuth, isAdminMiddleware, getCourierCredentialsController)
-router.put(
-  '/credentials/delhivery',
-  requireAuth,
-  isAdminMiddleware,
-  updateDelhiveryCredentialsController,
-)
 router.put(
   '/credentials/delivery-one',
   requireAuth,
@@ -231,18 +222,6 @@ router.get(
   requireAuth,
   isAdminMiddleware,
   generateDeliveryOneLabelController,
-)
-router.put(
-  '/credentials/ekart',
-  requireAuth,
-  isAdminMiddleware,
-  updateEkartCredentialsController,
-)
-router.put(
-  '/credentials/xpressbees',
-  requireAuth,
-  isAdminMiddleware,
-  updateXpressbeesCredentialsController,
 )
 router.delete(
   '/shipping-rates/:planId/:id',

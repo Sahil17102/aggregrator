@@ -11,13 +11,8 @@ import {
   updateShippingRate,
   upsertShippingRate,
 } from '../../models/services/courierIntegration.service'
-import {
-  DEFAULT_EKART_BASE_URL,
-  normalizeEkartBaseUrl,
-} from '../../models/services/courierCredentials.service'
+import { ensureDeliveryOneCouriers } from '../../models/services/deliveryOneCourierCatalog.service'
 import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
-import { EkartService } from '../../models/services/couriers/ekart.service'
-import { XpressbeesService } from '../../models/services/couriers/xpressbees.service'
 import { fetchAvailableCouriersWithRatesAdmin } from '../../models/services/shiprocket.service'
 import { courier_credentials } from '../../models/schema/courierCredentials'
 import { couriers } from '../../models/schema/couriers'
@@ -145,6 +140,7 @@ export const getShippingRatesController = async (req: Request, res: Response) =>
 
 export const getAllCouriersController = async (req: Request, res: Response) => {
   try {
+    await ensureDeliveryOneCouriers()
     const courierList = await db
       .select({
         id: couriers.id,
@@ -171,6 +167,7 @@ export const getAllCouriersController = async (req: Request, res: Response) => {
 
 export const getAllCouriersListController = async (req: Request, res: Response) => {
   try {
+    await ensureDeliveryOneCouriers()
     const { search, serviceProvider, businessType } = req.query
 
     const whereClauses = []
@@ -287,6 +284,7 @@ export const updateCourierStatusController = async (req: Request, res: Response)
 
 export const getServiceProvidersController = async (req: Request, res: Response) => {
   try {
+    await ensureDeliveryOneCouriers()
     // Only expose the main integrated service providers in the enable/disable UI
     const allowedProviders = [...INTEGRATED_SERVICE_PROVIDERS]
 
@@ -411,44 +409,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
     const data = rows.reduce<Record<string, any>>((acc, row) => {
       const provider = (row.provider || '').toLowerCase()
       if (!provider) return acc
-      if (provider === 'delhivery') {
-        const apiKey = row.apiKey || ''
-        acc.delhivery = {
-          provider: 'delhivery',
-          apiBase: row.apiBase || 'https://track.delhivery.com',
-          clientName: row.clientName || '',
-          hasApiKey: Boolean(apiKey.trim()),
-          apiKeyMasked: apiKey
-            ? `${apiKey.slice(0, 4)}${'*'.repeat(Math.max(apiKey.length - 8, 0))}${apiKey.slice(-4)}`
-            : '',
-        }
-      } else if (provider === 'ekart') {
-        const hasPassword = Boolean((row.password || '').trim())
-        const hasWebhookSecret = Boolean((row.webhookSecret || '').trim())
-        acc.ekart = {
-          provider: 'ekart',
-          apiBase: normalizeEkartBaseUrl(row.apiBase) || DEFAULT_EKART_BASE_URL,
-          clientId: row.clientId || '',
-          username: row.username || '',
-          hasPassword,
-          hasWebhookSecret,
-        }
-      } else if (provider === 'xpressbees') {
-        const apiKey = row.apiKey || ''
-        const hasPassword = Boolean((row.password || '').trim())
-        const hasWebhookSecret = Boolean((row.webhookSecret || '').trim())
-        acc.xpressbees = {
-          provider: 'xpressbees',
-          apiBase: row.apiBase || 'https://shipment.xpressbees.com',
-          username: row.username || '',
-          hasApiKey: Boolean(apiKey.trim()),
-          apiKeyMasked: apiKey
-            ? `${apiKey.slice(0, 4)}${'*'.repeat(Math.max(apiKey.length - 8, 0))}${apiKey.slice(-4)}`
-            : '',
-          hasPassword,
-          hasWebhookSecret,
-        }
-      } else if (provider === 'deliveryone') {
+      if (provider === 'deliveryone') {
         const apiKey = row.apiKey || ''
         const hasPassword = Boolean((row.password || '').trim())
         const hasWebhookSecret = Boolean((row.webhookSecret || '').trim())
@@ -475,74 +436,6 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
   } catch (err) {
     console.error(err)
     res.status(500).json({ success: false, message: 'Failed to fetch courier credentials' })
-  }
-}
-
-export const updateDelhiveryCredentialsController = async (req: Request, res: Response) => {
-  const { apiBase, clientName, apiKey } = req.body || {}
-
-  try {
-    const nextApiBase = typeof apiBase === 'string' ? apiBase.trim() : undefined
-    const nextClientName = typeof clientName === 'string' ? clientName.trim() : undefined
-    const nextApiKey = typeof apiKey === 'string' ? apiKey.trim() : undefined
-    const hasNewApiKey = typeof nextApiKey === 'string' && nextApiKey.length > 0
-
-    const [existing] = await db
-      .select({ id: courier_credentials.id })
-      .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'delhivery'))
-      .limit(1)
-
-    if (existing) {
-      const updatePayload: Record<string, any> = {
-        updatedAt: new Date(),
-      }
-      if (nextApiBase !== undefined) {
-        updatePayload.apiBase = nextApiBase || 'https://track.delhivery.com'
-      }
-      if (nextClientName !== undefined) {
-        updatePayload.clientName = nextClientName
-      }
-      if (hasNewApiKey) {
-        updatePayload.apiKey = nextApiKey
-      }
-
-      await db
-        .update(courier_credentials)
-        .set(updatePayload)
-        .where(eq(courier_credentials.provider, 'delhivery'))
-    } else {
-      await db.insert(courier_credentials).values({
-        provider: 'delhivery',
-        apiBase: nextApiBase || 'https://track.delhivery.com',
-        clientName: nextClientName || '',
-        apiKey: hasNewApiKey ? nextApiKey : '',
-      })
-    }
-
-    const [saved] = await db
-      .select({
-        apiBase: courier_credentials.apiBase,
-        clientName: courier_credentials.clientName,
-        apiKey: courier_credentials.apiKey,
-      })
-      .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'delhivery'))
-      .limit(1)
-
-    res.json({
-      success: true,
-      message: 'Delhivery credentials updated successfully',
-      data: {
-        provider: 'delhivery',
-        apiBase: saved?.apiBase || 'https://track.delhivery.com',
-        clientName: saved?.clientName || '',
-        hasApiKey: Boolean((saved?.apiKey || '').trim()),
-      },
-    })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ success: false, message: 'Failed to update Delhivery credentials' })
   }
 }
 
@@ -897,185 +790,6 @@ export const updateDeliveryOneWarehouseController = async (req: Request, res: Re
       success: false,
       message: err?.message || 'Failed to update Delivery One warehouse',
     })
-  }
-}
-
-export const updateEkartCredentialsController = async (req: Request, res: Response) => {
-  const { apiBase, clientId, username, password, webhookSecret } = req.body || {}
-
-  try {
-    const nextApiBase = typeof apiBase === 'string' ? normalizeEkartBaseUrl(apiBase) : undefined
-    const nextClientId = typeof clientId === 'string' ? clientId.trim() : undefined
-    const nextUsername = typeof username === 'string' ? username.trim() : undefined
-    const nextPassword = typeof password === 'string' ? password.trim() : undefined
-    const nextWebhookSecret =
-      typeof webhookSecret === 'string' ? webhookSecret.trim() : undefined
-    const hasPassword = typeof nextPassword === 'string' && nextPassword.length > 0
-    const hasWebhookSecret =
-      typeof nextWebhookSecret === 'string' && nextWebhookSecret.length > 0
-
-    const [existing] = await db
-      .select({ id: courier_credentials.id })
-      .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'ekart'))
-      .limit(1)
-
-    if (existing) {
-      const updatePayload: Record<string, any> = {
-        updatedAt: new Date(),
-      }
-      if (nextApiBase !== undefined) {
-        updatePayload.apiBase = nextApiBase || DEFAULT_EKART_BASE_URL
-      }
-      if (nextClientId !== undefined) {
-        updatePayload.clientId = nextClientId
-      }
-      if (nextUsername !== undefined) {
-        updatePayload.username = nextUsername
-      }
-      if (hasPassword) {
-        updatePayload.password = nextPassword
-      }
-      if (hasWebhookSecret) {
-        updatePayload.webhookSecret = nextWebhookSecret
-      }
-
-      await db
-        .update(courier_credentials)
-        .set(updatePayload)
-        .where(eq(courier_credentials.provider, 'ekart'))
-    } else {
-      await db.insert(courier_credentials).values({
-        provider: 'ekart',
-        apiBase: nextApiBase || DEFAULT_EKART_BASE_URL,
-        clientName: '',
-        apiKey: '',
-        clientId: nextClientId || '',
-        username: nextUsername || '',
-        password: hasPassword ? nextPassword : '',
-        webhookSecret: hasWebhookSecret ? nextWebhookSecret : '',
-      })
-    }
-
-    EkartService.clearCachedConfig()
-
-    const [saved] = await db
-      .select({
-        apiBase: courier_credentials.apiBase,
-        clientId: courier_credentials.clientId,
-        username: courier_credentials.username,
-        password: courier_credentials.password,
-        webhookSecret: courier_credentials.webhookSecret,
-      })
-      .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'ekart'))
-      .limit(1)
-
-    res.json({
-      success: true,
-      message: 'Ekart credentials updated successfully',
-      data: {
-        provider: 'ekart',
-        apiBase: normalizeEkartBaseUrl(saved?.apiBase) || DEFAULT_EKART_BASE_URL,
-        clientId: saved?.clientId || '',
-        username: saved?.username || '',
-        hasPassword: Boolean((saved?.password || '').trim()),
-        hasWebhookSecret: Boolean((saved?.webhookSecret || '').trim()),
-      },
-    })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ success: false, message: 'Failed to update Ekart credentials' })
-  }
-}
-
-export const updateXpressbeesCredentialsController = async (req: Request, res: Response) => {
-  const { apiBase, username, password, apiKey, webhookSecret } = req.body || {}
-
-  try {
-    const nextApiBase = typeof apiBase === 'string' ? apiBase.trim() : undefined
-    const nextUsername = typeof username === 'string' ? username.trim() : undefined
-    const nextPassword = typeof password === 'string' ? password.trim() : undefined
-    const nextApiKey = typeof apiKey === 'string' ? apiKey.trim() : undefined
-    const nextWebhookSecret =
-      typeof webhookSecret === 'string' ? webhookSecret.trim() : undefined
-    const hasPassword = typeof nextPassword === 'string' && nextPassword.length > 0
-    const hasApiKey = typeof nextApiKey === 'string' && nextApiKey.length > 0
-    const hasWebhookSecret =
-      typeof nextWebhookSecret === 'string' && nextWebhookSecret.length > 0
-
-    const [existing] = await db
-      .select({ id: courier_credentials.id })
-      .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'xpressbees'))
-      .limit(1)
-
-    if (existing) {
-      const updatePayload: Record<string, any> = {
-        updatedAt: new Date(),
-      }
-      if (nextApiBase !== undefined) {
-        updatePayload.apiBase = nextApiBase || 'https://shipment.xpressbees.com'
-      }
-      if (nextUsername !== undefined) {
-        updatePayload.username = nextUsername
-      }
-      if (hasPassword) {
-        updatePayload.password = nextPassword
-      }
-      if (hasApiKey) {
-        updatePayload.apiKey = nextApiKey
-      }
-      if (hasWebhookSecret) {
-        updatePayload.webhookSecret = nextWebhookSecret
-      }
-
-      await db
-        .update(courier_credentials)
-        .set(updatePayload)
-        .where(eq(courier_credentials.provider, 'xpressbees'))
-    } else {
-      await db.insert(courier_credentials).values({
-        provider: 'xpressbees',
-        apiBase: nextApiBase || 'https://shipment.xpressbees.com',
-        clientName: '',
-        apiKey: hasApiKey ? nextApiKey : '',
-        clientId: '',
-        username: nextUsername || '',
-        password: hasPassword ? nextPassword : '',
-        webhookSecret: hasWebhookSecret ? nextWebhookSecret : '',
-      })
-    }
-
-    XpressbeesService.clearCachedConfig()
-
-    const [saved] = await db
-      .select({
-        apiBase: courier_credentials.apiBase,
-        username: courier_credentials.username,
-        password: courier_credentials.password,
-        apiKey: courier_credentials.apiKey,
-        webhookSecret: courier_credentials.webhookSecret,
-      })
-      .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'xpressbees'))
-      .limit(1)
-
-    res.json({
-      success: true,
-      message: 'Xpressbees credentials updated successfully',
-      data: {
-        provider: 'xpressbees',
-        apiBase: saved?.apiBase || 'https://shipment.xpressbees.com',
-        username: saved?.username || '',
-        hasPassword: Boolean((saved?.password || '').trim()),
-        hasApiKey: Boolean((saved?.apiKey || '').trim()),
-        hasWebhookSecret: Boolean((saved?.webhookSecret || '').trim()),
-      },
-    })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ success: false, message: 'Failed to update Xpressbees credentials' })
   }
 }
 

@@ -134,26 +134,8 @@ export const fetchCourierCredentials = async () => {
   return data.data
 }
 
-export const updateDelhiveryCredentials = async (payload) => {
-  const { data } = await api.put('/admin/couriers/credentials/delhivery', payload)
-  if (!data?.success) throw new Error('Failed to update Delhivery credentials')
-  return data.data
-}
-
 export const updateDeliveryOneCredentials = async (payload) => {
   const { data } = await api.put('/admin/couriers/credentials/delivery-one', payload)
   if (!data?.success) throw new Error('Failed to update Delivery One credentials')
-  return data.data
-}
-
-export const updateEkartCredentials = async (payload) => {
-  const { data } = await api.put('/admin/couriers/credentials/ekart', payload)
-  if (!data?.success) throw new Error('Failed to update Ekart credentials')
-  return data.data
-}
-
-export const updateXpressbeesCredentials = async (payload) => {
-  const { data } = await api.put('/admin/couriers/credentials/xpressbees', payload)
-  if (!data?.success) throw new Error('Failed to update Xpressbees credentials')
   return data.data
 }

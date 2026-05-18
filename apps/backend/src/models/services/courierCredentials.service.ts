@@ -90,13 +90,7 @@ export interface CourierCredentialsMeta {
   }
 }
 
-const KNOWN_PROVIDERS: ServiceProviderId[] = [
-  'delhivery',
-  'shipway',
-  'xpressbees',
-  'ekart',
-  'deliveryone',
-]
+const KNOWN_PROVIDERS: ServiceProviderId[] = ['deliveryone']
 export const DEFAULT_EKART_BASE_URL = 'https://app.elite.ekartlogistics.in'
 
 const hasEnvForProviderAndType = (provider: ServiceProviderId, _type: BusinessType): boolean => {

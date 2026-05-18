@@ -13,7 +13,6 @@ type CourierLike =
       provider?: string | null
     }
 
-const DELHIVERY_DISPLAY_NAME = 'Delhivery'
 const DELIVERY_ONE_DISPLAY_NAME = 'Delivery One'
 const DELIVERY_ONE_LOGO = '/logo/integrations/delhivery-one.webp'
 
@@ -39,18 +38,20 @@ const getCourierValues = (courier: CourierLike) => {
 
 const isDeliveryOneValue = (value?: string | null) => {
   const normalized = normalizeToken(value)
-  return normalized === 'deliveryone' || normalized === 'delivery1' || normalized === 'delhiveryone'
+  return (
+    normalized === 'deliveryone' ||
+    normalized === 'delivery1' ||
+    normalized === 'delhiveryone' ||
+    normalized === 'delhivery'
+  )
 }
 
-const isDelhiveryValue = (value?: string | null) => normalizeToken(value) === 'delhivery'
-
 export const isDelhiveryCourier = (courier: CourierLike) =>
-  getCourierValues(courier).some((value) => isDelhiveryValue(value) || isDeliveryOneValue(value))
+  getCourierValues(courier).some((value) => isDeliveryOneValue(value))
 
 export const getCourierDisplayName = (courier: CourierLike, fallback = 'Unknown Courier') => {
   const values = getCourierValues(courier)
   if (values.some(isDeliveryOneValue)) return DELIVERY_ONE_DISPLAY_NAME
-  if (values.some(isDelhiveryValue)) return DELHIVERY_DISPLAY_NAME
   if (typeof courier === 'string') return courier || fallback
   return courier?.displayName || courier?.name || fallback
 }
@@ -59,9 +60,6 @@ export const getCourierLogo = (courier: CourierLike, fallback = defaultLogo) => 
   const values = getCourierValues(courier)
   if (values.some(isDeliveryOneValue)) {
     return courierLogos['Delivery One'] || courierLogos.deliveryone || DELIVERY_ONE_LOGO
-  }
-  if (values.some(isDelhiveryValue)) {
-    return courierLogos.Delhivery || DELIVERY_ONE_LOGO
   }
 
   const normalizedValues = values.map((value) => value.toLowerCase())

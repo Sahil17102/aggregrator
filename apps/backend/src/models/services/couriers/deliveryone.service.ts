@@ -1448,7 +1448,7 @@ export class DeliveryOneService {
     }
     const normalizeBillingMode = (value: unknown): 'E' | 'S' => {
       const normalized = sanitizeString(value as any).toLowerCase()
-      if (['e', 'express'].includes(normalized)) return 'E'
+      if (['e', 'express', 'air'].includes(normalized)) return 'E'
       if (['s', 'surface'].includes(normalized)) return 'S'
       throw new HttpError(400, 'md billing mode must be E/Express or S/Surface.')
     }

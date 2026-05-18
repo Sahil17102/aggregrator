@@ -257,6 +257,7 @@ const Couriers = () => {
 
   const deliveryOneCouriers = couriers.filter((c) => c.serviceProvider === 'deliveryone')
   const hasDeliveryOneSurface = deliveryOneCouriers.some((c) => c.id === 99)
+  const hasDeliveryOneExpress = deliveryOneCouriers.some((c) => c.id === 100)
 
   return (
     <Flex direction="column" pt={{ base: '120px', md: '75px' }} gap={4}>
@@ -269,11 +270,17 @@ const Couriers = () => {
             </AlertTitle>
             <AlertDescription fontSize="xs">
               <Text mb={1}>
-                <strong>Delivery One Surface</strong> (ID: 99) is the active courier option.
+                <strong>Delivery One Surface</strong> (ID: 99) and{' '}
+                <strong>Delivery One Express</strong> (ID: 100) are the active courier options.
               </Text>
               {!hasDeliveryOneSurface && (
                 <Text mt={2} color="orange.600" fontSize="xs">
                   Delivery One Surface (ID: 99) not found.
+                </Text>
+              )}
+              {!hasDeliveryOneExpress && (
+                <Text mt={2} color="orange.600" fontSize="xs">
+                  Delivery One Express (ID: 100) not found.
                 </Text>
               )}
             </AlertDescription>

@@ -6,15 +6,13 @@ const normalizeToken = (value) =>
 
 const isDeliveryOneValue = (value) => {
   const normalized = normalizeToken(value)
-  return ['deliveryone', 'delivery1', 'delhiveryone'].includes(normalized)
+  return ['deliveryone', 'delivery1', 'delhiveryone', 'delhivery'].includes(normalized)
 }
-
-const isDelhiveryValue = (value) => normalizeToken(value) === 'delhivery'
 
 export const getCourierDisplayName = (courierOrName, fallback = 'N/A') => {
   if (typeof courierOrName === 'string') {
     if (isDeliveryOneValue(courierOrName)) return 'Delivery One'
-    return isDelhiveryValue(courierOrName) ? 'Delhivery' : courierOrName || fallback
+    return courierOrName || fallback
   }
 
   const values = [
@@ -26,13 +24,8 @@ export const getCourierDisplayName = (courierOrName, fallback = 'N/A') => {
   ].filter(Boolean)
 
   if (values.some(isDeliveryOneValue)) return 'Delivery One'
-  if (values.some(isDelhiveryValue)) return 'Delhivery'
   return courierOrName?.displayName || courierOrName?.courier_name || courierOrName?.name || fallback
 }
 
 export const getProviderDisplayName = (provider, fallback = 'Not selected') =>
-  isDeliveryOneValue(provider)
-    ? 'Delivery One'
-    : isDelhiveryValue(provider)
-      ? 'Delhivery'
-      : provider || fallback
+  isDeliveryOneValue(provider) ? 'Delivery One' : provider || fallback

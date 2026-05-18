@@ -928,7 +928,7 @@ const B2COrdersList = () => {
         const retriesRemaining = Number(row.manifest_retries_remaining ?? 0)
         const canRetryManifest =
           row.can_retry_manifest === true &&
-          String(row.integration_type || '').toLowerCase() === 'delhivery'
+          String(row.integration_type || '').toLowerCase() === 'deliveryone'
 
         if (String(row.order_status || '').toLowerCase() === 'manifest_failed' && canRetryManifest) {
           actions.push(
@@ -971,9 +971,7 @@ const B2COrdersList = () => {
         if (
           actions.length === 0 &&
           String(row.order_status || '').toLowerCase() !== 'manifest_failed' &&
-          ['delhivery', 'ekart', 'xpressbees'].includes(
-            String(row.integration_type || '').toLowerCase(),
-          )
+          String(row.integration_type || '').toLowerCase() === 'deliveryone'
         ) {
           return (
             <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 700 }}>
@@ -990,7 +988,7 @@ const B2COrdersList = () => {
         if (
           actions.length === 0 &&
           String(row.order_status || '').toLowerCase() === 'manifest_failed' &&
-          String(row.integration_type || '').toLowerCase() === 'delhivery'
+          String(row.integration_type || '').toLowerCase() === 'deliveryone'
         ) {
           return (
             <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 700 }}>

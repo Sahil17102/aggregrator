@@ -143,7 +143,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
   const getModeIcon = (mode?: string) => {
     const normalizedMode = String(mode || '').toLowerCase()
-    if (normalizedMode === 'air') return <TbPlane size={16} />
+    if (normalizedMode === 'air' || normalizedMode === 'express') return <TbPlane size={16} />
     if (normalizedMode === 'surface') return <TbTruck size={16} />
     return null
   }
