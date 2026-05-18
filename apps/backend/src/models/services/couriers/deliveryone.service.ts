@@ -181,6 +181,37 @@ export type DeliveryOneShippingCostResponse = {
   raw: any
 }
 
+export type DeliveryOneExpectedTatParams = {
+  origin_pin?: string | number
+  originPin?: string | number
+  origin?: string | number
+  destination_pin?: string | number
+  destinationPin?: string | number
+  destination?: string | number
+  mot?: string
+  mode?: string
+  shipping_mode?: string
+  shippingMode?: string
+  pdt?: string
+  product_type?: string
+  productType?: string
+  expected_pickup_date?: string
+  expectedPickupDate?: string
+}
+
+export type DeliveryOneExpectedTatResponse = {
+  params: {
+    origin_pin: string
+    destination_pin: string
+    mot: 'S' | 'E' | 'N'
+    pdt?: string
+    expected_pickup_date?: string
+  }
+  tatDays: number | null
+  expectedDeliveryDate: string | null
+  raw: any
+}
+
 export type DeliveryOneLabelParams = {
   waybill?: string
   wbns?: string
@@ -195,6 +226,44 @@ export type DeliveryOneLabelResponse = {
   pdfSize?: 'A4' | '4R'
   labelUrl: string | null
   packages: any[]
+  raw: any
+}
+
+export type DeliveryOneDocumentParams = {
+  waybill?: string | number
+  doc_type?: string
+  docType?: string
+}
+
+export type DeliveryOneDocumentResponse = {
+  waybill: string
+  docType: string
+  documentUrl: string | null
+  raw: any
+}
+
+export type DeliveryOneNdrActionPayload = {
+  waybill: string
+  act: 'RE-ATTEMPT' | 'PICKUP_RESCHEDULE' | string
+  action_data?: Record<string, any>
+  actionData?: Record<string, any>
+}
+
+export type DeliveryOneNdrActionResponse = {
+  payload: {
+    data: Array<{
+      waybill: string
+      act: 'RE-ATTEMPT' | 'PICKUP_RESCHEDULE'
+      action_data?: Record<string, any>
+    }>
+  }
+  requestId: string | null
+  raw: any
+}
+
+export type DeliveryOneNdrStatusResponse = {
+  uplId: string
+  verbose: boolean
   raw: any
 }
 
@@ -915,6 +984,144 @@ export class DeliveryOneService {
     }
   }
 
+  async getExpectedTat(
+    params: DeliveryOneExpectedTatParams,
+  ): Promise<DeliveryOneExpectedTatResponse> {
+    const sanitizeString = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).trim()
+    }
+    const sanitizePincode = (value?: string | number | null) =>
+      sanitizeString(value).replace(/\D/g, '').slice(0, 6)
+    const normalizeMot = (value: unknown): 'S' | 'E' | 'N' => {
+      const normalized = sanitizeString(value as any).toLowerCase()
+      if (['s', 'surface'].includes(normalized)) return 'S'
+      if (['e', 'express', 'air'].includes(normalized)) return 'E'
+      if (['n', 'ndd', 'next day delivery', 'next-day-delivery'].includes(normalized)) return 'N'
+      throw new HttpError(400, 'mot must be S/Surface, E/Express, or N/NDD.')
+    }
+    const pickNumber = (raw: any, keys: string[]) => {
+      for (const key of keys) {
+        const value = key.split('.').reduce((acc, part) => acc?.[part], raw)
+        if (value === undefined || value === null || value === '') continue
+        const parsed = Number(String(value).replace(/,/g, ''))
+        if (Number.isFinite(parsed)) return parsed
+      }
+      return null
+    }
+    const pickString = (raw: any, keys: string[]) => {
+      for (const key of keys) {
+        const value = key.split('.').reduce((acc, part) => acc?.[part], raw)
+        if (value === undefined || value === null || value === '') continue
+        return String(value).trim()
+      }
+      return null
+    }
+
+    const originPin = sanitizePincode(params.origin_pin ?? params.originPin ?? params.origin)
+    const destinationPin = sanitizePincode(
+      params.destination_pin ?? params.destinationPin ?? params.destination,
+    )
+    if (!/^\d{6}$/.test(originPin)) {
+      throw new HttpError(400, 'A valid 6-digit origin_pin is required for Delivery One TAT.')
+    }
+    if (!/^\d{6}$/.test(destinationPin)) {
+      throw new HttpError(
+        400,
+        'A valid 6-digit destination_pin is required for Delivery One TAT.',
+      )
+    }
+
+    const expectedPickupDate = sanitizeString(
+      params.expected_pickup_date ?? params.expectedPickupDate,
+    )
+    if (
+      expectedPickupDate &&
+      !/^\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2})?$/.test(expectedPickupDate)
+    ) {
+      throw new HttpError(
+        400,
+        'expected_pickup_date must be in YYYY-MM-DD or YYYY-MM-DD HH:mm format.',
+      )
+    }
+
+    const requestParams: DeliveryOneExpectedTatResponse['params'] = {
+      origin_pin: originPin,
+      destination_pin: destinationPin,
+      mot: normalizeMot(params.mot ?? params.mode ?? params.shipping_mode ?? params.shippingMode),
+    }
+    const productType = sanitizeString(params.pdt ?? params.product_type ?? params.productType)
+    if (productType) requestParams.pdt = productType
+    if (expectedPickupDate) requestParams.expected_pickup_date = expectedPickupDate
+
+    const headers = await this.getHeaders({ includeContentType: false })
+
+    try {
+      const response = await axios.get(`${this.apiBase}/api/dc/expected_tat`, {
+        headers,
+        params: requestParams,
+        timeout: 20000,
+      })
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'Expected TAT rejected' : 'Expected TAT fetched', {
+        origin: originPin,
+        destination: destinationPin,
+        mot: requestParams.mot,
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One expected TAT lookup failed.'),
+        )
+      }
+
+      return {
+        params: requestParams,
+        tatDays: pickNumber(raw, ['tat', 'TAT', 'data.tat', 'data.TAT', 'days', 'data.days']),
+        expectedDeliveryDate: pickString(raw, [
+          'expected_delivery_date',
+          'expectedDeliveryDate',
+          'edd',
+          'data.expected_delivery_date',
+          'data.expectedDeliveryDate',
+          'data.edd',
+        ]),
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One expected TAT lookup failed'
+
+      this.log('Expected TAT failed', {
+        origin: originPin,
+        destination: destinationPin,
+        mot: requestParams.mot,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
   async generateLabel(
     params: string | DeliveryOneLabelParams,
     options: Omit<DeliveryOneLabelParams, 'waybill' | 'wbns'> = {},
@@ -1065,6 +1272,301 @@ export class DeliveryOneService {
         pdfSize: pdfSize || null,
         status,
         response: responseData || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async downloadDocument(params: DeliveryOneDocumentParams): Promise<DeliveryOneDocumentResponse> {
+    const sanitizeString = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).trim()
+    }
+    const normalizeDocType = (value: unknown) => {
+      const normalized = sanitizeString(value as any).toUpperCase()
+      const allowed = ['SIGNATURE_URL', 'RVP_QC_IMAGE', 'EPOD', 'SELLER_RETURN_IMAGE']
+      if (!allowed.includes(normalized)) {
+        throw new HttpError(
+          400,
+          `doc_type must be one of: ${allowed.join(', ')}.`,
+        )
+      }
+      return normalized
+    }
+    const extractFirstUrl = (value: any): string | null => {
+      if (!value) return null
+      if (typeof value === 'string') {
+        const directMatch = value.match(/https?:\/\/[^\s"'<>]+/i)
+        return directMatch?.[0] ?? null
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const url = extractFirstUrl(item)
+          if (url) return url
+        }
+        return null
+      }
+      if (typeof value === 'object') {
+        const preferredKeys = [
+          'document_url',
+          'documentUrl',
+          'doc_url',
+          'docUrl',
+          'signature_url',
+          'signatureUrl',
+          'epod',
+          'url',
+        ]
+        for (const key of preferredKeys) {
+          const url = extractFirstUrl(value[key])
+          if (url) return url
+        }
+        for (const nestedValue of Object.values(value)) {
+          const url = extractFirstUrl(nestedValue)
+          if (url) return url
+        }
+      }
+      return null
+    }
+
+    const waybill = sanitizeString(params.waybill)
+    if (!waybill) {
+      throw new HttpError(400, 'waybill is required to download a Delivery One document.')
+    }
+    const docType = normalizeDocType(params.doc_type ?? params.docType)
+    const headers = await this.getHeaders({ includeContentType: false })
+
+    try {
+      const response = await axios.get(`${this.apiBase}/api/rest/fetch/pkg/document/`, {
+        headers,
+        params: {
+          doc_type: docType,
+          waybill,
+        },
+        timeout: 30000,
+      })
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'Document download rejected' : 'Document download fetched', {
+        waybill,
+        docType,
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One document download failed.'),
+        )
+      }
+
+      return {
+        waybill,
+        docType,
+        documentUrl: extractFirstUrl(raw),
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One document download failed'
+
+      this.log('Document download failed', {
+        waybill,
+        docType,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async submitNdrAction(
+    input:
+      | DeliveryOneNdrActionPayload[]
+      | { data?: DeliveryOneNdrActionPayload[]; actions?: DeliveryOneNdrActionPayload[] },
+  ): Promise<DeliveryOneNdrActionResponse> {
+    const sanitizeString = (value?: string | number | null) => {
+      if (value === undefined || value === null) return ''
+      return String(value).trim()
+    }
+    const normalizeAct = (value: unknown): 'RE-ATTEMPT' | 'PICKUP_RESCHEDULE' => {
+      const normalized = sanitizeString(value as any).toUpperCase().replace(/\s+/g, '_')
+      if (normalized === 'RE-ATTEMPT' || normalized === 'RE_ATTEMPT') return 'RE-ATTEMPT'
+      if (normalized === 'PICKUP_RESCHEDULE' || normalized === 'DEFER_DLV') {
+        return 'PICKUP_RESCHEDULE'
+      }
+      throw new HttpError(400, 'NDR act must be RE-ATTEMPT or PICKUP_RESCHEDULE.')
+    }
+    const extractRequestId = (raw: any): string | null => {
+      const candidates = [
+        raw?.request_id,
+        raw?.requestId,
+        raw?.upl,
+        raw?.upl_id,
+        raw?.UPL,
+        raw?.Upl,
+        raw?.data?.request_id,
+        raw?.data?.requestId,
+        raw?.data?.upl,
+        raw?.data?.upl_id,
+      ]
+      for (const candidate of candidates) {
+        const normalized = sanitizeString(candidate as any)
+        if (normalized) return normalized
+      }
+      return null
+    }
+
+    const source = Array.isArray(input) ? input : input?.data ?? input?.actions ?? []
+    if (!Array.isArray(source) || !source.length) {
+      throw new HttpError(400, 'At least one NDR action is required.')
+    }
+
+    const data = source.map((action) => {
+      const waybill = sanitizeString(action?.waybill)
+      if (!waybill) throw new HttpError(400, 'waybill is required for every NDR action.')
+      const actionData = action?.action_data ?? action?.actionData
+      return {
+        waybill,
+        act: normalizeAct(action?.act),
+        ...(actionData && Object.keys(actionData).length ? { action_data: actionData } : {}),
+      }
+    })
+
+    const payload = { data }
+    const headers = await this.getHeaders()
+
+    try {
+      const response = await axios.post(`${this.apiBase}/api/p/update`, payload, {
+        headers,
+        timeout: 30000,
+      })
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'NDR action rejected' : 'NDR action submitted', {
+        count: data.length,
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One NDR action failed.'),
+        )
+      }
+
+      return {
+        payload,
+        requestId: extractRequestId(raw),
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One NDR action failed'
+
+      this.log('NDR action failed', {
+        count: data.length,
+        status,
+        response: error?.response?.data || null,
+        message,
+      })
+
+      throw new HttpError(status, message)
+    }
+  }
+
+  async getNdrStatus(uplId: string, verbose = true): Promise<DeliveryOneNdrStatusResponse> {
+    const normalizedUplId = String(uplId || '').trim()
+    if (!normalizedUplId) {
+      throw new HttpError(400, 'uplId is required to fetch Delivery One NDR status.')
+    }
+
+    const headers = await this.getHeaders({ includeContentType: false })
+
+    try {
+      const response = await axios.get(
+        `${this.apiBase}/api/cmu/get_bulk_upl/${encodeURIComponent(normalizedUplId)}`,
+        {
+          headers,
+          params: { verbose: verbose ? 'true' : 'false' },
+          timeout: 30000,
+        },
+      )
+      const raw = response.data
+      const explicitFailure =
+        raw?.error === true ||
+        (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
+        raw?.success === false ||
+        raw?.Success === false ||
+        String(raw?.status || '').toLowerCase() === 'fail'
+
+      this.log(explicitFailure ? 'NDR status rejected' : 'NDR status fetched', {
+        uplId: normalizedUplId,
+        verbose,
+        status: response.status,
+        response: explicitFailure ? raw : undefined,
+      })
+
+      if (explicitFailure) {
+        throw new HttpError(
+          502,
+          this.extractErrorMessage(raw, 'Delivery One NDR status lookup failed.'),
+        )
+      }
+
+      return {
+        uplId: normalizedUplId,
+        verbose,
+        raw,
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      const status = Number(error?.response?.status || 502)
+      const message =
+        this.extractErrorMessage(error?.response?.data, '') ||
+        error?.message ||
+        'Delivery One NDR status lookup failed'
+
+      this.log('NDR status failed', {
+        uplId: normalizedUplId,
+        verbose,
+        status,
+        response: error?.response?.data || null,
         message,
       })
 

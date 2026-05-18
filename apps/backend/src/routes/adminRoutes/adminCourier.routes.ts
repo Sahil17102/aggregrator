@@ -7,15 +7,19 @@ import {
   createDeliveryOnePickupRequestController,
   createDeliveryOneShipmentController,
   createDeliveryOneWarehouseController,
+  downloadDeliveryOneDocumentController,
   editDeliveryOneShipmentController,
   fetchDeliveryOneWaybillsController,
   generateDeliveryOneLabelController,
   getCourierCredentialsController,
+  getDeliveryOneExpectedTatController,
+  getDeliveryOneNdrStatusController,
   deleteShippingRateController,
   fetchAvailableCouriersForAdmin,
   getAllCouriersController,
   getShippingRatesController,
   importShippingRatesController,
+  submitDeliveryOneNdrActionController,
   trackDeliveryOneShipmentController,
   updateDeliveryOneCredentialsController,
   updateDeliveryOneEWaybillController,
@@ -93,6 +97,18 @@ router.post(
   requireAuth,
   isAdminMiddleware,
   calculateDeliveryOneShippingCostController,
+)
+router.get(
+  '/delivery-one/expected-tat',
+  requireAuth,
+  isAdminMiddleware,
+  getDeliveryOneExpectedTatController,
+)
+router.post(
+  '/delivery-one/expected-tat',
+  requireAuth,
+  isAdminMiddleware,
+  getDeliveryOneExpectedTatController,
 )
 router.get(
   '/delivery-one/labels',
@@ -198,6 +214,42 @@ router.put(
   requireAuth,
   isAdminMiddleware,
   updateDeliveryOneEWaybillController,
+)
+router.get(
+  '/delivery-one/documents',
+  requireAuth,
+  isAdminMiddleware,
+  downloadDeliveryOneDocumentController,
+)
+router.post(
+  '/delivery-one/documents',
+  requireAuth,
+  isAdminMiddleware,
+  downloadDeliveryOneDocumentController,
+)
+router.get(
+  '/delivery-one/shipments/:waybill/document',
+  requireAuth,
+  isAdminMiddleware,
+  downloadDeliveryOneDocumentController,
+)
+router.post(
+  '/delivery-one/ndr',
+  requireAuth,
+  isAdminMiddleware,
+  submitDeliveryOneNdrActionController,
+)
+router.get(
+  '/delivery-one/ndr/status',
+  requireAuth,
+  isAdminMiddleware,
+  getDeliveryOneNdrStatusController,
+)
+router.get(
+  '/delivery-one/ndr/:uplId/status',
+  requireAuth,
+  isAdminMiddleware,
+  getDeliveryOneNdrStatusController,
 )
 router.get(
   '/delivery-one/shipments/track',

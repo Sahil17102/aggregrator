@@ -691,6 +691,26 @@ export const trackDeliveryOneShipmentController = async (req: Request, res: Resp
   }
 }
 
+export const getDeliveryOneExpectedTatController = async (req: Request, res: Response) => {
+  try {
+    const source = req.method === 'GET' ? req.query : req.body
+    const result = await new DeliveryOneService().getExpectedTat({
+      ...(source || {}),
+    })
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to fetch Delivery One expected TAT:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to fetch Delivery One expected TAT',
+    })
+  }
+}
+
 export const calculateDeliveryOneShippingCostController = async (
   req: Request,
   res: Response,
@@ -710,6 +730,69 @@ export const calculateDeliveryOneShippingCostController = async (
     res.status(err?.statusCode || 500).json({
       success: false,
       message: err?.message || 'Failed to calculate Delivery One shipping cost',
+    })
+  }
+}
+
+export const downloadDeliveryOneDocumentController = async (req: Request, res: Response) => {
+  try {
+    const source = req.method === 'GET' ? req.query : req.body
+    const result = await new DeliveryOneService().downloadDocument({
+      ...(source || {}),
+      waybill: req.params?.waybill || (source as any)?.waybill,
+    })
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to download Delivery One document:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to download Delivery One document',
+    })
+  }
+}
+
+export const submitDeliveryOneNdrActionController = async (req: Request, res: Response) => {
+  try {
+    const result = await new DeliveryOneService().submitNdrAction(req.body || {})
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to submit Delivery One NDR action:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to submit Delivery One NDR action',
+    })
+  }
+}
+
+export const getDeliveryOneNdrStatusController = async (req: Request, res: Response) => {
+  try {
+    const rawVerbose = req.query?.verbose ?? req.body?.verbose
+    const verbose =
+      rawVerbose === undefined
+        ? true
+        : ['1', 'true', 'yes', 'y'].includes(String(rawVerbose).trim().toLowerCase())
+    const result = await new DeliveryOneService().getNdrStatus(
+      String(req.params?.uplId || req.query?.uplId || req.body?.uplId || ''),
+      verbose,
+    )
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (err: any) {
+    console.error('Failed to fetch Delivery One NDR status:', err?.message || err)
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      message: err?.message || 'Failed to fetch Delivery One NDR status',
     })
   }
 }
