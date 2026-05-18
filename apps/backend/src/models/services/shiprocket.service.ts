@@ -3745,6 +3745,7 @@ export const createB2CShipmentService = async (
     volumetric_weight: number | null
     chargeable_weight: number | null
     slabs: number | null
+    max_slab_weight?: number | null
   } = {
     freight: freightCharges,
     volumetric_weight: null,
@@ -3829,7 +3830,7 @@ export const createB2CShipmentService = async (
           chargedWeight: slabbedFreight.chargeable_weight ?? undefined,
           chargedSlabs: slabbedFreight.slabs ?? undefined,
           shippingMode: selectedDelhiveryShippingMode ?? null,
-          selectedMaxSlabWeight,
+          selectedMaxSlabWeight: slabbedFreight.max_slab_weight ?? selectedMaxSlabWeight,
         })
         console.log('⚠️ Delhivery manifest failure stored as order', {
           order_id: failureOrder?.id,
@@ -4583,7 +4584,7 @@ export const createB2CShipmentService = async (
         chargedWeight: finalSlabbedFreight.chargeable_weight ?? undefined,
         chargedSlabs: finalSlabbedFreight.slabs ?? undefined,
         shippingMode: selectedProviderShippingMode,
-        selectedMaxSlabWeight,
+        selectedMaxSlabWeight: finalSlabbedFreight.max_slab_weight ?? selectedMaxSlabWeight,
       })
 
       if (selectedDelhiveryShippingMode && selectedDelhiveryCourierId !== null) {

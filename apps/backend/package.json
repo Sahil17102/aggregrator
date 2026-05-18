@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "check:rate-apis": "node -r ts-node/register src/scripts/checkRateCalculatorApis.ts",
     "check:courier-charge": "tsx src/scripts/checkCourierChargeMath.ts",
+    "check:b2c-slabs": "tsx src/scripts/checkB2CRateCardSlabSelection.ts",
     "check:plan-rates": "tsx src/scripts/checkPlanScopedKashmirRates.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "drizzle-kit push",

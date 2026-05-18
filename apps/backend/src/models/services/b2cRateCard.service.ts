@@ -436,6 +436,12 @@ function getLastFiniteSlab(slabs: ResolvedRateCardSlab[]) {
   return null
 }
 
+const MIN_B2C_CHARGEABLE_WEIGHT_G = 500
+
+function applyB2CMinimumChargeableWeight(weightG: number) {
+  return Math.max(Number(weightG) || 0, MIN_B2C_CHARGEABLE_WEIGHT_G)
+}
+
 export function formatCourierSlabDisplayName(courierName: string, slabWeightTo: number | null) {
   if (slabWeightTo === null || slabWeightTo === undefined || !Number.isFinite(Number(slabWeightTo))) {
     return courierName
@@ -457,18 +463,17 @@ export function computeB2CRateCardCharge(params: {
     width_cm: params.width_cm,
     height_cm: params.height_cm,
   })
+  const chargeableWeight = applyB2CMinimumChargeableWeight(preview.chargeable_weight)
 
   if (!params.rateCard.slabs.length) {
-    const legacy = calculateFreight({
-      actual_weight_g: params.actual_weight_g,
-      length_cm: params.length_cm,
-      width_cm: params.width_cm,
-      height_cm: params.height_cm,
-      slab_weight_g: Math.max(1, params.rateCard.min_weight * 1000 || 1),
-      base_price: params.rateCard.base_rate,
-    })
+    const slabWeight = Math.max(1, params.rateCard.min_weight * 1000 || 1)
+    const slabs = Math.max(1, Math.ceil(chargeableWeight / slabWeight))
     return {
-      ...legacy,
+      actual_weight: preview.actual_weight,
+      volumetric_weight: preview.volumetric_weight,
+      chargeable_weight: chargeableWeight,
+      slabs,
+      freight: slabs * Number(params.rateCard.base_rate || 0),
       slab_weight: params.rateCard.min_weight ? params.rateCard.min_weight * 1000 : null,
       base_price: params.rateCard.base_rate,
       selected_slab: null,
@@ -477,76 +482,15 @@ export function computeB2CRateCardCharge(params: {
     }
   }
 
-  const chargeableWeightKg = preview.chargeable_weight / 1000
-  const selectedMaxSlabWeight =
-    params.selected_max_slab_weight === undefined || params.selected_max_slab_weight === null
-      ? null
-      : toNumber(params.selected_max_slab_weight)
+  const chargeableWeightKg = chargeableWeight / 1000
   const lastFiniteSlab = getLastFiniteSlab(params.rateCard.slabs)
 
-  if (selectedMaxSlabWeight !== null) {
-    const explicitlySelectedSlab =
-      params.rateCard.slabs.find(
-        (slab) =>
-          slab.weight_to !== null &&
-          Math.abs(Number(slab.weight_to) - Number(selectedMaxSlabWeight)) < 0.0001,
-      ) || null
-
-    if (explicitlySelectedSlab) {
-      if (
-        explicitlySelectedSlab.weight_to !== null &&
-        chargeableWeightKg <= explicitlySelectedSlab.weight_to
-      ) {
-        return {
-          actual_weight: preview.actual_weight,
-          volumetric_weight: preview.volumetric_weight,
-          chargeable_weight: preview.chargeable_weight,
-          slabs: null,
-          freight: explicitlySelectedSlab.rate,
-          slab_weight: null,
-          base_price: explicitlySelectedSlab.rate,
-          selected_slab: explicitlySelectedSlab,
-          max_slab_weight: explicitlySelectedSlab.weight_to,
-          matched_by: 'slab',
-        }
-      }
-
-      if (
-        lastFiniteSlab &&
-        explicitlySelectedSlab.weight_to !== null &&
-        lastFiniteSlab.weight_to !== null &&
-        Math.abs(Number(lastFiniteSlab.weight_to) - Number(explicitlySelectedSlab.weight_to)) <
-          0.0001 &&
-        chargeableWeightKg > explicitlySelectedSlab.weight_to &&
-        explicitlySelectedSlab.extra_rate !== null &&
-        explicitlySelectedSlab.extra_weight_unit !== null
-      ) {
-        const extraUnits = Math.ceil(
-          (chargeableWeightKg - explicitlySelectedSlab.weight_to) /
-            explicitlySelectedSlab.extra_weight_unit,
-        )
-        return {
-          actual_weight: preview.actual_weight,
-          volumetric_weight: preview.volumetric_weight,
-          chargeable_weight: preview.chargeable_weight,
-          slabs: null,
-          freight: explicitlySelectedSlab.rate + extraUnits * explicitlySelectedSlab.extra_rate,
-          slab_weight: explicitlySelectedSlab.extra_weight_unit * 1000,
-          base_price: explicitlySelectedSlab.rate,
-          selected_slab: explicitlySelectedSlab,
-          max_slab_weight: explicitlySelectedSlab.weight_to,
-          matched_by: 'last_slab_extra',
-        }
-      }
-    }
-  }
-
-  const selectedSlab = findMatchingSlab(preview.chargeable_weight, params.rateCard.slabs)
+  const selectedSlab = findMatchingSlab(chargeableWeight, params.rateCard.slabs)
   if (selectedSlab) {
     return {
       actual_weight: preview.actual_weight,
       volumetric_weight: preview.volumetric_weight,
-      chargeable_weight: preview.chargeable_weight,
+      chargeable_weight: chargeableWeight,
       slabs: null,
       freight: selectedSlab.rate,
       slab_weight: null,
@@ -571,7 +515,7 @@ export function computeB2CRateCardCharge(params: {
     return {
       actual_weight: preview.actual_weight,
       volumetric_weight: preview.volumetric_weight,
-      chargeable_weight: preview.chargeable_weight,
+      chargeable_weight: chargeableWeight,
       slabs: null,
       freight: extraFreight,
       slab_weight: lastFiniteSlab.extra_weight_unit * 1000,
@@ -585,7 +529,7 @@ export function computeB2CRateCardCharge(params: {
   return {
     actual_weight: preview.actual_weight,
     volumetric_weight: preview.volumetric_weight,
-    chargeable_weight: preview.chargeable_weight,
+    chargeable_weight: chargeableWeight,
     slabs: null,
     freight: 0,
     slab_weight: null,

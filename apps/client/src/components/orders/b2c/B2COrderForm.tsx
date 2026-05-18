@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Chip, Paper, Stack, Typography, alpha } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FormProvider, useFieldArray, useForm, type FieldErrors } from 'react-hook-form'
 import { BiRupee } from 'react-icons/bi'
 import { FaBox, FaTruck, FaUser } from 'react-icons/fa'
@@ -142,6 +142,18 @@ export default function B2COrderFormSteps({ onClose }: { onClose?: () => void })
   const discount = Number(watch('discount') || 0)
   const prepaidAmount = Number(watch('prepaidAmount') || 0)
   const orderType = watch('orderType') || getDefaultOrderType()
+  const packageWeight = watch('weight')
+  const packageLength = watch('length')
+  const packageBreadth = watch('breadth')
+  const packageHeight = watch('height')
+  const selectedCourierPartnerId = watch('courierPartnerId')
+  const packageSignature = [
+    packageWeight,
+    packageLength,
+    packageBreadth,
+    packageHeight,
+  ].join('|')
+  const previousPackageSignatureRef = useRef(packageSignature)
 
   // Ensure orderType is valid based on payment options
   useEffect(() => {
@@ -351,7 +363,26 @@ export default function B2COrderFormSteps({ onClose }: { onClose?: () => void })
 
   useEffect(() => {
     setValue('orderAmount', totalCollectable, { shouldValidate: true })
-  }, [totalCollectable])
+  }, [setValue, totalCollectable])
+
+  useEffect(() => {
+    if (previousPackageSignatureRef.current === packageSignature) return
+
+    previousPackageSignatureRef.current = packageSignature
+    if (!selectedCourierPartnerId) return
+
+    setValue('courierPartner', '')
+    setValue('courierPartnerId', '')
+    setValue('courierOptionKey', '')
+    setValue('selectedMaxSlabWeight', null)
+    setValue('courierCod', 0)
+    setValue('forwardCharges', 0)
+    setValue('otherCharges', 0)
+    setValue('courierCost', null)
+    setValue('chargeableWeight', null)
+    setValue('volumetricWeight', null)
+    setValue('slabs', null)
+  }, [packageSignature, selectedCourierPartnerId, setValue])
 
   useEffect(() => {
     register('courierPartnerId', {
