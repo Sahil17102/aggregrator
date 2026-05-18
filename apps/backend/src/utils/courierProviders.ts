@@ -1,20 +1,15 @@
-export const INTEGRATED_SERVICE_PROVIDERS = [
-  'delhivery',
-  'deliveryone',
-  'ekart',
-  'xpressbees',
-] as const
+export const INTEGRATED_SERVICE_PROVIDERS = ['deliveryone'] as const
 
 export type IntegratedServiceProvider = (typeof INTEGRATED_SERVICE_PROVIDERS)[number]
 
-export const SERVICE_PROVIDER_LABELS: Record<IntegratedServiceProvider, string> = {
+export const SERVICE_PROVIDER_LABELS: Record<string, string> = {
   delhivery: 'Delhivery',
   deliveryone: 'Delivery One',
   ekart: 'Ekart',
   xpressbees: 'Xpressbees',
 }
 
-const SERVICE_PROVIDER_ALIASES: Record<string, IntegratedServiceProvider> = {
+const SERVICE_PROVIDER_ALIASES: Record<string, string> = {
   delhivery: 'delhivery',
   deliveryone: 'deliveryone',
   delivery1: 'deliveryone',

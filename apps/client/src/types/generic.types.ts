@@ -128,7 +128,7 @@ export interface B2COrder {
   city: string
   state: string
   country: string
-  integration_type: 'delhivery'
+  integration_type: 'deliveryone'
   pincode: string
 
   // Product info

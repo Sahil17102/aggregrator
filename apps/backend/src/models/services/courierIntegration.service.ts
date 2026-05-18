@@ -12,6 +12,7 @@ import {
   normalizeServiceProviderKey,
   supportedServiceProviderList,
 } from '../../utils/courierProviders'
+import { DELIVERY_ONE_ALLOWED_COURIER_IDS } from '../../utils/delhiveryCourier'
 import {
   fetchShippingRateCodSlabs,
   fetchShippingRateSlabs,
@@ -54,7 +55,10 @@ export interface CourierFilters {
 }
 
 export const buildCourierWhereClause = (filters: CourierFilters = {}) => {
-  const conditions = []
+  const conditions = [
+    inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
+    inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS),
+  ]
 
   if (filters.name) {
     conditions.push(ilike(couriers.name, `%${filters.name}%`))
@@ -242,7 +246,16 @@ export const getCourierCount = async (filters: CourierFilters = {}) => {
 // 🔍 Get Courier by ID
 // =========================
 export const getCourierById = async (id: number) => {
-  const [courier] = await db.select().from(couriers).where(eq(couriers.id, id))
+  const [courier] = await db
+    .select()
+    .from(couriers)
+    .where(
+      and(
+        eq(couriers.id, id),
+        inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
+        inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS),
+      ),
+    )
 
   return courier
 }
@@ -278,6 +291,9 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
   if (filters.business_type) {
     conditions.push(eq(shippingRates.business_type, filters.business_type))
   }
+
+  conditions.push(inArray(shippingRates.service_provider, [...INTEGRATED_SERVICE_PROVIDERS]))
+  conditions.push(inArray(shippingRates.courier_id, DELIVERY_ONE_ALLOWED_COURIER_IDS))
 
   if (zoneFilter.length > 0) {
     conditions.push(

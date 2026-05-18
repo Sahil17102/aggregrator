@@ -8,6 +8,8 @@ export const DELHIVERY_ALLOWED_COURIER_IDS: number[] = [
   DELHIVERY_COURIER_IDS.SURFACE,
 ]
 
+export const DELIVERY_ONE_ALLOWED_COURIER_IDS: number[] = [DELHIVERY_COURIER_IDS.SURFACE]
+
 export const normalizeCourierId = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isFinite(value)) return Number(value)
   if (typeof value === 'string' && value.trim()) {
@@ -21,6 +23,12 @@ export const isSupportedDelhiveryCourierId = (value: unknown): boolean => {
   const id = normalizeCourierId(value)
   if (id === null) return false
   return DELHIVERY_ALLOWED_COURIER_IDS.includes(id)
+}
+
+export const isSupportedDeliveryOneCourierId = (value: unknown): boolean => {
+  const id = normalizeCourierId(value)
+  if (id === null) return false
+  return DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(id)
 }
 
 export const getDelhiveryShippingModeByCourierId = (

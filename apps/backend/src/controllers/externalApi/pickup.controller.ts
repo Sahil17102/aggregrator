@@ -434,7 +434,7 @@ export const requestPickupController = async (req: any, res: Response) => {
       })
     }
 
-    const supportedPickupProviders = ['delhivery', 'deliveryone']
+    const supportedPickupProviders = ['deliveryone']
     const unsupportedOrder = orders.find(
       (o) => !supportedPickupProviders.includes(normalizeServiceProviderKey(o.integration_type)),
     )
@@ -442,12 +442,12 @@ export const requestPickupController = async (req: any, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Unsupported provider',
-        message: `Order ${unsupportedOrder.order_number} is not configured for Delhivery or Delivery One`,
+        message: `Order ${unsupportedOrder.order_number} is not configured for Delivery One`,
       })
     }
 
     const providerSet = new Set(
-      orders.map((order) => normalizeServiceProviderKey(order.integration_type || 'delhivery')),
+      orders.map((order) => normalizeServiceProviderKey(order.integration_type || 'deliveryone')),
     )
     if (providerSet.size > 1) {
       return res.status(400).json({
@@ -457,7 +457,7 @@ export const requestPickupController = async (req: any, res: Response) => {
       })
     }
 
-    const provider = [...providerSet][0] || 'delhivery'
+    const provider = [...providerSet][0] || 'deliveryone'
 
     let pickupLocation = ''
     if (pickup_address_id) {

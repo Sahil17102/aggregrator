@@ -15,9 +15,6 @@ import {
 import { useServiceProviders, useUpdateServiceProviderStatus } from 'hooks/useCouriers'
 
 const providerLabels = {
-  delhivery: 'Delhivery',
-  ekart: 'Ekart',
-  xpressbees: 'Xpressbees',
   deliveryone: 'Delivery One',
 }
 
@@ -55,7 +52,7 @@ const ServiceProviders = () => {
         Service Providers
       </Text>
       <Text fontSize="sm" color="gray.500">
-        Manage enabled courier providers for Delhivery, Ekart, Xpressbees, and Delivery One.
+        Manage the Delivery One courier integration.
       </Text>
       <Table variant="simple">
         <Thead>

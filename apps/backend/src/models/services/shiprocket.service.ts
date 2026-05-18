@@ -17,8 +17,10 @@ import {
 } from 'drizzle-orm'
 import { DelhiveryManifestError, HttpError } from '../../utils/classes'
 import {
+  DELIVERY_ONE_ALLOWED_COURIER_IDS,
   DELHIVERY_ALLOWED_COURIER_IDS,
   getDelhiveryShippingModeByCourierId,
+  isSupportedDeliveryOneCourierId,
   isSupportedDelhiveryCourierId,
   normalizeCourierId,
 } from '../../utils/delhiveryCourier'
@@ -1104,7 +1106,7 @@ const getProviderRateAmount = (providerRate?: { total?: unknown; freight?: unkno
   return freight ?? cod
 }
 
-const QUOTE_BACKED_PROVIDER_KEYS = new Set(['delhivery', 'deliveryone'])
+const QUOTE_BACKED_PROVIDER_KEYS = new Set(['deliveryone'])
 
 const roundMoneyValue = (value: unknown) => {
   const parsed = Number(value ?? 0)
@@ -1132,7 +1134,7 @@ export const calculateFinalCourierCharge = ({
   const otherChargeAmount = roundMoneyValue(otherCharges)
   const codChargeAmount =
     String(paymentType || '').toLowerCase() === 'cod' ? roundMoneyValue(codCharge) : 0
-  const sellerFreightCharge = roundMoneyValue(platformFreightCharge + providerQuoteCharge)
+  const sellerFreightCharge = platformFreightCharge
   const finalCourierCharge = roundMoneyValue(
     sellerFreightCharge + otherChargeAmount + codChargeAmount,
   )
@@ -1466,6 +1468,12 @@ export const fetchAvailableCouriersWithRates = async (
       const providerKey = normalizeProviderKey(row.serviceProvider)
       if (!providerKey || !SUPPORTED_PROVIDERS.includes(providerKey as any)) continue
       if (providerKey === 'delhivery' && !DELHIVERY_ALLOWED_COURIER_IDS.includes(Number(row.id))) {
+        continue
+      }
+      if (
+        providerKey === 'deliveryone' &&
+        !DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(row.id))
+      ) {
         continue
       }
 
@@ -2132,26 +2140,29 @@ export const fetchAvailableCouriersWithRates = async (
       const matchedIndex = findMatchingSlabIndex(computed.chargeable_weight, rateCard.slabs)
 
       if (matchedIndex >= 0) {
-        return rateCard.slabs.slice(matchedIndex).map((slab: any) => ({
-          rate: Number(slab.rate),
-          cod_charges: codCalc.cod_charges,
-          cod_percent: rateCard.cod_percent,
-          cod_charge_basis: codCalc.cod_charge_basis,
-          cod_charge_source: codCalc.cod_charge_source,
-          cod_slabs: rateCard.cod_slabs,
-          selected_cod_slab: codCalc.selected_cod_slab,
-          other_charges: rateCard.other_charges,
-          mode: rateCard.mode,
-          min_weight: rateCard.min_weight,
-          slabs: rateCard.slabs,
-          selected_slab: slab,
-          slab_weight: null,
-          chargeable_weight: computed.chargeable_weight,
-          volumetric_weight: computed.volumetric_weight,
-          slab_count: null,
-          max_slab_weight: slab.weight_to,
-          matched_by: 'slab',
-        }))
+        const slab = rateCard.slabs[matchedIndex]
+        return [
+          {
+            rate: Number(slab.rate),
+            cod_charges: codCalc.cod_charges,
+            cod_percent: rateCard.cod_percent,
+            cod_charge_basis: codCalc.cod_charge_basis,
+            cod_charge_source: codCalc.cod_charge_source,
+            cod_slabs: rateCard.cod_slabs,
+            selected_cod_slab: codCalc.selected_cod_slab,
+            other_charges: rateCard.other_charges,
+            mode: rateCard.mode,
+            min_weight: rateCard.min_weight,
+            slabs: rateCard.slabs,
+            selected_slab: slab,
+            slab_weight: null,
+            chargeable_weight: computed.chargeable_weight,
+            volumetric_weight: computed.volumetric_weight,
+            slab_count: null,
+            max_slab_weight: slab.weight_to,
+            matched_by: 'slab' as const,
+          },
+        ]
       }
 
       const lastFiniteSlab = [...rateCard.slabs].reverse().find((slab: any) => slab.weight_to !== null) || null
@@ -2183,7 +2194,7 @@ export const fetchAvailableCouriersWithRates = async (
             volumetric_weight: computed.volumetric_weight,
             slab_count: null,
             max_slab_weight: lastFiniteSlab.weight_to,
-            matched_by: 'last_slab_extra',
+            matched_by: 'last_slab_extra' as const,
           },
         ]
       }
@@ -2315,10 +2326,17 @@ export const fetchAvailableCouriersWithRates = async (
 
     // ✅ Final filter: Ensure all couriers have correct business_type
     combined = await filterCouriersByBusinessType(combined, 'b2c')
+    combined = combined.filter((c: any) => {
+      const providerKey = normalizeProviderKey(c.integration_type || c.serviceProvider || '')
+      return (
+        providerKey === 'deliveryone' &&
+        DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(c.id))
+      )
+    })
 
     // Fetch live provider costs after local rate-card filtering so order creation
     // can persist the courier-company estimate selected by the user.
-    const quoteBackedProviders = new Set(['delhivery', 'deliveryone'])
+    const quoteBackedProviders = new Set(['deliveryone'])
     if (
       combined.some((c: any) =>
         quoteBackedProviders.has(normalizeProviderKey(c.integration_type)),
@@ -2706,8 +2724,15 @@ export const fetchAvailableCouriersWithRatesB2B = async (
       .where(and(eq(couriers.isEnabled, true), sql`${couriers.businessType} @> '["b2b"]'::jsonb`))
 
     const systemCourierMap = systemCourierRows.reduce<Record<string, Set<number>>>((acc, row) => {
-      const providerKey = (row.serviceProvider || '').toLowerCase()
+      const providerKey = normalizeServiceProviderKey(row.serviceProvider)
       if (!providerKey) return acc
+      if (!INTEGRATED_SERVICE_PROVIDERS.includes(providerKey as any)) return acc
+      if (
+        providerKey === 'deliveryone' &&
+        !DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(row.id))
+      ) {
+        return acc
+      }
       if (!acc[providerKey]) acc[providerKey] = new Set<number>()
       acc[providerKey].add(Number(row.id))
       return acc
@@ -2757,7 +2782,7 @@ export const fetchAvailableCouriersWithRatesB2B = async (
       if (!rate.courierId) continue
 
       // Check if courier is enabled
-      const providerKey = (rate.serviceProvider || '').toLowerCase()
+      const providerKey = normalizeServiceProviderKey(rate.serviceProvider)
       const isEnabled = providerKey && systemCourierMap[providerKey]?.has(Number(rate.courierId))
 
       if (!isEnabled) continue
@@ -2767,7 +2792,7 @@ export const fetchAvailableCouriersWithRatesB2B = async (
         const [courierRow] = await db
           .select()
           .from(couriers)
-          .where(eq(couriers.id, rate.courierId))
+          .where(and(eq(couriers.id, rate.courierId), eq(couriers.serviceProvider, providerKey)))
           .limit(1)
 
         if (!courierRow) continue
@@ -2775,8 +2800,8 @@ export const fetchAvailableCouriersWithRatesB2B = async (
         courierMap.set(rate.courierId, {
           id: courierRow.id,
           name: courierRow.name,
-          integration_type: rate.serviceProvider?.toLowerCase() || 'unknown',
-          serviceProvider: rate.serviceProvider?.toLowerCase(),
+          integration_type: providerKey || 'unknown',
+          serviceProvider: providerKey,
           localRates: {},
           approxZone: {
             originZoneId,
@@ -3311,7 +3336,13 @@ export const createB2CShipmentService = async (
           id: couriers.id,
         })
         .from(couriers)
-        .where(and(eq(couriers.id, Number(params.courier_id)), eq(couriers.isEnabled, true)))
+        .where(
+          and(
+            eq(couriers.id, Number(params.courier_id)),
+            eq(couriers.isEnabled, true),
+            inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
+          ),
+        )
 
       if (matchingCouriers.length === 0) {
         // No courier found - require integration_type to be explicitly provided
@@ -3364,14 +3395,14 @@ export const createB2CShipmentService = async (
     }
   }
 
-  // If still no integration_type (and no courier_id was provided to derive it), default to 'delhivery'
+  // If still no integration_type (and no courier_id was provided to derive it), default to Delivery One.
   // Note: This fallback is only for backward compatibility when neither integration_type nor courier_id is provided
   // When courier_id is provided without integration_type, an error is thrown above if it cannot be determined
   if (!params.integration_type) {
     console.warn(
-      `⚠️ integration_type not provided and courier_id not available, defaulting to 'delhivery'`,
+      `⚠️ integration_type not provided and courier_id not available, defaulting to 'deliveryone'`,
     )
-    params.integration_type = 'delhivery'
+    params.integration_type = 'deliveryone'
   }
 
   if (String(params.integration_type || '').toLowerCase() === 'delhivery') {
@@ -3411,6 +3442,24 @@ export const createB2CShipmentService = async (
         ? getDelhiveryShippingModeByCourierId(normalizeCourierId(params.courier_id))
         : null) ||
       null)
+  if (normalizedIntegrationForMode === 'deliveryone') {
+    const selectedDeliveryOneCourierId = normalizeCourierId(params.courier_id)
+    if (selectedDeliveryOneCourierId === null) {
+      throw new HttpError(
+        400,
+        'Delivery One courier_id is required. Use 99 for the available Surface service.',
+      )
+    }
+    if (!isSupportedDeliveryOneCourierId(selectedDeliveryOneCourierId)) {
+      throw new HttpError(
+        400,
+        `Invalid Delivery One courier_id: ${selectedDeliveryOneCourierId}. Allowed ID is 99 (Surface).`,
+      )
+    }
+    selectedProviderShippingMode =
+      getDelhiveryShippingModeByCourierId(selectedDeliveryOneCourierId) ||
+      selectedProviderShippingMode
+  }
   if (selectedProviderShippingMode && !params.shipping_mode) {
     params.shipping_mode = selectedProviderShippingMode
   }

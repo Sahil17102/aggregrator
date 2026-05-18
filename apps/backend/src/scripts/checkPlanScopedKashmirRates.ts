@@ -9,6 +9,7 @@ import {
   computeB2CFreightForOrder,
   fetchAvailableCouriersWithRates,
 } from '../models/services/shiprocket.service'
+import { normalizeServiceProviderKey } from '../utils/courierProviders'
 import { DelhiveryService } from '../models/services/couriers/delhivery.service'
 import { DeliveryOneService } from '../models/services/couriers/deliveryone.service'
 import { EkartService } from '../models/services/couriers/ekart.service'
@@ -77,8 +78,8 @@ async function quoteFor({
 }: QuoteParams) {
   return computeB2CFreightForOrder({
     userId,
-    courierId: mode === 'air' ? 100 : 99,
-    serviceProvider: 'delhivery',
+    courierId: 99,
+    serviceProvider: 'deliveryone',
     mode,
     paymentType,
     codChargeBasis,
@@ -146,12 +147,17 @@ async function assertCalculatorLocalFallback(userId: string) {
     const surfaceOption = results.find(
       (row: any) =>
         Number(row.id) === 99 &&
+        normalizeServiceProviderKey(row.integration_type || row.serviceProvider) ===
+          'deliveryone' &&
         row.approxZone?.code === 'KASHMIR' &&
         Number(row.localRates?.forward?.rate) === 80,
     )
 
     if (!surfaceOption) {
-      throw new Error('Calculator fallback did not return the Kashmir surface local rate.')
+      throw new Error('Calculator fallback did not return the Delivery One Kashmir surface local rate.')
+    }
+    if (results.length !== 1) {
+      throw new Error(`Calculator fallback should return exactly one Delivery One option, received ${results.length}.`)
     }
     if (surfaceOption.provider_rate !== null) {
       throw new Error('Calculator fallback should leave provider_rate null when live quote is unavailable.')

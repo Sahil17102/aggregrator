@@ -68,7 +68,7 @@ export const sanitizeOrderForCustomer = async (order: any): Promise<any> => {
   sanitized.manifest_retries_remaining = manifestRetriesRemaining
   sanitized.can_retry_manifest =
     String(order?.order_status || '').trim().toLowerCase() === 'manifest_failed' &&
-    ['delhivery', 'deliveryone'].includes(provider) &&
+    provider === 'deliveryone' &&
     manifestRetriesRemaining > 0
 
   // Always expose stored document keys so clients can reliably use the same regenerated keys

@@ -266,25 +266,38 @@ export default function RateCalculatorPage() {
     return match ? Number(match[1]) : Infinity
   }
 
-  const formatCurrency = (value) => `₹ ${Number(value || 0).toFixed(2)}`
+  const formatCurrency = (value) => `Rs ${Number(value || 0).toFixed(2)}`
   const getCourierDisplayName = (courier) => courier?.displayName || courier?.name || '—'
+  const getB2CRateCardBreakdown = (courier) => {
+    const forward = courier?.localRates?.forward || {}
+    const freight =
+      courier?.rate !== undefined && courier?.rate !== null
+        ? Number(courier.rate)
+        : Number(forward.rate ?? 0)
+    const codIncluded = formData.paymentType === 'cod' ? Number(forward.cod_charges ?? 0) : 0
+    const zone = courier?.approxZone?.code || courier?.approxZone?.name || '—'
+
+    return {
+      freight,
+      codIncluded,
+      total: freight + codIncluded,
+      zone,
+      maxSlabWeight: forward?.max_slab_weight ?? courier?.max_slab_weight ?? null,
+    }
+  }
 
   const highlights = useMemo(() => {
     if (shipmentType !== 'b2c' || !availableCouriers?.length) return null
 
     const enriched = availableCouriers.map((courier) => {
-      const forward = courier.localRates?.forward || {}
-      const slabbedRate =
-        courier?.rate !== undefined && courier?.rate !== null
-          ? Number(courier.rate)
-          : Number(forward.rate ?? 0)
-      const codCharge = Number(forward.cod_charges ?? 0)
-      const total = formData.paymentType === 'cod' ? slabbedRate + codCharge : slabbedRate
+      const rateCard = getB2CRateCardBreakdown(courier)
       return {
         ...courier,
         displayName: getCourierDisplayName(courier),
-        baseRate: slabbedRate,
-        total,
+        baseRate: rateCard.freight,
+        codIncluded: rateCard.codIncluded,
+        total: rateCard.total,
+        zoneUsed: rateCard.zone,
         eddDays: parseEddToDays(courier.edd),
       }
     })
@@ -394,8 +407,6 @@ export default function RateCalculatorPage() {
       }
     }
   }
-  console.log('availableCouriers', availableCouriers)
-
   const tableConfig =
     shipmentType === 'b2b'
       ? {
@@ -492,20 +503,16 @@ export default function RateCalculatorPage() {
         }
       : {
           data: (availableCouriers ?? []).map((c, idx) => {
-            const forward = c.localRates?.forward || {}
-            const baseRate =
-              c?.rate !== undefined && c?.rate !== null ? Number(c.rate) : Number(forward?.rate ?? 0)
-            const codCharge = Number(forward?.cod_charges ?? 0)
-            const codTotal = formData.paymentType === 'cod' ? codCharge : 0
+            const rateCard = getB2CRateCardBreakdown(c)
             return {
               sno: idx + 1,
               name: getCourierDisplayName(c),
-              freight_charges: baseRate,
-              cod_charges: codTotal,
-              total_charges: baseRate + codTotal,
+              rate_card_freight: rateCard.freight,
+              cod_included: rateCard.codIncluded,
+              rate_card_total: rateCard.total,
               edd: c.edd,
-              zone: c?.approxZone?.code,
-              max_slab_weight: forward?.max_slab_weight ?? c?.max_slab_weight ?? null,
+              zone: rateCard.zone,
+              max_slab_weight: rateCard.maxSlabWeight,
               chargeable_weight: c.chargeable_weight || null,
               volumetric_weight: c.volumetric_weight || null,
               slabs: c.slabs || null,
@@ -514,36 +521,49 @@ export default function RateCalculatorPage() {
           captions: [
             'S.No',
             'Courier Name',
-            'Freight Charges (Slabbed)',
-            'COD Charges',
-            'Total Charges',
+            'Rate Card Freight',
+            'COD Included',
+            'Rate Card Total',
+            'Zone Used',
             'EDD',
             'Max Slab Weight (kg)',
             'Chargeable Weight (g)',
             'Volumetric Weight (g)',
             'Slabs',
-            'Zone Code',
           ],
           columnKeys: [
             'sno',
             'name',
-            'freight_charges',
-            'cod_charges',
-            'total_charges',
+            'rate_card_freight',
+            'cod_included',
+            'rate_card_total',
+            'zone',
             'edd',
             'max_slab_weight',
             'chargeable_weight',
             'volumetric_weight',
             'slabs',
-            'zone',
           ],
           renderers: {
-            freight_charges: (val) => formatCurrency(val),
-            cod_charges: (val) => formatCurrency(val),
-            total_charges: (val) => formatCurrency(val),
+            rate_card_freight: (val) => formatCurrency(val),
+            cod_included: (val) =>
+              val > 0 ? (
+                <Badge colorScheme="green" borderRadius="full" px={2}>
+                  Included {formatCurrency(val)}
+                </Badge>
+              ) : (
+                <Badge colorScheme="gray" borderRadius="full" px={2}>
+                  No COD
+                </Badge>
+              ),
+            rate_card_total: (val) => (
+              <Text fontWeight="bold" color="green.600">
+                {formatCurrency(val)}
+              </Text>
+            ),
             zone: (val) => (
-              <Badge variant="subtle" colorScheme="orange">
-                {val}
+              <Badge variant="subtle" colorScheme="orange" borderRadius="full" px={2}>
+                Zone {val || '—'}
               </Badge>
             ),
             edd: (val) => <Text color="purple.500">{val}</Text>,
@@ -692,7 +712,9 @@ export default function RateCalculatorPage() {
                 <Text fontSize="lg" fontWeight="semibold">
                   {highlights.cheapest?.displayName}
                 </Text>
-                <Text color="gray.500">Zone {highlights.cheapest?.approxZone?.code || '—'}</Text>
+                <Badge colorScheme="orange" borderRadius="full" px={2} alignSelf="flex-start">
+                  Zone {highlights.cheapest?.zoneUsed || '—'}
+                </Badge>
                 <Text fontSize="xl" fontWeight="bold" color="green.500">
                   {formatCurrency(highlights.cheapest?.total)}
                 </Text>
@@ -701,11 +723,10 @@ export default function RateCalculatorPage() {
                     <Text>Freight: {formatCurrency(highlights.cheapest?.baseRate)}</Text>
                   </Tooltip>
                   {formData.paymentType === 'cod' && (
-                    <Tooltip label="COD Charges">
-                      <Text>
-                        COD:{' '}
-                        {formatCurrency(highlights.cheapest?.total - highlights.cheapest?.baseRate)}
-                      </Text>
+                    <Tooltip label="COD included in rate card total">
+                      <Badge colorScheme="green" borderRadius="full" px={2}>
+                        COD included {formatCurrency(highlights.cheapest?.codIncluded)}
+                      </Badge>
                     </Tooltip>
                   )}
                 </HStack>
@@ -734,11 +755,20 @@ export default function RateCalculatorPage() {
                 <Text fontSize="lg" fontWeight="semibold">
                   {highlights.fastest?.displayName}
                 </Text>
-                <Text color="gray.500">Zone {highlights.fastest?.approxZone?.code || '—'}</Text>
+                <Badge colorScheme="orange" borderRadius="full" px={2} alignSelf="flex-start">
+                  Zone {highlights.fastest?.zoneUsed || '—'}
+                </Badge>
                 <Text fontSize="xl" fontWeight="bold" color="purple.500">
                   {highlights.fastest?.edd || '—'}
                 </Text>
-                <Text color="gray.600">Total: {formatCurrency(highlights.fastest?.total)}</Text>
+                <HStack spacing={2}>
+                  <Text color="gray.600">Rate card total: {formatCurrency(highlights.fastest?.total)}</Text>
+                  {formData.paymentType === 'cod' && (
+                    <Badge colorScheme="green" borderRadius="full" px={2}>
+                      COD included {formatCurrency(highlights.fastest?.codIncluded)}
+                    </Badge>
+                  )}
+                </HStack>
               </Stack>
             </Box>
           </Box>

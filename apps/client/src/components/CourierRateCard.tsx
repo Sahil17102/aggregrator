@@ -157,7 +157,8 @@ export default function CourierRateList({
                 : 0
           const codCharges = toChargeNumber(forward?.cod_charges)
           const isCOD = shipmentType === 'cod'
-          const platformTotal = isCOD ? freight + codCharges : freight
+          const codIncluded = isCOD ? codCharges : 0
+          const rateCardTotal = freight + codIncluded
           const providerFreight = toChargeNumber(courier?.provider_rate?.freight)
           const providerCod = toChargeNumber(courier?.provider_rate?.cod)
           const providerParts = providerFreight + providerCod
@@ -166,13 +167,9 @@ export default function CourierRateList({
             providerParts ||
             toChargeNumber(courier?.courier_cost_estimate ?? courier?.rateEstimate)
           const hasProviderQuote = providerTotal > 0
-          const finalCourierCharge =
-            toChargeNumber(courier?.final_courier_charge) ||
-            (toChargeNumber(courier?.seller_freight_charge ?? courier?.final_freight_charge) +
-              (isCOD ? codCharges : 0)) ||
-            platformTotal + providerTotal
           const eddText = courier?.edd ?? '-'
           const isClickable = Boolean(onSelect)
+          const zoneLabel = courier?.approxZone?.code || courier?.approxZone?.name || null
 
           return (
             <Grid size={{ xs: 12, sm: 6, xl: 4 }} key={courier.id}>
@@ -223,9 +220,9 @@ export default function CourierRateList({
                       >
                         {displayName}
                       </Typography>
-                      {courier?.approxZone?.name ? (
+                      {zoneLabel ? (
                         <Chip
-                          label={courier.approxZone.name}
+                          label={`Zone ${zoneLabel}`}
                           size="small"
                           sx={{
                             height: 22,
@@ -256,7 +253,7 @@ export default function CourierRateList({
                             variant="caption"
                             sx={{ color: brand.inkSoft, fontWeight: 800, display: 'block' }}
                           >
-                            Courier charge
+                            Rate card total
                           </Typography>
                           <Stack direction="row" alignItems="baseline" spacing={0.5}>
                             <BiRupee size={18} color={brand.accent} />
@@ -268,13 +265,48 @@ export default function CourierRateList({
                                 lineHeight: 1,
                               }}
                             >
-                              {formatAmount(finalCourierCharge)}
+                              {formatAmount(rateCardTotal)}
                             </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            <Chip
+                              label={
+                                codIncluded > 0
+                                  ? `COD included Rs ${formatAmount(codIncluded)}`
+                                  : 'No COD included'
+                              }
+                              size="small"
+                              sx={{
+                                height: 24,
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                background:
+                                  codIncluded > 0 ? alpha('#16A34A', 0.12) : alpha(brand.ink, 0.08),
+                                color: codIncluded > 0 ? '#15803D' : brand.inkSoft,
+                                border: `1px solid ${
+                                  codIncluded > 0 ? alpha('#16A34A', 0.18) : alpha(brand.ink, 0.08)
+                                }`,
+                              }}
+                            />
+                            {zoneLabel ? (
+                              <Chip
+                                label={`Zone ${zoneLabel}`}
+                                size="small"
+                                sx={{
+                                  height: 24,
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  background: alpha(brand.accent, 0.12),
+                                  color: brand.accent,
+                                  border: `1px solid ${alpha(brand.accent, 0.18)}`,
+                                }}
+                              />
+                            ) : null}
                           </Stack>
                           <Typography variant="caption" sx={{ color: brand.inkSoft, fontWeight: 600 }}>
                             {hasProviderQuote || !isDelhiveryCourier(courier)
-                              ? 'Final payable courier rate'
-                              : 'Live Delhivery quote unavailable'}
+                              ? 'Manual rate card amount. Delivery One quote is checked separately.'
+                              : 'Manual rate card amount. Live Delivery One quote unavailable.'}
                           </Typography>
                         </Stack>
                       </Grid>

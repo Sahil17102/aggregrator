@@ -10,14 +10,27 @@ import {
 } from '../models/schema/shippingRates'
 import { zones } from '../models/schema/zones'
 
-const DELHIVERY_PROVIDER = 'delhivery'
-const DELHIVERY_SURFACE_COURIER_ID = 99
-const DELHIVERY_SURFACE_COURIER_NAME = 'Delhivery Surface'
+const TARGET_PROVIDER = String(process.env.B2C_RATECARD_PROVIDER || 'delhivery')
+  .trim()
+  .toLowerCase()
+const TARGET_SURFACE_COURIER_ID = Number(process.env.B2C_RATECARD_COURIER_ID || 99)
+const TARGET_SURFACE_COURIER_NAME =
+  process.env.B2C_RATECARD_COURIER_NAME ||
+  (TARGET_PROVIDER === 'deliveryone' ? 'Delivery One Surface' : 'Delhivery Surface')
+const TARGET_LEGACY_COURIER_NAME_PATTERN =
+  TARGET_PROVIDER === 'deliveryone' ? '%delivery%one%' : '%delhivery%'
 const BUSINESS_TYPE = 'B2C'
 const MODE = 'Surface'
 const forceReseed =
   process.argv.includes('--force') ||
-  ['1', 'true', 'yes'].includes(String(process.env.FORCE_DELHIVERY_B2C_RESEED || '').toLowerCase())
+  ['1', 'true', 'yes'].includes(
+    String(
+      process.env.FORCE_CHOICE_MEE_B2C_RESEED ||
+        process.env.FORCE_DELHIVERY_B2C_RESEED ||
+        process.env.FORCE_DELIVERY_ONE_B2C_RESEED ||
+        '',
+    ).toLowerCase(),
+  )
 
 type RateSlab = {
   weight_from: number
@@ -170,13 +183,13 @@ async function ensurePlans() {
   return planMap
 }
 
-async function ensureDelhiverySurfaceCourier() {
+async function ensureSurfaceCourier() {
   await db
     .insert(couriers)
     .values({
-      id: DELHIVERY_SURFACE_COURIER_ID,
-      name: DELHIVERY_SURFACE_COURIER_NAME,
-      serviceProvider: DELHIVERY_PROVIDER,
+      id: TARGET_SURFACE_COURIER_ID,
+      name: TARGET_SURFACE_COURIER_NAME,
+      serviceProvider: TARGET_PROVIDER,
       businessType: ['b2c'],
       isEnabled: true,
       createdAt: new Date(),
@@ -185,7 +198,7 @@ async function ensureDelhiverySurfaceCourier() {
     .onConflictDoUpdate({
       target: [couriers.id, couriers.serviceProvider],
       set: {
-        name: DELHIVERY_SURFACE_COURIER_NAME,
+        name: TARGET_SURFACE_COURIER_NAME,
         businessType: ['b2c'],
         isEnabled: true,
         updatedAt: new Date(),
@@ -238,12 +251,12 @@ async function purgeExistingSurfaceRates(planIds: string[], zoneIds: string[]) {
         eq(shippingRates.business_type, 'b2c'),
         inArray(shippingRates.plan_id, planIds),
         inArray(shippingRates.zone_id, zoneIds),
-        eq(shippingRates.courier_id, DELHIVERY_SURFACE_COURIER_ID),
+        eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
         sql`(
-          lower(trim(coalesce(${shippingRates.service_provider}, ''))) = ${DELHIVERY_PROVIDER}
+          lower(trim(coalesce(${shippingRates.service_provider}, ''))) = ${TARGET_PROVIDER}
           or (
             trim(coalesce(${shippingRates.service_provider}, '')) = ''
-            and lower(trim(${shippingRates.courier_name})) like '%delhivery%'
+            and lower(trim(${shippingRates.courier_name})) like ${TARGET_LEGACY_COURIER_NAME_PATTERN}
           )
         )`,
         sql`lower(trim(${shippingRates.mode})) = 'surface'`,
@@ -276,9 +289,9 @@ async function normalizeLegacyBlankProviderRows(planIds: string[], zoneIds: stri
         eq(shippingRates.business_type, 'b2c'),
         inArray(shippingRates.plan_id, planIds),
         inArray(shippingRates.zone_id, zoneIds),
-        eq(shippingRates.courier_id, DELHIVERY_SURFACE_COURIER_ID),
+        eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
         sql`trim(coalesce(${shippingRates.service_provider}, '')) = ''`,
-        sql`lower(trim(${shippingRates.courier_name})) like '%delhivery%'`,
+        sql`lower(trim(${shippingRates.courier_name})) like ${TARGET_LEGACY_COURIER_NAME_PATTERN}`,
         sql`lower(trim(${shippingRates.mode})) = 'surface'`,
       ),
     )
@@ -295,9 +308,9 @@ async function normalizeLegacyBlankProviderRows(planIds: string[], zoneIds: stri
           eq(shippingRates.business_type, 'b2c'),
           eq(shippingRates.plan_id, row.plan_id),
           eq(shippingRates.zone_id, row.zone_id),
-          eq(shippingRates.courier_id, DELHIVERY_SURFACE_COURIER_ID),
+          eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
           eq(shippingRates.type, row.type),
-          sql`lower(trim(${shippingRates.service_provider})) = ${DELHIVERY_PROVIDER}`,
+          sql`lower(trim(${shippingRates.service_provider})) = ${TARGET_PROVIDER}`,
           sql`lower(trim(${shippingRates.mode})) = 'surface'`,
         ),
       )
@@ -314,8 +327,8 @@ async function normalizeLegacyBlankProviderRows(planIds: string[], zoneIds: stri
     await db
       .update(shippingRates)
       .set({
-        courier_name: DELHIVERY_SURFACE_COURIER_NAME,
-        service_provider: DELHIVERY_PROVIDER,
+        courier_name: TARGET_SURFACE_COURIER_NAME,
+        service_provider: TARGET_PROVIDER,
         mode: MODE,
         last_updated: new Date(),
       })
@@ -381,9 +394,9 @@ async function seedRates(
               eq(shippingRates.plan_id, plan.id),
               eq(shippingRates.business_type, 'b2c'),
               eq(shippingRates.zone_id, zone.id),
-              eq(shippingRates.courier_id, DELHIVERY_SURFACE_COURIER_ID),
+              eq(shippingRates.courier_id, TARGET_SURFACE_COURIER_ID),
               eq(shippingRates.type, type),
-              sql`lower(trim(${shippingRates.service_provider})) = ${DELHIVERY_PROVIDER}`,
+              sql`lower(trim(${shippingRates.service_provider})) = ${TARGET_PROVIDER}`,
               sql`lower(trim(${shippingRates.mode})) = 'surface'`,
             ),
           )
@@ -399,9 +412,9 @@ async function seedRates(
           .values({
             id: randomUUID(),
             plan_id: plan.id,
-            courier_id: DELHIVERY_SURFACE_COURIER_ID,
-            courier_name: DELHIVERY_SURFACE_COURIER_NAME,
-            service_provider: DELHIVERY_PROVIDER,
+            courier_id: TARGET_SURFACE_COURIER_ID,
+            courier_name: TARGET_SURFACE_COURIER_NAME,
+            service_provider: TARGET_PROVIDER,
             mode: MODE,
             business_type: 'b2c',
             min_weight: '0.50',
@@ -429,7 +442,7 @@ async function seedRates(
 async function main() {
   try {
     const planMap = await ensurePlans()
-    await ensureDelhiverySurfaceCourier()
+    await ensureSurfaceCourier()
     const zoneRows = await ensureZones()
     const planIds = Array.from(planMap.values()).map((plan) => plan.id)
     const zoneIds = zoneRows.map((zone) => zone.id)
@@ -438,17 +451,17 @@ async function main() {
     const { inserted, skippedExisting } = await seedRates(planMap, zoneRows)
 
     console.log(
-      `Updated Delhivery surface image rate card: removed ${removed} old rows, inserted ${inserted} missing Basic/Premium forward/RTO rows, skipped ${skippedExisting} existing manual rows.`,
+      `Updated ${TARGET_SURFACE_COURIER_NAME} image rate card: removed ${removed} old rows, inserted ${inserted} missing Basic/Premium forward/RTO rows, skipped ${skippedExisting} existing manual rows.`,
     )
     console.log(
       `Legacy blank-provider cleanup: normalized ${legacyCleanup.normalized}, removed ${legacyCleanup.removedDuplicates} duplicates.`,
     )
     if (!forceReseed) {
-      console.log('Existing Delhivery surface rows were preserved so manual admin edits are not overwritten.')
+      console.log(`Existing ${TARGET_SURFACE_COURIER_NAME} rows were preserved so manual admin edits are not overwritten.`)
     }
     console.log('Express/Air rates were not changed.')
   } catch (error) {
-    console.error('Delhivery B2C image rate card seed failed:', error)
+    console.error(`${TARGET_SURFACE_COURIER_NAME} B2C image rate card seed failed:`, error)
     process.exitCode = 1
   } finally {
     await pool.end()

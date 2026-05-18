@@ -33,8 +33,8 @@ const SAMPLE_PAYLOADS: Record<string, WebhookPayload> = {
       order_number: 'ORD-2024-001234',
       awb_number: 'AWB123456789',
       status: 'booked',
-      courier_partner: 'Delhivery',
-      integration_type: 'delhivery',
+      courier_partner: 'Delivery One',
+      integration_type: 'deliveryone',
       payment_type: 'prepaid',
       created_at: '2024-01-15T10:30:00.000Z',
     },
@@ -59,7 +59,7 @@ const SAMPLE_PAYLOADS: Record<string, WebhookPayload> = {
       order_number: 'ORD-2024-001234',
       awb_number: 'AWB123456789',
       status: 'shipped',
-      courier_partner: 'Delhivery',
+      courier_partner: 'Delivery One',
       shipped_at: '2024-01-15T12:00:00.000Z',
     },
   },
@@ -125,7 +125,7 @@ const SAMPLE_PAYLOADS: Record<string, WebhookPayload> = {
       status: 'booked',
       reverse_charge: 200.0,
       shipment_data: {
-        courier_partner: 'Delhivery',
+        courier_partner: 'Delivery One',
         tracking_url: 'https://tracking.example.com/AWB987654321',
       },
     },
@@ -141,7 +141,7 @@ const SAMPLE_PAYLOADS: Record<string, WebhookPayload> = {
       reason: 'Door closed',
       remarks: 'Delivery attempt failed - door closed',
       attempt_no: '1',
-      courier_partner: 'Delhivery',
+      courier_partner: 'Delivery One',
       updated_at: '2024-01-17T10:00:00.000Z',
     },
   },
@@ -337,4 +337,3 @@ export const SamplePayloadModal = ({
     </CustomDialog>
   )
 }
-

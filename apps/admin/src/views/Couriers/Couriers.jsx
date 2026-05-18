@@ -45,9 +45,6 @@ import { useState } from 'react'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 const providerOptions = [
-  { value: 'delhivery', label: 'Delhivery' },
-  { value: 'ekart', label: 'Ekart' },
-  { value: 'xpressbees', label: 'Xpressbees' },
   { value: 'deliveryone', label: 'Delivery One' },
 ]
 
@@ -258,38 +255,25 @@ const Couriers = () => {
   if (isLoading) return <Spinner size="md" />
   if (error) return <Text color="red.500">Failed to load couriers</Text>
 
-  // Check if there are Delhivery couriers and show info
-  const delhiveryCouriers = couriers.filter((c) => c.serviceProvider === 'delhivery')
-  const hasDelhiveryExpress = delhiveryCouriers.some((c) => c.id === 100)
-  const hasDelhiverySurface = delhiveryCouriers.some((c) => c.id === 99)
+  const deliveryOneCouriers = couriers.filter((c) => c.serviceProvider === 'deliveryone')
+  const hasDeliveryOneSurface = deliveryOneCouriers.some((c) => c.id === 99)
 
   return (
     <Flex direction="column" pt={{ base: '120px', md: '75px' }} gap={4}>
-      {/* Delhivery Service Info */}
-      {delhiveryCouriers.length > 0 && (
+      {deliveryOneCouriers.length > 0 && (
         <Alert status="info" borderRadius="md">
           <AlertIcon />
           <Box flex="1">
             <AlertTitle fontSize="sm" mb={1}>
-              Delhivery Service Information
+              Delivery One Service Information
             </AlertTitle>
             <AlertDescription fontSize="xs">
               <Text mb={1}>
-                <strong>Delhivery Express</strong> (ID: 100) - Uses{' '}
-                <Badge colorScheme="blue">Express</Badge> shipping mode (air transport)
+                <strong>Delivery One Surface</strong> (ID: 99) is the active courier option.
               </Text>
-              <Text>
-                <strong>Delhivery Surface</strong> (ID: 99) - Uses{' '}
-                <Badge colorScheme="green">Surface</Badge> shipping mode (road transport)
-              </Text>
-              {!hasDelhiveryExpress && (
+              {!hasDeliveryOneSurface && (
                 <Text mt={2} color="orange.600" fontSize="xs">
-                  ⚠️ Delhivery Express (ID: 100) not found
-                </Text>
-              )}
-              {!hasDelhiverySurface && (
-                <Text mt={2} color="orange.600" fontSize="xs">
-                  ⚠️ Delhivery Surface (ID: 99) not found
+                  Delivery One Surface (ID: 99) not found.
                 </Text>
               )}
             </AlertDescription>

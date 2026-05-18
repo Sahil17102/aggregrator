@@ -26,6 +26,7 @@ import {
   INTEGRATED_SERVICE_PROVIDERS,
   normalizeServiceProviderKey,
 } from '../../utils/courierProviders'
+import { DELIVERY_ONE_ALLOWED_COURIER_IDS } from '../../utils/delhiveryCourier'
 import { extractCodChargeBasisFromBody, extractOrderAmountFromBody } from '../../utils/orderAmount'
 
 export interface ShippingRateFilters {
@@ -153,6 +154,12 @@ export const getAllCouriersController = async (req: Request, res: Response) => {
         createdAt: couriers.createdAt,
       })
       .from(couriers)
+      .where(
+        and(
+          inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
+          inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS),
+        ),
+      )
       .orderBy(desc(couriers.createdAt))
 
     res.json({ success: true, data: courierList })
@@ -167,6 +174,8 @@ export const getAllCouriersListController = async (req: Request, res: Response) 
     const { search, serviceProvider, businessType } = req.query
 
     const whereClauses = []
+    whereClauses.push(inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]))
+    whereClauses.push(inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS))
 
     // Filter by search (name or id)
     if (search && typeof search === 'string' && search.trim()) {
@@ -387,30 +396,6 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
       )
 
     const defaults = {
-      delhivery: {
-        provider: 'delhivery',
-        apiBase: 'https://track.delhivery.com',
-        clientName: '',
-        hasApiKey: false,
-        apiKeyMasked: '',
-      },
-      ekart: {
-        provider: 'ekart',
-        apiBase: DEFAULT_EKART_BASE_URL,
-        clientId: '',
-        username: '',
-        hasPassword: false,
-        hasWebhookSecret: false,
-      },
-      xpressbees: {
-        provider: 'xpressbees',
-        apiBase: 'https://shipment.xpressbees.com',
-        username: '',
-        hasApiKey: false,
-        apiKeyMasked: '',
-        hasPassword: false,
-        hasWebhookSecret: false,
-      },
       deliveryOne: {
         provider: 'deliveryone',
         apiBase: 'https://track.delhivery.com',

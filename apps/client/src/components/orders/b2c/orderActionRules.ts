@@ -8,7 +8,7 @@ export type B2COrderActionShape = {
 }
 
 const B2C_CANCELLABLE_STATUSES = new Set(['pending', 'booked', 'confirmed', 'pickup_initiated'])
-const B2C_CANCELLABLE_PROVIDERS = new Set(['delhivery', 'deliveryone', 'ekart', 'xpressbees'])
+const B2C_CANCELLABLE_PROVIDERS = new Set(['deliveryone'])
 const B2C_MANIFESTABLE_STATUSES = new Set([
   'pending',
   'booked',
@@ -29,15 +29,11 @@ export const getB2CManifestProvider = (order: B2COrderActionShape) => {
   const integrationType = normalizeActionValue(order.integration_type)
   const courierPartner = normalizeActionValue(order.courier_partner)
 
-  if (integrationType.includes('xpressbees') || courierPartner.includes('xpressbees')) {
-    return 'xpressbees'
+  if (integrationType.includes('deliveryone') || courierPartner.includes('delivery one')) {
+    return 'deliveryone'
   }
 
-  if (integrationType.includes('ekart') || courierPartner.includes('ekart')) {
-    return 'ekart'
-  }
-
-  return 'delhivery'
+  return 'deliveryone'
 }
 
 export const isB2CManifestEligible = (order: B2COrderActionShape) => {

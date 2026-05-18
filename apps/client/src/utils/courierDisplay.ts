@@ -14,7 +14,8 @@ type CourierLike =
     }
 
 const DELHIVERY_DISPLAY_NAME = 'Delhivery'
-const DELHIVERY_LOGO = '/logo/integrations/delhivery-one.webp'
+const DELIVERY_ONE_DISPLAY_NAME = 'Delivery One'
+const DELIVERY_ONE_LOGO = '/logo/integrations/delhivery-one.webp'
 
 const normalizeToken = (value?: string | null) =>
   String(value || '')
@@ -36,31 +37,36 @@ const getCourierValues = (courier: CourierLike) => {
   ].filter(Boolean) as string[]
 }
 
+const isDeliveryOneValue = (value?: string | null) => {
+  const normalized = normalizeToken(value)
+  return normalized === 'deliveryone' || normalized === 'delivery1' || normalized === 'delhiveryone'
+}
+
+const isDelhiveryValue = (value?: string | null) => normalizeToken(value) === 'delhivery'
+
 export const isDelhiveryCourier = (courier: CourierLike) =>
-  getCourierValues(courier).some((value) => {
-    const normalized = normalizeToken(value)
-    return (
-      normalized === 'delhivery' ||
-      normalized === 'deliveryone' ||
-      normalized === 'delivery1' ||
-      normalized === 'delhiveryone'
-    )
-  })
+  getCourierValues(courier).some((value) => isDelhiveryValue(value) || isDeliveryOneValue(value))
 
 export const getCourierDisplayName = (courier: CourierLike, fallback = 'Unknown Courier') => {
-  if (isDelhiveryCourier(courier)) return DELHIVERY_DISPLAY_NAME
+  const values = getCourierValues(courier)
+  if (values.some(isDeliveryOneValue)) return DELIVERY_ONE_DISPLAY_NAME
+  if (values.some(isDelhiveryValue)) return DELHIVERY_DISPLAY_NAME
   if (typeof courier === 'string') return courier || fallback
   return courier?.displayName || courier?.name || fallback
 }
 
 export const getCourierLogo = (courier: CourierLike, fallback = defaultLogo) => {
-  if (isDelhiveryCourier(courier)) {
-    return courierLogos.Delhivery || DELHIVERY_LOGO
+  const values = getCourierValues(courier)
+  if (values.some(isDeliveryOneValue)) {
+    return courierLogos['Delivery One'] || courierLogos.deliveryone || DELIVERY_ONE_LOGO
+  }
+  if (values.some(isDelhiveryValue)) {
+    return courierLogos.Delhivery || DELIVERY_ONE_LOGO
   }
 
-  const values = getCourierValues(courier).map((value) => value.toLowerCase())
+  const normalizedValues = values.map((value) => value.toLowerCase())
   const logo = Object.entries(courierLogos || {}).find(([key]) =>
-    values.some((value) => value.includes(key.toLowerCase())),
+    normalizedValues.some((value) => value.includes(key.toLowerCase())),
   )?.[1]
 
   return logo || fallback
