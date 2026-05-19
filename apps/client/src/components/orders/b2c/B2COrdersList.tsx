@@ -50,6 +50,7 @@ import {
   getDocumentReference,
   getDownloadFileName,
   isB2CManifestEligible,
+  isB2CCancelledStatus,
   summarizeMessages,
   summarizeOrderNumbers,
 } from '../bulkActionUtils'
@@ -904,9 +905,9 @@ const B2COrdersList = () => {
       truncate: false,
       render: (_, row) => {
         const actions: ReactNode[] = []
-        const orderStatus = String(row.order_status || '').toLowerCase()
+        const orderStatus = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
 
-        if (orderStatus === 'cancelled') {
+        if (isB2CCancelledStatus(orderStatus)) {
           return (
             <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 800 }}>
               Cancelled

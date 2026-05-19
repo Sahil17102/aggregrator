@@ -31,6 +31,7 @@ export {
   BULK_MANIFEST_LIMIT,
   getB2CManifestIdentifier,
   getB2CManifestProvider,
+  isB2CCancelledStatus,
   isB2CManifestEligible,
 } from './b2c/orderActionRules'
 
