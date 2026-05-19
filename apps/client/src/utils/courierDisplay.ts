@@ -9,6 +9,7 @@ type CourierLike =
       courier_name?: string | null
       id?: string | number | null
       courier_id?: string | number | null
+      courierId?: string | number | null
       displayName?: string | null
       serviceProvider?: string | null
       service_provider?: string | null
@@ -78,7 +79,7 @@ const getDeliveryOneVariant = (courier: CourierLike) => {
   }
 
   if (typeof courier !== 'string' && courier) {
-    const courierId = Number(courier.id ?? courier.courier_id)
+    const courierId = Number(courier.id ?? courier.courier_id ?? courier.courierId)
     if (courierId === DELIVERY_ONE_SURFACE_ID) return 'surface'
     if (courierId === DELIVERY_ONE_EXPRESS_ID) return 'express'
   }

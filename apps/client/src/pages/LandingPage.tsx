@@ -20,7 +20,7 @@ import { usePublicLandingStats } from '../hooks/useDashboard'
 import { brand, brandGradients, brandIdentity } from '../theme/brand'
 
 const partnerLogos = [
-  { alt: 'Delhivery logo', src: '/logo/integrations/delhivery.png' },
+  { alt: 'Delivery One logo', src: '/logo/integrations/delhivery-one.webp' },
   { alt: 'Blue Dart logo', src: '/logo/integrations/bluedart.png' },
   { alt: 'Shadowfax logo', src: '/logo/integrations/shadowfax.png' },
   { alt: 'Xpressbees logo', src: '/logo/integrations/xpressbees.png' },

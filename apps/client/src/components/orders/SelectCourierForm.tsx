@@ -6,7 +6,8 @@ import {
   useAvailableCouriers,
   type UseAvailableCouriersParams,
 } from '../../hooks/Integrations/useCouriers'
-import { courierLogos, defaultLogo } from '../../utils/constants'
+import { defaultLogo } from '../../utils/constants'
+import { getCourierDisplayName, getCourierLogo } from '../../utils/courierDisplay'
 import { normalizeParcelWeightInputToGrams } from '../../utils/weight'
 import { toast } from '../UI/Toast'
 import type { Box as B2BBox, B2BFormData } from './b2b/B2BOrderForm'
@@ -151,7 +152,6 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   const formatCurrency = (value?: number | string | null) => `₹${Number(value || 0).toFixed(2)}`
   const formatWeightKg = (value?: number | null) =>
     value ? `${(Number(value) / 1000).toFixed(2)} kg` : '—'
-  const getCourierDisplayName = (courier: { displayName?: string; name?: string }) => courier?.displayName || courier?.name || 'Courier'
   const toChargeNumber = (value: unknown) => {
     const parsed = Number(value ?? 0)
     return Number.isFinite(parsed) ? parsed : 0
@@ -572,11 +572,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                           }}
                         >
                           <img
-                            src={
-                              Object.entries(courierLogos)?.find(([key]) =>
-                                courier?.name?.toLowerCase().includes(key.toLowerCase()),
-                              )?.[1] ?? defaultLogo
-                            }
+                            src={getCourierLogo(courier, defaultLogo)}
                             alt={courier?.name}
                             style={{ width: 34, height: 34, objectFit: 'contain' }}
                           />

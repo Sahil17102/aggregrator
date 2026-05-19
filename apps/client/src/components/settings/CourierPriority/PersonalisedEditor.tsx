@@ -2,7 +2,8 @@
 
 import { Avatar, Box, Chip, Paper, Typography } from '@mui/material'
 import React, { useState } from 'react'
-import { courierLogos, defaultLogo } from '../../../utils/constants'
+import { defaultLogo } from '../../../utils/constants'
+import { getCourierLogo } from '../../../utils/courierDisplay'
 
 export interface PriorityCourier {
   courierId: number
@@ -40,10 +41,7 @@ const PersonalisedEditor: React.FC<PersonalisedEditorProps> = ({ couriers, onCha
     setDraggedIndex(null)
   }
 
-  const getLogo = (courier: PriorityCourier) =>
-    Object.entries(courierLogos || {}).find(([key]) =>
-      courier?.name?.toLowerCase().includes(key.toLowerCase()),
-    )?.[1] ?? defaultLogo
+  const getLogo = (courier: PriorityCourier) => getCourierLogo(courier, defaultLogo)
 
   return (
     <Box mt={4} display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2}>

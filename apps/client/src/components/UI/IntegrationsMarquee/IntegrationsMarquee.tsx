@@ -7,7 +7,7 @@ const logosRow1 = [
   '/logo/integrations/amazon.png',
   '/logo/integrations/aramex.webp',
   '/logo/integrations/bluedart.png',
-  '/logo/integrations/delhivery.png',
+  '/logo/integrations/delhivery-one.webp',
   '/logo/integrations/magento.png',
   '/logo/integrations/dtdc.png',
 ]
@@ -17,7 +17,7 @@ const logosRow2 = [
   '/logo/integrations/ekart.png',
   '/logo/integrations/shopify.webp',
   '/logo/integrations/woocommerce.webp',
-  '/logo/integrations/delhivery.png',
+  '/logo/integrations/delhivery-one.webp',
   '/logo/integrations/bluedart.png',
 ]
 

@@ -763,9 +763,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                           const mode = getCompactCourierMode(courier)
                           const zoneLabel = getZoneChipLabel(courier)
                           const logo = getCourierLogo(courier, defaultLogo)
-                          const isDelhivery =
-                            displayName.toLowerCase().includes('delhivery') ||
-                            displayName.toLowerCase().includes('delivery')
+                          const hasLogo = Boolean(logo && logo !== defaultLogo)
                           const freight = getCompactFreight(courier)
                           const cod = getCompactCod(courier)
 
@@ -789,8 +787,8 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                     width: 36,
                                     height: 36,
                                     borderRadius: '8px',
-                                    bgcolor: isDelhivery ? '#5F6266' : '#FFFFFF',
-                                    color: '#FFFFFF',
+                                    bgcolor: '#FFFFFF',
+                                    color: ui.muted,
                                     display: 'grid',
                                     placeItems: 'center',
                                     fontSize: '0.62rem',
@@ -799,15 +797,15 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                     flexShrink: 0,
                                   }}
                                 >
-                                  {isDelhivery || !logo || logo === defaultLogo ? (
-                                    'DEL'
-                                  ) : (
+                                  {hasLogo ? (
                                     <Box
                                       component="img"
                                       src={logo}
                                       alt={displayName}
-                                      sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.35 }}
+                                      sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.25 }}
                                     />
+                                  ) : (
+                                    'DEL'
                                   )}
                                 </Box>
                                 <Stack spacing={0.35} sx={{ minWidth: 0 }}>

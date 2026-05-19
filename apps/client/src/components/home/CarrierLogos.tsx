@@ -6,7 +6,7 @@ import { brand, brandGradients } from '../../theme/brand'
 const carriers = [
   { name: 'Amazon', logo: '/logo/integrations/amazon.png' },
   { name: 'BlueDart', logo: '/logo/integrations/bluedart.png' },
-  { name: 'Delhivery', logo: '/logo/integrations/delhivery.png' },
+  { name: 'Delivery One', logo: '/logo/integrations/delhivery-one.webp' },
   { name: 'DTDC', logo: '/logo/integrations/dtdc.png' },
   { name: 'Ekart', logo: '/logo/integrations/ekart.png' },
   { name: 'Shadowfax', logo: '/logo/integrations/shadowfax.png' },
