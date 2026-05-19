@@ -19,9 +19,12 @@ import { DelhiveryManifestError, HttpError } from '../../utils/classes'
 import {
   DELIVERY_ONE_ALLOWED_COURIER_IDS,
   DELHIVERY_ALLOWED_COURIER_IDS,
+  getDelhiveryModeCodeByShippingMode,
   getDelhiveryShippingModeByCourierId,
+  getDelhiveryShippingModeByModeCode,
   isSupportedDeliveryOneCourierId,
   isSupportedDelhiveryCourierId,
+  normalizeDelhiveryShippingMode,
   normalizeCourierId,
 } from '../../utils/delhiveryCourier'
 import { getBucketName } from '../../utils/functions'
@@ -7077,6 +7080,141 @@ export const generateManifestService = async (params: {
           )
         }
 
+        const getDeliveryOneLabelPackage = (labelData: any) => {
+          const raw = labelData?.raw ?? labelData?.data ?? labelData
+          const rawPackages = raw?.packages ?? raw?.data?.packages ?? labelData?.packages
+          const packages: any[] = Array.isArray(rawPackages)
+            ? rawPackages
+            : rawPackages
+              ? [rawPackages]
+              : []
+
+          return packages[0] ?? (raw && typeof raw === 'object' ? raw : null)
+        }
+
+        const resolveDeliveryOneActualMode = (meta: any) => {
+          const modeValue =
+            meta?.mot ??
+            meta?.mode ??
+            meta?.shipping_mode ??
+            meta?.shippingMode ??
+            meta?.service_mode ??
+            meta?.serviceMode ??
+            meta?.service_type ??
+            meta?.serviceType ??
+            null
+
+          return getDelhiveryShippingModeByModeCode(modeValue) ||
+            normalizeDelhiveryShippingMode(modeValue)
+        }
+
+        const assertDeliveryOneBookedMode = async ({
+          order,
+          waybill,
+          requestedMode,
+        }: {
+          order: any
+          waybill: string
+          requestedMode: unknown
+        }) => {
+          const expectedMode = normalizeDelhiveryShippingMode(requestedMode)
+          const expectedModeCode = getDelhiveryModeCodeByShippingMode(expectedMode)
+
+          if (!expectedModeCode) {
+            return {
+              labelPackage: null as any,
+              actualMode: null as 'Express' | 'Surface' | null,
+              actualModeCode: null as 'E' | 'S' | null,
+            }
+          }
+
+          if (expectedMode !== 'Express') {
+            return {
+              labelPackage: null as any,
+              actualMode: expectedMode,
+              actualModeCode: expectedModeCode,
+            }
+          }
+
+          let labelData: any
+          try {
+            labelData = await deliveryOneManifestService!.generateLabel(waybill, {
+              pdf: false,
+            })
+          } catch (verifyErr: any) {
+            if (expectedMode === 'Express') {
+              try {
+                await deliveryOneManifestService!.cancelShipment(waybill)
+              } catch (cancelErr: any) {
+                console.warn('[Delivery One] Failed to cancel unverified Express shipment', {
+                  order_number: order.order_number,
+                  waybill,
+                  message: cancelErr?.message || cancelErr,
+                })
+              }
+            }
+
+            throw new DelhiveryManifestError(
+              502,
+              `Delivery One booked order ${order.order_number}, but the booked mode could not be verified. The AWB was cancelled and the manifest was stopped.`,
+              {
+                order_number: order.order_number,
+                waybill,
+                expected_mode: expectedMode,
+                verification_error: verifyErr?.message || verifyErr,
+              },
+            )
+          }
+
+          const labelPackage = getDeliveryOneLabelPackage(labelData)
+          const actualMode = resolveDeliveryOneActualMode(labelPackage)
+          const actualModeCode = getDelhiveryModeCodeByShippingMode(actualMode)
+
+          if (expectedMode === 'Express' && actualModeCode !== expectedModeCode) {
+            try {
+              await deliveryOneManifestService!.cancelShipment(waybill)
+            } catch (cancelErr: any) {
+              console.warn('[Delivery One] Failed to cancel wrong-mode shipment', {
+                order_number: order.order_number,
+                waybill,
+                expectedMode,
+                actualMode,
+                message: cancelErr?.message || cancelErr,
+              })
+            }
+
+            throw new DelhiveryManifestError(
+              502,
+              `Delivery One booked order ${order.order_number} as ${
+                actualMode || 'unknown mode'
+              } instead of ${expectedMode}. The AWB was cancelled and the manifest was stopped.`,
+              {
+                order_number: order.order_number,
+                waybill,
+                expected_mode: expectedMode,
+                actual_mode: actualMode,
+                actual_mot: labelPackage?.mot ?? null,
+              },
+            )
+          }
+
+          if (actualModeCode && actualModeCode !== expectedModeCode) {
+            console.warn('[Delivery One] Booked mode differs from requested mode', {
+              order_number: order.order_number,
+              waybill,
+              expectedMode,
+              actualMode,
+              actualMot: labelPackage?.mot ?? null,
+            })
+          }
+
+          return {
+            labelPackage,
+            actualMode,
+            actualModeCode,
+          }
+        }
+
         const buildDeliveryOneManifestParams = (order: any): ShipmentParams => {
           const pickupDetails = normalizePickupDetails(order.pickup_details) as any
           const rtoDetails = normalizePickupDetails(order.rto_details) as any
@@ -7681,13 +7819,26 @@ export const generateManifestService = async (params: {
               deliveryOneShipmentData?.upload_wbn ??
               deliveryOneShipmentData?.shipment_id ??
               deliveryOneAwb
+            const bookedModeVerification = await assertDeliveryOneBookedMode({
+              order,
+              waybill: deliveryOneAwb,
+              requestedMode: deliveryOneShipmentParams.shipping_mode ?? order.shipping_mode,
+            })
+            const labelPackage = bookedModeVerification.labelPackage
             const deliveryOneSortCode =
+              labelPackage?.sort_code ??
+              labelPackage?.sortCode ??
+              labelPackage?.routing_code ??
+              labelPackage?.routingCode ??
+              labelPackage?.destination_code ??
+              labelPackage?.destinationCode ??
               shipmentPackage?.sort_code ??
               shipmentPackage?.sortCode ??
               shipmentPackage?.routing_code ??
               shipmentPackage?.routingCode ??
               null
             const deliveryOneShippingMode =
+              bookedModeVerification.actualMode ??
               deliveryOneShipmentData?.shipping_mode ??
               shipmentPackage?.shipping_mode ??
               shipmentPackage?.service_mode ??
@@ -7714,6 +7865,7 @@ export const generateManifestService = async (params: {
             order.courier_partner = 'Delivery One'
             order.shipping_mode = deliveryOneShippingMode
             order.sort_code = deliveryOneSortCode
+            order.deliveryone_label_meta = labelPackage ?? undefined
 
             try {
               const labelKey = await generateLabelForOrder(order, order.user_id, tx)

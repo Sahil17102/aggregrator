@@ -42,3 +42,31 @@ export const getDelhiveryShippingModeByCourierId = (
   if (id === DELHIVERY_COURIER_IDS.SURFACE) return 'Surface'
   return null
 }
+
+export const normalizeDelhiveryShippingMode = (
+  value: unknown,
+): 'Express' | 'Surface' | null => {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (!normalized) return null
+  if (['e', 'express', 'air'].includes(normalized)) return 'Express'
+  if (['s', 'surface'].includes(normalized)) return 'Surface'
+  return null
+}
+
+export const getDelhiveryModeCodeByShippingMode = (
+  value: unknown,
+): 'E' | 'S' | null => {
+  const mode = normalizeDelhiveryShippingMode(value)
+  if (mode === 'Express') return 'E'
+  if (mode === 'Surface') return 'S'
+  return null
+}
+
+export const getDelhiveryShippingModeByModeCode = (
+  value: unknown,
+): 'Express' | 'Surface' | null => {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (['e', 'express', 'air'].includes(normalized)) return 'Express'
+  if (['s', 'surface'].includes(normalized)) return 'Surface'
+  return null
+}

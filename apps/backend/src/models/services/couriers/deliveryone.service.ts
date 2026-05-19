@@ -2,7 +2,9 @@ import axios from 'axios'
 import qs from 'qs'
 import { DelhiveryManifestError, HttpError } from '../../../utils/classes'
 import {
+  getDelhiveryModeCodeByShippingMode,
   getDelhiveryShippingModeByCourierId,
+  normalizeDelhiveryShippingMode,
   normalizeCourierId,
 } from '../../../utils/delhiveryCourier'
 import { DeliveryOneConfig, getEffectiveCourierConfig } from '../courierCredentials.service'
@@ -2229,8 +2231,9 @@ export class DeliveryOneService {
 
     const selectedShippingMode =
       getDelhiveryShippingModeByCourierId(normalizeCourierId(params.courier_id)) ||
-      sanitizeString((params as any).shipping_mode) ||
+      normalizeDelhiveryShippingMode((params as any).shipping_mode) ||
       'Surface'
+    const selectedModeCode = getDelhiveryModeCodeByShippingMode(selectedShippingMode)
     const paymentType = sanitizeString(params.payment_type).toLowerCase()
     const paymentMode =
       paymentType === 'cod'
@@ -2315,6 +2318,7 @@ export class DeliveryOneService {
       shipment_length: toPositiveNumber(params.package_length ?? params.length, 10),
       weight: toPositiveNumber(params.package_weight ?? params.weight, 0.5),
       shipping_mode: selectedShippingMode,
+      mot: selectedModeCode,
       address_type: sanitizeString(params.address_type),
     }
 
@@ -2384,6 +2388,7 @@ export class DeliveryOneService {
       paymentMode,
       pickupLocation: pickupLocationName,
       shippingMode: selectedShippingMode,
+      mot: selectedModeCode,
       mps: isMps,
       shipmentCount: shipments.length,
       hasWaybills: waybills.length,
