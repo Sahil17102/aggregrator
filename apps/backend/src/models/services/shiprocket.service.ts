@@ -689,7 +689,7 @@ const isKashmirLocation = (loc: LocRow | null) => {
  * Determine B2C zone classification for a shipment
  *
  * Priority order (most specific → broadest):
- *  1. Kashmir
+ *  1. Kashmir to Kashmir
  *  2. Within City (city + state must both match)
  *  3. Within State (same state, different city)
  *  4. Metro to Metro (different metro cities, cross-state or same state)
@@ -703,9 +703,9 @@ const determineB2CZoneKey = (
   if (!origin || !destination) {
     return { key: 'ROI', reason: 'origin or destination missing' }
   }
-  // 1. Kashmir gets its own rate bucket; other special-zone tags continue below.
-  if (isKashmirLocation(origin) || isKashmirLocation(destination)) {
-    return { key: 'KASHMIR', reason: 'Kashmir/Ladakh origin or destination' }
+  // 1. Kashmir gets its own rate bucket only when both ends are in Kashmir/Ladakh.
+  if (isKashmirLocation(origin) && isKashmirLocation(destination)) {
+    return { key: 'KASHMIR', reason: 'Kashmir/Ladakh origin and destination' }
   }
 
   // 2. Within City (requires same city + same state)

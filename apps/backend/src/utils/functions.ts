@@ -187,8 +187,8 @@ export const determineB2CZone = (origin: LocationInfo, destination: LocationInfo
     return state.includes('kashmir') || state.includes('ladakh')
   }
 
-  // 1. Kashmir has its own zone and should not fall into generic special-zone pricing.
-  if (isKashmirLocation(origin) || isKashmirLocation(destination)) {
+  // 1. Kashmir-to-Kashmir has its own zone and should not fall into same-state pricing.
+  if (isKashmirLocation(origin) && isKashmirLocation(destination)) {
     return 'KASHMIR'
   }
 

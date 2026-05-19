@@ -68,8 +68,8 @@ function determineB2CZoneKey(
   if (!origin || !destination) {
     return { key: 'ROI', reason: 'origin or destination missing' }
   }
-  if (isKashmirLocation(origin) || isKashmirLocation(destination)) {
-    return { key: 'KASHMIR', reason: 'Kashmir/Ladakh origin or destination' }
+  if (isKashmirLocation(origin) && isKashmirLocation(destination)) {
+    return { key: 'KASHMIR', reason: 'Kashmir/Ladakh origin and destination' }
   }
   if (
     origin.city &&

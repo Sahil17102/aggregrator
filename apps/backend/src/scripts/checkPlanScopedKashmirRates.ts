@@ -130,7 +130,7 @@ async function assertCalculatorLocalFallback(userId: string) {
     const results = await fetchAvailableCouriersWithRates(
       {
         origin: 193123,
-        destination: 110001,
+        destination: 190008,
         payment_type: 'cod',
         order_amount: 2500,
         cod_charge_basis: 2500,
@@ -189,7 +189,7 @@ async function main() {
         label: 'Basic within Kashmir surface',
         userId: basicUserId,
         originPincode: '193123',
-        destinationPincode: '110001',
+        destinationPincode: '190008',
         mode: 'surface' as const,
         expected: [80, 100, 150, 200, 230, 260, 280],
         expectedZoneCode: 'KASHMIR',
@@ -198,7 +198,7 @@ async function main() {
         label: 'Premium within Kashmir surface',
         userId: premiumUserId,
         originPincode: '193123',
-        destinationPincode: '110001',
+        destinationPincode: '190008',
         mode: 'surface' as const,
         expected: [70, 85, 115, 165, 200, 225, 250],
         expectedZoneCode: 'KASHMIR',
@@ -218,6 +218,24 @@ async function main() {
         destinationPincode: '400001',
         mode: 'surface' as const,
         expected: [85, 115, 180, 250, 300, 360, 400],
+      },
+      {
+        label: 'Basic Kashmir to outside surface',
+        userId: basicUserId,
+        originPincode: '193123',
+        destinationPincode: '110001',
+        mode: 'surface' as const,
+        expected: [95, 140, 195, 260, 320, 380, 430],
+        expectedNotZoneCode: 'KASHMIR',
+      },
+      {
+        label: 'Premium Kashmir to outside surface',
+        userId: premiumUserId,
+        originPincode: '193123',
+        destinationPincode: '110001',
+        mode: 'surface' as const,
+        expected: [85, 115, 180, 250, 300, 360, 400],
+        expectedNotZoneCode: 'KASHMIR',
       },
       {
         label: 'Basic non-Kashmir special-zone surface',
@@ -264,6 +282,14 @@ async function main() {
       ) {
         throw new Error(
           `${group.label}: expected zone ${group.expectedZoneCode}, received ${zoneCode}`,
+        )
+      }
+      if (
+        group.expectedNotZoneCode &&
+        zoneCode.trim().toUpperCase() === group.expectedNotZoneCode
+      ) {
+        throw new Error(
+          `${group.label}: expected a non-${group.expectedNotZoneCode} zone, received ${zoneCode}`,
         )
       }
 
