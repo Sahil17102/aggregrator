@@ -12,7 +12,10 @@ import {
   normalizeServiceProviderKey,
   supportedServiceProviderList,
 } from '../../utils/courierProviders'
-import { DELIVERY_ONE_ALLOWED_COURIER_IDS } from '../../utils/delhiveryCourier'
+import {
+  DELHIVERY_COURIER_IDS,
+  DELIVERY_ONE_ALLOWED_COURIER_IDS,
+} from '../../utils/delhiveryCourier'
 import {
   fetchShippingRateCodSlabs,
   fetchShippingRateSlabs,
@@ -131,6 +134,18 @@ const normalizeZoneLookupKey = (value: unknown) =>
   String(value ?? '')
     .trim()
     .toLowerCase()
+
+const getDeliveryOneModeFromCourierName = (value: unknown) => {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+
+  if (!normalized) return ''
+  if (normalized.includes('surface') || normalized.includes('ground')) return 'surface'
+  if (normalized.includes('express') || normalized.includes('air')) return 'air'
+  return ''
+}
 
 const getZonePayloadKeys = (zone: Pick<typeof zones.$inferSelect, 'id' | 'code' | 'name'>) =>
   [
@@ -277,7 +292,20 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
     : []
 
   if (filters.courier_name?.length) {
-    conditions.push(inArray(shippingRates.courier_name, filters.courier_name))
+    const courierNameConditions: any[] = [inArray(shippingRates.courier_name, filters.courier_name)]
+    const requestedDeliveryOneModes = new Set(
+      filters.courier_name.map(getDeliveryOneModeFromCourierName).filter(Boolean),
+    )
+
+    if (requestedDeliveryOneModes.has('surface')) {
+      courierNameConditions.push(eq(shippingRates.courier_id, DELHIVERY_COURIER_IDS.SURFACE))
+    }
+
+    if (requestedDeliveryOneModes.has('air')) {
+      courierNameConditions.push(eq(shippingRates.courier_id, DELHIVERY_COURIER_IDS.EXPRESS))
+    }
+
+    conditions.push(or(...courierNameConditions)!)
   }
 
   if (filters.min_weight !== undefined && filters.business_type !== 'b2c') {

@@ -30,6 +30,7 @@ import { usePickupAddresses } from '../../../hooks/Pickup/usePickupAddresses'
 import { usePresignedDownloadMutation } from '../../../hooks/Uploads/usePresignedDownloadUrls'
 import { useKycVerification } from '../../../hooks/User/useKycVerification'
 import type { B2COrder } from '../../../types/generic.types'
+import { getCourierDisplayName } from '../../../utils/courierDisplay'
 import { FilterBar, type FilterField } from '../../FilterBar'
 import { toast } from '../../UI/Toast'
 import StatusChip from '../../UI/chip/StatusChip'
@@ -690,7 +691,10 @@ const B2COrdersList = () => {
       label: 'Courier',
       type: 'select',
       options:
-        couriers?.map((c: { name: string; id: string }) => ({ label: c.name, value: c.id })) ?? [],
+        couriers?.map((c: { name: string; id: string | number }) => ({
+          label: getCourierDisplayName(c),
+          value: String(c.id),
+        })) ?? [],
       isAdvanced: true,
     },
     {

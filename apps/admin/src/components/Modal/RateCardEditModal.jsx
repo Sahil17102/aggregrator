@@ -25,6 +25,21 @@ const normalizeMode = (value) => {
   if (['surface', 's', 'ground'].includes(raw)) return 'surface'
   return raw
 }
+const getDeliveryOneModeByCourierId = (courierId) => {
+  const id = Number(courierId)
+  if (id === 99) return 'surface'
+  if (id === 100) return 'air'
+  return ''
+}
+const getCourierDefaultMode = (courier) =>
+  normalizeMode(courier?.mode || courier?.shipping_mode || courier?.service_type) ||
+  getDeliveryOneModeByCourierId(courier?.id ?? courier?.courier_id)
+const getModeLabel = (mode) => {
+  const normalizedMode = normalizeMode(mode)
+  if (normalizedMode === 'air') return 'Air'
+  if (normalizedMode === 'surface') return 'Surface'
+  return ''
+}
 const makeCourierKey = (courierId, serviceProvider) =>
   `${courierId || ''}__${normalizeProvider(serviceProvider)}`
 
@@ -503,21 +518,29 @@ export const RateCardEditModal = ({
                 )
                 const courierId = selectedCourier?.id?.toString() || ''
                 const courierName = selectedCourier?.name || ''
+                const courierMode = getCourierDefaultMode(selectedCourier)
                 handleChange('courier_key', courierKey)
                 handleChange('courier_id', courierId)
                 handleChange('courier_name', courierName)
+                handleChange('mode', courierMode)
                 // service_provider will be set from selectedCourier in handleSave
               }}
             >
-              {availableCouriers.map((c) => (
-                <option
-                  key={makeCourierKey(c.id, c.serviceProvider || c.service_provider || '')}
-                  value={makeCourierKey(c.id, c.serviceProvider || c.service_provider || '')}
-                >
-                  {getCourierDisplayName(c)}{' '}
-                  {c.serviceProvider ? `(${getProviderDisplayName(c.serviceProvider)})` : ''}
-                </option>
-              ))}
+              {availableCouriers.map((c) => {
+                const defaultMode = getCourierDefaultMode(c)
+                const modeLabel = getModeLabel(defaultMode)
+
+                return (
+                  <option
+                    key={makeCourierKey(c.id, c.serviceProvider || c.service_provider || '')}
+                    value={makeCourierKey(c.id, c.serviceProvider || c.service_provider || '')}
+                  >
+                    {getCourierDisplayName(c)}
+                    {modeLabel ? ` - ${modeLabel}` : ''}{' '}
+                    {c.serviceProvider ? `(${getProviderDisplayName(c.serviceProvider)})` : ''}
+                  </option>
+                )
+              })}
             </Select>
             <Text fontSize="xs" color="gray.500" mt={1}>
               Select the courier for which you want to add rates. Service provider will be

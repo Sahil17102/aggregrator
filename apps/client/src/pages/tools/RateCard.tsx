@@ -56,6 +56,18 @@ interface ShippingRate {
   }
 }
 
+type CourierOption = string | {
+  id?: string | number
+  courier_id?: string | number
+  name?: string | null
+  courier_name?: string | null
+  displayName?: string | null
+  serviceProvider?: string | null
+  service_provider?: string | null
+  mode?: string | null
+  shipping_mode?: string | null
+}
+
 const getZoneLookupKeys = (zone: { id?: string; code?: string; name?: string }) =>
   [
     zone?.id,
@@ -243,6 +255,18 @@ const RateCard = () => {
   const { data, isLoading, isError } = useShippingRates({ ...filters, businessType: businessType })
 
   const rates: ShippingRate[] = data || []
+  const courierOptions =
+    (couriers as CourierOption[] | undefined)?.map((courier) => {
+      const value =
+        typeof courier === 'string'
+          ? courier
+          : courier.name || courier.courier_name || courier.displayName || ''
+
+      return {
+        label: getCourierDisplayName(courier),
+        value,
+      }
+    }).filter((option) => option.value) || []
 
   console.log('rates', rates)
 
@@ -300,7 +324,7 @@ const RateCard = () => {
       name: 'courier',
       label: 'Courier',
       type: 'multiselect',
-      options: couriers?.map((c: string) => ({ label: getCourierDisplayName(c), value: c })) || [],
+      options: courierOptions,
     },
     { name: 'min_weight', label: 'Min Weight (kg)', type: 'text', placeholder: 'Enter min weight' },
   ]

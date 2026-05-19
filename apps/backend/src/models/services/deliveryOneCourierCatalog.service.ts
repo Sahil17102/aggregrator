@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { db } from '../client'
 import { couriers } from '../schema/couriers'
 import { DELHIVERY_COURIER_IDS } from '../../utils/delhiveryCourier'
@@ -33,7 +34,13 @@ export const ensureDeliveryOneCouriers = async () => {
         updatedAt: new Date(),
       })),
     )
-    .onConflictDoNothing({
+    .onConflictDoUpdate({
       target: [couriers.id, couriers.serviceProvider],
+      set: {
+        name: sql`excluded.name`,
+        businessType,
+        isEnabled: true,
+        updatedAt: new Date(),
+      },
     })
 }
