@@ -176,7 +176,9 @@ function RouteAssetRecovery() {
 
 function RoutedApp() {
   const location = useLocation()
-  const routeKey = `${location.pathname}${location.search}${location.hash}`
+  const routeKey = [location.key, location.pathname, location.search, location.hash]
+    .filter(Boolean)
+    .join(':')
 
   return (
     <>
@@ -185,7 +187,7 @@ function RoutedApp() {
       <RouteAssetRecovery />
       <RouteErrorBoundary resetKey={routeKey}>
         <Suspense fallback={<FullScreenLoader />}>
-          <Routes>
+          <Routes location={location} key={routeKey}>
           {/* public */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />

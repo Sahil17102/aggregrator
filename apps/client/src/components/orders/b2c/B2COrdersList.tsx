@@ -15,9 +15,9 @@ import {
   useTheme,
 } from '@mui/material'
 import moment from 'moment'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { MdAssignment, MdLocalOffer, MdReceipt } from 'react-icons/md'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { generateManifestService } from '../../../api/order.service'
 import { useAllCouriersWithDetails } from '../../../hooks/Integrations/useCouriers'
 import {
@@ -129,6 +129,7 @@ const shippingStatusMap: Record<string, string> = {
 
 const B2COrdersList = () => {
   const theme = useTheme()
+  const location = useLocation()
   const isXs = useMediaQuery(theme.breakpoints.down('sm')) // mobile
   const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md')) // tablet
   const isMd = useMediaQuery(theme.breakpoints.between('md', 'lg')) // small desktop
@@ -176,6 +177,14 @@ const B2COrdersList = () => {
   const { mutate: createReverse } = useCreateReverseShipment()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reverseOrder, setReverseOrder] = useState<any | null>(null)
+
+  useEffect(() => {
+    setDrawerOpen(false)
+    setReverseOrder(null)
+    setManifestScheduleOpen(false)
+    setPendingManifestRequest(null)
+  }, [location.pathname, location.search, location.hash])
+
   const orders: B2COrder[] = data?.orders || []
   const selectedOrders: B2COrder[] = orders.filter((order) => selectedOrderIds.includes(order.id))
   const manifestValidationMessage =

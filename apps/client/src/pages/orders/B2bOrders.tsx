@@ -1,5 +1,6 @@
 import { Button, Stack, useMediaQuery, useTheme } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { FilterBar, type FilterField } from '../../components/FilterBar'
 import CustomDrawer from '../../components/UI/drawer/CustomDrawer'
 import B2BOrderForm from '../../components/orders/b2b/B2BOrderForm'
@@ -8,6 +9,7 @@ import { statusColorMap } from '../../components/orders/b2c/B2COrdersList'
 import { useKycVerification } from '../../hooks/User/useKycVerification'
 
 const B2bOrders = () => {
+  const location = useLocation()
   const [page, setPage] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -55,6 +57,10 @@ const B2bOrders = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { checkKycBeforeAction } = useKycVerification()
+
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [location.pathname, location.search, location.hash])
 
   const handleCreateB2BOrder = () => {
     checkKycBeforeAction(() => {

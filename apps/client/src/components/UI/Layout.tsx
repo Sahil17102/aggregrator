@@ -15,7 +15,9 @@ export default function Layout() {
   const [pinned, setPinned] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const routeContentKey = `${location.pathname}${location.search}${location.hash}`
+  const routeContentKey = [location.key, location.pathname, location.search, location.hash]
+    .filter(Boolean)
+    .join(':')
 
   const handleDrawerToggle = () => {
     if (isMobile) setMobileOpen(!mobileOpen)

@@ -1,5 +1,5 @@
 import { alpha, Alert, Box, Button, Container, Fade, Popover, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MdAdd } from 'react-icons/md'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import AllOrders from '../../components/orders/AllOrders'
@@ -15,6 +15,12 @@ export default function Orders() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isReady, progress, firstIncompleteStep } = useMerchantReadiness()
+
+  useEffect(() => {
+    setDrawerOpen(false)
+    setOrderType(null)
+    setAnchorEl(null)
+  }, [location.pathname, location.search, location.hash])
 
   const openPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget)
