@@ -174,6 +174,18 @@ function RouteAssetRecovery() {
   return null
 }
 
+function isAppChoiceMeeHost() {
+  if (typeof window === 'undefined') return false
+
+  return window.location.hostname.toLowerCase().startsWith('app.choicemee')
+}
+
+function RootRoute() {
+  if (isAppChoiceMeeHost()) return <Navigate to="/login" replace />
+
+  return <LandingPage />
+}
+
 function RoutedApp() {
   const location = useLocation()
   const routeKey = [location.key, location.pathname, location.search, location.hash]
@@ -189,7 +201,7 @@ function RoutedApp() {
         <Suspense fallback={<FullScreenLoader />}>
           <Routes location={location} key={routeKey}>
           {/* public */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
