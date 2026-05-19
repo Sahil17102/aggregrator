@@ -1,4 +1,4 @@
-import { courierLogos, defaultLogo } from './constants'
+import { courierLogos, defaultLogo, deliveryOneLogo } from './constants'
 
 type CourierLike =
   | string
@@ -23,7 +23,7 @@ type CourierLike =
 const DELIVERY_ONE_DISPLAY_NAME = 'Delivery One'
 const DELIVERY_ONE_SURFACE_DISPLAY_NAME = 'Delivery One Surface'
 const DELIVERY_ONE_EXPRESS_DISPLAY_NAME = 'Delivery One Express'
-const DELIVERY_ONE_LOGO = '/logo/integrations/delhivery-one.webp'
+const DELIVERY_ONE_LOGO = deliveryOneLogo
 const DELIVERY_ONE_SURFACE_ID = 99
 const DELIVERY_ONE_EXPRESS_ID = 100
 
@@ -59,7 +59,10 @@ const isDeliveryOneValue = (value?: string | null) => {
     normalized === 'delhiveryone' ||
     normalized === 'delhivery' ||
     normalized.startsWith('deliveryone') ||
-    normalized.startsWith('delhiveryone')
+    normalized.startsWith('delhiveryone') ||
+    normalized.startsWith('delhiverysurface') ||
+    normalized.startsWith('delhiveryexpress') ||
+    normalized.startsWith('delhiveryair')
   )
 }
 

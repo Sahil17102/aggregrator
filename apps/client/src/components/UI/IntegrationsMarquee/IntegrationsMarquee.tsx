@@ -1,13 +1,14 @@
 'use client'
 
 import { Box, Typography } from '@mui/material'
+import { deliveryOneLogo } from '../../../utils/constants'
 import styles from './IntegrationsMarquee.module.css'
 
 const logosRow1 = [
   '/logo/integrations/amazon.png',
   '/logo/integrations/aramex.webp',
   '/logo/integrations/bluedart.png',
-  '/logo/integrations/delhivery-one.webp',
+  deliveryOneLogo,
   '/logo/integrations/magento.png',
   '/logo/integrations/dtdc.png',
 ]
@@ -17,7 +18,7 @@ const logosRow2 = [
   '/logo/integrations/ekart.png',
   '/logo/integrations/shopify.webp',
   '/logo/integrations/woocommerce.webp',
-  '/logo/integrations/delhivery-one.webp',
+  deliveryOneLogo,
   '/logo/integrations/bluedart.png',
 ]
 
@@ -47,6 +48,7 @@ export default function IntegrationsMarquee() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  bgcolor: '#FFFFFF',
                   border: '1px solid #E0E6ED',
                   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                   transition: 'all 0.3s ease',
@@ -77,6 +79,7 @@ export default function IntegrationsMarquee() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  bgcolor: '#FFFFFF',
                   border: '1px solid #E0E6ED',
                   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                   transition: 'all 0.3s ease',

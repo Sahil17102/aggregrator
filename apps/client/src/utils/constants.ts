@@ -245,11 +245,19 @@ export const requiredKycFieldMap: Record<
   },
 }
 
+export const deliveryOneLogo = '/logo/integrations/delivery-one-logo.webp'
+
 export const courierLogos: Record<string, string> = {
-  Delhivery: '/logo/integrations/delhivery-one.webp',
-  'Delivery One': '/logo/integrations/delhivery-one.webp',
-  deliveryone: '/logo/integrations/delhivery-one.webp',
-  'Delhivery One': '/logo/integrations/delhivery-one.webp',
+  Delhivery: deliveryOneLogo,
+  'Delhivery Surface': deliveryOneLogo,
+  'Delhivery Express': deliveryOneLogo,
+  'Delhivery Air': deliveryOneLogo,
+  'Delivery One': deliveryOneLogo,
+  'Delivery One Surface': deliveryOneLogo,
+  'Delivery One Express': deliveryOneLogo,
+  deliveryone: deliveryOneLogo,
+  delhiveryone: deliveryOneLogo,
+  'Delhivery One': deliveryOneLogo,
   Bluedart: '/logo/integrations/bluedart.png',
   Shadowfax: '/logo/integrations/shadowfax.png',
   DTDC: '/logo/integrations/dtdc.png',
