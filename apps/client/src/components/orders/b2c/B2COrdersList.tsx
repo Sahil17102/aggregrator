@@ -904,8 +904,17 @@ const B2COrdersList = () => {
       truncate: false,
       render: (_, row) => {
         const actions: ReactNode[] = []
+        const orderStatus = String(row.order_status || '').toLowerCase()
 
-        if ((row.order_status || '').toLowerCase() === 'delivered') {
+        if (orderStatus === 'cancelled') {
+          return (
+            <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 800 }}>
+              Cancelled
+            </Typography>
+          )
+        }
+
+        if (orderStatus === 'delivered') {
           actions.push(
             <Button
               key="reverse"
@@ -943,7 +952,7 @@ const B2COrdersList = () => {
           row.can_retry_manifest === true &&
           String(row.integration_type || '').toLowerCase() === 'deliveryone'
 
-        if (String(row.order_status || '').toLowerCase() === 'manifest_failed' && canRetryManifest) {
+        if (orderStatus === 'manifest_failed' && canRetryManifest) {
           actions.push(
             <Button
               key="retry-manifest"
@@ -983,7 +992,7 @@ const B2COrdersList = () => {
 
         if (
           actions.length === 0 &&
-          String(row.order_status || '').toLowerCase() !== 'manifest_failed' &&
+          orderStatus !== 'manifest_failed' &&
           String(row.integration_type || '').toLowerCase() === 'deliveryone'
         ) {
           return (
@@ -1000,7 +1009,7 @@ const B2COrdersList = () => {
 
         if (
           actions.length === 0 &&
-          String(row.order_status || '').toLowerCase() === 'manifest_failed' &&
+          orderStatus === 'manifest_failed' &&
           String(row.integration_type || '').toLowerCase() === 'deliveryone'
         ) {
           return (
@@ -1010,7 +1019,7 @@ const B2COrdersList = () => {
           )
         }
 
-        if (row.order_status === 'manifest_generated' && row.manifest) {
+        if (actions.length === 0 && orderStatus === 'manifest_generated' && row.manifest) {
           actions.push(
             <Link
               key="view-manifest"

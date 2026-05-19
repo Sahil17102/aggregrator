@@ -108,6 +108,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
   const [expandedRowId, setExpandedRowId] = React.useState<T['id'] | null>(null)
 
   const expandedRef = useRef<HTMLDivElement | null>(null)
+  const onSelectRowsRef = useRef(onSelectRows)
 
   const page = currentPage ?? localPage
   const rowsPerPage = localRowsPerPage
@@ -128,6 +129,10 @@ export default function DataTable<T extends { id: string | number }>(props: Data
   }
 
   const isAllSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
+
+  useEffect(() => {
+    onSelectRowsRef.current = onSelectRows
+  }, [onSelectRows])
 
   const handleSelect = (id: T['id']) => {
     const selected = selectedIds.includes(id)
@@ -157,19 +162,19 @@ export default function DataTable<T extends { id: string | number }>(props: Data
         nextSelectedIds.every((id, index) => id === currentSelectedIds[index])
 
       if (!isSameSelection) {
-        onSelectRows?.(nextSelectedIds)
+        onSelectRowsRef.current?.(nextSelectedIds)
         return nextSelectedIds
       }
 
       return currentSelectedIds
     })
-  }, [rows, onSelectRows])
+  }, [rows])
 
   useEffect(() => {
     if (selectionResetToken === undefined) return
     setSelectedIds([])
-    onSelectRows?.([])
-  }, [selectionResetToken, onSelectRows])
+    onSelectRowsRef.current?.([])
+  }, [selectionResetToken])
 
   const toggleExpand = (id: T['id']) => {
     const isExpanding = id !== expandedRowId

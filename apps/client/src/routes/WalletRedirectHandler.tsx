@@ -18,7 +18,7 @@ export default function GlobalRedirectHandler() {
 
     // Clean up query param so refresh doesn't trigger toast again
     if (status) {
-      navigate(location.pathname, { replace: true, flushSync: true })
+      navigate(location.pathname, { replace: true })
     }
   }, [location.pathname, location.search, navigate])
 

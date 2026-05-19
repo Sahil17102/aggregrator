@@ -10,7 +10,7 @@
   Typography,
   useTheme,
 } from '@mui/material'
-import { useEffect, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react'
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { BiInfoCircle, BiListPlus } from 'react-icons/bi'
 import { CgTrack } from 'react-icons/cg'
 import { FaBalanceScaleLeft } from 'react-icons/fa'
@@ -32,7 +32,7 @@ import {
 } from 'react-icons/md'
 import { RiSettings2Fill } from 'react-icons/ri'
 import { TbInvoice, TbReportAnalytics, TbTransactionRupee } from 'react-icons/tb'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 import type { JSX } from '@emotion/react/jsx-runtime'
 import BrandLogo from '../brand/BrandLogo'
@@ -241,7 +241,6 @@ export default function Sidebar({
   onNavigate,
 }: SidebarProps) {
   const location = useLocation()
-  const navigate = useNavigate()
   const theme = useTheme()
   const isSidebarExpanded = pinned || hovered
 
@@ -255,21 +254,8 @@ export default function Sidebar({
     setExpandedItems((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const handleRouteNavigate = (path: string) => (event: MouseEvent<HTMLElement>) => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.shiftKey
-    ) {
-      return
-    }
-
-    event.preventDefault()
+  const handleRouteNavigate = () => {
     onNavigate?.()
-    navigate(path, { flushSync: true })
   }
 
   const activeItemSx = {
@@ -313,7 +299,7 @@ export default function Sidebar({
           <ListItemButton
             component={hasChildren ? 'div' : NavLink}
             to={hasChildren ? undefined : item.path}
-            onClick={hasChildren ? () => toggleExpand(item.text) : handleRouteNavigate(item.path)}
+            onClick={hasChildren ? () => toggleExpand(item.text) : handleRouteNavigate}
             sx={{
               ...navItemSx,
               justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
@@ -380,7 +366,7 @@ export default function Sidebar({
                         key={sub.text}
                         component={NavLink}
                         to={sub.path}
-                        onClick={handleRouteNavigate(sub.path)}
+                        onClick={handleRouteNavigate}
                         sx={{
                           py: 0.65,
                           px: 1.3,
@@ -519,7 +505,7 @@ export default function Sidebar({
         <ListItemButton
           component={NavLink}
           to="/settings"
-          onClick={handleRouteNavigate('/settings')}
+          onClick={handleRouteNavigate}
           sx={{
             ...navItemSx,
             justifyContent: isSidebarExpanded ? 'flex-start' : 'center',

@@ -5,18 +5,19 @@ export type B2COrderActionShape = {
   order_status?: string | null
   integration_type?: string | null
   courier_partner?: string | null
+  manifest?: string | null
 }
 
-const B2C_CANCELLABLE_STATUSES = new Set(['pending', 'booked', 'confirmed', 'pickup_initiated'])
-const B2C_CANCELLABLE_PROVIDERS = new Set(['deliveryone'])
-const B2C_MANIFESTABLE_STATUSES = new Set([
+const B2C_CANCELLABLE_STATUSES = new Set([
   'pending',
   'booked',
-  'shipment_created',
-  'manifest_failed',
+  'confirmed',
+  'shipment_booked',
   'pickup_initiated',
   'manifest_generated',
 ])
+const B2C_CANCELLABLE_PROVIDERS = new Set(['deliveryone'])
+const B2C_MANIFESTABLE_STATUSES = new Set(['pending', 'shipment_created'])
 
 export const BULK_MANIFEST_LIMIT = 5
 
@@ -38,7 +39,13 @@ export const getB2CManifestProvider = (order: B2COrderActionShape) => {
 
 export const isB2CManifestEligible = (order: B2COrderActionShape) => {
   const status = normalizeActionValue(order.order_status)
-  return Boolean(getB2CManifestIdentifier(order)) && B2C_MANIFESTABLE_STATUSES.has(status)
+  const manifestReference = normalizeActionValue(order.manifest)
+
+  return (
+    !manifestReference &&
+    Boolean(getB2CManifestIdentifier(order)) &&
+    B2C_MANIFESTABLE_STATUSES.has(status)
+  )
 }
 
 export const isB2CCancelEligible = (order: B2COrderActionShape) => {

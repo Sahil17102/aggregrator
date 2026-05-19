@@ -102,9 +102,7 @@ export default function RequireMerchantReady({ children }: { children: ReactNode
                 </Box>
                 <Button
                   variant="contained"
-                  onClick={() =>
-                    navigate('/support/tickets', { state: { from: location }, flushSync: true })
-                  }
+                  onClick={() => navigate('/support/tickets', { state: { from: location } })}
                   sx={{
                     borderRadius: 2,
                     textTransform: 'none',
@@ -146,9 +144,7 @@ export default function RequireMerchantReady({ children }: { children: ReactNode
                     <Button
                       size="small"
                       variant={item.done ? 'outlined' : 'contained'}
-                      onClick={() =>
-                        navigate(item.path, { state: { from: location }, flushSync: true })
-                      }
+                      onClick={() => navigate(item.path, { state: { from: location } })}
                       sx={{
                         borderRadius: 2,
                         textTransform: 'none',
@@ -177,7 +173,6 @@ export default function RequireMerchantReady({ children }: { children: ReactNode
                 onClick={() =>
                   navigate(firstIncompleteStep.path, {
                     state: { from: location },
-                    flushSync: true,
                   })
                 }
                 sx={{

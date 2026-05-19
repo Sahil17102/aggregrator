@@ -126,7 +126,7 @@ export default function Navbar({ handleDrawerToggle, pinned }: NavbarProps) {
           {!isMobile && (
             <Button
               variant="contained"
-              onClick={() => navigate('/orders/create', { flushSync: true })}
+              onClick={() => navigate('/orders/create')}
               sx={{
                 minWidth: 'fit-content',
                 px: 1.7,

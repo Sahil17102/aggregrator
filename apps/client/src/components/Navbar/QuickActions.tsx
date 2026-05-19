@@ -149,9 +149,7 @@ const QuickActions = () => {
                         <Box
                           key={action.name}
                           onClick={() => {
-                            navigate(locked ? firstIncompleteStep?.path || '/home' : action.path, {
-                              flushSync: true,
-                            })
+                            navigate(locked ? firstIncompleteStep?.path || '/home' : action.path)
                             setOpen(false)
                           }}
                           sx={{

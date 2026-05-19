@@ -735,7 +735,7 @@ const AllOrders = () => {
             <Button
               variant="contained"
               startIcon={<TbPlus size={16} />}
-              onClick={() => navigate('/orders/create', { flushSync: true })}
+              onClick={() => navigate('/orders/create')}
               sx={{
                 borderRadius: 1,
                 minHeight: 34,
