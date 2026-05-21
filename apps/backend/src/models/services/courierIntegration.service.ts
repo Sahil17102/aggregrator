@@ -7,11 +7,7 @@ import { courierSummary } from '../schema/courierSummary'
 import { shippingRates } from '../schema/shippingRates'
 import { userPlans } from '../schema/userPlans'
 import { zones } from '../schema/zones'
-import {
-  INTEGRATED_SERVICE_PROVIDERS,
-  normalizeServiceProviderKey,
-  supportedServiceProviderList,
-} from '../../utils/courierProviders'
+import { normalizeServiceProviderKey } from '../../utils/courierProviders'
 import {
   DELHIVERY_COURIER_IDS,
   DELIVERY_ONE_ALLOWED_COURIER_IDS,
@@ -58,10 +54,7 @@ export interface CourierFilters {
 }
 
 export const buildCourierWhereClause = (filters: CourierFilters = {}) => {
-  const conditions = [
-    inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
-    inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS),
-  ]
+  const conditions = []
 
   if (filters.name) {
     conditions.push(ilike(couriers.name, `%${filters.name}%`))
@@ -273,13 +266,7 @@ export const getCourierById = async (id: number) => {
   const [courier] = await db
     .select()
     .from(couriers)
-    .where(
-      and(
-        eq(couriers.id, id),
-        inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
-        inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS),
-      ),
-    )
+    .where(eq(couriers.id, id))
 
   return courier
 }
@@ -332,9 +319,6 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
   if (filters.business_type) {
     conditions.push(eq(shippingRates.business_type, filters.business_type))
   }
-
-  conditions.push(inArray(shippingRates.service_provider, [...INTEGRATED_SERVICE_PROVIDERS]))
-  conditions.push(inArray(shippingRates.courier_id, DELIVERY_ONE_ALLOWED_COURIER_IDS))
 
   if (zoneFilter.length > 0) {
     conditions.push(
@@ -556,33 +540,67 @@ export const updateShippingRate = async (
 
   console.log('MODE!', mode)
 
-  const normalizedBusinessType = String(businessType || '').trim().toLowerCase()
-  if (normalizedBusinessType !== 'b2b' && normalizedBusinessType !== 'b2c') {
-    throw new Error('businessType is required and must be either b2b or b2c')
-  }
-
   if (!planId || planId === 'undefined' || planId === 'true' || planId === 'false') {
     throw new Error('A valid plan ID is required to update a shipping rate')
   }
 
-  if (!courierId || !courier_name) {
-    throw new Error('Both courierId and courier_name are required')
+  if (!courierId || !Number.isFinite(Number(courierId))) {
+    throw new Error('A valid courierId is required')
   }
+
+  const existingDefaults = await db
+    .select({
+      courier_name: shippingRates.courier_name,
+      service_provider: shippingRates.service_provider,
+      business_type: shippingRates.business_type,
+      mode: shippingRates.mode,
+    })
+    .from(shippingRates)
+    .where(
+      and(
+        eq(shippingRates.courier_id, courierId),
+        eq(shippingRates.plan_id, planId),
+      ),
+    )
+    .orderBy(desc(shippingRates.last_updated), desc(shippingRates.created_at))
+    .limit(1)
+
+  const existingDefault = existingDefaults[0]
+  const normalizedBusinessType = String(businessType || existingDefault?.business_type || '')
+    .trim()
+    .toLowerCase()
+  if (normalizedBusinessType !== 'b2b' && normalizedBusinessType !== 'b2c') {
+    throw new Error('businessType is required and must be either b2b or b2c')
+  }
+
+  let resolvedCourierName = String(courier_name || existingDefault?.courier_name || '').trim()
+  if (!resolvedCourierName) {
+    const [courier] = await db
+      .select({ name: couriers.name })
+      .from(couriers)
+      .where(eq(couriers.id, Number(courierId)))
+      .limit(1)
+    resolvedCourierName = String(courier?.name || `Courier ${courierId}`).trim()
+  }
+
+  const providedOrExistingProvider = service_provider || existingDefault?.service_provider || ''
 
   const normalizedServiceProvider = await resolveCourierServiceProvider(
     courierId,
-    courier_name,
-    service_provider,
+    resolvedCourierName,
+    providedOrExistingProvider,
   )
   const previousServiceProvider =
-    normalizeB2CServiceProvider(previous_service_provider) || normalizedServiceProvider
+    normalizeB2CServiceProvider(previous_service_provider) ||
+    normalizeB2CServiceProvider(existingDefault?.service_provider) ||
+    normalizedServiceProvider
   const shouldMatchLegacyBlankProvider =
     Boolean(normalizedServiceProvider) && !normalizeB2CServiceProvider(previous_service_provider)
-  const normalizedMode = normalizeB2CShippingMode(mode)
-  const previousMode = normalizeB2CShippingMode(previous_mode ?? mode)
+  const normalizedMode = normalizeB2CShippingMode(mode || existingDefault?.mode)
+  const previousMode = normalizeB2CShippingMode(previous_mode ?? existingDefault?.mode ?? mode)
 
       console.log(
-        `[updateShippingRate] Saving service_provider from frontend: "${normalizedServiceProvider}" for courier_id: ${courierId}, courier_name: "${courier_name}"`,
+        `[updateShippingRate] Saving service_provider from frontend: "${normalizedServiceProvider}" for courier_id: ${courierId}, courier_name: "${resolvedCourierName}"`,
       )
 
   const zoneKeys = Array.from(
@@ -668,7 +686,7 @@ export const updateShippingRate = async (
           const updateData: any = {
             rate: rateStr,
             courier_id: courierId,
-            courier_name: String(courier_name),
+            courier_name: resolvedCourierName,
             last_updated: new Date(),
             min_weight: toWeight(fallbackMinWeight),
             cod_charges: cod_charges !== undefined ? toMoney(cod_charges) : undefined,
@@ -699,7 +717,7 @@ export const updateShippingRate = async (
             id: randomUUID(),
             plan_id: planId,
             courier_id: courierId,
-            courier_name: String(courier_name),
+            courier_name: resolvedCourierName,
             service_provider: normalizedServiceProvider,
             mode: normalizedMode,
             business_type: normalizedBusinessType,
@@ -928,13 +946,7 @@ export const createCourier = async (data: {
   if (!data?.courierName || !data?.courierName?.trim()) throw new Error('Courier name is required')
   if (!data?.serviceProvider) throw new Error('Service provider is required')
   
-  const allowedProviders = [...INTEGRATED_SERVICE_PROVIDERS]
   const normalizedProvider = normalizeServiceProviderKey(data.serviceProvider)
-  if (!allowedProviders.includes(normalizedProvider as any)) {
-    throw new Error(
-      `Service provider must be one of: ${supportedServiceProviderList()}. Received: ${data.serviceProvider}`
-    )
-  }
   const courierId = Number(data?.courierId)
   if (!Number.isFinite(courierId)) {
     throw new Error('Courier ID must be a valid number')
