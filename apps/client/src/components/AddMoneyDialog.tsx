@@ -102,13 +102,13 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
       }}
       PaperProps={{
         sx: {
-          width: { xs: 'calc(100vw - 32px)', sm: 716 },
-          maxWidth: 'calc(100vw - 32px)',
-          m: 0,
+          width: { xs: 'calc(100vw - 36px)', sm: 540 },
+          maxWidth: 'calc(100vw - 36px)',
+          m: 2,
           border: 'none',
-          borderRadius: { xs: '28px', sm: '42px' },
+          borderRadius: { xs: '24px', sm: '28px' },
           background: '#FFFFFF',
-          boxShadow: '0 30px 90px rgba(13, 27, 77, 0.26)',
+          boxShadow: '0 24px 70px rgba(13, 27, 77, 0.22)',
           overflow: 'hidden',
         },
       }}
@@ -118,9 +118,9 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
           position: 'relative',
           boxSizing: 'border-box',
           width: '100%',
-          px: { xs: 3, sm: '42px' },
-          pt: { xs: 4.5, sm: '50px' },
-          pb: { xs: 3.5, sm: '42px' },
+          px: { xs: 2.75, sm: 4 },
+          pt: { xs: 3.8, sm: 4.4 },
+          pb: { xs: 3, sm: 3.8 },
         }}
       >
         <IconButton
@@ -128,10 +128,10 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
           onClick={() => setOpen(false)}
           sx={{
             position: 'absolute',
-            top: { xs: 22, sm: 28 },
-            right: { xs: 22, sm: 28 },
-            width: { xs: 48, sm: 56 },
-            height: { xs: 48, sm: 56 },
+            top: { xs: 18, sm: 22 },
+            right: { xs: 18, sm: 22 },
+            width: { xs: 40, sm: 44 },
+            height: { xs: 40, sm: 44 },
             borderRadius: '50%',
             color: '#747781',
             bgcolor: '#F3F3F4',
@@ -141,16 +141,16 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
             },
           }}
         >
-          <FiX size={28} />
+          <FiX size={22} />
         </IconButton>
 
         <Typography
           sx={{
             pr: { xs: 5.5, sm: 7 },
             color: WALLET_TEXT,
-            fontSize: { xs: '1.72rem', sm: '2rem' },
+            fontSize: { xs: '1.45rem', sm: '1.62rem' },
             lineHeight: 1.1,
-            fontWeight: 800,
+            fontWeight: 500,
             letterSpacing: 0,
           }}
         >
@@ -158,18 +158,18 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
         </Typography>
         <Typography
           sx={{
-            mt: 2,
+            mt: 1.2,
             color: WALLET_MUTED,
-            fontSize: { xs: '1rem', sm: '1.3rem' },
+            fontSize: { xs: '0.94rem', sm: '1rem' },
             lineHeight: 1.25,
-            fontWeight: 500,
+            fontWeight: 400,
             letterSpacing: 0,
           }}
         >
           Enter the amount you want to recharge
         </Typography>
 
-        <Box sx={{ mt: { xs: 3, sm: 4 } }}>
+        <Box sx={{ mt: { xs: 2.4, sm: 2.8 } }}>
           <TextField
             type="number"
             value={amount}
@@ -186,8 +186,8 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
                       component="span"
                       sx={{
                         color: '#747A84',
-                        fontSize: { xs: '1.35rem', sm: '1.7rem' },
-                        fontWeight: 700,
+                        fontSize: { xs: '1.18rem', sm: '1.28rem' },
+                        fontWeight: 500,
                         lineHeight: 1,
                       }}
                     >
@@ -201,8 +201,8 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
                       component="span"
                       sx={{
                         color: '#747A84',
-                        fontSize: { xs: '1.35rem', sm: '1.72rem' },
-                        fontWeight: 700,
+                        fontSize: { xs: '1.14rem', sm: '1.24rem' },
+                        fontWeight: 500,
                         lineHeight: 1,
                       }}
                     >
@@ -212,9 +212,9 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
                 ),
                 sx: {
                   width: '100%',
-                  height: { xs: 82, sm: 106 },
-                  px: { xs: 2.6, sm: 3.3 },
-                  borderRadius: { xs: '18px', sm: '20px' },
+                  height: { xs: 66, sm: 74 },
+                  px: { xs: 2, sm: 2.4 },
+                  borderRadius: { xs: '16px', sm: '18px' },
                   bgcolor: '#F7F7F8',
                   border: '2px solid #E4E4E6',
                   boxShadow: 'inset 0 2px 4px rgba(13, 27, 77, 0.04)',
@@ -229,7 +229,7 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
                   pattern: '[0-9]*',
                   style: {
                     color: WALLET_TEXT,
-                    fontWeight: 800,
+                    fontWeight: 500,
                     MozAppearance: 'textfield',
                   },
                 },
@@ -237,13 +237,13 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
             }}
             sx={{
               '& .MuiInputBase-input': {
-                px: { xs: 1.2, sm: 1.5 },
+                px: { xs: 0.9, sm: 1.1 },
                 py: 0,
                 height: 'auto',
                 color: WALLET_TEXT,
-                fontSize: { xs: '1.72rem', sm: '2rem' },
+                fontSize: { xs: '1.45rem', sm: '1.58rem' },
                 lineHeight: 1,
-                fontWeight: 800,
+                fontWeight: 500,
                 letterSpacing: 0,
               },
               '& .MuiInputBase-input::placeholder': {
@@ -262,8 +262,8 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
         <Stack
           direction="row"
           flexWrap="wrap"
-          gap={{ xs: 1.5, sm: 2 }}
-          sx={{ mt: { xs: 2.8, sm: 3.3 }, maxWidth: 580 }}
+          gap={{ xs: 1.1, sm: 1.4 }}
+          sx={{ mt: { xs: 2.1, sm: 2.4 }, maxWidth: 456 }}
         >
           {quickAmounts.map((value) => (
             <Button
@@ -271,16 +271,16 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
               type="button"
               onClick={() => setAmount(value)}
               sx={{
-                minWidth: { xs: value === 5000 ? 134 : 118, sm: value === 5000 ? 134 : 118 },
-                height: { xs: 56, sm: 62 },
-                px: { xs: 2, sm: 2.2 },
-                borderRadius: '15px',
+                minWidth: { xs: value === 5000 ? 110 : 96, sm: value === 5000 ? 112 : 98 },
+                height: { xs: 46, sm: 48 },
+                px: { xs: 1.4, sm: 1.6 },
+                borderRadius: '12px',
                 border: '1px solid #E7E8EB',
                 bgcolor: '#FFFFFF',
                 color: WALLET_TEXT,
                 boxShadow: '0 4px 12px rgba(13, 27, 77, 0.02)',
-                fontSize: { xs: '1.02rem', sm: '1.22rem' },
-                fontWeight: 800,
+                fontSize: { xs: '0.94rem', sm: '1rem' },
+                fontWeight: 500,
                 lineHeight: 1,
                 letterSpacing: 0,
                 textTransform: 'none',
@@ -298,22 +298,22 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
-          gap={{ xs: 1.5, sm: 2.2 }}
-          sx={{ mt: { xs: 4, sm: 4.4 } }}
+          gap={{ xs: 1.2, sm: 1.6 }}
+          sx={{ mt: { xs: 3, sm: 3.2 } }}
         >
           <Button
             type="button"
             onClick={() => setOpen(false)}
             sx={{
               flex: 1,
-              height: { xs: 64, sm: 88 },
-              borderRadius: '18px',
+              height: { xs: 54, sm: 58 },
+              borderRadius: '14px',
               border: '1px solid #E6E7EA',
               bgcolor: '#FFFFFF',
               color: WALLET_TEXT,
               boxShadow: 'none',
-              fontSize: { xs: '1.12rem', sm: '1.38rem' },
-              fontWeight: 800,
+              fontSize: { xs: '1rem', sm: '1.06rem' },
+              fontWeight: 500,
               lineHeight: 1,
               letterSpacing: 0,
               textTransform: 'none',
@@ -331,13 +331,13 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
             disabled={recharge.isPending || effectiveAmount <= 0}
             sx={{
               flex: 1,
-              height: { xs: 64, sm: 88 },
-              borderRadius: '18px',
+              height: { xs: 54, sm: 58 },
+              borderRadius: '14px',
               bgcolor: WALLET_GREEN,
               color: '#FFFFFF',
               boxShadow: `0 16px 30px ${alpha(WALLET_GREEN, 0.22)}`,
-              fontSize: { xs: '1.12rem', sm: '1.38rem' },
-              fontWeight: 800,
+              fontSize: { xs: '1rem', sm: '1.06rem' },
+              fontWeight: 500,
               lineHeight: 1,
               letterSpacing: 0,
               textTransform: 'none',
