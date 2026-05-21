@@ -600,6 +600,15 @@ const getTomorrowPickupDate = () => {
 
 const DEFAULT_AUTO_PICKUP_TIME = '11:00:00'
 
+const normalizePickupDateForCourier = (value?: string | null) => {
+  const fallbackDate = getTomorrowPickupDate()
+  const normalized = String(value || '').trim().slice(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized) && normalized >= fallbackDate) {
+    return normalized
+  }
+  return fallbackDate
+}
+
 const normalizePickupTimeForCourier = (value?: string | null) => {
   const normalized = String(value || '').trim()
   if (/^\d{2}:\d{2}:\d{2}$/.test(normalized)) return normalized
@@ -4854,7 +4863,9 @@ export const createB2CShipmentService = async (
           awbs: [params.order_number],
           type: 'b2c',
           userId,
-          pickup_date: params.pickup_date || params.pickup?.pickup_date || getTomorrowPickupDate(),
+          pickup_date: normalizePickupDateForCourier(
+            params.pickup_date || params.pickup?.pickup_date,
+          ),
           pickup_time: normalizePickupTimeForCourier(params.pickup_time || params.pickup?.pickup_time),
         })
         ;(result as any).manifest = manifestResult
@@ -7743,7 +7754,7 @@ export const generateManifestService = async (params: {
           const deliveryOneOrders = orderIds.length
             ? await tx.select().from(b2c_orders).where(inArray(b2c_orders.id, orderIds))
             : []
-          const defaultPickupDate = scheduledPickupDate || getTomorrowPickupDate()
+          const defaultPickupDate = normalizePickupDateForCourier(scheduledPickupDate)
           const defaultPickupTime = normalizePickupTimeForCourier(scheduledPickupTime)
           const pickupGroups = new Map<
             string,
@@ -7776,9 +7787,9 @@ export const generateManifestService = async (params: {
               existingGroup.orderIds.push(order.id)
             } else {
               pickupGroups.set(pickupLocation, {
-                pickupDate: String(
+                pickupDate: normalizePickupDateForCourier(
                   scheduledPickupDate || pickupDetails?.pickup_date || defaultPickupDate,
-                ).slice(0, 10),
+                ),
                 pickupTime: normalizePickupTimeForCourier(
                   scheduledPickupTime || pickupDetails?.pickup_time || defaultPickupTime,
                 ),
@@ -8006,7 +8017,7 @@ export const generateManifestService = async (params: {
             }
           }
 
-          const defaultPickupDate = scheduledPickupDate || getTomorrowPickupDate()
+          const defaultPickupDate = normalizePickupDateForCourier(scheduledPickupDate)
           const defaultPickupTime = normalizePickupTimeForCourier(scheduledPickupTime)
           const pickupGroups = new Map<
             string,
@@ -8037,9 +8048,9 @@ export const generateManifestService = async (params: {
               existingGroup.orderIds.push(order.id)
             } else {
               pickupGroups.set(pickupLocation, {
-                pickupDate: String(
+                pickupDate: normalizePickupDateForCourier(
                   scheduledPickupDate || pickupDetails?.pickup_date || defaultPickupDate,
-                ).slice(0, 10),
+                ),
                 pickupTime: normalizePickupTimeForCourier(
                   scheduledPickupTime || pickupDetails?.pickup_time || defaultPickupTime,
                 ),

@@ -499,12 +499,23 @@ export const requestPickupController = async (req: any, res: Response) => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     const defaultPickupDate = tomorrow.toISOString().split('T')[0]
     const defaultPickupTime = '11:00:00'
+    const requestedPickupDate = String(pickup_date || '').trim().slice(0, 10)
+    const safePickupDate =
+      /^\d{4}-\d{2}-\d{2}$/.test(requestedPickupDate) && requestedPickupDate >= defaultPickupDate
+        ? requestedPickupDate
+        : defaultPickupDate
+    const requestedPickupTime = String(pickup_time || '').trim()
+    const safePickupTime = /^\d{2}:\d{2}:\d{2}$/.test(requestedPickupTime)
+      ? requestedPickupTime
+      : /^\d{2}:\d{2}$/.test(requestedPickupTime)
+        ? `${requestedPickupTime}:00`
+        : defaultPickupTime
 
     const providerService =
       provider === 'deliveryone' ? new DeliveryOneService() : new DelhiveryService()
     const providerResponse = await providerService.createPickupRequest({
-      pickup_date: String(pickup_date || defaultPickupDate),
-      pickup_time: String(pickup_time || defaultPickupTime),
+      pickup_date: safePickupDate,
+      pickup_time: safePickupTime,
       pickup_location: pickupLocation,
       expected_package_count: orders.length,
     })
@@ -528,8 +539,8 @@ export const requestPickupController = async (req: any, res: Response) => {
       data: {
         requested_awbs: orders.map((o) => o.awb_number).filter(Boolean),
         requested_order_numbers: orders.map((o) => o.order_number).filter(Boolean),
-        pickup_date: String(pickup_date || defaultPickupDate),
-        pickup_time: String(pickup_time || defaultPickupTime),
+        pickup_date: safePickupDate,
+        pickup_time: safePickupTime,
         pickup_location: pickupLocation,
         expected_package_count: orders.length,
         status: 'pickup_initiated',
