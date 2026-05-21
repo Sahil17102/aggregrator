@@ -351,6 +351,15 @@ const AllOrders = () => {
     setManifestScheduleOpen(false)
   }
 
+  const selectedDelhiveryOrders = selectedOrders.filter(
+    (order) => order.type === 'b2c' && getB2CManifestProvider(order) === 'delhivery',
+  )
+  const showManifestShipmentCount = selectedDelhiveryOrders.length > 0
+  const defaultManifestShipmentCount = Math.max(
+    1,
+    selectedDelhiveryOrders.length || selectedOrders.length,
+  )
+
   const getDocumentEntriesForOrders = (targetOrders: Order[], type: DocumentType) =>
     targetOrders.reduce<DocumentEntry[]>((entries, order) => {
       const { key, url } = getDocumentReference(order, type)
@@ -912,6 +921,8 @@ const AllOrders = () => {
       <ManifestScheduleDialog
         open={manifestScheduleOpen}
         loading={bulkManifesting}
+        defaultShipmentCount={defaultManifestShipmentCount}
+        showShipmentCount={showManifestShipmentCount}
         title="Schedule Selected Manifests"
         description="Choose the pickup date and time before sending the selected manifests to the courier."
         onClose={() => {

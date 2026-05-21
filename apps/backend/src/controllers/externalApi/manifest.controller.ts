@@ -11,7 +11,8 @@ import { generateManifestService } from '../../models/services/shiprocket.servic
 export const generateManifestController = async (req: any, res: Response) => {
   try {
     const userId = req.userId // From requireApiKey middleware
-    const { awbs, order_numbers, type = 'b2c', pickup_date, pickup_time } = req.body
+    const { awbs, order_numbers, type = 'b2c', pickup_date, pickup_time, expected_package_count } =
+      req.body
 
     // Validate input
     if ((!awbs || !Array.isArray(awbs) || awbs.length === 0) && 
@@ -85,6 +86,7 @@ export const generateManifestController = async (req: any, res: Response) => {
       userId,
       pickup_date,
       pickup_time,
+      expected_package_count,
     })
 
     res.status(200).json({

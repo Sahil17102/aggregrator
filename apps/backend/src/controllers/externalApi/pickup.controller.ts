@@ -434,7 +434,7 @@ export const requestPickupController = async (req: any, res: Response) => {
       })
     }
 
-    const supportedPickupProviders = ['deliveryone']
+    const supportedPickupProviders = ['deliveryone', 'delhivery']
     const unsupportedOrder = orders.find(
       (o) => !supportedPickupProviders.includes(normalizeServiceProviderKey(o.integration_type)),
     )
@@ -442,7 +442,7 @@ export const requestPickupController = async (req: any, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Unsupported provider',
-        message: `Order ${unsupportedOrder.order_number} is not configured for Delivery One`,
+        message: `Order ${unsupportedOrder.order_number} is not configured for Delhivery or Delivery One pickup scheduling`,
       })
     }
 

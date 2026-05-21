@@ -8,6 +8,17 @@ import {
 import { getDelhiveryCredentials } from '../delhiveryCredentials.service'
 import { ShipmentParams } from '../shiprocket.service'
 
+type DelhiveryPickupRequestPayload = {
+  pickup_date?: string | Date
+  pickup_time?: string
+  pickup_location?: string
+  pickupLocation?: string
+  expected_package_count?: number | string
+  expectedPackageCount?: number | string
+  package_count?: number | string
+  count?: number | string
+}
+
 export class DelhiveryService {
   private apiBase = 'https://track.delhivery.com'
   private token = ''
@@ -865,7 +876,7 @@ export class DelhiveryService {
         expected_package_count: packageCount,
       }
 
-      const res = await this.requestPickup(payload)
+      const res = await this.createPickupRequest(payload)
 
       if (!res?.success) {
         console.error('❌ Delhivery pickup creation failed:', res)
@@ -1003,25 +1014,44 @@ export class DelhiveryService {
     }
   }
 
-  async createPickupRequest({
-    pickup_date,
-    pickup_time,
-    pickup_location,
-    expected_package_count,
-  }: {
-    pickup_date: string
-    pickup_time: string
-    pickup_location: string
-    expected_package_count: number
-  }) {
+  async createPickupRequest(params: DelhiveryPickupRequestPayload) {
     try {
       await this.ensureCredentials()
       const url = `${this.apiBase}/fm/request/new/`
       const payload = {
-        pickup_date,
-        pickup_time,
-        pickup_location, // must exactly match warehouse name in Delhivery
-        expected_package_count,
+        pickup_date:
+          params.pickup_date instanceof Date
+            ? params.pickup_date.toISOString().split('T')[0]
+            : String(params.pickup_date || '').trim().slice(0, 10),
+        pickup_time: /^\d{2}:\d{2}$/.test(String(params.pickup_time || '').trim())
+          ? `${String(params.pickup_time).trim()}:00`
+          : String(params.pickup_time || '').trim(),
+        // must exactly match the warehouse name registered with Delhivery
+        pickup_location: String(params.pickup_location ?? params.pickupLocation ?? '').trim(),
+        expected_package_count: Math.floor(
+          Number(
+            params.expected_package_count ??
+              params.expectedPackageCount ??
+              params.package_count ??
+              params.count,
+          ),
+        ),
+      }
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.pickup_date || '').trim())) {
+        throw new HttpError(400, 'pickup_date must be in YYYY-MM-DD format.')
+      }
+      if (!/^\d{2}:\d{2}:\d{2}$/.test(String(payload.pickup_time || '').trim())) {
+        throw new HttpError(400, 'pickup_time must be in HH:mm:ss format.')
+      }
+      if (!String(payload.pickup_location || '').trim()) {
+        throw new HttpError(
+          400,
+          'pickup_location is required and must match the registered Delhivery warehouse name.',
+        )
+      }
+      if (!Number.isFinite(payload.expected_package_count) || payload.expected_package_count < 1) {
+        throw new HttpError(400, 'expected_package_count must be at least 1.')
       }
 
       const headers = {
@@ -1030,9 +1060,119 @@ export class DelhiveryService {
         'Content-Type': 'application/json',
       }
 
-      const res = await axios.post(url, payload, { headers })
-      return res.data
+      const collectStrings = (value: unknown, messages: string[] = []) => {
+        if (value === undefined || value === null || typeof value === 'boolean') return messages
+        if (typeof value === 'string' || typeof value === 'number') {
+          const text = String(value).trim()
+          if (text) messages.push(text)
+          return messages
+        }
+        if (Array.isArray(value)) {
+          value.forEach((entry) => collectStrings(entry, messages))
+          return messages
+        }
+        if (typeof value === 'object') {
+          Object.values(value as Record<string, unknown>).forEach((entry) =>
+            collectStrings(entry, messages),
+          )
+        }
+        return messages
+      }
+      const extractErrorMessage = (value: any, fallback: string) => {
+        const directMessages = collectStrings(
+          [
+            value?.message,
+            value?.error,
+            value?.detail,
+            value?.pickup_date,
+            value?.pickup_time,
+            value?.pickup_location,
+            value?.expected_package_count,
+            value?.non_field_errors,
+          ],
+          [],
+        )
+        if (directMessages.length) return Array.from(new Set(directMessages)).join(' | ')
+        const allMessages = collectStrings(value, [])
+        return Array.from(new Set(allMessages)).slice(0, 4).join(' | ') || fallback
+      }
+
+      let res
+      try {
+        res = await axios.post(url, payload, { headers, timeout: 30000 })
+      } catch (error: any) {
+        if (Number(error?.response?.status) !== 415) {
+          throw error
+        }
+
+        console.warn('Delhivery pickup JSON rejected with 415, retrying as form-encoded', {
+          pickup_date: payload.pickup_date,
+          pickup_time: payload.pickup_time,
+          pickup_location: payload.pickup_location,
+          expected_package_count: payload.expected_package_count,
+          response: error?.response?.data || null,
+        })
+        res = await this.postFormEncoded('/fm/request/new/', payload)
+      }
+
+      const raw = res.data
+      const rawText = (() => {
+        try {
+          return JSON.stringify(raw)
+        } catch {
+          return String(raw || '')
+        }
+      })().toLowerCase()
+      const providerMessage = extractErrorMessage(raw, '')
+      const pickupId = raw?.pickup_id ?? raw?.data?.pickup_id ?? raw?.pr_id ?? null
+      const alreadyExists =
+        raw?.pr_exist === true ||
+        Number(raw?.error?.code || 0) === 669 ||
+        providerMessage.toLowerCase().includes('already exist') ||
+        (rawText.includes('pickup request') && rawText.includes('already exist'))
+
+      const statusText = String(raw?.status ?? raw?.Status ?? '').trim().toLowerCase()
+      const accepted =
+        alreadyExists ||
+        Boolean(pickupId) ||
+        raw?.success === true ||
+        raw?.Success === true ||
+        raw?.status === true ||
+        ['success', 'succeeded', 'created', 'scheduled'].includes(statusText)
+
+      const explicitFailure =
+        !alreadyExists &&
+        (raw?.success === false ||
+          raw?.Success === false ||
+          raw?.error === true ||
+          (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
+          ['fail', 'failed', 'error', 'false'].includes(statusText))
+
+      if (explicitFailure || !accepted) {
+        console.error('Delhivery pickup request rejected:', raw)
+        const error = new HttpError(
+          502,
+          extractErrorMessage(raw, 'Delhivery pickup request failed.'),
+        )
+        ;(error as any).details = raw
+        ;(error as any).isPickupRequestError = true
+        throw error
+      }
+
+      return {
+        success: true,
+        message: providerMessage || 'Delhivery pickup request accepted.',
+        payload,
+        existing: alreadyExists,
+        pickupId,
+        raw,
+      }
     } catch (err: any) {
+      if (err instanceof HttpError) {
+        ;(err as any).isPickupRequestError = true
+        throw err
+      }
+
       const providerError = err.response?.data
       console.error('❌ Delhivery pickup request error:', providerError || err.message)
 

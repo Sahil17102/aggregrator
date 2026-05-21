@@ -262,7 +262,7 @@ export const generateManifestController = async (req: any, res: Response) => {
       return res.status(401).json({ success: false, message: 'Unauthorized' })
     }
 
-    const { awbs, type = 'b2c', pickup_date, pickup_time } = req.body
+    const { awbs, type = 'b2c', pickup_date, pickup_time, expected_package_count } = req.body
 
     if (!awbs || !Array.isArray(awbs) || awbs.length === 0) {
       return res.status(400).json({ success: false, message: 'AWBs are required' })
@@ -283,6 +283,7 @@ export const generateManifestController = async (req: any, res: Response) => {
       userId,
       pickup_date,
       pickup_time,
+      expected_package_count,
     })
 
     const { manifest_id, manifest_url, manifest_key, warnings } = (await Promise.race([

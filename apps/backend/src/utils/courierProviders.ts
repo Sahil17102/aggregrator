@@ -1,4 +1,4 @@
-export const INTEGRATED_SERVICE_PROVIDERS = ['deliveryone'] as const
+export const INTEGRATED_SERVICE_PROVIDERS = ['deliveryone', 'delhivery'] as const
 
 export type IntegratedServiceProvider = (typeof INTEGRATED_SERVICE_PROVIDERS)[number]
 

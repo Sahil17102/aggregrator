@@ -220,6 +220,7 @@ export interface GenerateManifestParams {
   type: 'b2c' | 'b2b'
   pickup_date?: string
   pickup_time?: string
+  expected_package_count?: number
 }
 
 export interface GenerateManifestResponse {

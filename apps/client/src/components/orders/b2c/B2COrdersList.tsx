@@ -791,6 +791,11 @@ const B2COrdersList = () => {
     )
   }
 
+  const isDelhiveryOrder = (row: B2COrder) => {
+    const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`.toLowerCase()
+    return !isDeliveryOneOrder(row) && provider.includes('delhivery')
+  }
+
   const isDeliveryOneTrackingOrder = (row: B2COrder) => {
     return (
       Boolean(String(row.awb_number || '').trim()) &&
@@ -800,11 +805,21 @@ const B2COrdersList = () => {
 
   const isB2CPickupRequestEligible = (row: B2COrder) => {
     const status = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
-    if (!isDeliveryOneOrder(row)) return false
+    if (!isDeliveryOneOrder(row) && !isDelhiveryOrder(row)) return false
     if (!String(row.awb_number || '').trim()) return false
     if (isB2CCancelledStatus(status)) return false
     return !['delivered', 'rto_delivered', 'returned'].includes(status)
   }
+
+  const shouldShowManifestShipmentCount =
+    pendingManifestRequest?.mode === 'single'
+      ? isDelhiveryOrder(pendingManifestRequest.order)
+      : selectedOrders.some(isDelhiveryOrder)
+
+  const defaultManifestShipmentCount =
+    pendingManifestRequest?.mode === 'single'
+      ? 1
+      : Math.max(1, selectedOrders.filter(isDelhiveryOrder).length || selectedOrders.length)
 
   const formatCompactDate = (value?: string | null) =>
     value ? moment(value).format('DD MMM, hh:mm A') : '-'
@@ -1383,6 +1398,8 @@ const B2COrdersList = () => {
       <ManifestScheduleDialog
         open={manifestScheduleOpen}
         loading={bulkManifesting || Boolean(manifestingRef)}
+        defaultShipmentCount={defaultManifestShipmentCount}
+        showShipmentCount={shouldShowManifestShipmentCount}
         title={
           pendingManifestRequest?.mode === 'bulk'
             ? 'Schedule Selected Manifests'
@@ -1397,7 +1414,7 @@ const B2COrdersList = () => {
         open={Boolean(pickupScheduleOrder)}
         loading={requestingPickup}
         title="Schedule Pickup"
-        description="Choose the pickup date and time before sending the pickup request to Delivery One."
+        description="Choose the pickup date and time before sending the pickup request to the courier."
         onClose={() => {
           if (!requestingPickup) setPickupScheduleOrder(null)
         }}

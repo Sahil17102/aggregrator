@@ -4060,12 +4060,7 @@ export const createB2CShipmentService = async (
           orderNumber: params.order_number,
         })
 
-        shipmentData = {
-          success: true,
-          deferred_manifest: true,
-          shipping_mode: selectedDelhiveryShippingMode ?? null,
-          packages: [],
-        }
+        shipmentData = await delhivery.createShipment(params)
       }
 
       if (isReverseShipment) {
@@ -4074,7 +4069,7 @@ export const createB2CShipmentService = async (
           throw new HttpError(500, 'Delhivery reverse shipment creation failed')
         }
       } else {
-        if (!shipmentData?.success) {
+        if (!shipmentData?.success && !shipmentData?.packages?.length) {
           console.error('❌ Invalid Delhivery shipment:', shipmentData)
           throw new HttpError(500, 'Delhivery shipment creation failed')
         }
@@ -4104,7 +4099,9 @@ export const createB2CShipmentService = async (
         courier_name: 'Delhivery',
         courier_id: params.courier_id ? Number(params.courier_id) : null,
         label: undefined,
-        manifest: shipmentData?.upload_wbn ?? shipmentData?.manifest ?? undefined,
+        manifest: isReverseShipment
+          ? shipmentData?.upload_wbn ?? shipmentData?.manifest ?? undefined
+          : undefined,
         courier_cost: providerCourierCost,
         sort_code: providerSortCode,
       }
@@ -4628,7 +4625,9 @@ export const createB2CShipmentService = async (
 
       // 3️⃣ CREATE LOCAL ORDER ENTRY (no seller insurance for B2C – platform liability only)
       const orderStatus =
-        integrationType === 'deliveryone' && !isReverseShipment && shipmentMeta.awb_number
+        ['delhivery', 'deliveryone'].includes(integrationType) &&
+        !isReverseShipment &&
+        shipmentMeta.awb_number
           ? 'shipment_created'
           : 'pending'
       const manifestErrorMessage = null
@@ -5525,6 +5524,7 @@ export const generateManifestService = async (params: {
   userId?: string
   pickup_date?: string
   pickup_time?: string
+  expected_package_count?: number | string
 }): Promise<{
   manifest_id: string | null
   manifest_url: string | null
@@ -5534,6 +5534,13 @@ export const generateManifestService = async (params: {
   const table = params.type === 'b2c' ? b2c_orders : b2b_orders
   const scheduledPickupDate = normalizeManifestPickupDate(params.pickup_date)
   const scheduledPickupTime = normalizeManifestPickupTime(params.pickup_time)
+  const requestedExpectedPackageCount = Number(params.expected_package_count)
+  if (
+    params.expected_package_count !== undefined &&
+    (!Number.isFinite(requestedExpectedPackageCount) || requestedExpectedPackageCount < 1)
+  ) {
+    throw new HttpError(400, 'expected_package_count must be at least 1.')
+  }
 
   return await db.transaction(
     async (
@@ -6647,12 +6654,17 @@ export const generateManifestService = async (params: {
           if (expectedPackageCount === 0) {
             expectedPackageCount = fetchedOrders.length
           }
+          if (params.expected_package_count !== undefined) {
+            expectedPackageCount = Math.floor(requestedExpectedPackageCount)
+          }
 
           const pickupDetails = normalizeDetails(fetchedOrders[0]?.pickup_details)
           const pickupLocationName = String(pickupDetails?.warehouse_name || '').trim()
           if (!pickupLocationName) {
             throw new Error('Pickup warehouse name is required to create Delhivery pickup request')
           }
+          let delhiveryPickupScheduled = false
+          let delhiveryPickupError: string | null = null
           const isManifestRetry = fetchedOrders.some(
             (order) => String(order.order_status || '').toLowerCase() === 'manifest_failed',
           )
@@ -6680,16 +6692,26 @@ export const generateManifestService = async (params: {
           }
 
           try {
-            await delhivery.createPickupRequest({
+            const pickupResponse = await delhivery.createPickupRequest({
               pickup_date: pickupDate,
               pickup_time: pickupTime,
               pickup_location: pickupLocationName,
               expected_package_count: expectedPackageCount,
             })
+            delhiveryPickupScheduled = true
+            console.log('[Manifest] Delhivery pickup request accepted', {
+              pickup_location: pickupLocationName,
+              pickup_date: pickupDate,
+              pickup_time: pickupTime,
+              expected_package_count: expectedPackageCount,
+              existing: Boolean(pickupResponse?.existing),
+              pickup_id: pickupResponse?.pickupId ?? pickupResponse?.raw?.pickup_id ?? null,
+            })
           } catch (pickupErr: any) {
             const warning =
               pickupErr?.message ||
               'Delhivery pickup request could not be scheduled automatically.'
+            delhiveryPickupError = warning
             console.error('[Manifest] Delhivery pickup request failed after shipment creation', {
               pickup_location: pickupLocationName,
               pickup_date: pickupDate,
@@ -7001,7 +7023,14 @@ export const generateManifestService = async (params: {
             const updateDataDel: any = {
               manifest: manifestKey,
               manifest_error: null,
-              order_status: 'pickup_initiated',
+              order_status: delhiveryPickupScheduled ? 'pickup_initiated' : 'shipment_created',
+              pickup_status: delhiveryPickupScheduled ? 'scheduled' : 'failed',
+              pickup_error: delhiveryPickupScheduled
+                ? null
+                : truncateColumnValue(
+                    delhiveryPickupError ||
+                      'Delhivery pickup request could not be scheduled automatically.',
+                  ),
               updated_at: new Date(),
             }
 
@@ -8983,9 +9012,10 @@ export const requestB2CPickupByOrderIdService = async (
   const providerKey = normalizeServiceProviderKey(
     order.integration_type || order.courier_partner || '',
   )
-  if (providerKey !== 'deliveryone') {
-    throw new HttpError(400, 'Pickup request is available for Delivery One orders only.')
+  if (!['deliveryone', 'delhivery'].includes(providerKey)) {
+    throw new HttpError(400, 'Pickup request is available for Delhivery or Delivery One orders only.')
   }
+  const providerLabel = providerKey === 'delhivery' ? 'Delhivery' : 'Delivery One'
 
   if (!sanitizeString(order.awb_number)) {
     throw new HttpError(400, 'AWB number is required before pickup can be requested.')
@@ -9011,8 +9041,9 @@ export const requestB2CPickupByOrderIdService = async (
   )
 
   try {
-    const deliveryOne = new DeliveryOneService()
-    const pickupResponse = await deliveryOne.createPickupRequest({
+    const pickupService =
+      providerKey === 'delhivery' ? new DelhiveryService() : new DeliveryOneService()
+    const pickupResponse = await pickupService.createPickupRequest({
       pickup_date: pickupDate,
       pickup_time: pickupTime,
       pickup_location: pickupLocation,
@@ -9044,7 +9075,7 @@ export const requestB2CPickupByOrderIdService = async (
   } catch (error: any) {
     const errorMessage = getUserFacingManifestError(
       error,
-      'Delivery One pickup request failed.',
+      `${providerLabel} pickup request failed.`,
     )
     await db
       .update(b2c_orders)
