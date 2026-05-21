@@ -42,10 +42,11 @@ const getCourierFilterOptions = (courierList = []) => {
       courier?.serviceProvider || courier?.service_provider || '',
     )
     const isDeliveryOne = serviceProvider === 'deliveryone'
-    const key = isDeliveryOne ? 'deliveryone' : courier?.name || courier?.id
+    const displayName = getCourierDisplayName(courier)
+    const key = isDeliveryOne ? displayName.toLowerCase().replace(/[\s_-]+/g, '') : courier?.name || courier?.id
     const option = isDeliveryOne
-      ? { label: 'Delivery One', value: 'Delivery One' }
-      : { label: getCourierDisplayName(courier), value: courier?.name }
+      ? { label: displayName, value: displayName }
+      : { label: displayName, value: courier?.name }
 
     if (key && option.value && !optionsByKey.has(key)) {
       optionsByKey.set(key, option)

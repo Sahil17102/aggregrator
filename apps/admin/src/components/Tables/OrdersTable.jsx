@@ -17,6 +17,7 @@ import { useCancelOrderMutation, useRegenerateOrderDocumentsMutation } from 'hoo
 import { useMemo, useState } from 'react'
 import { FiCopy, FiEye, FiMoreVertical, FiRefreshCw, FiTruck, FiXCircle } from 'react-icons/fi'
 import { useHistory } from 'react-router-dom'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 import OrderDetailsModal from './OrderDetailsModal'
 
@@ -296,7 +297,15 @@ const OrdersTable = ({
     order_amount: (value) => (
       <span style={{ fontWeight: '600' }}>₹{parseFloat(value || 0).toFixed(2)}</span>
     ),
-    courier_partner: (value) => value || 'Not Assigned',
+    courier_partner: (value, row) =>
+      getCourierDisplayName(
+        {
+          name: value,
+          courier_id: row?.courier_id,
+          integration_type: row?.integration_type,
+        },
+        'Not Assigned',
+      ),
     order_date: (value) => {
       if (!value) return 'N/A'
       const date = new Date(value)

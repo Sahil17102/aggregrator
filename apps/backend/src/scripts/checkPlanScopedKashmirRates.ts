@@ -162,10 +162,10 @@ async function assertCalculatorLocalFallback(userId: string) {
     )
 
     if (!surfaceOption) {
-      throw new Error('Calculator fallback did not return the Delivery One Kashmir surface local rate.')
+      throw new Error('Calculator fallback did not return the Delhivery Kashmir surface local rate.')
     }
     if (results.length !== 1) {
-      throw new Error(`Calculator fallback should return exactly one Delivery One option, received ${results.length}.`)
+      throw new Error(`Calculator fallback should return exactly one Delhivery option, received ${results.length}.`)
     }
     if (surfaceOption.provider_rate !== null) {
       throw new Error('Calculator fallback should leave provider_rate null when live quote is unavailable.')

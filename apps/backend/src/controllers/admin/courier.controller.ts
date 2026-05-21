@@ -518,7 +518,7 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
 
     res.json({
       success: true,
-      message: 'Delivery One credentials updated successfully',
+      message: 'Delhivery credentials updated successfully',
       data: {
         provider: 'deliveryone',
         apiBase: saved?.apiBase || 'https://track.delhivery.com',
@@ -531,7 +531,7 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
     })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: 'Failed to update Delivery One credentials' })
+    res.status(500).json({ success: false, message: 'Failed to update Delhivery credentials' })
   }
 }
 
@@ -546,10 +546,10 @@ export const fetchDeliveryOneWaybillsController = async (req: Request, res: Resp
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to fetch Delivery One waybills:', err?.message || err)
+    console.error('Failed to fetch Delhivery waybills:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to fetch Delivery One waybills',
+      message: err?.message || 'Failed to fetch Delhivery waybills',
     })
   }
 }
@@ -591,10 +591,10 @@ export const checkDeliveryOnePincodeServiceabilityController = async (
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to check Delivery One pincode serviceability:', err?.message || err)
+    console.error('Failed to check Delhivery pincode serviceability:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to check Delivery One pincode serviceability',
+      message: err?.message || 'Failed to check Delhivery pincode serviceability',
     })
   }
 }
@@ -608,10 +608,10 @@ export const createDeliveryOneShipmentController = async (req: Request, res: Res
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to create Delivery One shipment:', err?.message || err)
+    console.error('Failed to create Delhivery shipment:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to create Delivery One shipment',
+      message: err?.message || 'Failed to create Delhivery shipment',
     })
   }
 }
@@ -625,10 +625,10 @@ export const editDeliveryOneShipmentController = async (req: Request, res: Respo
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to edit Delivery One shipment:', err?.message || err)
+    console.error('Failed to edit Delhivery shipment:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to edit Delivery One shipment',
+      message: err?.message || 'Failed to edit Delhivery shipment',
     })
   }
 }
@@ -643,10 +643,10 @@ export const cancelDeliveryOneShipmentController = async (req: Request, res: Res
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to cancel Delivery One shipment:', err?.message || err)
+    console.error('Failed to cancel Delhivery shipment:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to cancel Delivery One shipment',
+      message: err?.message || 'Failed to cancel Delhivery shipment',
     })
   }
 }
@@ -663,10 +663,10 @@ export const updateDeliveryOneEWaybillController = async (req: Request, res: Res
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to update Delivery One e-waybill:', err?.message || err)
+    console.error('Failed to update Delhivery e-waybill:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to update Delivery One e-waybill',
+      message: err?.message || 'Failed to update Delhivery e-waybill',
     })
   }
 }
@@ -683,10 +683,10 @@ export const trackDeliveryOneShipmentController = async (req: Request, res: Resp
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to track Delivery One shipment:', err?.message || err)
+    console.error('Failed to track Delhivery shipment:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to track Delivery One shipment',
+      message: err?.message || 'Failed to track Delhivery shipment',
     })
   }
 }
@@ -703,10 +703,10 @@ export const getDeliveryOneExpectedTatController = async (req: Request, res: Res
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to fetch Delivery One expected TAT:', err?.message || err)
+    console.error('Failed to fetch Delhivery expected TAT:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to fetch Delivery One expected TAT',
+      message: err?.message || 'Failed to fetch Delhivery expected TAT',
     })
   }
 }
@@ -726,10 +726,10 @@ export const calculateDeliveryOneShippingCostController = async (
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to calculate Delivery One shipping cost:', err?.message || err)
+    console.error('Failed to calculate Delhivery shipping cost:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to calculate Delivery One shipping cost',
+      message: err?.message || 'Failed to calculate Delhivery shipping cost',
     })
   }
 }
@@ -747,10 +747,10 @@ export const downloadDeliveryOneDocumentController = async (req: Request, res: R
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to download Delivery One document:', err?.message || err)
+    console.error('Failed to download Delhivery document:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to download Delivery One document',
+      message: err?.message || 'Failed to download Delhivery document',
     })
   }
 }
@@ -764,10 +764,10 @@ export const submitDeliveryOneNdrActionController = async (req: Request, res: Re
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to submit Delivery One NDR action:', err?.message || err)
+    console.error('Failed to submit Delhivery NDR action:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to submit Delivery One NDR action',
+      message: err?.message || 'Failed to submit Delhivery NDR action',
     })
   }
 }
@@ -789,10 +789,10 @@ export const getDeliveryOneNdrStatusController = async (req: Request, res: Respo
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to fetch Delivery One NDR status:', err?.message || err)
+    console.error('Failed to fetch Delhivery NDR status:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to fetch Delivery One NDR status',
+      message: err?.message || 'Failed to fetch Delhivery NDR status',
     })
   }
 }
@@ -811,10 +811,10 @@ export const generateDeliveryOneLabelController = async (req: Request, res: Resp
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to generate Delivery One shipping label:', err?.message || err)
+    console.error('Failed to generate Delhivery shipping label:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to generate Delivery One shipping label',
+      message: err?.message || 'Failed to generate Delhivery shipping label',
     })
   }
 }
@@ -831,10 +831,10 @@ export const createDeliveryOnePickupRequestController = async (
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to create Delivery One pickup request:', err?.message || err)
+    console.error('Failed to create Delhivery pickup request:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to create Delivery One pickup request',
+      message: err?.message || 'Failed to create Delhivery pickup request',
     })
   }
 }
@@ -848,10 +848,10 @@ export const createDeliveryOneWarehouseController = async (req: Request, res: Re
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to create Delivery One warehouse:', err?.message || err)
+    console.error('Failed to create Delhivery warehouse:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to create Delivery One warehouse',
+      message: err?.message || 'Failed to create Delhivery warehouse',
     })
   }
 }
@@ -868,10 +868,10 @@ export const updateDeliveryOneWarehouseController = async (req: Request, res: Re
       data: result,
     })
   } catch (err: any) {
-    console.error('Failed to update Delivery One warehouse:', err?.message || err)
+    console.error('Failed to update Delhivery warehouse:', err?.message || err)
     res.status(err?.statusCode || 500).json({
       success: false,
-      message: err?.message || 'Failed to update Delivery One warehouse',
+      message: err?.message || 'Failed to update Delhivery warehouse',
     })
   }
 }

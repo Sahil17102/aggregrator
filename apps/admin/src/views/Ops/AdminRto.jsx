@@ -15,6 +15,7 @@ import TableFilters from 'components/Tables/TableFilters'
 import { useAdminRto, useAdminRtoKpis } from 'hooks/useOps'
 import { useState } from 'react'
 import { exportAdminRto } from 'services/ops.service'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 export default function AdminRto() {
@@ -113,7 +114,16 @@ export default function AdminRto() {
             <Stack spacing={0.5}>
               <Text fontSize="sm" fontWeight="700">{row.order_number || '—'}</Text>
               <Text fontSize="xs" color="gray.500">{row.order_id || '—'}</Text>
-              <Text fontSize="xs" color="gray.500">{row.courier_partner || '—'}</Text>
+              <Text fontSize="xs" color="gray.500">
+                {getCourierDisplayName(
+                  {
+                    name: row.courier_partner,
+                    courier_id: row.courier_id,
+                    integration_type: row.integration_type,
+                  },
+                  '—',
+                )}
+              </Text>
             </Stack>
           ),
           status: (v) => <Tag>{v}</Tag>,

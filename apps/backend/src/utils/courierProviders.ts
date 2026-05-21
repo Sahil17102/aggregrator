@@ -4,7 +4,7 @@ export type IntegratedServiceProvider = (typeof INTEGRATED_SERVICE_PROVIDERS)[nu
 
 export const SERVICE_PROVIDER_LABELS: Record<string, string> = {
   delhivery: 'Delhivery',
-  deliveryone: 'Delivery One',
+  deliveryone: 'Delhivery',
   ekart: 'Ekart',
   xpressbees: 'Xpressbees',
 }

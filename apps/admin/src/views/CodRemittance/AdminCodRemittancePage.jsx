@@ -59,6 +59,7 @@ import {
   downloadSettlementCsvTemplate,
   exportAllCodRemittances,
 } from 'services/codRemittance.service'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 // Filter options for COD remittances
@@ -575,6 +576,7 @@ export default function AdminCodRemittancePage() {
               )}
             </Box>
           ),
+          courierPartner: (value) => getCourierDisplayName(value, 'N/A'),
           codAmount: (value) => <Text fontWeight="600">₹{value?.toLocaleString('en-IN')}</Text>,
           deductions: (value) => <Text color="red.500">₹{value?.toLocaleString('en-IN')}</Text>,
           remittableAmount: (value) => (
@@ -646,7 +648,7 @@ export default function AdminCodRemittancePage() {
               <Text fontSize="sm">User: {selectedRemittance?.userEmail}</Text>
               <Text fontSize="xs" color="gray.600">
                 AWB: {selectedRemittance?.awbNumber || 'N/A'} | Courier:{' '}
-                {selectedRemittance?.courierPartner || 'N/A'}
+                {getCourierDisplayName(selectedRemittance?.courierPartner, 'N/A')}
               </Text>
             </Box>
 
@@ -742,7 +744,7 @@ export default function AdminCodRemittancePage() {
                   Courier Partner
                 </FormLabel>
                 <Select value={courierPartner} onChange={(e) => setCourierPartner(e.target.value)}>
-                  <option value="deliveryone">Delivery One</option>
+                  <option value="deliveryone">Delhivery</option>
                 </Select>
               </FormControl>
 

@@ -7,8 +7,9 @@ const terminalStatuses = ['delivered', 'cancelled', 'rto_delivered', 'manifest_f
 
 const isDeliveryOneOrder = or(
   eq(b2c_orders.integration_type, 'deliveryone'),
-  sql`lower(coalesce(${b2c_orders.courier_partner}, '')) like ${'%delivery one%'}`,
-  sql`lower(coalesce(${b2c_orders.courier_partner}, '')) like ${'%deliveryone%'}`,
+  sql`replace(lower(coalesce(${b2c_orders.courier_partner}, '')), ' ', '') like ${'%deliveryone%'}`,
+  sql`lower(coalesce(${b2c_orders.courier_partner}, '')) like ${'%delhivery surface%'}`,
+  sql`lower(coalesce(${b2c_orders.courier_partner}, '')) like ${'%delhivery express%'}`,
 )!
 
 export async function pollDeliveryOneTracking(batchSize = 50) {
@@ -49,7 +50,7 @@ export async function pollDeliveryOneTracking(batchSize = 50) {
           if (result.changed) stats.changed += 1
         } catch (err: any) {
           stats.failed += 1
-          console.error('[Cron] Delivery One tracking sync failed', {
+          console.error('[Cron] Delhivery tracking sync failed', {
             order_id: order.id,
             order_number: order.order_number,
             awb_number: order.awb_number,

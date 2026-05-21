@@ -40,9 +40,15 @@ const makeCourierKey = (courierId, serviceProvider) =>
 const providerNameMatchesCourierName = (serviceProvider, courierName) => {
   const provider = normalizeProvider(serviceProvider)
   const name = String(courierName || '').trim().toLowerCase()
+  const compactName = name.replace(/[\s_-]+/g, '')
   if (!provider || !name) return false
   if (provider === 'deliveryone') {
-    return name.includes('delivery one') || name.includes('deliveryone')
+    return (
+      compactName.includes('deliveryone') ||
+      compactName.includes('delhiveryone') ||
+      compactName.includes('delhiverysurface') ||
+      compactName.includes('delhiveryexpress')
+    )
   }
   return name.includes(provider)
 }

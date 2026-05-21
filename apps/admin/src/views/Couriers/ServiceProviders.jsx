@@ -15,7 +15,7 @@ import {
 import { useServiceProviders, useUpdateServiceProviderStatus } from 'hooks/useCouriers'
 
 const providerLabels = {
-  deliveryone: 'Delivery One',
+  deliveryone: 'Delhivery',
 }
 
 const ServiceProviders = () => {
@@ -52,7 +52,7 @@ const ServiceProviders = () => {
         Service Providers
       </Text>
       <Text fontSize="sm" color="gray.500">
-        Manage the Delivery One courier integration.
+        Manage the Delhivery courier integration.
       </Text>
       <Table variant="simple">
         <Thead>

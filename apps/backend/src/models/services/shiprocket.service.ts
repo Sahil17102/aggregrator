@@ -19,6 +19,7 @@ import { DelhiveryManifestError, HttpError } from '../../utils/classes'
 import {
   DELIVERY_ONE_ALLOWED_COURIER_IDS,
   DELHIVERY_ALLOWED_COURIER_IDS,
+  getDelhiveryCourierDisplayName,
   getDelhiveryModeCodeByShippingMode,
   getDelhiveryShippingModeByCourierId,
   getDelhiveryShippingModeByModeCode,
@@ -1215,7 +1216,7 @@ const fetchDeliveryOneShippingCostEstimate = async (params: {
 }) => {
   const billingMode = resolveDeliveryOneBillingMode(params.courierId, params.mode)
   if (!billingMode) {
-    console.warn('[Delivery One] Skipping shipping cost estimate: billing mode not resolved', {
+    console.warn('[Delhivery] Skipping shipping cost estimate: billing mode not resolved', {
       courierId: params.courierId,
       mode: params.mode,
     })
@@ -1227,7 +1228,7 @@ const fetchDeliveryOneShippingCostEstimate = async (params: {
     Math.round(Number(params.chargeableWeightG || params.weightG || 0)),
   )
   if (!Number.isFinite(chargeableWeight) || chargeableWeight <= 0) {
-    console.warn('[Delivery One] Skipping shipping cost estimate: chargeable weight missing', {
+    console.warn('[Delhivery] Skipping shipping cost estimate: chargeable weight missing', {
       courierId: params.courierId,
       weightG: params.weightG,
       chargeableWeightG: params.chargeableWeightG,
@@ -1742,7 +1743,7 @@ export const fetchAvailableCouriersWithRates = async (
       candidates: providerCourierBuckets.get('delhivery')?.rows.length ?? 0,
     })
 
-    // Delivery One B2C serviceability uses the same Delhivery pincode network contract.
+    // Delhivery B2C serviceability uses the same pincode network contract.
     let deliveryOneAvailable = false
     let deliveryOneResp: any = null
     if (enabledProviders.has('deliveryone')) {
@@ -1752,7 +1753,7 @@ export const fetchAvailableCouriersWithRates = async (
         params.destination ?? params.destination_pincode,
       )?.toString()
 
-      console.log('[Serviceability] Delivery One pincode check start', {
+      console.log('[Serviceability] Delhivery pincode check start', {
         mode: isCalculator ? 'calculator' : 'standard',
         origin: originPincode,
         destination: destinationPincode,
@@ -1766,7 +1767,7 @@ export const fetchAvailableCouriersWithRates = async (
             paymentType: normalizedPaymentType,
           })
           deliveryOneAvailable = deliveryOneResp.serviceable === true
-          console.log('[Serviceability] Delivery One pincode check result', {
+          console.log('[Serviceability] Delhivery pincode check result', {
             mode: isCalculator ? 'calculator' : 'standard',
             origin: originPincode,
             destination: destinationPincode,
@@ -1779,12 +1780,12 @@ export const fetchAvailableCouriersWithRates = async (
           })
         } catch (err: any) {
           console.error(
-            'Delivery One serviceability error:',
+            'Delhivery serviceability error:',
             err?.response?.data || err?.message || err,
           )
         }
       } else {
-        console.log('[Serviceability] Delivery One pincode validation skipped (missing input)', {
+        console.log('[Serviceability] Delhivery pincode validation skipped (missing input)', {
           mode: isCalculator ? 'calculator' : 'standard',
           origin: originPincode,
           destination: destinationPincode,
@@ -1795,7 +1796,7 @@ export const fetchAvailableCouriersWithRates = async (
     if (deliveryOneAvailable) {
       registerServiceableProvider('deliveryone', {
         providerId: 'deliveryone',
-        providerName: 'Delivery One',
+        providerName: 'Delhivery',
         codAvailable: deliveryOneResp?.codAvailable ?? true,
         prepaidAvailable: deliveryOneResp?.prepaidAvailable ?? true,
         edd: '3-5 Days',
@@ -1803,7 +1804,7 @@ export const fetchAvailableCouriersWithRates = async (
       })
     }
 
-    console.log('[Serviceability] Delivery One candidate couriers prepared', {
+    console.log('[Serviceability] Delhivery candidate couriers prepared', {
       mode: isCalculator ? 'calculator' : 'standard',
       destination: params.destination?.toString(),
       available: deliveryOneAvailable,
@@ -3458,7 +3459,7 @@ export const createB2CShipmentService = async (
     }
   }
 
-  // If still no integration_type (and no courier_id was provided to derive it), default to Delivery One.
+  // If still no integration_type (and no courier_id was provided to derive it), default to Delhivery.
   // Note: This fallback is only for backward compatibility when neither integration_type nor courier_id is provided
   // When courier_id is provided without integration_type, an error is thrown above if it cannot be determined
   if (!params.integration_type) {
@@ -3510,13 +3511,13 @@ export const createB2CShipmentService = async (
     if (selectedDeliveryOneCourierId === null) {
       throw new HttpError(
         400,
-        'Delivery One courier_id is required. Use 99 for Surface or 100 for Express.',
+        'Delhivery courier_id is required. Use 99 for Surface or 100 for Express.',
       )
     }
     if (!isSupportedDeliveryOneCourierId(selectedDeliveryOneCourierId)) {
       throw new HttpError(
         400,
-        `Invalid Delivery One courier_id: ${selectedDeliveryOneCourierId}. Allowed IDs are 99 (Surface) and 100 (Express).`,
+        `Invalid Delhivery courier_id: ${selectedDeliveryOneCourierId}. Allowed IDs are 99 (Surface) and 100 (Express).`,
       )
     }
     selectedProviderShippingMode =
@@ -3926,7 +3927,7 @@ export const createB2CShipmentService = async (
         : integrationType === 'ekart'
           ? 'Ekart Logistics'
           : integrationType === 'deliveryone'
-            ? 'Delivery One'
+            ? 'Delhivery'
             : 'Xpressbees'
 
     let providerQuoteForBooking = 0
@@ -3999,7 +4000,7 @@ export const createB2CShipmentService = async (
       if (expectedWalletDebit > 0 && walletBalance < expectedWalletDebit) {
         throw new HttpError(
           400,
-          `Insufficient wallet balance to create Delivery One shipment. Required INR ${expectedWalletDebit.toFixed(
+          `Insufficient wallet balance to create Delhivery shipment. Required INR ${expectedWalletDebit.toFixed(
             2,
           )}, available INR ${walletBalance.toFixed(2)}.`,
         )
@@ -4108,8 +4109,8 @@ export const createB2CShipmentService = async (
     } else if (integrationType === 'deliveryone') {
       console.log(
         isReverseShipment
-          ? 'â†’ Using Delivery One Reverse Shipment API...'
-          : 'â†’ Using Delivery One Shipment API...',
+          ? 'â†’ Using Delhivery Reverse Shipment API...'
+          : 'â†’ Using Delhivery Shipment API...',
       )
 
       const deliveryOne = new DeliveryOneService()
@@ -4122,7 +4123,7 @@ export const createB2CShipmentService = async (
       if (!serviceability.serviceable) {
         throw new HttpError(
           400,
-          `Delivery One is not serviceable for order ${params.order_number}. Please select another courier.`,
+          `Delhivery is not serviceable for order ${params.order_number}. Please select another courier.`,
         )
       }
 
@@ -4143,7 +4144,7 @@ export const createB2CShipmentService = async (
 
         if (estimate?.amount !== null && estimate?.amount !== undefined) {
           params.courier_cost = estimate.amount
-          console.log('[Delivery One] Shipping cost fetched before booking', {
+          console.log('[Delhivery] Shipping cost fetched before booking', {
             order_number: params.order_number,
             courier_id: params.courier_id,
             mode: selectedProviderShippingMode ?? params.shipping_mode,
@@ -4151,7 +4152,7 @@ export const createB2CShipmentService = async (
           })
         }
       } catch (rateErr: any) {
-        console.error('[Delivery One] Shipping cost fetch failed before booking', {
+        console.error('[Delhivery] Shipping cost fetch failed before booking', {
           order_number: params.order_number,
           courier_id: params.courier_id,
           mode: selectedProviderShippingMode ?? params.shipping_mode,
@@ -4175,13 +4176,14 @@ export const createB2CShipmentService = async (
       )
 
       if (!shipmentSuccessPackage?.waybill) {
-        console.error('Invalid Delivery One shipment:', shipmentData)
+        console.error('Invalid Delhivery shipment:', shipmentData)
         throw new HttpError(
           502,
-          `Delivery One shipment creation failed for order ${params.order_number}.`,
+          `Delhivery shipment creation failed for order ${params.order_number}.`,
         )
       }
 
+      const deliveryOneCourierDisplayName = getDelhiveryCourierDisplayName(params.courier_id)
       providerCourierCost =
         shipmentSuccessPackage?.charge ||
         shipmentSuccessPackage?.amount ||
@@ -4203,7 +4205,7 @@ export const createB2CShipmentService = async (
           shipmentSuccessPackage?.waybill ??
           undefined,
         awb_number: shipmentSuccessPackage?.waybill ?? shipmentData?.awb_number ?? undefined,
-        courier_name: 'Delivery One',
+        courier_name: deliveryOneCourierDisplayName,
         courier_id: params.courier_id ? Number(params.courier_id) : null,
         label: undefined,
         manifest: undefined,
@@ -4666,7 +4668,7 @@ export const createB2CShipmentService = async (
       }
 
       // 4️⃣ WALLET TRANSACTION
-      // Delivery One forward orders are charged at booking; other forward couriers are charged after manifest.
+      // Delhivery forward orders are charged at booking; other forward couriers are charged after manifest.
       const shouldDeferWalletDebit = !isReverseShipment && integrationType !== 'deliveryone'
       const finalWalletDebit = walletDebit ?? 0
       if (shouldDeferWalletDebit) {
@@ -4868,7 +4870,7 @@ export const createB2CShipmentService = async (
           pickup_time: normalizePickupTimeForCourier(params.pickup_time || params.pickup?.pickup_time),
         })
         ;(result as any).manifest = manifestResult
-        console.log('[Delivery One] Auto manifest and pickup scheduling completed after order creation', {
+        console.log('[Delhivery] Auto manifest and pickup scheduling completed after order creation', {
           order_number: params.order_number,
           order_id: result.order.id,
           manifest_id: manifestResult.manifest_id,
@@ -4877,9 +4879,9 @@ export const createB2CShipmentService = async (
       } catch (autoManifestErr: any) {
         const manifestErrorMessage = getUserFacingManifestError(
           autoManifestErr,
-          'Delivery One automatic manifest and pickup scheduling failed.',
+          'Delhivery automatic manifest and pickup scheduling failed.',
         )
-        console.error('[Delivery One] Auto manifest and pickup scheduling failed after order creation', {
+        console.error('[Delhivery] Auto manifest and pickup scheduling failed after order creation', {
           order_number: params.order_number,
           order_id: result.order.id,
           message: manifestErrorMessage,
@@ -6023,7 +6025,7 @@ export const generateManifestService = async (params: {
         }
 
         if (!['delhivery', 'deliveryone'].includes(integrationType)) {
-          throw new Error('Only Delhivery and Delivery One are supported for manifest generation')
+          throw new Error('Only Delhivery orders are supported for manifest generation')
         }
 
         async function resolveManifestUrl(value: string | null): Promise<string | null> {
@@ -7277,7 +7279,7 @@ export const generateManifestService = async (params: {
               try {
                 await deliveryOneManifestService!.cancelShipment(waybill)
               } catch (cancelErr: any) {
-                console.warn('[Delivery One] Failed to cancel unverified Express shipment', {
+                console.warn('[Delhivery] Failed to cancel unverified Express shipment', {
                   order_number: order.order_number,
                   waybill,
                   message: cancelErr?.message || cancelErr,
@@ -7287,7 +7289,7 @@ export const generateManifestService = async (params: {
 
             throw new DelhiveryManifestError(
               502,
-              `Delivery One booked order ${order.order_number}, but the booked mode could not be verified. The AWB was cancelled and the manifest was stopped.`,
+              `Delhivery booked order ${order.order_number}, but the booked mode could not be verified. The AWB was cancelled and the manifest was stopped.`,
               {
                 order_number: order.order_number,
                 waybill,
@@ -7305,7 +7307,7 @@ export const generateManifestService = async (params: {
             try {
               await deliveryOneManifestService!.cancelShipment(waybill)
             } catch (cancelErr: any) {
-              console.warn('[Delivery One] Failed to cancel wrong-mode shipment', {
+              console.warn('[Delhivery] Failed to cancel wrong-mode shipment', {
                 order_number: order.order_number,
                 waybill,
                 expectedMode,
@@ -7316,7 +7318,7 @@ export const generateManifestService = async (params: {
 
             throw new DelhiveryManifestError(
               502,
-              `Delivery One booked order ${order.order_number} as ${
+              `Delhivery booked order ${order.order_number} as ${
                 actualMode || 'unknown mode'
               } instead of ${expectedMode}. The AWB was cancelled and the manifest was stopped.`,
               {
@@ -7330,7 +7332,7 @@ export const generateManifestService = async (params: {
           }
 
           if (actualModeCode && actualModeCode !== expectedModeCode) {
-            console.warn('[Delivery One] Booked mode differs from requested mode', {
+            console.warn('[Delhivery] Booked mode differs from requested mode', {
               order_number: order.order_number,
               waybill,
               expectedMode,
@@ -7367,7 +7369,7 @@ export const generateManifestService = async (params: {
             package_breadth: Number(order.breadth ?? 0),
             package_height: Number(order.height ?? 0),
             courier_id: order.courier_id ? Number(order.courier_id) : undefined,
-            courier_partner: order.courier_partner ?? 'Delivery One',
+            courier_partner: order.courier_partner ?? getDelhiveryCourierDisplayName(order.courier_id),
             shipping_mode: shippingMode,
             integration_type: 'deliveryone',
             invoice_number: order.invoice_number ?? undefined,
@@ -7442,7 +7444,7 @@ export const generateManifestService = async (params: {
             if (!reservedWaybill) {
               throw new HttpError(
                 502,
-                `Delivery One did not return a waybill for order ${order.order_number}.`,
+                `Delhivery did not return a waybill for order ${order.order_number}.`,
               )
             }
 
@@ -7633,7 +7635,7 @@ export const generateManifestService = async (params: {
           } catch (invoiceErr: any) {
             const warning = `${order.order_number}: invoice could not be generated during manifest.`
             deliveryOnePickupWarnings.push(warning)
-            console.warn('[Manifest] Delivery One invoice generation skipped', {
+            console.warn('[Manifest] Delhivery invoice generation skipped', {
               order_number: order.order_number,
               message: invoiceErr?.message || invoiceErr,
               status: invoiceErr?.response?.status || null,
@@ -7694,7 +7696,7 @@ export const generateManifestService = async (params: {
                   }
                 } catch (metaErr: any) {
                   console.warn(
-                    `[Delivery One] Failed to fetch packing_slip JSON for order ${order.order_number}:`,
+                    `[Delhivery] Failed to fetch packing_slip JSON for order ${order.order_number}:`,
                     metaErr?.message || metaErr,
                   )
                 }
@@ -7710,12 +7712,12 @@ export const generateManifestService = async (params: {
                     pdf_size: '4R',
                   })
                   console.log(
-                    `[Delivery One] Provider label generated for AWB ${order.awb_number}`,
+                    `[Delhivery] Provider label generated for AWB ${order.awb_number}`,
                     { labelUrl: providerLabel.labelUrl || null },
                   )
                 } catch (providerLabelErr: any) {
                   console.warn(
-                    `[Delivery One] Failed to generate provider label for AWB ${order.awb_number}:`,
+                    `[Delhivery] Failed to generate provider label for AWB ${order.awb_number}:`,
                     providerLabelErr?.message || providerLabelErr,
                   )
                 }
@@ -7837,7 +7839,7 @@ export const generateManifestService = async (params: {
                 pickup_location: pickupLocation,
                 expected_package_count: pickupGroup.expectedPackageCount,
               })
-              console.log('[Delivery One] Pickup request created during manifest', {
+              console.log('[Delhivery] Pickup request created during manifest', {
                 pickupLocation,
                 pickupDate: pickupGroup.pickupDate,
                 pickupTime: pickupGroup.pickupTime,
@@ -7852,11 +7854,11 @@ export const generateManifestService = async (params: {
                 })
                 .where(inArray(b2c_orders.id, pickupGroup.orderIds))
             } catch (pickupErr: any) {
-              const warning = `Delivery One pickup request failed for ${pickupLocation}: ${
+              const warning = `Delhivery pickup request failed for ${pickupLocation}: ${
                 pickupErr?.message || pickupErr
               }`
               deliveryOnePickupWarnings.push(warning)
-              console.warn('[Delivery One] Pickup request failed during manifest', {
+              console.warn('[Delhivery] Pickup request failed during manifest', {
                 pickupLocation,
                 pickupDate: pickupGroup.pickupDate,
                 pickupTime: pickupGroup.pickupTime,
@@ -7961,7 +7963,7 @@ export const generateManifestService = async (params: {
             if (!shipmentPackage?.waybill) {
               throw new HttpError(
                 502,
-                `Delivery One shipment creation failed for order ${order.order_number}.`,
+                `Delhivery shipment creation failed for order ${order.order_number}.`,
               )
             }
 
@@ -7996,13 +7998,19 @@ export const generateManifestService = async (params: {
               shipmentPackage?.service_type ??
               order.shipping_mode ??
               null
+            const deliveryOneCourierDisplayName =
+              deliveryOneShippingMode === 'Express'
+                ? 'Delhivery Express'
+                : deliveryOneShippingMode === 'Surface'
+                  ? 'Delhivery Surface'
+                : getDelhiveryCourierDisplayName(order.courier_id)
 
             await tx
               .update(b2c_orders)
               .set({
                 awb_number: deliveryOneAwb,
                 shipment_id: deliveryOneShipmentId,
-                courier_partner: 'Delivery One',
+                courier_partner: deliveryOneCourierDisplayName,
                 shipping_mode: deliveryOneShippingMode,
                 sort_code: deliveryOneSortCode,
                 manifest_error: null,
@@ -8013,7 +8021,7 @@ export const generateManifestService = async (params: {
 
             order.awb_number = deliveryOneAwb
             order.shipment_id = deliveryOneShipmentId
-            order.courier_partner = 'Delivery One'
+            order.courier_partner = deliveryOneCourierDisplayName
             order.shipping_mode = deliveryOneShippingMode
             order.sort_code = deliveryOneSortCode
             order.deliveryone_label_meta = labelPackage ?? undefined
@@ -8037,9 +8045,9 @@ export const generateManifestService = async (params: {
               }
             } catch (labelErr: any) {
               deliveryOnePickupWarnings.push(
-                `${order.order_number}: label could not be generated after Delivery One booking.`,
+                `${order.order_number}: label could not be generated after Delhivery booking.`,
               )
-              console.warn('[Delivery One] Label generation skipped after booking', {
+              console.warn('[Delhivery] Label generation skipped after booking', {
                 order_number: order.order_number,
                 message: labelErr?.message || labelErr,
               })
@@ -8106,11 +8114,11 @@ export const generateManifestService = async (params: {
                 })
                 .where(inArray(b2c_orders.id, pickupGroup.orderIds))
             } catch (pickupErr: any) {
-              const warning = `Delivery One pickup request failed for ${pickupLocation}: ${
+              const warning = `Delhivery pickup request failed for ${pickupLocation}: ${
                 pickupErr?.message || pickupErr
               }`
               deliveryOnePickupWarnings.push(warning)
-              console.warn('[Delivery One] Pickup request failed after manifest booking', {
+              console.warn('[Delhivery] Pickup request failed after manifest booking', {
                 pickupLocation,
                 pickupDate: pickupGroup.pickupDate,
                 pickupTime: pickupGroup.pickupTime,
@@ -8196,7 +8204,7 @@ export const retryFailedManifestService = async (
   if (!['delhivery', 'deliveryone'].includes(provider)) {
     throw new HttpError(
       400,
-      'Manifest retry is currently supported only for Delhivery and Delivery One failed orders.',
+      'Manifest retry is currently supported only for Delhivery failed orders.',
     )
   }
 
@@ -8544,7 +8552,7 @@ const sortHistoryDescending = (history: TrackingHistoryItem[]) => {
 const mapDeliveryOneTracking = (
   raw: any,
   order: OrderSummary,
-  courierName = 'Delivery One',
+  courierName = getDelhiveryCourierDisplayName(order.courier_partner || order.courier_id),
 ): ProviderNormalizedTracking => {
   const history: TrackingHistoryItem[] = []
   const shipmentWrapper = Array.isArray(raw?.ShipmentData)
@@ -8616,10 +8624,17 @@ const getTrackingProviderKey = (order: {
   integration_type?: string | null
   courier_partner?: string | null
 }) => {
-  const courierPartner = String(order.courier_partner || '').toLowerCase()
+  const courierPartner = String(order.courier_partner || '')
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
   let providerKey = normalizeServiceProviderKey(order.integration_type)
 
-  if (courierPartner.includes('delivery one') || courierPartner.includes('deliveryone')) {
+  if (
+    courierPartner.includes('deliveryone') ||
+    courierPartner.includes('delhiveryone') ||
+    courierPartner.includes('delhiverysurface') ||
+    courierPartner.includes('delhiveryexpress')
+  ) {
     providerKey = 'deliveryone'
   } else if (courierPartner.includes('delhivery')) {
     providerKey = 'delhivery'
@@ -8874,7 +8889,10 @@ const persistB2CTrackingStatus = async (
       orderId: order.id,
       userId: order.user_id,
       awbNumber: order.awb_number,
-      courier: providerData.courier_name ?? order.courier_partner ?? 'Delivery One',
+      courier:
+        providerData.courier_name ??
+        order.courier_partner ??
+        getDelhiveryCourierDisplayName(order.courier_id),
       statusCode: nextStatus,
       statusText: providerData.status ?? latestEvent?.message ?? nextStatus,
       location: latestEvent?.location ?? '',
@@ -8886,7 +8904,10 @@ const persistB2CTrackingStatus = async (
       awb_number: order.awb_number,
       status: nextStatus,
       raw_status: providerData.status ?? latestEvent?.message ?? nextStatus,
-      courier_partner: providerData.courier_name ?? order.courier_partner ?? 'Delivery One',
+      courier_partner:
+        providerData.courier_name ??
+        order.courier_partner ??
+        getDelhiveryCourierDisplayName(order.courier_id),
     })
   }
 
@@ -8953,7 +8974,7 @@ export const syncB2COrderTrackingById = async (
   const providerKey = getTrackingProviderKey(order)
 
   if (options.provider && providerKey !== options.provider) {
-    throw new HttpError(400, 'Tracking sync is available for Delivery One orders only.')
+    throw new HttpError(400, 'Tracking sync is available for Delhivery orders only.')
   }
 
   if (!sanitizeString(order.awb_number)) {
@@ -9013,9 +9034,9 @@ export const requestB2CPickupByOrderIdService = async (
     order.integration_type || order.courier_partner || '',
   )
   if (!['deliveryone', 'delhivery'].includes(providerKey)) {
-    throw new HttpError(400, 'Pickup request is available for Delhivery or Delivery One orders only.')
+    throw new HttpError(400, 'Pickup request is available for Delhivery orders only.')
   }
-  const providerLabel = providerKey === 'delhivery' ? 'Delhivery' : 'Delivery One'
+  const providerLabel = 'Delhivery'
 
   if (!sanitizeString(order.awb_number)) {
     throw new HttpError(400, 'AWB number is required before pickup can be requested.')

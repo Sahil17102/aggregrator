@@ -2,6 +2,7 @@
 import { Box, Paper, Stack, Typography } from '@mui/material'
 import Barcode from 'react-barcode'
 import type { LabelPreferences } from '../../../api/labelPreference.api'
+import { getCourierDisplayName } from '../../../utils/courierDisplay'
 
 const normalize = (value: unknown) => {
   if (value === undefined || value === null) return ''
@@ -49,7 +50,7 @@ export function LabelPreview({ values, order }: LabelPreviewProps) {
   const maxItems = Math.max(1, Number(values?.maxItems ?? 3))
 
   const awbNumber = pickFirst(order.awb, order.awbNumber, order.awb_number)
-  const courierName = normalize(order.courier || order.courier_partner || 'Courier')
+  const courierName = getCourierDisplayName(order.courier || order.courier_partner, 'Courier')
   const paymentType = (normalize(order.paymentType) || normalize(order.payment_type) || 'prepaid').toLowerCase()
   const paymentLabel = paymentType === 'cod' ? 'COD' : 'Prepaid'
   const paymentInstruction =

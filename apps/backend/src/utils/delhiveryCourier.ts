@@ -43,6 +43,18 @@ export const getDelhiveryShippingModeByCourierId = (
   return null
 }
 
+export const getDelhiveryCourierDisplayName = (value: unknown): string => {
+  const mode = getDelhiveryShippingModeByCourierId(value)
+  if (mode === 'Express') return 'Delhivery Express'
+
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (['e', 'express', 'air', '100'].includes(normalized) || normalized.includes('express')) {
+    return 'Delhivery Express'
+  }
+
+  return 'Delhivery Surface'
+}
+
 export const normalizeDelhiveryShippingMode = (
   value: unknown,
 ): 'Express' | 'Surface' | null => {

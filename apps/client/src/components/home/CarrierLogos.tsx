@@ -7,7 +7,7 @@ import { deliveryOneLogo } from '../../utils/constants'
 const carriers = [
   { name: 'Amazon', logo: '/logo/integrations/amazon.png' },
   { name: 'BlueDart', logo: '/logo/integrations/bluedart.png' },
-  { name: 'Delivery One', logo: deliveryOneLogo },
+  { name: 'Delhivery', logo: deliveryOneLogo },
   { name: 'DTDC', logo: '/logo/integrations/dtdc.png' },
   { name: 'Ekart', logo: '/logo/integrations/ekart.png' },
   { name: 'Shadowfax', logo: '/logo/integrations/shadowfax.png' },

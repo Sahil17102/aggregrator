@@ -11,6 +11,7 @@ import {
 import { useState } from 'react'
 import { FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
 import { RiScales3Line } from 'react-icons/ri'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 const filterOptions = [
@@ -140,7 +141,9 @@ export default function AdminWeightReconciliationDashboard() {
       <Text fontSize="sm">{row?.user?.email || row?.user?.phone || 'N/A'}</Text>
     ),
     courier: (value, row) => (
-      <Text fontSize="sm">{row?.discrepancy?.courier_partner || 'N/A'}</Text>
+      <Text fontSize="sm">
+        {getCourierDisplayName(row?.discrepancy?.courier_partner, 'N/A')}
+      </Text>
     ),
     declared_weight: (value, row) =>
       (Number(row?.discrepancy?.declared_weight || 0) / 1000).toFixed(3),

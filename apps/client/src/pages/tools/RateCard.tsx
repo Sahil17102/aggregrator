@@ -278,15 +278,18 @@ const RateCard = () => {
         typeof courier === 'string'
           ? courier
           : courier.name || courier.courier_name || courier.displayName || ''
-      const key = isDeliveryOne ? 'deliveryone' : value
+      const displayName = getCourierDisplayName(courier)
+      const key = isDeliveryOne ? normalizeCourierProvider(displayName) : value
 
       if (key && value && !optionsByKey.has(key)) {
         optionsByKey.set(
           key,
-          isDeliveryOne ? { label: 'Delivery One', value: 'Delivery One' } : {
-            label: getCourierDisplayName(courier),
-            value,
-          },
+          isDeliveryOne
+            ? { label: displayName, value: displayName }
+            : {
+                label: displayName,
+                value,
+              },
         )
       }
 

@@ -55,9 +55,8 @@ const getDeliveryOneVariant = (courierOrName) => {
 
 const getDeliveryOneDisplayName = (courierOrName) => {
   const variant = getDeliveryOneVariant(courierOrName)
-  if (variant === 'surface') return 'Delivery One Surface'
-  if (variant === 'express') return 'Delivery One Express'
-  return 'Delivery One'
+  if (variant === 'express') return 'Delhivery Express'
+  return 'Delhivery Surface'
 }
 
 export const getCourierDisplayName = (courierOrName, fallback = 'N/A') => {
@@ -73,4 +72,4 @@ export const getCourierDisplayName = (courierOrName, fallback = 'N/A') => {
 }
 
 export const getProviderDisplayName = (provider, fallback = 'Not selected') =>
-  isDeliveryOneValue(provider) ? 'Delivery One' : provider || fallback
+  isDeliveryOneValue(provider) ? 'Delhivery' : provider || fallback

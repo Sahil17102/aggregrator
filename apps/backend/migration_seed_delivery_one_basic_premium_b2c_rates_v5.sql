@@ -54,7 +54,7 @@ BEGIN
   END IF;
 
   INSERT INTO couriers (id, name, "serviceProvider", "isEnabled", business_type, created_at, updated_at)
-  VALUES (99, 'Delivery One Surface', 'deliveryone', true, '["b2c"]'::jsonb, now(), now())
+  VALUES (99, 'Delhivery Surface', 'deliveryone', true, '["b2c"]'::jsonb, now(), now())
   ON CONFLICT (id, "serviceProvider") DO UPDATE SET
     name = EXCLUDED.name,
     "isEnabled" = true,
@@ -165,7 +165,7 @@ BEGIN
       AND courier_id IN (99, 100)
       AND (
         lower(coalesce(service_provider, '')) IN ('deliveryone', 'delhivery')
-        OR lower(trim(courier_name)) LIKE '%delivery one%'
+        OR lower(trim(courier_name)) LIKE '%delivery%one%'
         OR lower(trim(courier_name)) LIKE '%delhivery%'
       )
   );
@@ -179,7 +179,7 @@ BEGIN
       AND courier_id IN (99, 100)
       AND (
         lower(coalesce(service_provider, '')) IN ('deliveryone', 'delhivery')
-        OR lower(trim(courier_name)) LIKE '%delivery one%'
+        OR lower(trim(courier_name)) LIKE '%delivery%one%'
         OR lower(trim(courier_name)) LIKE '%delhivery%'
       )
   );
@@ -190,7 +190,7 @@ BEGIN
     AND courier_id IN (99, 100)
     AND (
       lower(coalesce(service_provider, '')) IN ('deliveryone', 'delhivery')
-      OR lower(trim(courier_name)) LIKE '%delivery one%'
+      OR lower(trim(courier_name)) LIKE '%delivery%one%'
       OR lower(trim(courier_name)) LIKE '%delhivery%'
     );
 
@@ -262,7 +262,7 @@ BEGIN
             v_slab_rates[1],
             now(),
             99,
-            'Delivery One Surface',
+            'Delhivery Surface',
             'Surface',
             'b2c',
             0.50,

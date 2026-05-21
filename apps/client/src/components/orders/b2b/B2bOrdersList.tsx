@@ -5,6 +5,7 @@ import moment from 'moment'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { useB2BOrdersByUser, useGenerateManifest } from '../../../hooks/Orders/useOrders'
 import type { B2BOrder } from '../../../types/generic.types'
+import { getCourierDisplayName } from '../../../utils/courierDisplay'
 import StatusChip from '../../UI/chip/StatusChip'
 import DataTable, { type Column } from '../../UI/table/DataTable'
 import TableSkeleton from '../../UI/table/TableSkeleton'
@@ -125,7 +126,16 @@ const B2BOrdersList = ({
     },
     { label: 'Buyer', id: 'buyer_name' },
     { label: 'Amount', id: 'order_amount', render: (v) => `₹${Number(v)?.toFixed(2)}` },
-    { label: 'Courier', id: 'courier_partner' },
+    {
+      label: 'Courier',
+      id: 'courier_partner',
+      render: (value, row) =>
+        getCourierDisplayName({
+          name: value,
+          courier_id: row.courier_id,
+          integration_type: (row as B2BOrder & { integration_type?: string }).integration_type,
+        }),
+    },
     {
       label: 'Source',
       id: 'is_external_api',

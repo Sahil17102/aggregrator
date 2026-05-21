@@ -150,8 +150,7 @@ const formatWeightKg = (value: unknown) => {
   return `${kg.toLocaleString('en-IN', { maximumFractionDigits: 2 })} kg`
 }
 
-const getCompactCourierName = (courier: Courier) =>
-  getCourierDisplayName(courier).replace(/^Delivery One/i, 'Delhivery')
+const getCompactCourierName = (courier: Courier) => getCourierDisplayName(courier)
 
 const getCompactCourierMode = (courier: Courier) => {
   const text = [

@@ -21,7 +21,7 @@ import { brand, brandGradients, brandIdentity } from '../theme/brand'
 import { deliveryOneLogo } from '../utils/constants'
 
 const partnerLogos = [
-  { alt: 'Delivery One logo', src: deliveryOneLogo },
+  { alt: 'Delhivery logo', src: deliveryOneLogo },
   { alt: 'Blue Dart logo', src: '/logo/integrations/bluedart.png' },
   { alt: 'Shadowfax logo', src: '/logo/integrations/shadowfax.png' },
   { alt: 'Xpressbees logo', src: '/logo/integrations/xpressbees.png' },

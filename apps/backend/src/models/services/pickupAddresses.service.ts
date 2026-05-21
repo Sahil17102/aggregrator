@@ -237,8 +237,8 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       }
     }
 
-    // Delivery One uses the same warehouse registration contract. Keep this best-effort so
-    // missing Delivery One credentials do not block local pickup address creation.
+    // Delhivery uses the same warehouse registration contract. Keep this best-effort so
+    // missing Delhivery credentials do not block local pickup address creation.
     try {
       const deliveryOne = new DeliveryOneService()
       await deliveryOne.createWarehouse({
@@ -256,10 +256,10 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
         return_state: rtoAddressData.state ?? pickupAddr.state,
         return_country: 'India',
       })
-      console.log(`✅ Delivery One warehouse registered: ${pickupAddr.addressNickname}`)
+      console.log(`✅ Delhivery warehouse registered: ${pickupAddr.addressNickname}`)
     } catch (err: any) {
       console.warn(
-        '⚠️ Failed to register Delivery One warehouse:',
+        '⚠️ Failed to register Delhivery warehouse:',
         err?.response?.data || err?.message || err,
       )
     }
@@ -428,7 +428,7 @@ export async function updatePickupAddressService(
           if (!delhiveryResp || delhiveryResp.success === false) {
             console.error('❌ Failed to update warehouse in Delhivery:', delhiveryResp)
             console.warn('Delhivery warehouse update failed; pickup address update was saved locally.')
-            // Continue with Delivery One sync even if Delhivery update is rejected.
+            // Continue with Delhivery sync even if Delhivery update is rejected.
           } else {
             console.log(`✅ Warehouse updated in Delhivery: ${updatedPickup?.addressNickname}`)
           }
@@ -489,16 +489,16 @@ export async function updatePickupAddressService(
                 return_country: 'India',
               })
               currentWarehouseRegistered = true
-              console.log(`Delivery One warehouse registered after pickup update: ${currentWarehouseName}`)
+              console.log(`Delhivery warehouse registered after pickup update: ${currentWarehouseName}`)
             } catch (createErr: any) {
               const rawCreateError = createErr?.response?.data ?? createErr
               if (isCourierWarehouseAlreadyExistsError(rawCreateError, createErr)) {
                 currentWarehouseRegistered = true
-                console.log(`Delivery One warehouse already exists after pickup update: ${currentWarehouseName}`)
+                console.log(`Delhivery warehouse already exists after pickup update: ${currentWarehouseName}`)
                 return
               }
               console.warn(
-                `Skipping Delivery One warehouse registration (${reason}). Pickup address update was saved locally:`,
+                `Skipping Delhivery warehouse registration (${reason}). Pickup address update was saved locally:`,
                 getCourierErrorText(rawCreateError, createErr) || createErr?.message || createErr,
               )
             }
@@ -511,21 +511,21 @@ export async function updatePickupAddressService(
               pin: updatedPickup?.pincode?.toString(),
               phone: updatedPickup?.contactPhone,
             })
-            console.log(`Delivery One warehouse updated: ${originalWarehouseName}`)
+            console.log(`Delhivery warehouse updated: ${originalWarehouseName}`)
           } catch (err: any) {
             const rawError = err?.response?.data ?? err
             if (isCourierAuthOrConfigError(rawError, err)) {
               console.warn(
-                'Skipping Delivery One warehouse update because credentials are invalid or missing. Pickup address update was saved locally.',
+                'Skipping Delhivery warehouse update because credentials are invalid or missing. Pickup address update was saved locally.',
               )
             } else if (isCourierWarehouseMissingError(rawError, err)) {
               console.warn(
-                'Delivery One warehouse is missing in the courier panel. Registering the current pickup warehouse.',
+                'Delhivery warehouse is missing in the courier panel. Registering the current pickup warehouse.',
               )
               await createCurrentDeliveryOneWarehouse('warehouse missing in courier panel')
             } else {
               console.warn(
-                'Skipping Delivery One warehouse update because the courier API rejected it. Pickup address update was saved locally:',
+                'Skipping Delhivery warehouse update because the courier API rejected it. Pickup address update was saved locally:',
                 getCourierErrorText(rawError, err) || err?.message || err,
               )
             }
@@ -538,11 +538,11 @@ export async function updatePickupAddressService(
             await createCurrentDeliveryOneWarehouse('pickup nickname changed')
           }
         } else {
-          console.log('No pickup address change detected - skipped Delivery One update.')
+          console.log('No pickup address change detected - skipped Delhivery update.')
         }
       } catch (err: any) {
         console.warn(
-          'Skipping Delivery One warehouse sync because the courier API rejected it. Pickup address update was saved locally:',
+          'Skipping Delhivery warehouse sync because the courier API rejected it. Pickup address update was saved locally:',
           err?.response?.data || err?.message || err,
         )
       }

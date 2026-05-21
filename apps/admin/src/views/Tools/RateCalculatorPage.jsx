@@ -34,6 +34,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { BiRupee, BiTachometer } from 'react-icons/bi'
 import { TbDiscountCheck } from 'react-icons/tb'
 import { b2bAdminService } from 'services/b2bAdmin.service'
+import { getCourierDisplayName as formatCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 // ✅ Shared common fields
@@ -267,7 +268,7 @@ export default function RateCalculatorPage() {
   }
 
   const formatCurrency = (value) => `Rs ${Number(value || 0).toFixed(2)}`
-  const getCourierDisplayName = (courier) => courier?.displayName || courier?.name || '—'
+  const getCourierDisplayName = (courier) => formatCourierDisplayName(courier, '—')
   const getB2CRateCardBreakdown = (courier) => {
     const forward = courier?.localRates?.forward || {}
     const freight =

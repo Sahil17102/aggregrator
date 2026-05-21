@@ -782,12 +782,14 @@ const B2COrdersList = () => {
   }
 
   const isDeliveryOneOrder = (row: B2COrder) => {
-    const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`.toLowerCase()
+    const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '')
     return (
       provider.includes('deliveryone') ||
-      provider.includes('delivery one') ||
       provider.includes('delhiveryone') ||
-      provider.includes('delhivery one')
+      provider.includes('delhiverysurface') ||
+      provider.includes('delhiveryexpress')
     )
   }
 
@@ -964,7 +966,11 @@ const B2COrdersList = () => {
       truncate: false,
       render: (_v, row) => (
         <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 140 }} noWrap>
-          {row.courier_partner || '-'}
+          {getCourierDisplayName({
+            name: row.courier_partner,
+            courier_id: row.courier_id,
+            integration_type: row.integration_type,
+          }, '-')}
         </Typography>
       ),
     },

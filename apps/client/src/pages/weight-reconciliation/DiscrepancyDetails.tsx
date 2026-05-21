@@ -24,6 +24,7 @@ import {
   useDiscrepancyDetails,
   useRejectDiscrepancy,
 } from '../../hooks/useWeightReconciliation'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 
 export default function DiscrepancyDetails() {
   const { id } = useParams<{ id: string }>()
@@ -260,7 +261,7 @@ export default function DiscrepancyDetails() {
                   Courier
                 </Typography>
                 <Typography sx={{ fontWeight: 600, color: '#333369' }}>
-                  {discrepancy.courier_partner || 'N/A'}
+                  {getCourierDisplayName(discrepancy.courier_partner, 'N/A')}
                 </Typography>
               </Box>
             </Stack>

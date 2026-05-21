@@ -38,6 +38,7 @@ import { useZoneById, useZones } from 'hooks/useZones'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 import { useZoneMappings } from '../../hooks/useZoneMappings'
 
@@ -462,7 +463,9 @@ const ZoneMappingsPage = () => {
             <Flex direction="column">
               <Text fontSize="lg" fontWeight="bold">
                 {specificZone?.name} ({specificZone?.code}){' '}
-                {specificZone?.courier_name ? `- ${specificZone?.courier_name} ` : null}
+                {specificZone?.courier_name
+                  ? `- ${getCourierDisplayName(specificZone.courier_name)} `
+                  : null}
               </Text>
               <Text fontSize="sm">{specificZone?.description || 'No description available'}</Text>
             </Flex>

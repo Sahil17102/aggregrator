@@ -65,7 +65,7 @@ export const generateManifestController = async (req: any, res: Response) => {
       })
     }
 
-    // Delivery One orders receive their AWB only when manifest succeeds, so fall back
+    // Delhivery orders receive their AWB only when manifest succeeds, so fall back
     // to order_number for deferred-manifest orders.
     const manifestRefs = orders
       .map((o) => (awbs ? o.awb_number || o.order_number : o.order_number || o.awb_number))

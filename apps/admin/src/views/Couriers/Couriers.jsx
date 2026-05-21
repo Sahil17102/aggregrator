@@ -45,7 +45,7 @@ import { useState } from 'react'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 const providerOptions = [
-  { value: 'deliveryone', label: 'Delivery One' },
+  { value: 'deliveryone', label: 'Delhivery' },
 ]
 
 const providerLabels = providerOptions.reduce((acc, option) => {
@@ -266,21 +266,21 @@ const Couriers = () => {
           <AlertIcon />
           <Box flex="1">
             <AlertTitle fontSize="sm" mb={1}>
-              Delivery One Service Information
+              Delhivery Service Information
             </AlertTitle>
             <AlertDescription fontSize="xs">
               <Text mb={1}>
-                <strong>Delivery One Surface</strong> (ID: 99) and{' '}
-                <strong>Delivery One Express</strong> (ID: 100) are the active courier options.
+                <strong>Delhivery Surface</strong> (ID: 99) and{' '}
+                <strong>Delhivery Express</strong> (ID: 100) are the active courier options.
               </Text>
               {!hasDeliveryOneSurface && (
                 <Text mt={2} color="orange.600" fontSize="xs">
-                  Delivery One Surface (ID: 99) not found.
+                  Delhivery Surface (ID: 99) not found.
                 </Text>
               )}
               {!hasDeliveryOneExpress && (
                 <Text mt={2} color="orange.600" fontSize="xs">
-                  Delivery One Express (ID: 100) not found.
+                  Delhivery Express (ID: 100) not found.
                 </Text>
               )}
             </AlertDescription>

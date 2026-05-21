@@ -12,6 +12,7 @@ import {
 } from 'react-icons/md'
 import { usePresignedDownloadMutation } from '../../hooks/Uploads/usePresignedDownloadUrls'
 import { useRegenerateOrderDocuments } from '../../hooks/Orders/useOrders'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 import { toast } from '../UI/Toast'
 
 interface OrderExpandedRowProps {
@@ -306,7 +307,12 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
         <Stack direction="row" spacing={1} alignItems="center">
           <MdLocalShipping size={20} />
           <Typography>
-            <strong>Courier:</strong> {row.courier_partner}
+            <strong>Courier:</strong>{' '}
+            {getCourierDisplayName({
+              name: row.courier_partner,
+              courier_id: row.courier_id,
+              integration_type: row.integration_type,
+            })}
           </Typography>
         </Stack>
       </Stack>

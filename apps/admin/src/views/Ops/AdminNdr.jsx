@@ -37,6 +37,7 @@ import { useEffect, useState } from 'react'
 import { FiClock, FiMapPin, FiPaperclip, FiPhone, FiRotateCw } from 'react-icons/fi'
 import { getPresignedDownloadUrls } from 'services/upload.service'
 import { exportAdminNdr, getAdminNdrKpis, getNdrTimeline } from 'services/ops.service'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 export default function AdminNdr() {
@@ -324,6 +325,15 @@ export default function AdminNdr() {
         }}
         sortByComponent={actionsBar}
         renderers={{
+          courier_partner: (value, row) =>
+            getCourierDisplayName(
+              {
+                name: value,
+                courier_id: row?.courier_id,
+                integration_type: row?.integration_type,
+              },
+              '—',
+            ),
           status: (v) => <Tag colorScheme="yellow">{v}</Tag>,
           merchant_id: (v, row) => {
             const id = v

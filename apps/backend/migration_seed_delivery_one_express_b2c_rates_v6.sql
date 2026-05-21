@@ -51,7 +51,7 @@ BEGIN
   END IF;
 
   INSERT INTO couriers (id, name, "serviceProvider", "isEnabled", business_type, created_at, updated_at)
-  VALUES (100, 'Delivery One Express', 'deliveryone', true, '["b2c"]'::jsonb, now(), now())
+  VALUES (100, 'Delhivery Express', 'deliveryone', true, '["b2c"]'::jsonb, now(), now())
   ON CONFLICT (id, "serviceProvider") DO UPDATE SET
     name = EXCLUDED.name,
     "isEnabled" = true,
@@ -163,7 +163,7 @@ BEGIN
       AND lower(trim(sr.mode)) IN ('express', 'air')
       AND (
         lower(trim(coalesce(sr.service_provider, ''))) IN ('deliveryone', 'delhivery')
-        OR lower(trim(sr.courier_name)) LIKE '%delivery one%'
+        OR lower(trim(sr.courier_name)) LIKE '%delivery%one%'
         OR lower(trim(sr.courier_name)) LIKE '%delhivery%'
       )
   );
@@ -178,7 +178,7 @@ BEGIN
       AND lower(trim(sr.mode)) IN ('express', 'air')
       AND (
         lower(trim(coalesce(sr.service_provider, ''))) IN ('deliveryone', 'delhivery')
-        OR lower(trim(sr.courier_name)) LIKE '%delivery one%'
+        OR lower(trim(sr.courier_name)) LIKE '%delivery%one%'
         OR lower(trim(sr.courier_name)) LIKE '%delhivery%'
       )
   );
@@ -190,7 +190,7 @@ BEGIN
     AND lower(trim(sr.mode)) IN ('express', 'air')
     AND (
       lower(trim(coalesce(sr.service_provider, ''))) IN ('deliveryone', 'delhivery')
-      OR lower(trim(sr.courier_name)) LIKE '%delivery one%'
+      OR lower(trim(sr.courier_name)) LIKE '%delivery%one%'
       OR lower(trim(sr.courier_name)) LIKE '%delhivery%'
     );
 
@@ -240,7 +240,7 @@ BEGIN
             v_slab_rates[1],
             now(),
             100,
-            'Delivery One Express',
+            'Delhivery Express',
             'Express',
             'b2c',
             0.50,

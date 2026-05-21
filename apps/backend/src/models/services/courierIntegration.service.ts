@@ -175,9 +175,15 @@ const getZonePayloadEntry = <T>(
 const providerNameMatchesCourierName = (serviceProvider: unknown, courierName: unknown) => {
   const provider = normalizeB2CServiceProvider(serviceProvider)
   const name = String(courierName ?? '').trim().toLowerCase()
+  const compactName = name.replace(/[\s_-]+/g, '')
   if (!provider || !name) return false
   if (provider === 'deliveryone') {
-    return name.includes('delivery one') || name.includes('deliveryone')
+    return (
+      compactName.includes('deliveryone') ||
+      compactName.includes('delhiveryone') ||
+      compactName.includes('delhiverysurface') ||
+      compactName.includes('delhiveryexpress')
+    )
   }
   return name.includes(provider)
 }
@@ -937,7 +943,7 @@ export const createCourier = async (data: {
     normalizedProvider === 'deliveryone' &&
     !DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(courierId)
   ) {
-    throw new Error('Delivery One supports only courier ID 99 (Surface) and 100 (Express)')
+    throw new Error('Delhivery supports only courier ID 99 (Surface) and 100 (Express)')
   }
 
   console.log('data', data)

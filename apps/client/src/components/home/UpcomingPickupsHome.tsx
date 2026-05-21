@@ -1,6 +1,7 @@
 import { alpha, Box, Skeleton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { MdAccessTime, MdLocationPin, MdLocalShipping } from 'react-icons/md'
 import type { Pickup } from '../../api/dashboard.api'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 import StatusChip from '../UI/chip/StatusChip'
 
 const DE_BLUE = '#0052CC'
@@ -100,7 +101,7 @@ const UpcomingPickupsHome = ({ data: overrideData, isLoading: overrideLoading, e
               : '—'
 
             const warehouseName = pickup.pickup_details?.warehouse_name ?? 'Warehouse'
-            const courier = pickup?.courier_partner ?? 'Courier TBD'
+            const courier = getCourierDisplayName(pickup?.courier_partner, 'Courier TBD')
             const address = pickup.pickup_details?.address ?? '—'
 
             return (

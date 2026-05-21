@@ -8,12 +8,12 @@ export const DELIVERY_ONE_SERVICE_PROVIDER = 'deliveryone'
 export const DELIVERY_ONE_COURIER_CATALOG = [
   {
     id: DELHIVERY_COURIER_IDS.SURFACE,
-    name: 'Delivery One Surface',
+    name: 'Delhivery Surface',
     shippingMode: 'Surface',
   },
   {
     id: DELHIVERY_COURIER_IDS.EXPRESS,
-    name: 'Delivery One Express',
+    name: 'Delhivery Express',
     shippingMode: 'Express',
   },
 ] as const

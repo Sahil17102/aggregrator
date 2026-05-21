@@ -21,6 +21,7 @@ import {
   FaStore,
   FaTruck,
 } from 'react-icons/fa'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 
 const stages = [
   { label: 'Booked', icon: FaStore },
@@ -87,7 +88,7 @@ export default function TrackingDetails({ data, isLoading, error }) {
           </Text>
           <VStack spacing={3} align="stretch">
             {[
-              { label: 'Courier', value: data.courier_name },
+              { label: 'Courier', value: getCourierDisplayName(data.courier_name) },
               { label: 'AWB No', value: data.awb_number },
               { label: 'Order Number', value: data.order_number },
               { label: 'Payment Type', value: data.payment_type },

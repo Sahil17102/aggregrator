@@ -10,6 +10,7 @@ import StatusChip from '../../components/UI/chip/StatusChip'
 import PageHeading from '../../components/UI/heading/PageHeading'
 import DataTable, { type Column } from '../../components/UI/table/DataTable'
 import { useBulkAcceptDiscrepancies, useBulkRejectDiscrepancies, useWeightDiscrepancies, useWeightReconciliationSummary } from '../../hooks/useWeightReconciliation'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 
 const statusColorMap: Record<string, 'success' | 'error' | 'info' | 'pending'> = {
     pending: 'pending',
@@ -118,7 +119,11 @@ export default function WeightReconciliation() {
     const columns: Column<WeightDiscrepancy>[] = [
         { id: 'order_number', label: 'Order #' },
         { id: 'awb_number', label: 'AWB #' },
-        { id: 'courier_partner', label: 'Courier' },
+        {
+            id: 'courier_partner',
+            label: 'Courier',
+            render: (value: unknown) => getCourierDisplayName(String(value || ''), 'N/A'),
+        },
         { id: 'declared_weight', label: 'Declared (kg)', render: (value: unknown) => `${(Number(value) / 1000).toFixed(2)}`, },
         { id: 'charged_weight', label: 'Charged (kg)', render: (value: unknown) => `${(Number(value) / 1000).toFixed(2)}`, },
         { id: 'weight_difference', label: 'Difference (kg)', render: (value: unknown) => (

@@ -55,7 +55,7 @@ const CourierCredentials = () => {
       },
       {
         onSuccess: () => {
-          toast({ title: 'Delivery One credentials updated', status: 'success' })
+          toast({ title: 'Delhivery credentials updated', status: 'success' })
           setDeliveryOneForm((prev) => ({
             ...prev,
             password: '',
@@ -65,7 +65,7 @@ const CourierCredentials = () => {
         },
         onError: (err) => {
           toast({
-            title: 'Failed to update Delivery One credentials',
+            title: 'Failed to update Delhivery credentials',
             description: err?.message,
             status: 'error',
           })
@@ -87,7 +87,7 @@ const CourierCredentials = () => {
         <Box borderWidth="1px" borderRadius="lg" p={5} minW="320px" flex="1" maxW="520px">
           <VStack spacing={4} align="stretch">
             <Flex justify="space-between" align="center">
-              <Text fontWeight="semibold">Delivery One</Text>
+              <Text fontWeight="semibold">Delhivery</Text>
               <Badge colorScheme={data?.deliveryOne?.hasApiKey ? 'green' : 'orange'}>
                 {data?.deliveryOne?.hasApiKey ? 'API key set' : 'Missing API key'}
               </Badge>
@@ -111,7 +111,7 @@ const CourierCredentials = () => {
                 onChange={(e) =>
                   setDeliveryOneForm((prev) => ({ ...prev, clientId: e.target.value }))
                 }
-                placeholder="Delivery One client ID"
+                placeholder="Delhivery client ID"
               />
             </FormControl>
 
@@ -122,7 +122,7 @@ const CourierCredentials = () => {
                 onChange={(e) =>
                   setDeliveryOneForm((prev) => ({ ...prev, username: e.target.value }))
                 }
-                placeholder="Delivery One username or email"
+                placeholder="Delhivery username or email"
               />
             </FormControl>
 
@@ -138,7 +138,7 @@ const CourierCredentials = () => {
               />
               {data?.deliveryOne?.hasPassword && (
                 <Text fontSize="xs" color="gray.500" mt={1}>
-                  Password already configured on Delivery One.
+                  Password already configured on Delhivery.
                 </Text>
               )}
             </FormControl>
@@ -151,7 +151,7 @@ const CourierCredentials = () => {
                 onChange={(e) =>
                   setDeliveryOneForm((prev) => ({ ...prev, apiKey: e.target.value }))
                 }
-                placeholder={data?.deliveryOne?.apiKeyMasked || 'Enter Delivery One API key'}
+                placeholder={data?.deliveryOne?.apiKeyMasked || 'Enter Delhivery API key'}
               />
               {!!data?.deliveryOne?.apiKeyMasked && (
                 <Text fontSize="xs" color="gray.500" mt={1}>
@@ -172,13 +172,13 @@ const CourierCredentials = () => {
               />
               {data?.deliveryOne?.hasWebhookSecret && (
                 <Text fontSize="xs" color="gray.500" mt={1}>
-                  Webhook secret already configured on Delivery One.
+                  Webhook secret already configured on Delhivery.
                 </Text>
               )}
             </FormControl>
 
             <Text fontSize="xs" color="gray.500">
-              Delivery One is the only active courier integration. Leave password, API key, or
+              Delhivery is the only active courier integration. Leave password, API key, or
               webhook secret blank to keep the saved value.
             </Text>
 
@@ -188,7 +188,7 @@ const CourierCredentials = () => {
               isLoading={updateDeliveryOne.isPending}
               alignSelf="flex-start"
             >
-              Save Delivery One Credentials
+              Save Delhivery Credentials
             </Button>
           </VStack>
         </Box>

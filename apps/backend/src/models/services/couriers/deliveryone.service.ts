@@ -424,7 +424,7 @@ export class DeliveryOneService {
     if (!this.apiKey) {
       throw new HttpError(
         400,
-        'Delivery One API key is not configured. Save the token in Courier Credentials first.',
+        'Delhivery API key is not configured. Save the token in Courier Credentials first.',
       )
     }
 
@@ -442,7 +442,7 @@ export class DeliveryOneService {
     if (!this.apiKey) {
       throw new HttpError(
         400,
-        'Delivery One API key is not configured. Save the token in Courier Credentials first.',
+        'Delhivery API key is not configured. Save the token in Courier Credentials first.',
       )
     }
 
@@ -554,10 +554,10 @@ export class DeliveryOneService {
   async fetchWaybills(count = 1): Promise<DeliveryOneWaybillFetchResponse> {
     const normalizedCount = Math.floor(Number(count || 1))
     if (!Number.isFinite(normalizedCount) || normalizedCount < 1) {
-      throw new HttpError(400, 'Delivery One waybill count must be at least 1.')
+      throw new HttpError(400, 'Delhivery waybill count must be at least 1.')
     }
     if (normalizedCount > 10000) {
-      throw new HttpError(400, 'Delivery One bulk waybill count cannot be more than 10,000.')
+      throw new HttpError(400, 'Delhivery bulk waybill count cannot be more than 10,000.')
     }
 
     const token = await this.getToken()
@@ -598,7 +598,7 @@ export class DeliveryOneService {
         error?.response?.data?.error ||
         (typeof error?.response?.data === 'string' ? error.response.data : '') ||
         error?.message ||
-        'Delivery One waybill fetch failed'
+        'Delhivery waybill fetch failed'
 
       this.log('Fetch waybills failed', {
         mode,
@@ -639,13 +639,13 @@ export class DeliveryOneService {
       if (['prepaid', 'pre-paid', 'pre paid'].includes(normalized)) return 'Pre-paid'
       throw new HttpError(
         400,
-        'Delivery One shipment edit payment mode must be COD or Pre-paid.',
+        'Delhivery shipment edit payment mode must be COD or Pre-paid.',
       )
     }
 
     const waybill = sanitizeString(payload?.waybill)
     if (!waybill) {
-      throw new HttpError(400, 'waybill is required to edit a Delivery One shipment.')
+      throw new HttpError(400, 'waybill is required to edit a Delhivery shipment.')
     }
 
     const editPayload: Record<string, any> = { waybill }
@@ -683,13 +683,13 @@ export class DeliveryOneService {
     if (Object.keys(editPayload).length === 1) {
       throw new HttpError(
         400,
-        'Provide at least one editable field for Delivery One shipment edit.',
+        'Provide at least one editable field for Delhivery shipment edit.',
       )
     }
     if (editPayload.pt === 'COD' && !(Number(editPayload.cod) > 0)) {
       throw new HttpError(
         400,
-        'Positive COD amount is required when converting a Delivery One shipment to COD.',
+        'Positive COD amount is required when converting a Delhivery shipment to COD.',
       )
     }
 
@@ -718,7 +718,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One shipment edit failed.'),
+          this.extractErrorMessage(raw, 'Delhivery shipment edit failed.'),
         )
       }
 
@@ -736,7 +736,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One shipment edit failed'
+        'Delhivery shipment edit failed'
 
       this.log('Edit shipment failed', {
         waybill,
@@ -752,7 +752,7 @@ export class DeliveryOneService {
   async cancelShipment(waybill: string) {
     const normalizedWaybill = String(waybill || '').trim()
     if (!normalizedWaybill) {
-      throw new HttpError(400, 'waybill is required to cancel a Delivery One shipment.')
+      throw new HttpError(400, 'waybill is required to cancel a Delhivery shipment.')
     }
 
     const payload = {
@@ -783,7 +783,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One shipment cancellation failed.'),
+          this.extractErrorMessage(raw, 'Delhivery shipment cancellation failed.'),
         )
       }
 
@@ -797,7 +797,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One shipment cancellation failed'
+        'Delhivery shipment cancellation failed'
 
       this.log('Cancel shipment failed', {
         waybill: normalizedWaybill,
@@ -820,7 +820,7 @@ export class DeliveryOneService {
 
     const waybill = sanitizeString(payload?.waybill)
     if (!waybill) {
-      throw new HttpError(400, 'waybill is required to update a Delivery One e-waybill.')
+      throw new HttpError(400, 'waybill is required to update a Delhivery e-waybill.')
     }
 
     const recordsSource =
@@ -849,7 +849,7 @@ export class DeliveryOneService {
     if (!data.length) {
       throw new HttpError(
         400,
-        'dcn (invoice number) and ewbn (e-waybill number) are required to update a Delivery One e-waybill.',
+        'dcn (invoice number) and ewbn (e-waybill number) are required to update a Delhivery e-waybill.',
       )
     }
 
@@ -883,7 +883,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One e-waybill update failed.'),
+          this.extractErrorMessage(raw, 'Delhivery e-waybill update failed.'),
         )
       }
 
@@ -901,7 +901,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One e-waybill update failed'
+        'Delhivery e-waybill update failed'
 
       this.log('Update e-waybill failed', {
         waybill,
@@ -925,10 +925,10 @@ export class DeliveryOneService {
       typeof params === 'string' ? [] : normalizeList(params.ref_ids ?? params.refIds)
 
     if (!waybills.length && !refIds.length) {
-      throw new HttpError(400, 'waybill or ref_ids is required to track a Delivery One shipment.')
+      throw new HttpError(400, 'waybill or ref_ids is required to track a Delhivery shipment.')
     }
     if (waybills.length > 50) {
-      throw new HttpError(400, 'Delivery One tracking supports up to 50 waybills per request.')
+      throw new HttpError(400, 'Delhivery tracking supports up to 50 waybills per request.')
     }
 
     const headers = await this.getHeaders({ includeContentType: false })
@@ -960,7 +960,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One tracking failed.'),
+          this.extractErrorMessage(raw, 'Delhivery tracking failed.'),
         )
       }
 
@@ -974,7 +974,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One tracking failed'
+        'Delhivery tracking failed'
 
       this.log('Track shipment failed', {
         waybill: waybills.join(',') || null,
@@ -1027,12 +1027,12 @@ export class DeliveryOneService {
       params.destination_pin ?? params.destinationPin ?? params.destination,
     )
     if (!/^\d{6}$/.test(originPin)) {
-      throw new HttpError(400, 'A valid 6-digit origin_pin is required for Delivery One TAT.')
+      throw new HttpError(400, 'A valid 6-digit origin_pin is required for Delhivery TAT.')
     }
     if (!/^\d{6}$/.test(destinationPin)) {
       throw new HttpError(
         400,
-        'A valid 6-digit destination_pin is required for Delivery One TAT.',
+        'A valid 6-digit destination_pin is required for Delhivery TAT.',
       )
     }
 
@@ -1085,7 +1085,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One expected TAT lookup failed.'),
+          this.extractErrorMessage(raw, 'Delhivery expected TAT lookup failed.'),
         )
       }
 
@@ -1111,7 +1111,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One expected TAT lookup failed'
+        'Delhivery expected TAT lookup failed'
 
       this.log('Expected TAT failed', {
         origin: originPin,
@@ -1210,7 +1210,7 @@ export class DeliveryOneService {
         : { ...(params || {}), ...options }
     const waybill = sanitizeString(source.waybill || source.wbns)
     if (!waybill) {
-      throw new HttpError(400, 'waybill is required to generate a Delivery One shipping label.')
+      throw new HttpError(400, 'waybill is required to generate a Delhivery shipping label.')
     }
 
     const pdf = normalizeBoolean(source.pdf, false)
@@ -1246,7 +1246,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One shipping label generation failed.'),
+          this.extractErrorMessage(raw, 'Delhivery shipping label generation failed.'),
         )
       }
 
@@ -1268,7 +1268,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(responseData, '') ||
         error?.message ||
-        'Delivery One shipping label generation failed'
+        'Delhivery shipping label generation failed'
 
       this.log('Generate label failed', {
         waybill,
@@ -1337,7 +1337,7 @@ export class DeliveryOneService {
 
     const waybill = sanitizeString(params.waybill)
     if (!waybill) {
-      throw new HttpError(400, 'waybill is required to download a Delivery One document.')
+      throw new HttpError(400, 'waybill is required to download a Delhivery document.')
     }
     const docType = normalizeDocType(params.doc_type ?? params.docType)
     const headers = await this.getHeaders({ includeContentType: false })
@@ -1369,7 +1369,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One document download failed.'),
+          this.extractErrorMessage(raw, 'Delhivery document download failed.'),
         )
       }
 
@@ -1388,7 +1388,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One document download failed'
+        'Delhivery document download failed'
 
       this.log('Document download failed', {
         waybill,
@@ -1480,7 +1480,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One NDR action failed.'),
+          this.extractErrorMessage(raw, 'Delhivery NDR action failed.'),
         )
       }
 
@@ -1498,7 +1498,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One NDR action failed'
+        'Delhivery NDR action failed'
 
       this.log('NDR action failed', {
         count: data.length,
@@ -1514,7 +1514,7 @@ export class DeliveryOneService {
   async getNdrStatus(uplId: string, verbose = true): Promise<DeliveryOneNdrStatusResponse> {
     const normalizedUplId = String(uplId || '').trim()
     if (!normalizedUplId) {
-      throw new HttpError(400, 'uplId is required to fetch Delivery One NDR status.')
+      throw new HttpError(400, 'uplId is required to fetch Delhivery NDR status.')
     }
 
     const headers = await this.getHeaders({ includeContentType: false })
@@ -1546,7 +1546,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One NDR status lookup failed.'),
+          this.extractErrorMessage(raw, 'Delhivery NDR status lookup failed.'),
         )
       }
 
@@ -1564,7 +1564,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One NDR status lookup failed'
+        'Delhivery NDR status lookup failed'
 
       this.log('NDR status failed', {
         uplId: normalizedUplId,
@@ -1629,7 +1629,7 @@ export class DeliveryOneService {
     if (!payload.pickup_location) {
       throw new HttpError(
         400,
-        'pickup_location is required and must match the registered Delivery One warehouse name.',
+        'pickup_location is required and must match the registered Delhivery warehouse name.',
       )
     }
 
@@ -1698,7 +1698,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One pickup request failed.'),
+          this.extractErrorMessage(raw, 'Delhivery pickup request failed.'),
         )
       }
 
@@ -1717,7 +1717,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One pickup request failed'
+        'Delhivery pickup request failed'
 
       this.log('Pickup request failed', {
         pickupDate: payload.pickup_date,
@@ -1774,14 +1774,14 @@ export class DeliveryOneService {
     if (!payload.name) {
       throw new HttpError(
         400,
-        'name is required and is case-sensitive for Delivery One warehouse registration.',
+        'name is required and is case-sensitive for Delhivery warehouse registration.',
       )
     }
     if (!payload.return_address) {
-      throw new HttpError(400, 'return_address is required for Delivery One warehouse registration.')
+      throw new HttpError(400, 'return_address is required for Delhivery warehouse registration.')
     }
     if (!payload.address) {
-      throw new HttpError(400, 'address is required for Delivery One warehouse registration.')
+      throw new HttpError(400, 'address is required for Delhivery warehouse registration.')
     }
 
     const registeredName = sanitizeString(params.registered_name ?? params.registeredName)
@@ -1832,7 +1832,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One warehouse creation failed.'),
+          this.extractErrorMessage(raw, 'Delhivery warehouse creation failed.'),
         )
       }
 
@@ -1849,7 +1849,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One warehouse creation failed'
+        'Delhivery warehouse creation failed'
 
       this.log('Warehouse creation failed', {
         name: payload.name,
@@ -1897,7 +1897,7 @@ export class DeliveryOneService {
     if (!payload.name) {
       throw new HttpError(
         400,
-        'name is required and must match the existing Delivery One warehouse name.',
+        'name is required and must match the existing Delhivery warehouse name.',
       )
     }
     if (address) payload.address = address
@@ -1942,7 +1942,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One warehouse update failed.'),
+          this.extractErrorMessage(raw, 'Delhivery warehouse update failed.'),
         )
       }
 
@@ -1959,7 +1959,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One warehouse update failed'
+        'Delhivery warehouse update failed'
 
       this.log('Warehouse update failed', {
         name: payload.name,
@@ -2104,7 +2104,7 @@ export class DeliveryOneService {
       if (explicitFailure) {
         throw new HttpError(
           502,
-          this.extractErrorMessage(raw, 'Delivery One shipping cost calculation failed.'),
+          this.extractErrorMessage(raw, 'Delhivery shipping cost calculation failed.'),
         )
       }
 
@@ -2155,7 +2155,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One shipping cost calculation failed'
+        'Delhivery shipping cost calculation failed'
 
       this.log('Shipping cost failed', {
         origin: requestParams.o_pin,
@@ -2220,12 +2220,12 @@ export class DeliveryOneService {
     const invoiceNumber = sanitizeString(params.invoice_number) || orderNumber
 
     if (!orderNumber) {
-      throw new HttpError(400, 'order_number is required to create a Delivery One shipment.')
+      throw new HttpError(400, 'order_number is required to create a Delhivery shipment.')
     }
     if (orderAmount <= 0 || Number.isNaN(orderAmount)) {
       throw new HttpError(
         400,
-        'order_amount is required and must be a positive number for Delivery One shipment creation.',
+        'order_amount is required and must be a positive number for Delhivery shipment creation.',
       )
     }
 
@@ -2233,13 +2233,13 @@ export class DeliveryOneService {
     if (!consigneePhone) {
       throw new HttpError(
         400,
-        'Consignee phone must contain at least 10 digits for Delivery One shipments.',
+        'Consignee phone must contain at least 10 digits for Delhivery shipments.',
       )
     }
 
     const pickupPhone = sanitizePhone(pickup.phone)
     if (!pickupPhone) {
-      throw new HttpError(400, 'Valid pickup phone is required for Delivery One shipments.')
+      throw new HttpError(400, 'Valid pickup phone is required for Delhivery shipments.')
     }
 
     const destinationPin = sanitizePincode(consignee.pincode)
@@ -2251,7 +2251,7 @@ export class DeliveryOneService {
     if (!pickupLocationName) {
       throw new HttpError(
         400,
-        'Delivery One pickup_location.name is required and must match the registered warehouse name.',
+        'Delhivery pickup_location.name is required and must match the registered warehouse name.',
       )
     }
 
@@ -2316,7 +2316,7 @@ export class DeliveryOneService {
     if (isMps && waybills.length < packageCount) {
       throw new HttpError(
         400,
-        `Delivery One MPS shipment requires ${packageCount} prefetched waybills. Received ${waybills.length}.`,
+        `Delhivery MPS shipment requires ${packageCount} prefetched waybills. Received ${waybills.length}.`,
       )
     }
 
@@ -2541,7 +2541,7 @@ export class DeliveryOneService {
             .filter(Boolean)
             .join(' | ') ||
           normalizeRemarks(responseData?.rmk).join(' | ') ||
-          'Delivery One reported a failure during shipment creation.'
+          'Delhivery reported a failure during shipment creation.'
 
         this.log('Create shipment rejected', {
           order: orderNumber,
@@ -2616,7 +2616,7 @@ export class DeliveryOneService {
         error?.response?.data?.error ||
         (typeof error?.response?.data === 'string' ? error.response.data : '') ||
         error?.message ||
-        'Delivery One shipment creation failed'
+        'Delhivery shipment creation failed'
 
       this.log('Create shipment failed', {
         order: orderNumber,
@@ -2634,7 +2634,7 @@ export class DeliveryOneService {
   ): Promise<DeliveryOnePincodeServiceabilityResponse> {
     const normalizedPincode = String(pincode ?? '').replace(/\D/g, '').slice(0, 6)
     if (!/^\d{6}$/.test(normalizedPincode)) {
-      throw new HttpError(400, 'A valid 6-digit pincode is required for Delivery One serviceability.')
+      throw new HttpError(400, 'A valid 6-digit pincode is required for Delhivery serviceability.')
     }
 
     const headers = await this.getHeaders({ includeContentType: false })
@@ -2682,7 +2682,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One pincode serviceability failed'
+        'Delhivery pincode serviceability failed'
 
       this.log('B2C pincode serviceability failed', {
         pincode: normalizedPincode,
@@ -2736,7 +2736,7 @@ export class DeliveryOneService {
     if (!/^\d{6}$/.test(normalizedPincode)) {
       throw new HttpError(
         400,
-        'A valid 6-digit pincode is required for Delivery One heavy serviceability.',
+        'A valid 6-digit pincode is required for Delhivery heavy serviceability.',
       )
     }
 
@@ -2807,7 +2807,7 @@ export class DeliveryOneService {
       const message =
         this.extractErrorMessage(error?.response?.data, '') ||
         error?.message ||
-        'Delivery One heavy pincode serviceability failed'
+        'Delhivery heavy pincode serviceability failed'
 
       this.log('Heavy pincode serviceability failed', {
         pincode: normalizedPincode,

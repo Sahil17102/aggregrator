@@ -64,11 +64,11 @@ function assertDeliveryOneCourier(paymentType: 'prepaid' | 'cod', couriers: Smok
   )
 
   if (!deliveryOne) {
-    throw new Error(`Delivery One Surface was not returned for ${paymentType} booking smoke.`)
+    throw new Error(`Delhivery Surface was not returned for ${paymentType} booking smoke.`)
   }
 
   if (deliveryOne.is_bookable === false) {
-    throw new Error(`Delivery One Surface returned as unbookable for ${paymentType} booking smoke.`)
+    throw new Error(`Delhivery Surface returned as unbookable for ${paymentType} booking smoke.`)
   }
 
   const localFreight = Number(deliveryOne.localRates?.forward?.rate ?? deliveryOne.rate ?? 0)
@@ -76,15 +76,15 @@ function assertDeliveryOneCourier(paymentType: 'prepaid' | 'cod', couriers: Smok
   const finalCharge = Number(deliveryOne.final_courier_charge ?? 0)
 
   if (!Number.isFinite(localFreight) || localFreight <= 0) {
-    throw new Error(`Delivery One local freight was missing for ${paymentType} booking smoke.`)
+    throw new Error(`Delhivery local freight was missing for ${paymentType} booking smoke.`)
   }
 
   if (!Number.isFinite(providerQuote) || providerQuote <= 0) {
-    throw new Error(`Delivery One live provider quote was missing for ${paymentType} booking smoke.`)
+    throw new Error(`Delhivery live provider quote was missing for ${paymentType} booking smoke.`)
   }
 
   if (!Number.isFinite(finalCharge) || finalCharge <= 0) {
-    throw new Error(`Delivery One final courier charge was missing for ${paymentType} booking smoke.`)
+    throw new Error(`Delhivery final courier charge was missing for ${paymentType} booking smoke.`)
   }
 
   return {
@@ -119,7 +119,7 @@ async function quoteFor(userId: string, paymentType: 'prepaid' | 'cod') {
 async function main() {
   const planId = await getBasicPlanId()
   if (!planId) {
-    throw new Error('Basic plan is required before running Delivery One booking smoke.')
+    throw new Error('Basic plan is required before running Delhivery booking smoke.')
   }
 
   const userId = await createSmokeUser(planId)
@@ -132,7 +132,7 @@ async function main() {
         {
           ok: true,
           message:
-            'Delivery One booking courier lookup passed for a live Rs 10 test order without creating a shipment.',
+            'Delhivery booking courier lookup passed for a live Rs 10 test order without creating a shipment.',
           route: {
             origin: 190001,
             destination: 110042,
@@ -167,7 +167,7 @@ async function main() {
 }
 
 main().catch(async (error) => {
-  console.error('Delivery One booking smoke failed:', error)
+  console.error('Delhivery booking smoke failed:', error)
   await pool.end()
   process.exit(1)
 })

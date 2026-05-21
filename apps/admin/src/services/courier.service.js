@@ -136,6 +136,6 @@ export const fetchCourierCredentials = async () => {
 
 export const updateDeliveryOneCredentials = async (payload) => {
   const { data } = await api.put('/admin/couriers/credentials/delivery-one', payload)
-  if (!data?.success) throw new Error('Failed to update Delivery One credentials')
+  if (!data?.success) throw new Error('Failed to update Delhivery credentials')
   return data.data
 }

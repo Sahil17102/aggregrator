@@ -30,6 +30,7 @@ import {
 import { usePresignedDownloadUrls } from 'hooks/usePresignedUrls'
 import { useUpdateOrderStatusMutation } from 'hooks/useOrders'
 import { useEffect, useState } from 'react'
+import { getCourierDisplayName } from 'utils/courierDisplay'
 import {
   FiPackage,
   FiUser,
@@ -248,7 +249,14 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
             {/* Shipment Information */}
             <Section title="Shipment Information" icon={FiTruck}>
               <InfoRow label="AWB Number" value={order.awb_number} copyable />
-              <InfoRow label="Courier Partner" value={order.courier_partner} />
+              <InfoRow
+                label="Courier Partner"
+                value={getCourierDisplayName({
+                  name: order.courier_partner,
+                  courier_id: order.courier_id,
+                  integration_type: order.integration_type,
+                })}
+              />
               <InfoRow label="Shipment ID" value={order.shipment_id} />
               {labelSource && (
                 <Flex justify="space-between" align="center" py={2}>

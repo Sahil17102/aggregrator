@@ -36,6 +36,7 @@ import PageHeading from '../../components/UI/heading/PageHeading'
 import CustomInput from '../../components/UI/inputs/CustomInput'
 import { SmartTabs } from '../../components/UI/tab/Tabs'
 import { useTracking } from '../../hooks/Orders/useTracking'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 import { cardStyles } from './RateCalculator'
 
 type FormValues = {
@@ -342,7 +343,9 @@ export default function OrderTrackingForm() {
                   <Typography variant="body2" color="text.secondary">
                     Courier
                   </Typography>
-                  <Typography fontWeight={600}>{tracking.courier_name || '—'}</Typography>
+                  <Typography fontWeight={600}>
+                    {getCourierDisplayName(tracking.courier_name, '—')}
+                  </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <Typography variant="body2" color="text.secondary">

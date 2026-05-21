@@ -19,7 +19,7 @@ const TARGET_MODE_FILTER = MODE.toLowerCase()
 const IS_EXPRESS_MODE = ['air', 'express'].includes(TARGET_MODE_FILTER)
 const TARGET_COURIER_NAME =
   process.env.B2C_RATECARD_COURIER_NAME ||
-  (TARGET_PROVIDER === 'deliveryone' ? `Delivery One ${MODE}` : `Delhivery ${MODE}`)
+  (TARGET_PROVIDER === 'deliveryone' ? `Delhivery ${MODE}` : `Delhivery ${MODE}`)
 const TARGET_LEGACY_COURIER_NAME_PATTERN =
   TARGET_PROVIDER === 'deliveryone' ? '%delivery%one%' : '%delhivery%'
 const BUSINESS_TYPE = 'B2C'

@@ -20,9 +20,8 @@ type CourierLike =
       service_type?: string | null
     }
 
-const DELIVERY_ONE_DISPLAY_NAME = 'Delivery One'
-const DELIVERY_ONE_SURFACE_DISPLAY_NAME = 'Delivery One Surface'
-const DELIVERY_ONE_EXPRESS_DISPLAY_NAME = 'Delivery One Express'
+const DELHIVERY_SURFACE_DISPLAY_NAME = 'Delhivery Surface'
+const DELHIVERY_EXPRESS_DISPLAY_NAME = 'Delhivery Express'
 const DELIVERY_ONE_LOGO = deliveryOneLogo
 const DELIVERY_ONE_SURFACE_ID = 99
 const DELIVERY_ONE_EXPRESS_ID = 100
@@ -92,9 +91,8 @@ const getDeliveryOneVariant = (courier: CourierLike) => {
 
 const getDeliveryOneDisplayName = (courier: CourierLike) => {
   const variant = getDeliveryOneVariant(courier)
-  if (variant === 'surface') return DELIVERY_ONE_SURFACE_DISPLAY_NAME
-  if (variant === 'express') return DELIVERY_ONE_EXPRESS_DISPLAY_NAME
-  return DELIVERY_ONE_DISPLAY_NAME
+  if (variant === 'express') return DELHIVERY_EXPRESS_DISPLAY_NAME
+  return DELHIVERY_SURFACE_DISPLAY_NAME
 }
 
 export const getCourierDisplayName = (courier: CourierLike, fallback = 'Unknown Courier') => {
@@ -107,7 +105,8 @@ export const getCourierDisplayName = (courier: CourierLike, fallback = 'Unknown 
 export const getCourierLogo = (courier: CourierLike, fallback = defaultLogo) => {
   const values = getCourierValues(courier)
   if (values.some(isDeliveryOneValue)) {
-    return courierLogos['Delivery One'] || courierLogos.deliveryone || DELIVERY_ONE_LOGO
+    const displayName = getDeliveryOneDisplayName(courier)
+    return courierLogos[displayName] || courierLogos.deliveryone || DELIVERY_ONE_LOGO
   }
 
   const normalizedValues = values.map((value) => value.toLowerCase())

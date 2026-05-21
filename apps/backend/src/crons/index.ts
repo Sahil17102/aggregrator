@@ -58,12 +58,12 @@ cron.schedule('*/15 * * * *', async () => {
 })
 
 cron.schedule('*/3 * * * *', async () => {
-  console.log('[Cron] Delivery One tracking poll')
+  console.log('[Cron] Delhivery tracking poll')
   try {
     const stats = await pollDeliveryOneTracking()
-    console.log('[Cron] Delivery One tracking poll finished', stats)
+    console.log('[Cron] Delhivery tracking poll finished', stats)
   } catch (err) {
-    console.error('[Cron] Delivery One tracking poll failed:', err)
+    console.error('[Cron] Delhivery tracking poll failed:', err)
   }
 })
 

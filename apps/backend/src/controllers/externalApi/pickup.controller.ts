@@ -442,7 +442,7 @@ export const requestPickupController = async (req: any, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Unsupported provider',
-        message: `Order ${unsupportedOrder.order_number} is not configured for Delhivery or Delivery One pickup scheduling`,
+        message: `Order ${unsupportedOrder.order_number} is not configured for Delhivery or Delhivery pickup scheduling`,
       })
     }
 
