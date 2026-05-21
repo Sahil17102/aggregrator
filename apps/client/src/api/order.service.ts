@@ -249,6 +249,35 @@ export const retryFailedManifestService = async (orderId: string) => {
   return res.data
 }
 
+export interface SyncB2CTrackingResponse {
+  success: boolean
+  message: string
+  data?: {
+    order_id: string
+    order_number: string
+    awb_number: string
+    courier_partner: string
+    previous_status?: string | null
+    status?: string | null
+    raw_status?: string | null
+    status_type?: string | null
+    changed: boolean
+    status_changed: boolean
+    edd?: string | null
+    delivery_message?: string | null
+    synced_at: string
+  }
+}
+
+export const syncB2COrderTrackingService = async (orderId: string) => {
+  const res = await axiosInstance.post<SyncB2CTrackingResponse>(
+    `/orders/b2c/${orderId}/sync-tracking`,
+    undefined,
+    { timeout: 60000 },
+  )
+  return res.data
+}
+
 export const regenerateOrderDocumentsService = async (
   orderId: string,
   { regenerateLabel = true, regenerateInvoice = true } = {},

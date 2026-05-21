@@ -16,7 +16,7 @@ import {
 } from '@mui/material'
 import moment from 'moment'
 import { useEffect, useState, type ReactNode } from 'react'
-import { MdAssignment, MdLocalOffer, MdReceipt } from 'react-icons/md'
+import { MdAssignment, MdLocalOffer, MdReceipt, MdSync } from 'react-icons/md'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { generateManifestService } from '../../../api/order.service'
 import { useAllCouriersWithDetails } from '../../../hooks/Integrations/useCouriers'
@@ -25,6 +25,7 @@ import {
   useCancelShipment,
   useCreateReverseShipment,
   useRetryFailedManifest,
+  useSyncB2CTracking,
 } from '../../../hooks/Orders/useOrders'
 import { usePickupAddresses } from '../../../hooks/Pickup/usePickupAddresses'
 import { usePresignedDownloadMutation } from '../../../hooks/Uploads/usePresignedDownloadUrls'
@@ -104,6 +105,7 @@ export const statusColorMap: Record<string, 'success' | 'pending' | 'error' | 'i
   delivered: 'success',
   cancelled: 'error',
   ndr: 'error',
+  rto_initiated: 'error',
   rto: 'error',
   rto_in_transit: 'pending',
   rto_delivered: 'info',
@@ -122,6 +124,7 @@ const shippingStatusMap: Record<string, string> = {
   out_for_delivery: 'Out For Delivery',
   delivered: 'Delivered',
   ndr: 'NDR',
+  rto_initiated: 'RTO Initiated',
   rto: 'RTO Initiated',
   rto_in_transit: 'RTO In Transit',
   rto_delivered: 'RTO Delivered',
@@ -171,6 +174,7 @@ const B2COrdersList = () => {
 
   const { data, isLoading, isError } = useB2COrdersByUser(page, rowsPerPage, effectiveFilters)
   const { mutateAsync: retryFailedManifest, isPending: retryingManifest } = useRetryFailedManifest()
+  const { mutateAsync: syncB2CTracking } = useSyncB2CTracking()
   const queryClient = useQueryClient()
   const { mutateAsync: presignDownloads } = usePresignedDownloadMutation()
   const { data: couriers } = useAllCouriersWithDetails()
@@ -179,6 +183,7 @@ const B2COrdersList = () => {
   const { mutate: createReverse } = useCreateReverseShipment()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reverseOrder, setReverseOrder] = useState<any | null>(null)
+  const [syncingTrackingOrderId, setSyncingTrackingOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     setDrawerOpen(false)
@@ -276,6 +281,17 @@ const B2COrdersList = () => {
   const handleRetryManifest = async (order: B2COrder) => {
     if (!order.id) return
     await retryFailedManifest(String(order.id))
+  }
+
+  const handleSyncTracking = async (order: B2COrder) => {
+    if (!order.id) return
+    const orderId = String(order.id)
+    try {
+      setSyncingTrackingOrderId(orderId)
+      await syncB2CTracking(orderId)
+    } finally {
+      setSyncingTrackingOrderId((current) => (current === orderId ? null : current))
+    }
   }
 
   const handleApplyFilters = (appliedFilters: OrderFilters) => {
@@ -730,6 +746,11 @@ const B2COrdersList = () => {
     return Number(row.final_courier_charge ?? row.courier_charge ?? fallback)
   }
 
+  const isDelhiveryTrackingOrder = (row: B2COrder) => {
+    const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`.toLowerCase()
+    return Boolean(String(row.awb_number || '').trim()) && provider.includes('delhivery')
+  }
+
   const formatCompactDate = (value?: string | null) =>
     value ? moment(value).format('DD MMM, hh:mm A') : '-'
 
@@ -867,20 +888,26 @@ const B2COrdersList = () => {
       },
     },
     {
-      label: 'Courier / Status',
+      label: 'Courier',
       id: 'courier_partner',
-      minWidth: 150,
+      minWidth: 132,
       truncate: false,
       render: (_v, row) => (
-        <Stack spacing={0.35} alignItems="flex-start">
-          <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 150 }} noWrap>
-            {row.courier_partner || '-'}
-          </Typography>
-          <StatusChip
-            label={shippingStatusMap[row.order_status] || row.order_status || 'Unknown'}
-            status={statusColorMap[row.order_status] || 'info'}
-          />
-        </Stack>
+        <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 140 }} noWrap>
+          {row.courier_partner || '-'}
+        </Typography>
+      ),
+    },
+    {
+      label: 'Status',
+      id: 'order_status',
+      minWidth: 128,
+      truncate: false,
+      render: (_v, row) => (
+        <StatusChip
+          label={shippingStatusMap[row.order_status] || row.order_status || 'Unknown'}
+          status={statusColorMap[row.order_status] || 'info'}
+        />
       ),
     },
     {
@@ -909,12 +936,35 @@ const B2COrdersList = () => {
       render: (_, row) => {
         const actions: ReactNode[] = []
         const orderStatus = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+        const canSyncTracking = isDelhiveryTrackingOrder(row)
+        const isTrackingSyncing = syncingTrackingOrderId === String(row.id)
+
+        if (canSyncTracking) {
+          actions.push(
+            <Button
+              key="sync-tracking"
+              size="small"
+              variant="outlined"
+              startIcon={
+                isTrackingSyncing ? <CircularProgress size={12} /> : <MdSync size={14} />
+              }
+              disabled={isTrackingSyncing}
+              onClick={() => handleSyncTracking(row)}
+              sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
+            >
+              {isTrackingSyncing ? 'Syncing' : 'Sync'}
+            </Button>,
+          )
+        }
 
         if (isB2CCancelledStatus(orderStatus)) {
           return (
-            <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 800 }}>
-              Cancelled
-            </Typography>
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center">
+              {actions}
+              <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 800 }}>
+                Cancelled
+              </Typography>
+            </Stack>
           )
         }
 

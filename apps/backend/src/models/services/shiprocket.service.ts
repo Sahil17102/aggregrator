@@ -49,6 +49,7 @@ import { presignDownload, presignUpload } from './upload.service'
 import { createWalletTransaction } from './wallet.service'
 import { walletOfUser } from './walletTopupService'
 import { resolveInvoiceNumber } from './invoiceNumber.service'
+import { logTrackingEvent } from './trackingEvents.service'
 
 import * as dotenv from 'dotenv'
 import { PgTransaction } from 'drizzle-orm/pg-core'
@@ -8276,6 +8277,7 @@ type ProviderNormalizedTracking = {
   edd?: string | null
   courier_name?: string | null
   shipment_info?: string | null
+  raw?: any
 }
 
 const TRACKING_SYNC_TERMINAL_STATUSES = new Set([
@@ -8296,6 +8298,7 @@ const TRACKING_SYNC_INTERNAL_STATUSES = new Set([
   'delivered',
   'cancelled',
   'ndr',
+  'rto_initiated',
   'rto',
   'rto_in_transit',
   'rto_delivered',
@@ -8304,6 +8307,7 @@ const TRACKING_SYNC_INTERNAL_STATUSES = new Set([
 
 type OrderSummary = {
   id: string
+  user_id?: string | null
   order_id: string | null
   order_number: string
   integration_type: string | null
@@ -8434,6 +8438,7 @@ const mapDelhiveryTracking = (
     edd: eddString || undefined,
     shipment_info: shipmentInfo || undefined,
     courier_name: courierName,
+    raw,
   }
 }
 
@@ -8507,7 +8512,7 @@ const mapTrackingToOrderStatus = (
       ) {
         return 'rto_in_transit'
       }
-      return 'rto'
+      return 'rto_initiated'
     }
 
     if (providerStatusType === 'dl') {
@@ -8573,7 +8578,7 @@ const mapTrackingToOrderStatus = (
   if (combined.includes('rto')) {
     if (combined.includes('delivered') || combined.includes('dto')) return 'rto_delivered'
     if (combined.includes('in transit') || combined.includes('dispatched')) return 'rto_in_transit'
-    return 'rto'
+    return 'rto_initiated'
   }
 
   if (combined.includes('delivered') || combined === 'dl') return 'delivered'
@@ -8623,9 +8628,28 @@ const shouldSyncB2CTrackingStatus = (order: any) => {
   return providerKey === 'deliveryone' || providerKey === 'delhivery'
 }
 
+const toB2COrderSummary = (order: any): OrderSummary => ({
+  id: order.id,
+  user_id: order.user_id ?? null,
+  order_id: order.order_id ?? null,
+  order_number: order.order_number,
+  integration_type: order.integration_type ?? null,
+  courier_partner: order.courier_partner ?? null,
+  courier_id: order.courier_id ? Number(order.courier_id) : null,
+  awb_number: order.awb_number,
+  order_status: order.order_status ?? null,
+  edd: order.edd ?? null,
+  order_type: order.order_type ?? null,
+  shipment_id: order.shipment_id ?? null,
+  delivery_message: order.delivery_message ?? null,
+  created_at: order.created_at ?? null,
+  updated_at: order.updated_at ?? null,
+})
+
 const persistB2CTrackingStatus = async (
   order: OrderSummary,
   providerData: ProviderNormalizedTracking,
+  options: { emitEvents?: boolean } = {},
 ) => {
   const nextStatus = mapTrackingToOrderStatus(providerData, order.order_status)
   if (!nextStatus) return null
@@ -8637,7 +8661,7 @@ const persistB2CTrackingStatus = async (
 
   if (
     currentStatus === 'cancelled' &&
-    !['cancelled', 'rto', 'rto_in_transit', 'rto_delivered'].includes(nextStatus)
+    !['cancelled', 'rto', 'rto_initiated', 'rto_in_transit', 'rto_delivered'].includes(nextStatus)
   ) {
     return null
   }
@@ -8650,8 +8674,9 @@ const persistB2CTrackingStatus = async (
   }
 
   const updateData: Record<string, any> = {}
+  const statusChanged = currentStatus !== nextStatus
 
-  if (currentStatus !== nextStatus) {
+  if (statusChanged) {
     updateData.order_status = nextStatus
   }
 
@@ -8671,11 +8696,37 @@ const persistB2CTrackingStatus = async (
 
   await db.update(b2c_orders).set(updateData).where(eq(b2c_orders.id, order.id))
 
-  return {
+  const synced = {
     order_status: updateData.order_status ?? order.order_status,
     edd: updateData.edd ?? order.edd,
     delivery_message: updateData.delivery_message ?? order.delivery_message,
+    changed: true,
+    statusChanged,
   }
+
+  if (options.emitEvents && statusChanged && order.user_id) {
+    const latestEvent = providerData.history?.[0]
+    await logTrackingEvent({
+      orderId: order.id,
+      userId: order.user_id,
+      awbNumber: order.awb_number,
+      courier: providerData.courier_name ?? order.courier_partner ?? 'Delhivery',
+      statusCode: nextStatus,
+      statusText: providerData.status ?? latestEvent?.message ?? nextStatus,
+      location: latestEvent?.location ?? '',
+      raw: providerData.raw ?? providerData,
+    })
+
+    await sendWebhookEvent(order.user_id, 'tracking.updated', {
+      order_id: order.id,
+      awb_number: order.awb_number,
+      status: nextStatus,
+      raw_status: providerData.status ?? latestEvent?.message ?? nextStatus,
+      courier_partner: providerData.courier_name ?? order.courier_partner ?? 'Delhivery',
+    })
+  }
+
+  return synced
 }
 
 const syncB2COrdersWithLiveTracking = async (orders: any[]) => {
@@ -8686,22 +8737,7 @@ const syncB2COrdersWithLiveTracking = async (orders: any[]) => {
     const chunk = candidates.slice(index, index + concurrency)
     await Promise.all(
       chunk.map(async (order) => {
-        const orderSummary: OrderSummary = {
-          id: order.id,
-          order_id: order.order_id ?? null,
-          order_number: order.order_number,
-          integration_type: order.integration_type ?? null,
-          courier_partner: order.courier_partner ?? null,
-          courier_id: order.courier_id ? Number(order.courier_id) : null,
-          awb_number: order.awb_number,
-          order_status: order.order_status ?? null,
-          edd: order.edd ?? null,
-          order_type: order.order_type ?? null,
-          shipment_id: order.shipment_id ?? null,
-          delivery_message: order.delivery_message ?? null,
-          created_at: order.created_at ?? null,
-          updated_at: order.updated_at ?? null,
-        }
+        const orderSummary = toB2COrderSummary(order)
 
         try {
           const providerData = await fetchLiveTrackingForOrder(orderSummary)
@@ -8723,6 +8759,68 @@ const syncB2COrdersWithLiveTracking = async (orders: any[]) => {
         }
       }),
     )
+  }
+}
+
+export const syncB2COrderTrackingById = async (
+  orderId: string,
+  options: {
+    userId?: string
+    provider?: 'delhivery' | 'deliveryone'
+    emitEvents?: boolean
+  } = {},
+) => {
+  if (!orderId) throw new HttpError(400, 'Order ID is required')
+
+  const conditions: SQL<unknown>[] = [eq(b2c_orders.id, orderId)]
+  if (options.userId) conditions.push(eq(b2c_orders.user_id, options.userId))
+
+  const [orderRow] = await db
+    .select()
+    .from(b2c_orders)
+    .where(conditions.length === 1 ? conditions[0] : and(...conditions))
+    .limit(1)
+
+  if (!orderRow) {
+    throw new HttpError(404, 'Order not found')
+  }
+
+  const order = toB2COrderSummary(orderRow)
+  const providerKey = getTrackingProviderKey(order)
+
+  if (options.provider && providerKey !== options.provider) {
+    throw new HttpError(400, 'Tracking sync is available for Delhivery orders only.')
+  }
+
+  if (!sanitizeString(order.awb_number)) {
+    throw new HttpError(400, 'AWB number is required before tracking can be synced.')
+  }
+
+  const providerData = await fetchLiveTrackingForOrder(order)
+  if (!providerData) {
+    throw new HttpError(400, 'Live tracking is not configured for this courier.')
+  }
+
+  const previousStatus = normalizeStatusToken(order.order_status)
+  const nextStatus = mapTrackingToOrderStatus(providerData, order.order_status)
+  const synced = await persistB2CTrackingStatus(order, providerData, {
+    emitEvents: options.emitEvents ?? true,
+  })
+
+  return {
+    order_id: order.id,
+    order_number: order.order_number,
+    awb_number: order.awb_number,
+    courier_partner: providerData.courier_name ?? order.courier_partner ?? providerKey,
+    previous_status: previousStatus || order.order_status,
+    status: synced?.order_status ?? nextStatus ?? order.order_status,
+    raw_status: providerData.status ?? null,
+    status_type: providerData.status_type ?? null,
+    changed: Boolean(synced?.changed),
+    status_changed: Boolean(synced?.statusChanged),
+    edd: synced?.edd ?? order.edd ?? providerData.edd ?? null,
+    delivery_message: synced?.delivery_message ?? order.delivery_message ?? providerData.shipment_info ?? null,
+    synced_at: new Date().toISOString(),
   }
 }
 

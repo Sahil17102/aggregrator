@@ -8,11 +8,13 @@ import {
   generateManifestService,
   regenerateOrderDocumentsService,
   retryFailedManifestService,
+  syncB2COrderTrackingService,
   type CreateB2BShipmentParams,
   type CreateShipmentParams,
   type GenerateManifestParams,
   type GenerateManifestResponse,
   type RetryManifestResponse,
+  type SyncB2CTrackingResponse,
 } from '../../api/order.service'
 import { cancelShipment as cancelShipmentApi } from '../../api/pickups'
 import { createReverseShipment } from '../../api/returns'
@@ -88,6 +90,7 @@ const TRACKING_POLL_STATUSES = new Set([
   'in_transit',
   'out_for_delivery',
   'ndr',
+  'rto_initiated',
   'rto',
   'rto_in_transit',
   'cancellation_requested',
@@ -181,6 +184,29 @@ export const useRetryFailedManifest = () => {
         error?.response?.data?.message || error?.message || 'Failed to retry manifest'
       toast.open({ message, severity: 'error' })
       console.error('Manifest retry error:', error)
+    },
+  })
+}
+
+export const useSyncB2CTracking = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (orderId: string) => syncB2COrderTrackingService(orderId),
+    onSuccess: (data: SyncB2CTrackingResponse) => {
+      toast.open({
+        message: data.message || 'Tracking status synced successfully.',
+        severity: 'success',
+      })
+      queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message || error?.message || 'Failed to sync tracking status'
+      toast.open({ message, severity: 'error' })
+      console.error('Tracking sync error:', error)
     },
   })
 }

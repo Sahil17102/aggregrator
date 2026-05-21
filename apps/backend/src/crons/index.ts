@@ -9,6 +9,7 @@ import {
   sendWeeklyWeightReconciliationEmails,
 } from './weightReconciliationEmails'
 import { pollEkartTracking } from './ekartTracking'
+import { pollDelhiveryTracking } from './delhiveryTracking'
 
 if (isRazorpayConfigured) {
   cron.schedule('*/20 * * * *', async () => {
@@ -53,6 +54,16 @@ cron.schedule('*/15 * * * *', async () => {
     await pollEkartTracking()
   } catch (err) {
     console.error('[Cron] Ekart tracking poll failed:', err)
+  }
+})
+
+cron.schedule('*/3 * * * *', async () => {
+  console.log('[Cron] Delhivery tracking poll')
+  try {
+    const stats = await pollDelhiveryTracking()
+    console.log('[Cron] Delhivery tracking poll finished', stats)
+  } catch (err) {
+    console.error('[Cron] Delhivery tracking poll failed:', err)
   }
 })
 

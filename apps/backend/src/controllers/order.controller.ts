@@ -10,6 +10,7 @@ import {
   getB2COrdersByUserService,
   ShipmentParams,
   retryFailedManifestService,
+  syncB2COrderTrackingById,
   trackByAwbService,
   trackByOrderService,
 } from '../models/services/shiprocket.service'
@@ -333,6 +334,47 @@ export const retryFailedManifestController = async (req: any, res: Response) => 
     return res.status(statusCode).json({
       success: false,
       message: error?.message || 'Failed to retry manifest.',
+    })
+  }
+}
+
+export const syncB2CTrackingController = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.sub
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const orderId = String(req.params.orderId || '').trim()
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' })
+    }
+
+    const result = await syncB2COrderTrackingById(orderId, {
+      userId,
+      provider: 'delhivery',
+      emitEvents: true,
+    })
+
+    return res.status(200).json({
+      success: true,
+      message: result.changed
+        ? 'Tracking status synced successfully.'
+        : 'Tracking status is already up to date.',
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('B2C tracking sync error:', {
+      orderId: req.params?.orderId,
+      userId: req.user?.sub,
+      message: error?.message,
+      statusCode: error?.statusCode,
+      response: error?.response?.data,
+    })
+    const statusCode = typeof error?.statusCode === 'number' ? error.statusCode : 500
+    return res.status(statusCode).json({
+      success: false,
+      message: error?.message || 'Failed to sync tracking status.',
     })
   }
 }
