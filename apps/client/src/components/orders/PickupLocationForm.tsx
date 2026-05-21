@@ -19,6 +19,11 @@ import type { B2CFormData } from './b2c/B2COrderForm'
 
 const ACCENT = '#0D3B8E'
 const TEXT_PRIMARY = '#102A54'
+const padDatePart = (value: number) => String(value).padStart(2, '0')
+const getLocalDateInputValue = () => {
+  const today = new Date()
+  return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`
+}
 
 const PickupLocationForm = () => {
   const { control, setValue, watch } = useFormContext<B2BFormData | B2CFormData>()
@@ -41,7 +46,7 @@ const PickupLocationForm = () => {
 
   useEffect(() => {
     if (!pickupDate) {
-      setValue('pickupDate', new Date().toISOString().split('T')[0])
+      setValue('pickupDate', getLocalDateInputValue())
     }
     if (!pickupTime) {
       setValue('pickupTime', '10:00')

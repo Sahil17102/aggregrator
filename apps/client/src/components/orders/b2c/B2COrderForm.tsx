@@ -22,6 +22,11 @@ import PackageDimensionsForm from './PackageDimensionsForm'
 const ACCENT = '#0D3B8E'
 const TEXT_PRIMARY = '#102A54'
 const TEXT_MUTED = '#496189'
+const padDatePart = (value: number) => String(value).padStart(2, '0')
+const getLocalDateInputValue = () => {
+  const today = new Date()
+  return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`
+}
 
 export type Product = {
   productName: string
@@ -100,7 +105,7 @@ export default function B2COrderFormSteps({ onClose }: { onClose?: () => void })
   const steps = ['Order & Delivery', 'Pickup Location', 'Courier Selection']
   const { data: paymentOptions } = usePaymentOptions()
 
-  const defaultPickupDate = new Date().toISOString().split('T')[0]
+  const defaultPickupDate = getLocalDateInputValue()
 
   // Determine default order type based on enabled payment options
   const getDefaultOrderType = (): 'prepaid' | 'cod' => {

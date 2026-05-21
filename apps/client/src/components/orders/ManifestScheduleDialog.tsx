@@ -37,7 +37,6 @@ const formatTimeInput = (date: Date) => `${pad(date.getHours())}:${pad(date.getM
 const getDefaultSchedule = () => {
   const now = new Date()
   const pickup = new Date(now)
-  pickup.setDate(pickup.getDate() + 1)
   pickup.setHours(11, 0, 0, 0)
   return {
     pickupDate: formatDateInput(pickup),
@@ -75,7 +74,7 @@ export default function ManifestScheduleDialog({
     setShipmentCount(String(Math.max(1, defaultShipmentCount)))
   }, [defaultShipmentCount, open])
 
-  const today = defaults.pickupDate
+  const today = formatDateInput(new Date())
   const dateError = pickupDate < today
   const timeError = !/^\d{2}:\d{2}$/.test(pickupTime)
   const normalizedShipmentCount = Number(shipmentCount)

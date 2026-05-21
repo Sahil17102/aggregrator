@@ -12,7 +12,11 @@ import type { B2CFormData } from './b2c/B2COrderForm'
 
 type OrderFormData = B2CFormData | B2BFormData
 
-const getTodayDate = () => new Date().toISOString().split('T')[0]
+const padDatePart = (value: number) => String(value).padStart(2, '0')
+const getTodayDate = () => {
+  const today = new Date()
+  return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`
+}
 const generateOrderId = () => `ORD-${Date.now()}`
 const allOrderTypes = [
   { key: 'prepaid', label: 'Prepaid' },

@@ -1581,15 +1581,21 @@ export class DeliveryOneService {
   async createPickupRequest(
     params: DeliveryOnePickupRequestPayload,
   ): Promise<DeliveryOnePickupRequestResponse> {
+    const formatLocalDateOnly = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
     const sanitizeString = (value?: string | number | Date | null) => {
       if (value === undefined || value === null) return ''
-      if (value instanceof Date) return value.toISOString().split('T')[0]
+      if (value instanceof Date) return formatLocalDateOnly(value)
       return String(value).trim()
     }
     const normalizeDate = (value: unknown) => {
       const normalized =
         value instanceof Date
-          ? value.toISOString().split('T')[0]
+          ? formatLocalDateOnly(value)
           : sanitizeString(value as any)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
         throw new HttpError(400, 'pickup_date must be in YYYY-MM-DD format.')

@@ -495,15 +495,18 @@ export const requestPickupController = async (req: any, res: Response) => {
       })
     }
 
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const defaultPickupDate = tomorrow.toISOString().split('T')[0]
+    const formatLocalDateOnly = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    const defaultPickupDate = formatLocalDateOnly(new Date())
     const defaultPickupTime = '11:00:00'
     const requestedPickupDate = String(pickup_date || '').trim().slice(0, 10)
-    const safePickupDate =
-      /^\d{4}-\d{2}-\d{2}$/.test(requestedPickupDate) && requestedPickupDate >= defaultPickupDate
-        ? requestedPickupDate
-        : defaultPickupDate
+    const safePickupDate = /^\d{4}-\d{2}-\d{2}$/.test(requestedPickupDate)
+      ? requestedPickupDate
+      : defaultPickupDate
     const requestedPickupTime = String(pickup_time || '').trim()
     const safePickupTime = /^\d{2}:\d{2}:\d{2}$/.test(requestedPickupTime)
       ? requestedPickupTime
