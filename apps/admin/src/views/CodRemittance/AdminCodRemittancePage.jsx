@@ -62,6 +62,10 @@ import {
 import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
+const padDatePart = (value) => String(value).padStart(2, '0')
+const formatDateInput = (date = new Date()) =>
+  `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`
+
 // Filter options for COD remittances
 const remittanceFilterOptions = [
   {
@@ -107,8 +111,12 @@ export default function AdminCodRemittancePage() {
   const [csvPreviewData, setCsvPreviewData] = useState(null)
   const [selectedForCredit, setSelectedForCredit] = useState([])
   const [utrNumber, setUtrNumber] = useState('')
-  const [settlementDate, setSettlementDate] = useState(new Date().toISOString().split('T')[0])
+  const [settlementDate, setSettlementDate] = useState(formatDateInput())
   const [reviewTabIndex, setReviewTabIndex] = useState(0)
+  const [manualUtrNumber, setManualUtrNumber] = useState('')
+  const [manualSettlementDate, setManualSettlementDate] = useState(formatDateInput())
+  const [manualSettledAmount, setManualSettledAmount] = useState('')
+  const [manualSettlementNotes, setManualSettlementNotes] = useState('')
 
   const { isOpen: isNotesOpen, onOpen: onNotesOpen, onClose: onNotesClose } = useDisclosure()
   const { isOpen: isCreditOpen, onOpen: onCreditOpen, onClose: onCreditClose } = useDisclosure()
@@ -178,12 +186,43 @@ export default function AdminCodRemittancePage() {
 
   const handleOpenCredit = (remittance) => {
     setSelectedRemittance(remittance)
+    setManualUtrNumber('')
+    setManualSettlementDate(formatDateInput())
+    setManualSettledAmount(String(remittance?.remittableAmount || remittance?.codAmount || ''))
+    setManualSettlementNotes('')
     onCreditOpen()
   }
 
   const handleManualCredit = async () => {
     if (selectedRemittance) {
-      await manualCreditMutation.mutateAsync(selectedRemittance.id)
+      if (!manualUtrNumber.trim()) {
+        toast({
+          title: 'UTR Required',
+          description: 'Please enter the UTR/Transaction number',
+          status: 'warning',
+          duration: 3000,
+        })
+        return
+      }
+
+      const amount = Number(manualSettledAmount)
+      if (!Number.isFinite(amount) || amount <= 0) {
+        toast({
+          title: 'Invalid Amount',
+          description: 'Please enter a valid settled amount',
+          status: 'warning',
+          duration: 3000,
+        })
+        return
+      }
+
+      await manualCreditMutation.mutateAsync({
+        remittanceId: selectedRemittance.id,
+        settledDate: manualSettlementDate,
+        utrNumber: manualUtrNumber.trim(),
+        settledAmount: amount,
+        notes: manualSettlementNotes.trim() || undefined,
+      })
       onCreditClose()
     }
   }
@@ -357,6 +396,7 @@ export default function AdminCodRemittancePage() {
       setCsvPreviewData(null)
       setSelectedForCredit([])
       setUtrNumber('')
+      setSettlementDate(formatDateInput())
       setCsvFile(null)
     } catch (error) {
       toast({
@@ -702,6 +742,50 @@ export default function AdminCodRemittancePage() {
                 before marking the net seller settlement in panel.
               </Text>
             </Box>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} mb="12px">
+              <FormControl isRequired>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  UTR / Transaction Number
+                </FormLabel>
+                <Input
+                  value={manualUtrNumber}
+                  onChange={(e) => setManualUtrNumber(e.target.value)}
+                  placeholder="Enter UTR/Reference number"
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Settlement Date
+                </FormLabel>
+                <Input
+                  type="date"
+                  value={manualSettlementDate}
+                  onChange={(e) => setManualSettlementDate(e.target.value)}
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Settled Amount
+                </FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={manualSettledAmount}
+                  onChange={(e) => setManualSettledAmount(e.target.value)}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Notes
+                </FormLabel>
+                <Input
+                  value={manualSettlementNotes}
+                  onChange={(e) => setManualSettlementNotes(e.target.value)}
+                  placeholder="Optional settlement notes"
+                />
+              </FormControl>
+            </SimpleGrid>
             <Text fontSize="xs" color="red.500">
               ⚠️ This action only marks the remittance as settled in panel. It does not credit the wallet.
             </Text>

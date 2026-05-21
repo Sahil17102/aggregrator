@@ -1,10 +1,10 @@
 import { decimal, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { users } from './users'
 
-// COD Remittance Status - Wallet Integrated
+// COD Remittance Status - offline settlement tracked in panel
 export const codRemittanceStatusEnum = pgEnum('cod_remittance_status', [
-  'pending', // COD collected, awaiting wallet credit
-  'credited', // Amount credited to merchant wallet
+  'pending', // COD collected, awaiting courier/admin settlement
+  'credited', // Amount marked settled/disbursed
 ])
 
 /**
@@ -38,7 +38,7 @@ export const codRemittances = pgTable('cod_remittances', {
   // Remittance tracking
   status: codRemittanceStatusEnum('status').default('pending').notNull(),
   collectedAt: timestamp('collected_at'),
-  creditedAt: timestamp('credited_at'), // When credited to wallet
+  creditedAt: timestamp('credited_at'), // When marked settled/disbursed
 
   // Wallet transaction reference
   walletTransactionId: uuid('wallet_transaction_id'),

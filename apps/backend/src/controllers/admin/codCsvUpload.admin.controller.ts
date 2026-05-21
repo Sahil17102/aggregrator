@@ -3,21 +3,63 @@ import { Response } from 'express'
 import Papa from 'papaparse'
 import { db } from '../../models/client'
 import { codRemittances } from '../../models/schema/codRemittance'
-import { creditCodRemittanceToWallet } from '../../models/services/codRemittance.service'
+import { markCodRemittanceSettledOffline } from '../../models/services/codRemittance.service'
+
+const DELHIVERY_SETTLEMENT_MAPPING = {
+  awb: ['Waybill', 'waybill', 'AWB', 'CN Number'],
+  orderNumber: ['Order', 'order_id', 'Client Order ID', 'Reference Number'],
+  codAmount: ['COD Amount', 'cod_amount', 'Total Amount'],
+  remittableAmount: ['Net Payable', 'net_payable', 'Remittable Amount', 'Settlement Amount'],
+  utr: ['Bank Transaction ID', 'utr_number', 'UTR', 'Transaction Reference'],
+  settlementDate: ['Remittance Date', 'settlement_date', 'Date'],
+}
 
 /**
  * CSV Field Mappings for Different Couriers
  * Each courier has different column names in their settlement CSV
  */
 const COURIER_CSV_MAPPINGS = {
-  delhivery: {
-    awb: ['Waybill', 'waybill', 'AWB', 'CN Number'],
-    orderNumber: ['Order', 'order_id', 'Client Order ID', 'Reference Number'],
-    codAmount: ['COD Amount', 'cod_amount', 'Total Amount'],
-    remittableAmount: ['Net Payable', 'net_payable', 'Remittable Amount', 'Settlement Amount'],
-    utr: ['Bank Transaction ID', 'utr_number', 'UTR', 'Transaction Reference'],
-    settlementDate: ['Remittance Date', 'settlement_date', 'Date'],
-  },
+  deliveryone: DELHIVERY_SETTLEMENT_MAPPING,
+}
+
+function normalizeCourierPartnerKey(value: unknown): keyof typeof COURIER_CSV_MAPPINGS | null {
+  const compact = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+
+  if (
+    compact === 'deliveryone' ||
+    compact === 'delivery1' ||
+    compact === 'delhivery' ||
+    compact === 'delhiveryone' ||
+    compact === 'delhiverysurface' ||
+    compact === 'delhiveryexpress' ||
+    compact === 'delhiveryair'
+  ) {
+    return 'deliveryone'
+  }
+
+  return null
+}
+
+function getCourierSettlementLabel(courierPartner: unknown) {
+  return normalizeCourierPartnerKey(courierPartner) === 'deliveryone'
+    ? 'Delhivery'
+    : String(courierPartner || 'Courier').trim() || 'Courier'
+}
+
+function parseSettlementDate(value: unknown) {
+  const raw = String(value || '').trim()
+  const dateOnlyMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch
+    return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0)
+  }
+
+  const parsed = raw ? new Date(raw) : new Date()
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
 }
 
 /**
@@ -26,7 +68,6 @@ const COURIER_CSV_MAPPINGS = {
 function extractField(
   row: Record<string, string>,
   fieldMappings: string[],
-  courierPartner: string,
 ): string {
   for (const fieldName of fieldMappings) {
     if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== '') {
@@ -80,7 +121,16 @@ export const previewCourierSettlementCsv = async (req: any, res: Response): Prom
       })
     }
 
-    console.log(`📊 Parsing ${records.length} records from ${courierPartner} CSV...`)
+    const courierKey = normalizeCourierPartnerKey(courierPartner)
+    if (!courierKey) {
+      return res.status(400).json({
+        success: false,
+        message: `Unsupported courier partner: ${courierPartner}`,
+      })
+    }
+    const courierLabel = getCourierSettlementLabel(courierPartner)
+
+    console.log(`📊 Parsing ${records.length} records from ${courierLabel} CSV...`)
 
     // DEBUG: Log CSV column names
     if (records.length > 0) {
@@ -98,23 +148,16 @@ export const previewCourierSettlementCsv = async (req: any, res: Response): Prom
       errors: [] as any[],
     }
 
-    // Get courier-specific field mappings
-    const mappings = COURIER_CSV_MAPPINGS[courierPartner as keyof typeof COURIER_CSV_MAPPINGS]
-    if (!mappings) {
-      return res.status(400).json({
-        success: false,
-        message: `Unsupported courier partner: ${courierPartner}`,
-      })
-    }
+    const mappings = COURIER_CSV_MAPPINGS[courierKey]
 
-    console.log(`🔍 Using mappings for ${courierPartner}:`, mappings)
+    console.log(`🔍 Using mappings for ${courierLabel}:`, mappings)
 
     // Process each row
     for (let i = 0; i < records.length; i++) {
       const row = records[i]
       try {
         // Extract AWB using courier-specific mapping
-        const awbRaw = extractField(row, mappings.awb, courierPartner)
+        const awbRaw = extractField(row, mappings.awb)
         const awbNumber = normalizeAwb(awbRaw)
 
         if (!awbNumber) {
@@ -130,12 +173,13 @@ export const previewCourierSettlementCsv = async (req: any, res: Response): Prom
         }
 
         // Extract amounts using courier-specific mapping
-        const remittableAmountStr = extractField(row, mappings.remittableAmount, courierPartner)
+        const remittableAmountStr =
+          extractField(row, mappings.remittableAmount) || extractField(row, mappings.codAmount)
         const courierRemittableAmount = parseAmount(remittableAmountStr)
 
         // Extract UTR (optional in CSV, can be entered manually later)
-        const utr = extractField(row, mappings.utr, courierPartner)
-        const csvOrderNumber = extractField(row, mappings.orderNumber, courierPartner)
+        const utr = extractField(row, mappings.utr)
+        const csvOrderNumber = extractField(row, mappings.orderNumber)
 
         // Find in our database
         let [remittance] = await db
@@ -210,7 +254,7 @@ export const previewCourierSettlementCsv = async (req: any, res: Response): Prom
           difference,
           matched: difference !== null && Math.abs(difference) < 1, // Within ₹1
           utr,
-          courierPartner,
+          courierPartner: courierKey,
           amountMissing: courierRemittableAmount === null,
         }
 
@@ -278,6 +322,7 @@ export const previewCourierSettlementCsv = async (req: any, res: Response): Prom
 export const confirmCourierSettlement = async (req: any, res: Response): Promise<any> => {
   try {
     const { remittances, utrNumber, settlementDate, courierPartner } = req.body
+    const normalizedUtrNumber = String(utrNumber || '').trim()
 
     if (!remittances || !Array.isArray(remittances) || remittances.length === 0) {
       return res.status(400).json({
@@ -286,7 +331,7 @@ export const confirmCourierSettlement = async (req: any, res: Response): Promise
       })
     }
 
-    if (!utrNumber) {
+    if (!normalizedUtrNumber) {
       return res.status(400).json({
         success: false,
         message: 'UTR number is required',
@@ -327,32 +372,34 @@ export const confirmCourierSettlement = async (req: any, res: Response): Promise
         }
         seenRemittances.add(remittanceId)
 
-        const parsedDate = settlementDate ? new Date(settlementDate) : new Date()
-        const validSettledDate = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate
+        const validSettledDate = parseSettlementDate(settlementDate)
         const parsedCourierAmount = Number(courierAmount)
         const settledAmount =
           Number.isFinite(parsedCourierAmount) && parsedCourierAmount > 0
             ? parsedCourierAmount
             : undefined
 
-        // Credit wallet
-        await creditCodRemittanceToWallet({
+        const updatedRemittance = await markCodRemittanceSettledOffline({
           remittanceId,
           settledDate: validSettledDate,
-          utrNumber,
+          utrNumber: normalizedUtrNumber,
           settledAmount,
-          notes: `Marked settled offline from ${courierPartner || 'Courier'} CSV upload via admin panel`,
+          notes: `Marked settled offline from ${getCourierSettlementLabel(
+            courierPartner,
+          )} CSV upload via admin panel`,
           creditedBy: req.user?.sub || 'admin',
         })
+
+        const actualSettledAmount = Number(updatedRemittance?.remittableAmount || settledAmount || 0)
 
         results.credited.push({
           remittanceId,
           awb,
           orderNumber,
-          amount: settledAmount,
+          amount: actualSettledAmount,
         })
 
-        console.log(`✅ Marked settled ${awb}: ₹${settledAmount ?? 'system_amount'}`)
+        console.log(`✅ Marked settled ${awb}: ₹${actualSettledAmount}`)
       } catch (error: any) {
         results.failed.push({
           awb: item.awb,
@@ -363,7 +410,10 @@ export const confirmCourierSettlement = async (req: any, res: Response): Promise
       }
     }
 
-    const totalCredited = results.credited.reduce((sum, r) => sum + r.amount, 0)
+    const totalCredited = results.credited.reduce(
+      (sum, r) => sum + (Number.isFinite(Number(r.amount)) ? Number(r.amount) : 0),
+      0,
+    )
 
     console.log(`
     ✅ Settlement Confirmed:
@@ -372,7 +422,7 @@ export const confirmCourierSettlement = async (req: any, res: Response): Promise
     Successfully Settled:  ${results.credited.length}
     Failed:              ${results.failed.length}
     Total Amount:        ₹${totalCredited}
-    UTR:                 ${utrNumber}
+    UTR:                 ${normalizedUtrNumber}
     ───────────────────────────────────────
     `)
 
@@ -383,7 +433,7 @@ export const confirmCourierSettlement = async (req: any, res: Response): Promise
         credited: results.credited.length,
         failed: results.failed.length,
         totalAmount: totalCredited,
-        utrNumber,
+        utrNumber: normalizedUtrNumber,
         results,
       },
     })

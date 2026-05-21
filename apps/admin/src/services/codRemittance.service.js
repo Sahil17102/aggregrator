@@ -29,8 +29,19 @@ export const getUserCodRemittances = async (userId) => {
 /**
  * Manually mark a remittance as settled offline
  */
-export const manualCreditWallet = async (remittanceId) => {
-  const response = await apiClient.post(`/admin/cod-remittance/remittances/${remittanceId}/credit`)
+export const manualCreditWallet = async ({
+  remittanceId,
+  settledDate,
+  utrNumber,
+  settledAmount,
+  notes,
+}) => {
+  const response = await apiClient.post(`/admin/cod-remittance/remittances/${remittanceId}/credit`, {
+    settledDate,
+    utrNumber,
+    settledAmount,
+    notes,
+  })
   return response.data
 }
 

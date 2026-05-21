@@ -1,15 +1,14 @@
 /**
  * COD Settlement Flow - Integration Test
- * Tests the complete flow from order delivery to wallet credit
+ * Tests the complete flow from order delivery to offline COD settlement
  */
 
 import { db } from './src/models/client'
 import { codRemittances } from './src/models/schema/codRemittance'
-import { wallets, walletTransactions } from './src/models/schema/wallet'
 import { eq } from 'drizzle-orm'
 import {
   createCodRemittance,
-  creditCodRemittanceToWallet,
+  markCodRemittanceSettledOffline,
   getCodRemittanceStats,
 } from './src/models/services/codRemittance.service'
 
@@ -78,27 +77,29 @@ async function testCodSettlementFlow() {
     console.log('✅ Pending remittance showing in stats\n')
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 3: Simulate Courier Settlement (Admin Credits Wallet)
+    // STEP 3: Simulate Courier Settlement (Admin Marks Offline Settlement)
     // ═══════════════════════════════════════════════════════════════
     console.log('💰 STEP 3: Simulating courier settlement...')
     console.log('(In real world: Courier sends ₹1420 to your bank after 7-15 days)')
-    console.log('Admin now credits seller wallet...\n')
+    console.log('Admin now marks the seller settlement as paid offline...\n')
 
     const settledDate = new Date()
     const utrNumber = 'TEST-UTR-' + Date.now()
 
-    const creditedRemittance = await creditCodRemittanceToWallet({
+    const creditedRemittance = await markCodRemittanceSettledOffline({
       remittanceId: remittance.id,
       settledDate,
       utrNumber,
+      settledAmount: Number(remittance.remittableAmount),
       notes: 'Test settlement from integration test',
       creditedBy: 'test-admin',
     })
 
-    console.log('✅ Wallet credited:', {
+    console.log('✅ Remittance settled offline:', {
       id: creditedRemittance.id,
       status: creditedRemittance.status,
       creditedAt: creditedRemittance.creditedAt,
+      walletTransactionId: creditedRemittance.walletTransactionId,
       notes: creditedRemittance.notes,
     })
 
@@ -109,40 +110,15 @@ async function testCodSettlementFlow() {
     console.log('✅ Status changed to "credited"\n')
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 4: Verify Wallet Transaction Created
+    // STEP 4: Verify Wallet Was Not Credited
     // ═══════════════════════════════════════════════════════════════
-    console.log('💵 STEP 4: Verifying wallet transaction...')
+    console.log('💵 STEP 4: Verifying no wallet transaction was created...')
 
-    // Get user wallet
-    const [userWallet] = await db.select().from(wallets).where(eq(wallets.userId, testUserId))
-
-    if (!userWallet) {
-      console.log('ℹ️ No wallet found for test user (expected in test environment)')
-    } else {
-      console.log('✅ Wallet found:', {
-        id: userWallet.id,
-        balance: userWallet.balance,
-        userId: userWallet.userId,
-      })
-
-      // Check wallet transactions
-      const transactions = await db
-        .select()
-        .from(walletTransactions)
-        .where(eq(walletTransactions.wallet_id, userWallet.id))
-        .limit(5)
-
-      console.log(`✅ Found ${transactions.length} wallet transaction(s)`)
-
-      const codTransaction = transactions.find((t) => t.ref === testOrderId)
-      if (codTransaction) {
-        console.log('✅ COD credit transaction found:', {
-          amount: codTransaction.amount,
-          type: codTransaction.type,
-          reason: codTransaction.reason,
-        })
-      }
+    if (creditedRemittance.walletTransactionId !== null) {
+      throw new Error('❌ Offline COD settlement should not create a wallet transaction')
     }
+
+    console.log('✅ Wallet transaction reference stayed null\n')
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 5: Verify Final Stats
@@ -170,10 +146,6 @@ async function testCodSettlementFlow() {
 
     await db.delete(codRemittances).where(eq(codRemittances.id, remittance.id))
 
-    if (userWallet) {
-      await db.delete(walletTransactions).where(eq(walletTransactions.wallet_id, userWallet.id))
-    }
-
     console.log('✅ Test data cleaned up\n')
 
     // ═══════════════════════════════════════════════════════════════
@@ -185,10 +157,10 @@ async function testCodSettlementFlow() {
 
     console.log('✅ Flow Summary:')
     console.log('  1. Order delivered → COD remittance created with "pending" status')
-    console.log('  2. No instant wallet credit (real-world flow)')
-    console.log('  3. Courier settles → Admin credits wallet')
+    console.log('  2. No wallet transaction is created (real-world flow)')
+    console.log('  3. Courier settles → Admin marks settlement paid offline')
     console.log('  4. Status updated to "credited"')
-    console.log('  5. Wallet transaction recorded')
+    console.log('  5. Wallet transaction is not created')
     console.log('  6. Stats updated correctly\n')
 
     process.exit(0)

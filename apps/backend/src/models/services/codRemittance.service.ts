@@ -91,10 +91,10 @@ export async function createCodRemittance(params: {
 }
 
 /**
- * Mark COD remittance as settled once the courier remits funds offline.
- * This does not touch the merchant wallet or invoices.
+ * Mark COD remittance as settled once the courier/admin disburses funds offline.
+ * This records settlement status, amount, date, and reference in COD settlement records only.
  */
-export async function creditCodRemittanceToWallet(params: {
+export async function markCodRemittanceSettledOffline(params: {
   remittanceId: string
   settledDate?: Date
   utrNumber?: string
@@ -103,6 +103,8 @@ export async function creditCodRemittanceToWallet(params: {
   creditedBy?: string // admin user ID
 }) {
   const { remittanceId, settledDate, utrNumber, settledAmount, notes, creditedBy } = params
+  const normalizedUtrNumber = String(utrNumber || '').trim()
+  const normalizedNotes = String(notes || '').trim()
 
   return await db
     .transaction(async (tx) => {
@@ -117,7 +119,7 @@ export async function creditCodRemittanceToWallet(params: {
       }
 
       if (remittance.status === 'credited') {
-        throw new Error(`Remittance already credited: ${remittance.orderNumber}`)
+        throw new Error(`Remittance already settled: ${remittance.orderNumber}`)
       }
 
       // 2. Determine settled amount (use courier-settled amount if different from original)
@@ -132,7 +134,9 @@ export async function creditCodRemittanceToWallet(params: {
       const adminNote = creditedBy
         ? `Marked as settled offline by admin (ID: ${creditedBy}). `
         : 'Marked as settled offline via settlement reconciliation. '
-      const fullNotes = `${adminNote}${notes || ''} ${utrNumber ? `UTR: ${utrNumber}` : ''}`
+      const fullNotes = `${adminNote}${normalizedNotes}${
+        normalizedUtrNumber ? ` UTR: ${normalizedUtrNumber}` : ''
+      }`
 
       const [updatedRemittance] = await tx
         .update(codRemittances)
@@ -154,6 +158,10 @@ export async function creditCodRemittanceToWallet(params: {
       return updatedRemittance
     })
 }
+
+// Backward-compatible alias for older imports. The workflow marks offline settlement;
+// it does not create a wallet credit transaction.
+export const creditCodRemittanceToWallet = markCodRemittanceSettledOffline
 
 /**
  * Get all COD remittances for a user with filters

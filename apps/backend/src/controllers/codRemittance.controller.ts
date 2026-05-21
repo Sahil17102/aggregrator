@@ -283,7 +283,7 @@ export const exportRemittances = async (req: any, res: Response): Promise<any> =
       'Net Remittable Amount',
       'Status',
       'Order Delivered Date',
-      'Settlement Credited Date',
+      'Settlement Date',
       'Settlement Notes',
       'Created Date',
     ]

@@ -126,7 +126,7 @@ export default function FinancialHealthCard({
                 </Typography>
                 {financial.codRemittanceCredited > 0 && (
                   <Typography sx={{ fontSize: '0.74rem', color: dashboardPalette.muted, mt: 0.4 }}>
-                    Credited this month: {formatCurrency(financial.codRemittanceCredited || 0)}
+                    Settled this month: {formatCurrency(financial.codRemittanceCredited || 0)}
                   </Typography>
                 )}
               </Box>

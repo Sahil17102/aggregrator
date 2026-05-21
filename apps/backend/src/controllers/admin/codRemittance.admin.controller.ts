@@ -5,7 +5,20 @@ import { db } from '../../models/client'
 import { codRemittances } from '../../models/schema/codRemittance'
 import { users } from '../../models/schema/users'
 import { wallets } from '../../models/schema/wallet'
-import { creditCodRemittanceToWallet } from '../../models/services/codRemittance.service'
+import { markCodRemittanceSettledOffline } from '../../models/services/codRemittance.service'
+
+const parseSettlementDate = (value: unknown) => {
+  const raw = String(value || '').trim()
+  const dateOnlyMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch
+    return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0)
+  }
+
+  const parsed = raw ? new Date(raw) : new Date()
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+}
 
 /**
  * Admin: Get all COD remittances across all users
@@ -239,18 +252,32 @@ export const manualCreditWallet = async (req: any, res: Response): Promise<any> 
   try {
     const { remittanceId } = req.params
     const { settledDate, utrNumber, settledAmount, notes } = req.body || {}
+    const normalizedUtrNumber = String(utrNumber || '').trim()
+    const parsedSettledAmount = Number(settledAmount)
+    const normalizedNotes = String(notes || '').trim()
 
     if (!remittanceId) {
       return res.status(400).json({ success: false, message: 'Remittance ID required' })
     }
 
+    if (!normalizedUtrNumber) {
+      return res.status(400).json({ success: false, message: 'UTR number is required' })
+    }
+
+    if (!Number.isFinite(parsedSettledAmount) || parsedSettledAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid settled amount. Amount must be greater than 0.',
+      })
+    }
+
     // Mark settlement using the shared service function
-    const updated = await creditCodRemittanceToWallet({
+    const updated = await markCodRemittanceSettledOffline({
       remittanceId,
-      settledDate: settledDate ? new Date(settledDate) : new Date(), // Default to now
-      utrNumber: utrNumber || `MANUAL-${Date.now()}`, // Auto-generate if not provided
-      settledAmount: settledAmount ? Number(settledAmount) : undefined,
-      notes: notes || 'Manually marked as settled offline by admin',
+      settledDate: parseSettlementDate(settledDate),
+      utrNumber: normalizedUtrNumber,
+      settledAmount: parsedSettledAmount,
+      notes: normalizedNotes || 'Manually marked as settled offline by admin',
       creditedBy: req.user?.sub || 'admin',
     })
 

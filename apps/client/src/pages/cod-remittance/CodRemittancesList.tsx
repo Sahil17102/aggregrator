@@ -17,6 +17,7 @@ import {
   useCodRemittances,
   useCodStats,
 } from '../../hooks/useCodRemittance'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 
 export default function CodRemittancesList() {
   const [page, setPage] = useState(1)
@@ -103,7 +104,9 @@ export default function CodRemittancesList() {
       id: 'courierPartner',
       label: 'Courier',
       minWidth: 120,
-      render: (val) => <Typography variant="body2">{val || 'N/A'}</Typography>,
+      render: (val) => (
+        <Typography variant="body2">{getCourierDisplayName(String(val || ''), 'N/A')}</Typography>
+      ),
     },
     {
       id: 'codAmount',

@@ -10,7 +10,6 @@ import { ndr_events } from '../models/schema/ndr'
 import { notifications } from '../models/schema/notifications'
 import { rto_events } from '../models/schema/rto'
 import { users } from '../models/schema/users'
-import { wallets, walletTransactions } from '../models/schema/wallet'
 import { weight_discrepancies } from '../models/schema/weightDiscrepancies'
 import {
   processDelhiveryDocumentWebhook,
@@ -316,7 +315,7 @@ async function testSettlementControllers(orders: SeededOrder[]) {
 
   const previewReq: any = {
     body: {
-      courierPartner: 'delhivery',
+      courierPartner: 'deliveryone',
       csvData,
     },
   }
@@ -363,29 +362,13 @@ async function testSettlementControllers(orders: SeededOrder[]) {
     throw new Error('Remittance was not marked credited after confirm flow.')
   }
 
-  const [wallet] = await db
-    .select()
-    .from(wallets)
-    .where(eq(wallets.userId, creditedRemittance.userId))
-    .limit(1)
-
-  if (!wallet) {
-    throw new Error('Wallet not found for credited remittance user.')
-  }
-
-  const txns = await db
-    .select()
-    .from(walletTransactions)
-    .where(eq(walletTransactions.wallet_id, wallet.id))
-
-  const relatedTxn = txns.find((t) => t.ref === creditedRemittance.orderId)
-  if (!relatedTxn) {
-    throw new Error('Wallet transaction not found for credited remittance.')
+  if (creditedRemittance.walletTransactionId !== null) {
+    throw new Error('Offline COD settlement should not create a wallet transaction.')
   }
 
   const postPreviewReq: any = {
     body: {
-      courierPartner: 'delhivery',
+      courierPartner: 'deliveryone',
       csvData,
     },
   }
