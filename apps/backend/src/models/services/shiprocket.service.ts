@@ -8959,6 +8959,106 @@ export const syncB2COrderTrackingById = async (
   }
 }
 
+export const requestB2CPickupByOrderIdService = async (
+  orderId: string,
+  userId: string,
+  params: {
+    pickup_date?: string
+    pickup_time?: string
+  } = {},
+) => {
+  if (!orderId) throw new HttpError(400, 'Order ID is required')
+  if (!userId) throw new HttpError(401, 'Unauthorized')
+
+  const [order] = await db
+    .select()
+    .from(b2c_orders)
+    .where(and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId)))
+    .limit(1)
+
+  if (!order) {
+    throw new HttpError(404, 'Order not found')
+  }
+
+  const providerKey = normalizeServiceProviderKey(
+    order.integration_type || order.courier_partner || '',
+  )
+  if (providerKey !== 'deliveryone') {
+    throw new HttpError(400, 'Pickup request is available for Delivery One orders only.')
+  }
+
+  if (!sanitizeString(order.awb_number)) {
+    throw new HttpError(400, 'AWB number is required before pickup can be requested.')
+  }
+
+  const pickupDetails = normalizePickupDetails(order.pickup_details) as any
+  const pickupLocation = sanitizeString(
+    pickupDetails?.warehouse_name || order.pickup_location_id || '',
+  )
+
+  if (!pickupLocation) {
+    throw new HttpError(
+      400,
+      'Pickup warehouse name is missing. Please update the pickup address before requesting pickup.',
+    )
+  }
+
+  const pickupDate = normalizePickupDateForCourier(
+    params.pickup_date || pickupDetails?.pickup_date,
+  )
+  const pickupTime = normalizePickupTimeForCourier(
+    params.pickup_time || pickupDetails?.pickup_time,
+  )
+
+  try {
+    const deliveryOne = new DeliveryOneService()
+    const pickupResponse = await deliveryOne.createPickupRequest({
+      pickup_date: pickupDate,
+      pickup_time: pickupTime,
+      pickup_location: pickupLocation,
+      expected_package_count: 1,
+    })
+
+    await db
+      .update(b2c_orders)
+      .set({
+        order_status: 'pickup_initiated',
+        pickup_status: 'scheduled',
+        pickup_error: null,
+        updated_at: new Date(),
+      })
+      .where(eq(b2c_orders.id, order.id))
+
+    return {
+      order_id: order.id,
+      order_number: order.order_number,
+      awb_number: order.awb_number,
+      pickup_date: pickupDate,
+      pickup_time: pickupTime,
+      pickup_location: pickupLocation,
+      pickup_status: 'scheduled',
+      existing: Boolean(pickupResponse.existing),
+      pickup_id: pickupResponse.pickupId ?? pickupResponse.raw?.pickup_id ?? null,
+      raw: pickupResponse.raw,
+    }
+  } catch (error: any) {
+    const errorMessage = getUserFacingManifestError(
+      error,
+      'Delivery One pickup request failed.',
+    )
+    await db
+      .update(b2c_orders)
+      .set({
+        pickup_status: 'failed',
+        pickup_error: truncateColumnValue(errorMessage),
+        updated_at: new Date(),
+      })
+      .where(eq(b2c_orders.id, order.id))
+
+    throw new HttpError(getErrorStatusCode(error, 502), errorMessage)
+  }
+}
+
 const buildLocalTrackingFallback = async (
   order: OrderSummary,
 ): Promise<ProviderNormalizedTracking> => {

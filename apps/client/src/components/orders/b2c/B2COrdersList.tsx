@@ -24,6 +24,7 @@ import {
   useB2COrdersByUser,
   useCancelShipment,
   useCreateReverseShipment,
+  useRequestB2CPickup,
   useRetryFailedManifest,
   useSyncB2CTracking,
 } from '../../../hooks/Orders/useOrders'
@@ -175,6 +176,7 @@ const B2COrdersList = () => {
   const { data, isLoading, isError } = useB2COrdersByUser(page, rowsPerPage, effectiveFilters)
   const { mutateAsync: retryFailedManifest, isPending: retryingManifest } = useRetryFailedManifest()
   const { mutateAsync: syncB2CTracking } = useSyncB2CTracking()
+  const { mutateAsync: requestB2CPickup, isPending: requestingPickup } = useRequestB2CPickup()
   const queryClient = useQueryClient()
   const { mutateAsync: presignDownloads } = usePresignedDownloadMutation()
   const { data: couriers } = useAllCouriersWithDetails()
@@ -184,12 +186,15 @@ const B2COrdersList = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reverseOrder, setReverseOrder] = useState<any | null>(null)
   const [syncingTrackingOrderId, setSyncingTrackingOrderId] = useState<string | null>(null)
+  const [pickupScheduleOrder, setPickupScheduleOrder] = useState<B2COrder | null>(null)
+  const [requestingPickupOrderId, setRequestingPickupOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     setDrawerOpen(false)
     setReverseOrder(null)
     setManifestScheduleOpen(false)
     setPendingManifestRequest(null)
+    setPickupScheduleOrder(null)
   }, [location.pathname, location.search, location.hash])
 
   const orders: B2COrder[] = data?.orders || []
@@ -292,6 +297,36 @@ const B2COrdersList = () => {
     } finally {
       setSyncingTrackingOrderId((current) => (current === orderId ? null : current))
     }
+  }
+
+  const handleRequestPickup = async (
+    order: B2COrder,
+    schedule: ManifestSchedulePayload,
+  ) => {
+    if (!order.id) return
+    const orderId = String(order.id)
+    try {
+      setRequestingPickupOrderId(orderId)
+      const response = await requestB2CPickup({
+        orderId,
+        ...schedule,
+      })
+      const message = response.message || `Pickup scheduled for ${order.order_number}.`
+      setBulkFeedback({
+        severity: 'success',
+        title: 'Pickup scheduled',
+        message,
+      })
+    } finally {
+      setRequestingPickupOrderId((current) => (current === orderId ? null : current))
+    }
+  }
+
+  const handlePickupScheduleConfirm = async (schedule: ManifestSchedulePayload) => {
+    if (!pickupScheduleOrder) return
+    const order = pickupScheduleOrder
+    setPickupScheduleOrder(null)
+    await handleRequestPickup(order, schedule)
   }
 
   const handleApplyFilters = (appliedFilters: OrderFilters) => {
@@ -746,12 +781,29 @@ const B2COrdersList = () => {
     return Number(row.final_courier_charge ?? row.courier_charge ?? fallback)
   }
 
-  const isDeliveryOneTrackingOrder = (row: B2COrder) => {
+  const isDeliveryOneOrder = (row: B2COrder) => {
     const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`.toLowerCase()
     return (
-      Boolean(String(row.awb_number || '').trim()) &&
-      (provider.includes('deliveryone') || provider.includes('delivery one'))
+      provider.includes('deliveryone') ||
+      provider.includes('delivery one') ||
+      provider.includes('delhiveryone') ||
+      provider.includes('delhivery one')
     )
+  }
+
+  const isDeliveryOneTrackingOrder = (row: B2COrder) => {
+    return (
+      Boolean(String(row.awb_number || '').trim()) &&
+      isDeliveryOneOrder(row)
+    )
+  }
+
+  const isB2CPickupRequestEligible = (row: B2COrder) => {
+    const status = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+    if (!isDeliveryOneOrder(row)) return false
+    if (!String(row.awb_number || '').trim()) return false
+    if (isB2CCancelledStatus(status)) return false
+    return !['delivered', 'rto_delivered', 'returned'].includes(status)
   }
 
   const formatCompactDate = (value?: string | null) =>
@@ -932,7 +984,7 @@ const B2COrdersList = () => {
     {
       label: 'Actions',
       id: 'id',
-      minWidth: 140,
+      minWidth: 230,
       sticky: 'right',
       stickyOffset: 160,
       truncate: false,
@@ -941,6 +993,9 @@ const B2COrdersList = () => {
         const orderStatus = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
         const canSyncTracking = isDeliveryOneTrackingOrder(row)
         const isTrackingSyncing = syncingTrackingOrderId === String(row.id)
+        const canRequestPickup = isB2CPickupRequestEligible(row)
+        const isPickupRequesting =
+          requestingPickupOrderId === String(row.id) || (requestingPickup && pickupScheduleOrder?.id === row.id)
 
         if (canSyncTracking) {
           actions.push(
@@ -955,7 +1010,7 @@ const B2COrdersList = () => {
               onClick={() => handleSyncTracking(row)}
               sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
             >
-              {isTrackingSyncing ? 'Syncing' : 'Sync'}
+              {isTrackingSyncing ? 'Syncing' : 'Sync Status'}
             </Button>,
           )
         }
@@ -1000,6 +1055,22 @@ const B2COrdersList = () => {
               sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
             >
               {isThisManifesting ? 'Manifesting...' : 'Manifest'}
+            </Button>,
+          )
+        }
+
+        if (canRequestPickup) {
+          actions.push(
+            <Button
+              key="request-pickup"
+              size="small"
+              variant="outlined"
+              color="warning"
+              disabled={isPickupRequesting}
+              onClick={() => setPickupScheduleOrder(row)}
+              sx={{ px: 0.85, py: 0.2, minWidth: 0, fontSize: 11.5 }}
+            >
+              {isPickupRequesting ? 'Scheduling...' : 'Pickup'}
             </Button>,
           )
         }
@@ -1320,6 +1391,17 @@ const B2COrdersList = () => {
         description="Choose the pickup date and time before sending this manifest to the courier."
         onClose={closeManifestSchedule}
         onConfirm={handleManifestScheduleConfirm}
+      />
+
+      <ManifestScheduleDialog
+        open={Boolean(pickupScheduleOrder)}
+        loading={requestingPickup}
+        title="Schedule Pickup"
+        description="Choose the pickup date and time before sending the pickup request to Delivery One."
+        onClose={() => {
+          if (!requestingPickup) setPickupScheduleOrder(null)
+        }}
+        onConfirm={handlePickupScheduleConfirm}
       />
 
       <CustomDrawer

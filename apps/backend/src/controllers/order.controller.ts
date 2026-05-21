@@ -9,6 +9,7 @@ import {
   getB2BOrdersByUserService,
   getB2COrdersByUserService,
   ShipmentParams,
+  requestB2CPickupByOrderIdService,
   retryFailedManifestService,
   syncB2COrderTrackingById,
   trackByAwbService,
@@ -375,6 +376,46 @@ export const syncB2CTrackingController = async (req: any, res: Response) => {
     return res.status(statusCode).json({
       success: false,
       message: error?.message || 'Failed to sync tracking status.',
+    })
+  }
+}
+
+export const requestB2CPickupController = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.sub
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const orderId = String(req.params.orderId || '').trim()
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' })
+    }
+
+    const result = await requestB2CPickupByOrderIdService(orderId, userId, {
+      pickup_date: req.body?.pickup_date,
+      pickup_time: req.body?.pickup_time,
+    })
+
+    return res.status(200).json({
+      success: true,
+      message: result.existing
+        ? 'Pickup request already exists and is marked as scheduled.'
+        : 'Pickup request scheduled successfully.',
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('B2C pickup request error:', {
+      orderId: req.params?.orderId,
+      userId: req.user?.sub,
+      message: error?.message,
+      statusCode: error?.statusCode,
+      response: error?.response?.data,
+    })
+    const statusCode = typeof error?.statusCode === 'number' ? error.statusCode : 500
+    return res.status(statusCode).json({
+      success: false,
+      message: error?.message || 'Failed to request pickup.',
     })
   }
 }

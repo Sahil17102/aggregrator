@@ -7,12 +7,15 @@ import {
   fetchB2COrdersByUser,
   generateManifestService,
   regenerateOrderDocumentsService,
+  requestB2CPickupService,
   retryFailedManifestService,
   syncB2COrderTrackingService,
   type CreateB2BShipmentParams,
   type CreateShipmentParams,
   type GenerateManifestParams,
   type GenerateManifestResponse,
+  type RequestB2CPickupParams,
+  type RequestB2CPickupResponse,
   type RetryManifestResponse,
   type SyncB2CTrackingResponse,
 } from '../../api/order.service'
@@ -207,6 +210,33 @@ export const useSyncB2CTracking = () => {
         error?.response?.data?.message || error?.message || 'Failed to sync tracking status'
       toast.open({ message, severity: 'error' })
       console.error('Tracking sync error:', error)
+    },
+  })
+}
+
+export const useRequestB2CPickup = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      ...params
+    }: RequestB2CPickupParams & { orderId: string }) =>
+      requestB2CPickupService(orderId, params),
+    onSuccess: (data: RequestB2CPickupResponse) => {
+      toast.open({
+        message: data.message || 'Pickup request scheduled successfully.',
+        severity: 'success',
+      })
+      queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message || error?.message || 'Failed to request pickup'
+      toast.open({ message, severity: 'error' })
+      console.error('Pickup request error:', error)
     },
   })
 }

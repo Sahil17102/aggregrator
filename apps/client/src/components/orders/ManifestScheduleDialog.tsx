@@ -33,9 +33,11 @@ const formatTimeInput = (date: Date) => `${pad(date.getHours())}:${pad(date.getM
 
 const getDefaultSchedule = () => {
   const now = new Date()
-  const pickup = new Date(now.getTime() + 60 * 60 * 1000)
+  const pickup = new Date(now)
+  pickup.setDate(pickup.getDate() + 1)
+  pickup.setHours(11, 0, 0, 0)
   return {
-    pickupDate: formatDateInput(now),
+    pickupDate: formatDateInput(pickup),
     pickupTime: formatTimeInput(pickup),
   }
 }

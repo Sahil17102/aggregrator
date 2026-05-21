@@ -249,6 +249,39 @@ export const retryFailedManifestService = async (orderId: string) => {
   return res.data
 }
 
+export interface RequestB2CPickupParams {
+  pickup_date?: string
+  pickup_time?: string
+}
+
+export interface RequestB2CPickupResponse {
+  success: boolean
+  message: string
+  data?: {
+    order_id: string
+    order_number: string
+    awb_number: string
+    pickup_date: string
+    pickup_time: string
+    pickup_location: string
+    pickup_status: string
+    existing?: boolean
+    pickup_id?: string | number | null
+  }
+}
+
+export const requestB2CPickupService = async (
+  orderId: string,
+  params: RequestB2CPickupParams,
+) => {
+  const res = await axiosInstance.post<RequestB2CPickupResponse>(
+    `/orders/b2c/${orderId}/request-pickup`,
+    params,
+    { timeout: 60000 },
+  )
+  return res.data
+}
+
 export interface SyncB2CTrackingResponse {
   success: boolean
   message: string
