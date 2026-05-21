@@ -46,6 +46,18 @@ function isCourierAuthOrConfigError(rawError: any, err?: any) {
   )
 }
 
+function isCourierWarehouseMissingError(rawError: any, err?: any) {
+  const text = getCourierErrorText(rawError, err).toLowerCase()
+
+  return (
+    text.includes('warehouse does not exists') ||
+    text.includes('warehouse does not exist') ||
+    text.includes('warehouse not found') ||
+    text.includes('clientwarehouse does not exist') ||
+    text.includes('client warehouse does not exist')
+  )
+}
+
 type CourierAddressLike = {
   addressLine1?: string | number | null
   addressLine2?: string | number | null
@@ -332,7 +344,15 @@ export async function updatePickupAddressService(
     return await db.transaction(async (txn) => {
       // ✅ Update pickup address itself
       let updatedPickup: any = null
+      let originalPickup: any = null
       if (data.pickup && pickup.addressId) {
+        const [existingPickup] = await txn
+          .select()
+          .from(addresses)
+          .where(eq(addresses.id, pickup.addressId))
+          .limit(1)
+        originalPickup = existingPickup
+
         const { createdAt, ...safeData } = data.pickup
         const [addr] = await txn
           .update(addresses)
@@ -383,18 +403,26 @@ export async function updatePickupAddressService(
       // 🟢 Sync with Delhivery (only if pickup address actually changed)
       try {
         if (updatedPickup) {
+          const courierWarehouseName =
+            originalPickup?.addressNickname ??
+            originalPickup?.contactName ??
+            updatedPickup?.addressNickname ??
+            updatedPickup?.contactName ??
+            'Default Warehouse'
           const delhivery = new DelhiveryService()
           const delhiveryResp = await delhivery.updateWarehouse({
-            name:
-              updatedPickup?.addressNickname ?? updatedPickup?.contactName ?? 'Default Warehouse',
-            address: updatedPickup?.addressLine1,
+            // Courier warehouse names are case-sensitive and cannot be renamed.
+            // Use the original saved name even when the local display nickname changes.
+            name: courierWarehouseName,
+            address: buildCourierAddress(updatedPickup) || updatedPickup?.addressLine1,
             pin: updatedPickup?.pincode?.toString(),
             phone: updatedPickup?.contactPhone,
           })
 
           if (!delhiveryResp || delhiveryResp.success === false) {
             console.error('❌ Failed to update warehouse in Delhivery:', delhiveryResp)
-            throw new Error('Warehouse update failed')
+            console.warn('Delhivery warehouse update failed; pickup address update was saved locally.')
+            return pickup
           }
 
           console.log(`✅ Warehouse updated in Delhivery: ${updatedPickup?.addressNickname}`)
@@ -408,8 +436,15 @@ export async function updatePickupAddressService(
           console.warn(
             'Skipping Delhivery warehouse update because credentials are invalid or missing. Pickup address update was saved locally.',
           )
+        } else if (isCourierWarehouseMissingError(rawError, err)) {
+          console.warn(
+            'Skipping Delhivery warehouse update because the warehouse does not exist in the courier panel. Pickup address update was saved locally.',
+          )
         } else {
-          throw new Error('Failed to update warehouse')
+          console.warn(
+            'Skipping Delhivery warehouse update because the courier API rejected it. Pickup address update was saved locally:',
+            getCourierErrorText(rawError, err) || err?.message || err,
+          )
         }
       }
 
