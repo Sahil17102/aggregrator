@@ -45,7 +45,7 @@ import { useState } from 'react'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
 
 const providerOptions = [
-  { value: 'deliveryone', label: 'Delhivery' },
+  { value: 'delhivery', label: 'Delhivery' },
 ]
 
 const providerLabels = providerOptions.reduce((acc, option) => {
@@ -255,13 +255,12 @@ const Couriers = () => {
   if (isLoading) return <Spinner size="md" />
   if (error) return <Text color="red.500">Failed to load couriers</Text>
 
-  const deliveryOneCouriers = couriers.filter((c) => c.serviceProvider === 'deliveryone')
-  const hasDeliveryOneSurface = deliveryOneCouriers.some((c) => c.id === 99)
-  const hasDeliveryOneExpress = deliveryOneCouriers.some((c) => c.id === 100)
+  const delhiveryCouriers = couriers.filter((c) => c.serviceProvider === 'delhivery')
+  const activeDelhiveryIds = delhiveryCouriers.map((c) => c.id).join(', ')
 
   return (
     <Flex direction="column" pt={{ base: '120px', md: '75px' }} gap={4}>
-      {deliveryOneCouriers.length > 0 && (
+      {delhiveryCouriers.length > 0 && (
         <Alert status="info" borderRadius="md">
           <AlertIcon />
           <Box flex="1">
@@ -270,19 +269,9 @@ const Couriers = () => {
             </AlertTitle>
             <AlertDescription fontSize="xs">
               <Text mb={1}>
-                <strong>Delhivery Surface</strong> (ID: 99) and{' '}
-                <strong>Delhivery Express</strong> (ID: 100) are the active courier options.
+                Delhivery is the only active courier provider. Active courier ID
+                {delhiveryCouriers.length > 1 ? 's' : ''}: {activeDelhiveryIds || 'none'}.
               </Text>
-              {!hasDeliveryOneSurface && (
-                <Text mt={2} color="orange.600" fontSize="xs">
-                  Delhivery Surface (ID: 99) not found.
-                </Text>
-              )}
-              {!hasDeliveryOneExpress && (
-                <Text mt={2} color="orange.600" fontSize="xs">
-                  Delhivery Express (ID: 100) not found.
-                </Text>
-              )}
             </AlertDescription>
           </Box>
         </Alert>

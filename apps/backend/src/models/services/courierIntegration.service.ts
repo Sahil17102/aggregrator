@@ -7,7 +7,12 @@ import { courierSummary } from '../schema/courierSummary'
 import { shippingRates } from '../schema/shippingRates'
 import { userPlans } from '../schema/userPlans'
 import { zones } from '../schema/zones'
-import { normalizeServiceProviderKey } from '../../utils/courierProviders'
+import {
+  VISIBLE_SERVICE_PROVIDERS,
+  isVisibleServiceProvider,
+  normalizeServiceProviderKey,
+  visibleServiceProviderList,
+} from '../../utils/courierProviders'
 import {
   DELHIVERY_COURIER_IDS,
   DELIVERY_ONE_ALLOWED_COURIER_IDS,
@@ -54,13 +59,17 @@ export interface CourierFilters {
 }
 
 export const buildCourierWhereClause = (filters: CourierFilters = {}) => {
-  const conditions = []
+  const conditions = [
+    eq(couriers.isEnabled, true),
+    inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
+    sql`${couriers.id} not in (99, 100)`,
+  ]
 
   if (filters.name) {
     conditions.push(ilike(couriers.name, `%${filters.name}%`))
   }
 
-  return conditions.length ? and(...conditions) : undefined
+  return and(...conditions)
 }
 // =========================
 // 🛠 Helper: Sort
@@ -170,10 +179,12 @@ const providerNameMatchesCourierName = (serviceProvider: unknown, courierName: u
   const name = String(courierName ?? '').trim().toLowerCase()
   const compactName = name.replace(/[\s_-]+/g, '')
   if (!provider || !name) return false
-  if (provider === 'deliveryone') {
+  if (provider === 'deliveryone' || provider === 'delhivery') {
     return (
       compactName.includes('deliveryone') ||
       compactName.includes('delhiveryone') ||
+      compactName.includes('delhivery') ||
+      compactName.includes('dehlivery') ||
       compactName.includes('delhiverysurface') ||
       compactName.includes('delhiveryexpress')
     )
@@ -266,7 +277,14 @@ export const getCourierById = async (id: number) => {
   const [courier] = await db
     .select()
     .from(couriers)
-    .where(eq(couriers.id, id))
+    .where(
+      and(
+        eq(couriers.id, id),
+        eq(couriers.isEnabled, true),
+        inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
+        sql`${couriers.id} not in (99, 100)`,
+      ),
+    )
 
   return courier
 }
@@ -337,6 +355,16 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
       zone: zones,
     })
     .from(shippingRates)
+    .innerJoin(
+      couriers,
+      and(
+        eq(couriers.id, shippingRates.courier_id),
+        eq(couriers.isEnabled, true),
+        inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
+        sql`${couriers.id} not in (99, 100)`,
+        sql`lower(trim(${couriers.serviceProvider})) = lower(trim(coalesce(${shippingRates.service_provider}, '')))`,
+      ),
+    )
     .leftJoin(zones, eq(zones.id, shippingRates.zone_id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(shippingRates.last_updated), desc(shippingRates.created_at))
@@ -951,13 +979,12 @@ export const createCourier = async (data: {
   if (!Number.isFinite(courierId)) {
     throw new Error('Courier ID must be a valid number')
   }
-  if (
-    normalizedProvider === 'deliveryone' &&
-    !DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(courierId)
-  ) {
-    throw new Error('Delhivery supports only courier ID 99 (Surface) and 100 (Express)')
+  if (!isVisibleServiceProvider(normalizedProvider)) {
+    throw new Error(`Only these service providers can be used: ${visibleServiceProviderList()}`)
   }
-
+  if (normalizedProvider === 'delhivery' && DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(courierId)) {
+    throw new Error('Seeded Delhivery courier IDs 99 and 100 are hidden; use the active custom Delhivery courier instead')
+  }
   console.log('data', data)
   // Check if courier already exists for this service provider
   // Same courier ID can exist for different service providers

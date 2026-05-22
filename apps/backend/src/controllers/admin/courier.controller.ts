@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { Request, Response } from 'express'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
@@ -11,16 +11,25 @@ import {
   updateShippingRate,
   upsertShippingRate,
 } from '../../models/services/courierIntegration.service'
-import { ensureDeliveryOneCouriers } from '../../models/services/deliveryOneCourierCatalog.service'
+import {
+  getDeliveryOneCourierCatalog,
+  type DeliveryOneCourierCatalogItem,
+} from '../../models/services/deliveryOneCourierCatalog.service'
 import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
 import { fetchAvailableCouriersWithRatesAdmin } from '../../models/services/shiprocket.service'
 import { courier_credentials } from '../../models/schema/courierCredentials'
 import { couriers } from '../../models/schema/couriers'
 import { getAllZones } from '../../models/services/zone.service'
 import {
-  INTEGRATED_SERVICE_PROVIDERS,
+  VISIBLE_SERVICE_PROVIDERS,
+  isVisibleServiceProvider,
   normalizeServiceProviderKey,
+  visibleServiceProviderList,
 } from '../../utils/courierProviders'
+import {
+  DELHIVERY_ALLOWED_COURIER_IDS,
+  getDelhiveryCourierDisplayName,
+} from '../../utils/delhiveryCourier'
 import { extractCodChargeBasisFromBody, extractOrderAmountFromBody } from '../../utils/orderAmount'
 
 export interface ShippingRateFilters {
@@ -30,6 +39,134 @@ export interface ShippingRateFilters {
   plan_id?: string
   business_type?: 'b2b' | 'b2c'
   zone?: string[]
+}
+
+const normalizeCourierListText = (value: unknown) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+const isDelhiveryListProvider = (value: unknown) => {
+  const normalized = normalizeServiceProviderKey(value)
+  return normalized === 'delhivery' || normalized === 'deliveryone'
+}
+
+const normalizeCourierListToken = (value: unknown) =>
+  normalizeCourierListText(value).replace(/[\s_-]+/g, '')
+
+const isDelhiveryCatalogRow = (row: { id: number; name: string }) => {
+  const name = normalizeCourierListToken(row.name)
+  return (
+    DELHIVERY_ALLOWED_COURIER_IDS.includes(Number(row.id)) ||
+    name.includes('delhivery') ||
+    name.includes('deliveryone') ||
+    name.includes('delivery1')
+  )
+}
+
+const getCanonicalDelhiveryCouriers = async (filters: {
+  search?: unknown
+  serviceProvider?: unknown
+  businessType?: unknown
+} = {}) => {
+  const providerFilter = String(filters.serviceProvider ?? '').trim()
+  if (providerFilter && !isDelhiveryListProvider(providerFilter)) return []
+
+  const requestedBusinessType = normalizeCourierListText(filters.businessType)
+
+  const dbRows = await db
+    .select({
+      id: couriers.id,
+      name: couriers.name,
+      serviceProvider: couriers.serviceProvider,
+      isEnabled: couriers.isEnabled,
+      businessType: couriers.businessType,
+      createdAt: couriers.createdAt,
+      updatedAt: couriers.updatedAt,
+    })
+    .from(couriers)
+    .where(
+      and(
+        eq(couriers.isEnabled, true),
+        inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
+      ),
+    )
+
+  const dbCatalogRows: DeliveryOneCourierCatalogItem[] = dbRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    displayName: row.name,
+    serviceProvider: row.serviceProvider,
+    service_provider: row.serviceProvider,
+    isEnabled: row.isEnabled,
+    businessType: Array.isArray(row.businessType)
+      ? row.businessType.filter((type): type is 'b2c' | 'b2b' => type === 'b2c' || type === 'b2b')
+      : [],
+    mode: '',
+    shipping_mode: '',
+    shippingMode: '',
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }))
+  const sourceRows: DeliveryOneCourierCatalogItem[] = dbCatalogRows.length
+    ? dbCatalogRows
+    : getDeliveryOneCourierCatalog()
+  const legacyIds = new Set<number>(DELHIVERY_ALLOWED_COURIER_IDS)
+  const deduped = new Map<string, DeliveryOneCourierCatalogItem>()
+
+  sourceRows
+    .filter(isDelhiveryCatalogRow)
+    .sort((left, right) => {
+      const leftLegacy = legacyIds.has(Number(left.id)) ? 1 : 0
+      const rightLegacy = legacyIds.has(Number(right.id)) ? 1 : 0
+      return leftLegacy - rightLegacy || Number(left.id) - Number(right.id)
+    })
+    .forEach((row) => {
+      const displayName = getDelhiveryCourierDisplayName(row.name || row.id)
+      const key = normalizeCourierListToken(displayName)
+      if (deduped.has(key)) return
+
+      const mode = displayName.toLowerCase().includes('express') ? 'air' : 'surface'
+      deduped.set(key, {
+        ...row,
+        name: displayName,
+        displayName,
+        serviceProvider: 'delhivery',
+        service_provider: 'delhivery',
+        mode,
+        shipping_mode: mode,
+        shippingMode: mode === 'air' ? 'Express' : 'Surface',
+      })
+    })
+
+  getDeliveryOneCourierCatalog().forEach((courier) => {
+    const key = normalizeCourierListToken(courier.displayName)
+    if (!deduped.has(key)) deduped.set(key, courier)
+  })
+
+  const list = Array.from(deduped.values()).filter((courier) => {
+    const courierBusinessTypes = Array.isArray(courier.businessType)
+      ? courier.businessType.map(String)
+      : []
+
+    if (
+      (requestedBusinessType === 'b2c' || requestedBusinessType === 'b2b') &&
+      !courierBusinessTypes.includes(requestedBusinessType)
+    ) {
+      return false
+    }
+
+    const search = normalizeCourierListText(filters.search)
+    if (!search) return true
+
+    return (
+      String(courier.id).includes(search) ||
+      normalizeCourierListText(courier.name).includes(search) ||
+      normalizeCourierListText(courier.displayName).includes(search)
+    )
+  })
+
+  return list
 }
 
 export const fetchAvailableCouriersForAdmin = async (req: Request, res: Response) => {
@@ -139,17 +276,7 @@ export const getShippingRatesController = async (req: Request, res: Response) =>
 
 export const getAllCouriersController = async (req: Request, res: Response) => {
   try {
-    await ensureDeliveryOneCouriers()
-    const courierList = await db
-      .select({
-        id: couriers.id,
-        name: couriers.name,
-        serviceProvider: couriers.serviceProvider,
-        isEnabled: couriers.isEnabled,
-        createdAt: couriers.createdAt,
-      })
-      .from(couriers)
-      .orderBy(desc(couriers.createdAt))
+    const courierList = await getCanonicalDelhiveryCouriers()
 
     res.json({ success: true, data: courierList })
   } catch (err) {
@@ -160,49 +287,13 @@ export const getAllCouriersController = async (req: Request, res: Response) => {
 
 export const getAllCouriersListController = async (req: Request, res: Response) => {
   try {
-    await ensureDeliveryOneCouriers()
     const { search, serviceProvider, businessType } = req.query
 
-    const whereClauses = []
-
-    // Filter by search (name or id)
-    if (search && typeof search === 'string' && search.trim()) {
-      const searchTerm = `%${search.trim()}%`
-      whereClauses.push(
-        or(
-          ilike(couriers.name, searchTerm),
-          sql`CAST(${couriers.id} AS TEXT) ILIKE ${searchTerm}`,
-        )!,
-      )
-    }
-
-    // Filter by service provider
-    if (serviceProvider && typeof serviceProvider === 'string' && serviceProvider.trim()) {
-      whereClauses.push(eq(couriers.serviceProvider, normalizeServiceProviderKey(serviceProvider)))
-    }
-
-    // Filter by business type (b2c or b2b)
-    if (businessType && typeof businessType === 'string') {
-      const normalizedBusinessType = businessType.trim().toLowerCase()
-      if (normalizedBusinessType === 'b2c' || normalizedBusinessType === 'b2b') {
-        // Construct JSONB array string - value is validated above (only 'b2c' or 'b2b')
-        const jsonbArrayStr = JSON.stringify([normalizedBusinessType])
-        // Match the pattern from shiprocket.service.ts - construct the full JSONB literal
-        whereClauses.push(
-          sql`${couriers.businessType} @> ${sql.raw(
-            `'${jsonbArrayStr.replace(/'/g, "''")}'::jsonb`,
-          )}`,
-        )
-      }
-    }
-
-    const whereCondition = whereClauses.length > 0 ? and(...whereClauses) : undefined
-
-    const courierList = await db
-      .select()
-      .from(couriers)
-      .where(whereCondition)
-      .orderBy(desc(couriers.createdAt))
+    const courierList = await getCanonicalDelhiveryCouriers({
+      search,
+      serviceProvider,
+      businessType,
+    })
 
     res.json({ success: true, data: courierList })
   } catch (err) {
@@ -256,6 +347,13 @@ export const updateCourierStatusController = async (req: Request, res: Response)
     }
 
     const normalizedServiceProvider = normalizeServiceProviderKey(serviceProvider)
+    if (!isVisibleServiceProvider(normalizedServiceProvider)) {
+      return res.status(400).json({
+        success: false,
+        message: `Only these providers are supported: ${visibleServiceProviderList()}`,
+      })
+    }
+
     const updated = await db
       .update(couriers)
       .set(updateData)
@@ -275,9 +373,8 @@ export const updateCourierStatusController = async (req: Request, res: Response)
 
 export const getServiceProvidersController = async (req: Request, res: Response) => {
   try {
-    await ensureDeliveryOneCouriers()
     // Only expose the main integrated service providers in the enable/disable UI
-    const allowedProviders = [...INTEGRATED_SERVICE_PROVIDERS]
+    const allowedProviders = [...VISIBLE_SERVICE_PROVIDERS]
 
     const rows = await db
       .select({
@@ -286,7 +383,12 @@ export const getServiceProvidersController = async (req: Request, res: Response)
         enabledCouriers: sql<number>`sum(case when ${couriers.isEnabled} then 1 else 0 end)`,
       })
       .from(couriers)
-      .where(inArray(couriers.serviceProvider, allowedProviders))
+      .where(
+        and(
+          inArray(couriers.serviceProvider, allowedProviders),
+          sql`${couriers.id} not in (99, 100)`,
+        ),
+      )
       .groupBy(couriers.serviceProvider)
       .orderBy(couriers.serviceProvider)
 
@@ -323,7 +425,7 @@ export const updateServiceProviderStatusController = async (req: Request, res: R
   const { isEnabled } = req.body
 
   try {
-    const allowedProviders = [...INTEGRATED_SERVICE_PROVIDERS]
+    const allowedProviders = [...VISIBLE_SERVICE_PROVIDERS]
 
     if (!serviceProvider || typeof isEnabled !== 'boolean') {
       return res.status(400).json({
@@ -335,7 +437,7 @@ export const updateServiceProviderStatusController = async (req: Request, res: R
     if (!allowedProviders.includes(normalizedProvider as any)) {
       return res.status(400).json({
         success: false,
-        message: `Only these providers are supported: ${allowedProviders.join(', ')}`,
+        message: `Only these providers are supported: ${visibleServiceProviderList()}`,
       })
     }
 
@@ -345,7 +447,12 @@ export const updateServiceProviderStatusController = async (req: Request, res: R
         isEnabled,
         updatedAt: new Date(),
       })
-      .where(eq(couriers.serviceProvider, normalizedProvider))
+      .where(
+        and(
+          eq(couriers.serviceProvider, normalizedProvider),
+          sql`${couriers.id} not in (99, 100)`,
+        ),
+      )
       .returning()
 
     if (!updated.length) {
@@ -381,12 +488,12 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
       })
       .from(courier_credentials)
       .where(
-        inArray(courier_credentials.provider, [...INTEGRATED_SERVICE_PROVIDERS]),
+        inArray(courier_credentials.provider, ['delhivery', 'deliveryone']),
       )
 
     const defaults = {
       deliveryOne: {
-        provider: 'deliveryone',
+        provider: 'delhivery',
         apiBase: 'https://track.delhivery.com',
         clientId: '',
         username: '',
@@ -397,28 +504,29 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
       },
     }
 
-    const data = rows.reduce<Record<string, any>>((acc, row) => {
-      const provider = (row.provider || '').toLowerCase()
-      if (!provider) return acc
-      if (provider === 'deliveryone') {
-        const apiKey = row.apiKey || ''
-        const hasPassword = Boolean((row.password || '').trim())
-        const hasWebhookSecret = Boolean((row.webhookSecret || '').trim())
-        acc.deliveryOne = {
-          provider: 'deliveryone',
-          apiBase: row.apiBase || 'https://track.delhivery.com',
-          clientId: row.clientId || '',
-          username: row.username || '',
-          hasApiKey: Boolean(apiKey.trim()),
-          apiKeyMasked: apiKey
-            ? `${apiKey.slice(0, 4)}${'*'.repeat(Math.max(apiKey.length - 8, 0))}${apiKey.slice(-4)}`
-            : '',
-          hasPassword,
-          hasWebhookSecret,
-        }
-      }
-      return acc
-    }, { ...defaults })
+    const activeCredential =
+      rows.find((row) => String(row.provider || '').toLowerCase() === 'delhivery') ||
+      rows.find((row) => String(row.provider || '').toLowerCase() === 'deliveryone')
+    const apiKey = activeCredential?.apiKey || ''
+    const data = {
+      ...defaults,
+      ...(activeCredential
+        ? {
+            deliveryOne: {
+              provider: 'delhivery',
+              apiBase: activeCredential.apiBase || 'https://track.delhivery.com',
+              clientId: activeCredential.clientId || '',
+              username: activeCredential.username || '',
+              hasApiKey: Boolean(apiKey.trim()),
+              apiKeyMasked: apiKey
+                ? `${apiKey.slice(0, 4)}${'*'.repeat(Math.max(apiKey.length - 8, 0))}${apiKey.slice(-4)}`
+                : '',
+              hasPassword: Boolean((activeCredential.password || '').trim()),
+              hasWebhookSecret: Boolean((activeCredential.webhookSecret || '').trim()),
+            },
+          }
+        : {}),
+    }
 
     res.json({
       success: true,
@@ -432,6 +540,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
 
 export const updateDeliveryOneCredentialsController = async (req: Request, res: Response) => {
   const { apiBase, clientId, username, password, apiKey, webhookSecret } = req.body || {}
+  const credentialsProvider = 'delhivery'
 
   try {
     const nextApiBase = typeof apiBase === 'string' ? apiBase.trim() : undefined
@@ -449,7 +558,7 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
     const [existing] = await db
       .select({ id: courier_credentials.id })
       .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'deliveryone'))
+      .where(eq(courier_credentials.provider, credentialsProvider))
       .limit(1)
 
     if (existing) {
@@ -478,10 +587,10 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
       await db
         .update(courier_credentials)
         .set(updatePayload)
-        .where(eq(courier_credentials.provider, 'deliveryone'))
+        .where(eq(courier_credentials.provider, credentialsProvider))
     } else {
       await db.insert(courier_credentials).values({
-        provider: 'deliveryone',
+        provider: credentialsProvider,
         apiBase: nextApiBase || 'https://track.delhivery.com',
         clientName: '',
         apiKey: hasApiKey ? nextApiKey : '',
@@ -504,14 +613,14 @@ export const updateDeliveryOneCredentialsController = async (req: Request, res: 
         webhookSecret: courier_credentials.webhookSecret,
       })
       .from(courier_credentials)
-      .where(eq(courier_credentials.provider, 'deliveryone'))
+      .where(eq(courier_credentials.provider, credentialsProvider))
       .limit(1)
 
     res.json({
       success: true,
       message: 'Delhivery credentials updated successfully',
       data: {
-        provider: 'deliveryone',
+        provider: credentialsProvider,
         apiBase: saved?.apiBase || 'https://track.delhivery.com',
         clientId: saved?.clientId || '',
         username: saved?.username || '',

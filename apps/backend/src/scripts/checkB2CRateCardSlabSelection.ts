@@ -7,7 +7,7 @@ import {
 const rateCard: ResolvedB2CRateCard = {
   shippingRateId: 'test-rate-card',
   courier_id: 99,
-  service_provider: 'deliveryone',
+  service_provider: 'delhivery',
   zone_id: 'test-zone',
   type: 'forward',
   mode: 'surface',
@@ -84,5 +84,28 @@ for (const testCase of cases) {
   assert.equal(result.freight, testCase.expectedFreight, testCase.label)
   assert.equal(result.max_slab_weight, testCase.expectedMaxSlabWeight, testCase.label)
 }
+
+const gapRateCard: ResolvedB2CRateCard = {
+  ...rateCard,
+  shippingRateId: 'test-rate-card-gap',
+  courier_id: 121,
+  base_rate: 20,
+  min_weight: 1,
+  slabs: [
+    { weight_from: 1, weight_to: 2, rate: 20, extra_rate: 10, extra_weight_unit: 1 },
+    { weight_from: 2, weight_to: 3, rate: 50, extra_rate: 20, extra_weight_unit: 1 },
+  ],
+}
+
+const gapResult = computeB2CRateCardCharge({
+  actual_weight_g: 500,
+  length_cm: 10,
+  width_cm: 10,
+  height_cm: 10,
+  rateCard: gapRateCard,
+})
+
+assert.equal(gapResult.chargeable_weight, 500, '500g still uses the B2C minimum')
+assert.equal(gapResult.freight, 20, '500g below first configured slab uses the first slab rate')
 
 console.log('B2C rate-card slab selection checks passed')

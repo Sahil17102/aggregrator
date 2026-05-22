@@ -19,7 +19,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { MdAssignment, MdLocalOffer, MdReceipt, MdSync } from 'react-icons/md'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { generateManifestService } from '../../../api/order.service'
-import { useAllCouriersWithDetails } from '../../../hooks/Integrations/useCouriers'
 import {
   useB2COrdersByUser,
   useCancelShipment,
@@ -32,7 +31,10 @@ import { usePickupAddresses } from '../../../hooks/Pickup/usePickupAddresses'
 import { usePresignedDownloadMutation } from '../../../hooks/Uploads/usePresignedDownloadUrls'
 import { useKycVerification } from '../../../hooks/User/useKycVerification'
 import type { B2COrder } from '../../../types/generic.types'
-import { getCourierDisplayName } from '../../../utils/courierDisplay'
+import {
+  DELHIVERY_COURIER_FILTER_OPTIONS_BY_NAME,
+  getCourierDisplayName,
+} from '../../../utils/courierDisplay'
 import { FilterBar, type FilterField } from '../../FilterBar'
 import { toast } from '../../UI/Toast'
 import StatusChip from '../../UI/chip/StatusChip'
@@ -179,7 +181,6 @@ const B2COrdersList = () => {
   const { mutateAsync: requestB2CPickup, isPending: requestingPickup } = useRequestB2CPickup()
   const queryClient = useQueryClient()
   const { mutateAsync: presignDownloads } = usePresignedDownloadMutation()
-  const { data: couriers } = useAllCouriersWithDetails()
   const { data: warehouses } = usePickupAddresses()
   const { mutate: cancelShipment } = useCancelShipment()
   const { mutate: createReverse } = useCreateReverseShipment()
@@ -742,11 +743,7 @@ const B2COrdersList = () => {
       name: 'courier',
       label: 'Courier',
       type: 'select',
-      options:
-        couriers?.map((c: { name: string; id: string | number }) => ({
-          label: getCourierDisplayName(c),
-          value: String(c.id),
-        })) ?? [],
+      options: DELHIVERY_COURIER_FILTER_OPTIONS_BY_NAME,
       isAdvanced: true,
     },
     {
@@ -754,10 +751,12 @@ const B2COrdersList = () => {
       label: 'Warehouse',
       type: 'select',
       options:
-        warehouses?.pickupAddresses?.map((w) => ({
-          label: w.pickup?.addressNickname,
-          value: w.pickup?.addressNickname,
-        })) ?? [],
+        warehouses?.pickupAddresses
+          ?.map((w) => {
+            const nickname = String(w.pickup?.addressNickname || '').trim()
+            return nickname ? { label: nickname, value: nickname } : null
+          })
+          .filter((option): option is { label: string; value: string } => Boolean(option)) ?? [],
       isAdvanced: true,
     },
     { name: 'fromDate', label: 'From Date', type: 'date', placeholder: 'From' },
@@ -787,9 +786,7 @@ const B2COrdersList = () => {
       .replace(/[\s_-]+/g, '')
     return (
       provider.includes('deliveryone') ||
-      provider.includes('delhiveryone') ||
-      provider.includes('delhiverysurface') ||
-      provider.includes('delhiveryexpress')
+      provider.includes('delhiveryone')
     )
   }
 
@@ -1097,9 +1094,12 @@ const B2COrdersList = () => {
         }
 
         const retriesRemaining = Number(row.manifest_retries_remaining ?? 0)
+        const isDelhiveryIntegration = ['delhivery', 'deliveryone'].includes(
+          String(row.integration_type || '').toLowerCase(),
+        )
         const canRetryManifest =
           row.can_retry_manifest === true &&
-          String(row.integration_type || '').toLowerCase() === 'deliveryone'
+          isDelhiveryIntegration
 
         if (orderStatus === 'manifest_failed' && canRetryManifest) {
           actions.push(
@@ -1142,7 +1142,7 @@ const B2COrdersList = () => {
         if (
           actions.length === 0 &&
           orderStatus !== 'manifest_failed' &&
-          String(row.integration_type || '').toLowerCase() === 'deliveryone'
+          isDelhiveryIntegration
         ) {
           return (
             <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 700 }}>
@@ -1159,7 +1159,7 @@ const B2COrdersList = () => {
         if (
           actions.length === 0 &&
           orderStatus === 'manifest_failed' &&
-          String(row.integration_type || '').toLowerCase() === 'deliveryone'
+          isDelhiveryIntegration
         ) {
           return (
             <Typography sx={{ fontSize: 12, color: 'error.main', fontWeight: 700 }}>

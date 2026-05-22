@@ -18,13 +18,11 @@ import {
 import { DelhiveryManifestError, HttpError } from '../../utils/classes'
 import {
   DELIVERY_ONE_ALLOWED_COURIER_IDS,
-  DELHIVERY_ALLOWED_COURIER_IDS,
   getDelhiveryCourierDisplayName,
   getDelhiveryModeCodeByShippingMode,
   getDelhiveryShippingModeByCourierId,
   getDelhiveryShippingModeByModeCode,
   isSupportedDeliveryOneCourierId,
-  isSupportedDelhiveryCourierId,
   normalizeDelhiveryShippingMode,
   normalizeCourierId,
 } from '../../utils/delhiveryCourier'
@@ -57,9 +55,9 @@ import { PgTransaction } from 'drizzle-orm/pg-core'
 import path from 'path'
 import PdfPrinter from 'pdfmake'
 import {
-  INTEGRATED_SERVICE_PROVIDERS,
+  VISIBLE_SERVICE_PROVIDERS,
   normalizeServiceProviderKey,
-  supportedServiceProviderList,
+  visibleServiceProviderList,
 } from '../../utils/courierProviders'
 import { requireMerchantOrderReadiness } from '../../utils/merchantReadiness'
 import { courierPriorityProfiles } from '../schema/courierPriority'
@@ -89,7 +87,6 @@ import {
   formatCourierSlabDisplayName,
   normalizeB2CShippingMode,
 } from './b2cRateCard.service'
-import { ensureDeliveryOneCouriers } from './deliveryOneCourierCatalog.service'
 import { calculateFreight } from './pricing/chargeableFreight'
 
 // Load correct .env based on NODE_ENV
@@ -1510,10 +1507,7 @@ export const fetchAvailableCouriersWithRates = async (
 
     // Build registry of enabled couriers by service provider
     // Filter by business type: check if business_type JSONB array contains 'b2c'
-    const SUPPORTED_PROVIDERS = [...INTEGRATED_SERVICE_PROVIDERS]
-    if (SUPPORTED_PROVIDERS.includes('deliveryone' as any)) {
-      await ensureDeliveryOneCouriers()
-    }
+    const SUPPORTED_PROVIDERS = [...VISIBLE_SERVICE_PROVIDERS]
     const systemCourierRows = await db
       .select({
         id: couriers.id,
@@ -1562,7 +1556,10 @@ export const fetchAvailableCouriersWithRates = async (
     for (const row of systemCourierRows) {
       const providerKey = normalizeProviderKey(row.serviceProvider)
       if (!providerKey || !SUPPORTED_PROVIDERS.includes(providerKey as any)) continue
-      if (providerKey === 'delhivery' && !DELHIVERY_ALLOWED_COURIER_IDS.includes(Number(row.id))) {
+      if (
+        providerKey === 'delhivery' &&
+        DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(row.id))
+      ) {
         continue
       }
       if (
@@ -2409,10 +2406,7 @@ export const fetchAvailableCouriersWithRates = async (
     combined = await filterCouriersByBusinessType(combined, 'b2c')
     combined = combined.filter((c: any) => {
       const providerKey = normalizeProviderKey(c.integration_type || c.serviceProvider || '')
-      return (
-        providerKey === 'deliveryone' &&
-        DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(c.id))
-      )
+      return VISIBLE_SERVICE_PROVIDERS.includes(providerKey as any)
     })
 
     // Fetch live provider costs after local rate-card filtering so order creation
@@ -2794,7 +2788,13 @@ export const fetchAvailableCouriersWithRatesB2B = async (
     const systemCourierMap = systemCourierRows.reduce<Record<string, Set<number>>>((acc, row) => {
       const providerKey = normalizeServiceProviderKey(row.serviceProvider)
       if (!providerKey) return acc
-      if (!INTEGRATED_SERVICE_PROVIDERS.includes(providerKey as any)) return acc
+      if (!VISIBLE_SERVICE_PROVIDERS.includes(providerKey as any)) return acc
+      if (
+        providerKey === 'delhivery' &&
+        DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(row.id))
+      ) {
+        return acc
+      }
       if (
         providerKey === 'deliveryone' &&
         !DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(row.id))
@@ -3397,7 +3397,7 @@ export const createB2CShipmentService = async (
       )
 
       // First, get all couriers matching the courier_id
-      const matchingCouriers = await db
+      const matchingCourierRows = await db
         .select({
           serviceProvider: couriers.serviceProvider,
           name: couriers.name,
@@ -3408,9 +3408,17 @@ export const createB2CShipmentService = async (
           and(
             eq(couriers.id, Number(params.courier_id)),
             eq(couriers.isEnabled, true),
-            inArray(couriers.serviceProvider, [...INTEGRATED_SERVICE_PROVIDERS]),
+            inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
           ),
         )
+
+      const matchingCouriers = matchingCourierRows.filter((courier) => {
+        const serviceProvider = normalizeServiceProviderKey(courier.serviceProvider)
+        return !(
+          serviceProvider === 'delhivery' &&
+          DELIVERY_ONE_ALLOWED_COURIER_IDS.includes(Number(courier.id))
+        )
+      })
 
       if (matchingCouriers.length === 0) {
         // No courier found - require integration_type to be explicitly provided
@@ -3422,7 +3430,7 @@ export const createB2CShipmentService = async (
         // Only one courier with this ID - use it directly
         const matchedCourier = matchingCouriers[0]
         const serviceProvider = normalizeServiceProviderKey(matchedCourier.serviceProvider)
-        if (INTEGRATED_SERVICE_PROVIDERS.includes(serviceProvider as any)) {
+        if (VISIBLE_SERVICE_PROVIDERS.includes(serviceProvider as any)) {
           params.integration_type = serviceProvider
           console.log(
             `✅ Derived integration_type: ${params.integration_type} from courier_id: ${params.courier_id} (courier: ${matchedCourier.name})`,
@@ -3430,7 +3438,7 @@ export const createB2CShipmentService = async (
         } else {
           throw new HttpError(
             400,
-            `Unsupported serviceProvider: ${serviceProvider}. Supported providers: ${supportedServiceProviderList()}.`,
+            `Unsupported serviceProvider: ${serviceProvider}. Supported providers: ${visibleServiceProviderList()}.`,
           )
         }
       } else {
@@ -3468,9 +3476,9 @@ export const createB2CShipmentService = async (
   // When courier_id is provided without integration_type, an error is thrown above if it cannot be determined
   if (!params.integration_type) {
     console.warn(
-      `⚠️ integration_type not provided and courier_id not available, defaulting to 'deliveryone'`,
+      `⚠️ integration_type not provided and courier_id not available, defaulting to 'delhivery'`,
     )
-    params.integration_type = 'deliveryone'
+    params.integration_type = 'delhivery'
   }
 
   if (String(params.integration_type || '').toLowerCase() === 'delhivery') {
@@ -3478,20 +3486,16 @@ export const createB2CShipmentService = async (
     if (selectedDelhiveryCourierId === null) {
       throw new HttpError(
         400,
-        'Delhivery courier_id is required to lock the selected Surface/Express service (use 99 for Surface or 100 for Express).',
+        'Delhivery courier_id is required to lock the selected service.',
       )
     }
-    if (!isSupportedDelhiveryCourierId(selectedDelhiveryCourierId)) {
-      throw new HttpError(
-        400,
-        `Invalid Delhivery courier_id: ${selectedDelhiveryCourierId}. Allowed IDs are 100 (Express) and 99 (Surface).`,
-      )
-    }
-    const shippingMode = getDelhiveryShippingModeByCourierId(selectedDelhiveryCourierId)
+    const shippingMode =
+      getDelhiveryShippingModeByCourierId(selectedDelhiveryCourierId) ||
+      normalizeDelhiveryShippingMode(params.shipping_mode)
     if (!shippingMode) {
       throw new HttpError(
-        500,
-        `Unable to resolve Delhivery shipping mode for courier_id: ${selectedDelhiveryCourierId}.`,
+        400,
+        `Unable to resolve Delhivery shipping mode for courier_id: ${selectedDelhiveryCourierId}. Please include shipping_mode as Surface or Express.`,
       )
     }
     selectedDelhiveryShippingMode = shippingMode
@@ -3910,13 +3914,13 @@ export const createB2CShipmentService = async (
   try {
     // 1️⃣ CREATE SHIPMENT
     const requestedIntegrationType = normalizeServiceProviderKey(params.integration_type)
-    const allowedIntegrationTypes = [...INTEGRATED_SERVICE_PROVIDERS]
+    const allowedIntegrationTypes = [...VISIBLE_SERVICE_PROVIDERS]
     if (
       !requestedIntegrationType ||
       !allowedIntegrationTypes.includes(requestedIntegrationType as any)
     ) {
       throw new Error(
-        `Invalid integration_type: ${params.integration_type}. Supported values: ${supportedServiceProviderList()}.`,
+        `Invalid integration_type: ${params.integration_type}. Supported values: ${visibleServiceProviderList()}.`,
       )
     }
 
@@ -3991,7 +3995,7 @@ export const createB2CShipmentService = async (
       }
     }
 
-    if (integrationType === 'deliveryone' && !isReverseShipment) {
+    if (['delhivery', 'deliveryone'].includes(integrationType) && !isReverseShipment) {
       const expectedWalletDebit = getExpectedWalletDebitFromChargeParts({
         paymentType: params.payment_type,
         freightCharges,
@@ -4673,7 +4677,8 @@ export const createB2CShipmentService = async (
 
       // 4️⃣ WALLET TRANSACTION
       // Delhivery forward orders are charged at booking; other forward couriers are charged after manifest.
-      const shouldDeferWalletDebit = !isReverseShipment && integrationType !== 'deliveryone'
+      const shouldDeferWalletDebit =
+        !isReverseShipment && !['delhivery', 'deliveryone'].includes(integrationType)
       const finalWalletDebit = walletDebit ?? 0
       if (shouldDeferWalletDebit) {
         console.log('ℹ️ Deferring wallet debit until manifest success for B2C order', {
@@ -4858,7 +4863,7 @@ export const createB2CShipmentService = async (
     })
 
     if (
-      integrationType === 'deliveryone' &&
+      ['delhivery', 'deliveryone'].includes(integrationType) &&
       !isReverseShipment &&
       result?.order?.id &&
       shipmentMeta.awb_number
@@ -8633,18 +8638,15 @@ const getTrackingProviderKey = (order: {
     .replace(/[\s_-]+/g, '')
   let providerKey = normalizeServiceProviderKey(order.integration_type)
 
-  if (
-    courierPartner.includes('deliveryone') ||
-    courierPartner.includes('delhiveryone') ||
-    courierPartner.includes('delhiverysurface') ||
-    courierPartner.includes('delhiveryexpress')
-  ) {
-    providerKey = 'deliveryone'
-  } else if (courierPartner.includes('delhivery')) {
-    providerKey = 'delhivery'
+  if (!['delhivery', 'deliveryone'].includes(providerKey)) {
+    if (courierPartner.includes('deliveryone') || courierPartner.includes('delhiveryone')) {
+      providerKey = 'deliveryone'
+    } else if (courierPartner.includes('delhivery')) {
+      providerKey = 'delhivery'
+    }
   }
 
-  return providerKey || 'deliveryone'
+  return providerKey || 'delhivery'
 }
 
 const fetchLiveTrackingForOrder = async (
@@ -8655,6 +8657,12 @@ const fetchLiveTrackingForOrder = async (
   if (providerKey === 'deliveryone') {
     const deliveryOneService = new DeliveryOneService()
     const raw = await deliveryOneService.trackShipment(order.awb_number)
+    return mapDeliveryOneTracking(raw, order)
+  }
+
+  if (providerKey === 'delhivery') {
+    const delhiveryService = new DelhiveryService()
+    const raw = await delhiveryService.trackShipment(order.awb_number)
     return mapDeliveryOneTracking(raw, order)
   }
 

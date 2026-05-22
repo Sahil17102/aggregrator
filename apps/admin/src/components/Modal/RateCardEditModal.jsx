@@ -42,10 +42,12 @@ const providerNameMatchesCourierName = (serviceProvider, courierName) => {
   const name = String(courierName || '').trim().toLowerCase()
   const compactName = name.replace(/[\s_-]+/g, '')
   if (!provider || !name) return false
-  if (provider === 'deliveryone') {
+  if (provider === 'deliveryone' || provider === 'delhivery') {
     return (
       compactName.includes('deliveryone') ||
       compactName.includes('delhiveryone') ||
+      compactName.includes('delhivery') ||
+      compactName.includes('dehlivery') ||
       compactName.includes('delhiverysurface') ||
       compactName.includes('delhiveryexpress')
     )

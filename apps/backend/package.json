@@ -22,6 +22,7 @@
     "seed:delivery-one-b2c:force": "tsx src/scripts/seedDeliveryOneB2CRatecard.ts --force",
     "seed:delivery-one-express-b2c": "tsx src/scripts/seedDeliveryOneExpressB2CRatecard.ts",
     "seed:delivery-one-express-b2c:force": "tsx src/scripts/seedDeliveryOneExpressB2CRatecard.ts --force",
+    "repair:delhivery-visibility": "tsx src/scripts/repairDelhiveryVisibility.ts",
     "zones:remove-kashmir-special": "tsx src/scripts/removeKashmirFromSpecialZone.ts",
     "verify:smtp": "tsx src/scripts/verifySmtp.ts",
     "verify:delivery-one-api-calls": "tsx src/scripts/verifyDeliveryOneApiCalls.ts",

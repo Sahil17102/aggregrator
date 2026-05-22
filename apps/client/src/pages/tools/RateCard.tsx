@@ -23,9 +23,13 @@ import { SmartTabs } from '../../components/UI/tab/Tabs'
 import type { Column } from '../../components/UI/table/DataTable'
 import DataTable from '../../components/UI/table/DataTable'
 import TableSkeleton from '../../components/UI/table/TableSkeleton'
-import { useAllCouriers, useShippingRates } from '../../hooks/Integrations/useCouriers'
+import { useShippingRates } from '../../hooks/Integrations/useCouriers'
 import { useZones } from '../../hooks/useZones'
-import { getCourierDisplayName, getCourierLogo } from '../../utils/courierDisplay'
+import {
+  DELHIVERY_COURIER_FILTER_OPTIONS_BY_NAME,
+  getCourierDisplayName,
+  getCourierLogo,
+} from '../../utils/courierDisplay'
 import { defaultLogo } from '../../utils/constants'
 
 interface ShippingRate {
@@ -55,24 +59,6 @@ interface ShippingRate {
     }
   }
 }
-
-type CourierOption = string | {
-  id?: string | number
-  courier_id?: string | number
-  name?: string | null
-  courier_name?: string | null
-  displayName?: string | null
-  serviceProvider?: string | null
-  service_provider?: string | null
-  mode?: string | null
-  shipping_mode?: string | null
-}
-
-const normalizeCourierProvider = (value?: string | null) =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '')
 
 const getZoneLookupKeys = (zone: { id?: string; code?: string; name?: string }) =>
   [
@@ -257,45 +243,9 @@ const RateCard = () => {
   })
 
   const { zones } = useZones(businessType)
-  const { data: couriers } = useAllCouriers()
   const { data, isLoading, isError } = useShippingRates({ ...filters, businessType: businessType })
 
   const rates: ShippingRate[] = data || []
-  const courierOptions = Array.from(
-    ((couriers as CourierOption[] | undefined) || []).reduce((optionsByKey, courier) => {
-      const provider =
-        typeof courier === 'string'
-          ? normalizeCourierProvider(courier)
-          : normalizeCourierProvider(
-              courier.serviceProvider || courier.service_provider || courier.name,
-            )
-      const isDeliveryOne =
-        provider === 'deliveryone' ||
-        provider === 'delivery1' ||
-        provider === 'delhiveryone' ||
-        provider === 'delhivery'
-      const value =
-        typeof courier === 'string'
-          ? courier
-          : courier.name || courier.courier_name || courier.displayName || ''
-      const displayName = getCourierDisplayName(courier)
-      const key = isDeliveryOne ? normalizeCourierProvider(displayName) : value
-
-      if (key && value && !optionsByKey.has(key)) {
-        optionsByKey.set(
-          key,
-          isDeliveryOne
-            ? { label: displayName, value: displayName }
-            : {
-                label: displayName,
-                value,
-              },
-        )
-      }
-
-      return optionsByKey
-    }, new Map<string, { label: string; value: string }>()),
-  ).map(([, option]) => option)
 
   console.log('rates', rates)
 
@@ -353,7 +303,7 @@ const RateCard = () => {
       name: 'courier',
       label: 'Courier',
       type: 'multiselect',
-      options: courierOptions,
+      options: DELHIVERY_COURIER_FILTER_OPTIONS_BY_NAME,
     },
     { name: 'min_weight', label: 'Min Weight (kg)', type: 'text', placeholder: 'Enter min weight' },
   ]

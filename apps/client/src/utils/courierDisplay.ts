@@ -20,11 +20,21 @@ type CourierLike =
       service_type?: string | null
     }
 
-const DELHIVERY_SURFACE_DISPLAY_NAME = 'Delhivery Surface'
-const DELHIVERY_EXPRESS_DISPLAY_NAME = 'Delhivery Express'
+export const DELHIVERY_SURFACE_DISPLAY_NAME = 'Delhivery Surface'
+export const DELHIVERY_EXPRESS_DISPLAY_NAME = 'Delhivery Express'
 const DELIVERY_ONE_LOGO = deliveryOneLogo
 const DELIVERY_ONE_SURFACE_ID = 99
 const DELIVERY_ONE_EXPRESS_ID = 100
+
+export const DELHIVERY_COURIER_FILTER_OPTIONS_BY_ID = [
+  { label: DELHIVERY_SURFACE_DISPLAY_NAME, value: String(DELIVERY_ONE_SURFACE_ID) },
+  { label: DELHIVERY_EXPRESS_DISPLAY_NAME, value: String(DELIVERY_ONE_EXPRESS_ID) },
+]
+
+export const DELHIVERY_COURIER_FILTER_OPTIONS_BY_NAME = [
+  { label: DELHIVERY_SURFACE_DISPLAY_NAME, value: DELHIVERY_SURFACE_DISPLAY_NAME },
+  { label: DELHIVERY_EXPRESS_DISPLAY_NAME, value: DELHIVERY_EXPRESS_DISPLAY_NAME },
+]
 
 const normalizeToken = (value?: string | null) =>
   String(value || '')

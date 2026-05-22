@@ -17,7 +17,7 @@ const B2C_CANCELLABLE_STATUSES = new Set([
   'pickup_initiated',
   'manifest_generated',
 ])
-const B2C_CANCELLABLE_PROVIDERS = new Set(['deliveryone'])
+const B2C_CANCELLABLE_PROVIDERS = new Set(['delhivery', 'deliveryone'])
 const B2C_MANIFESTABLE_STATUSES = new Set(['pending', 'booked', 'shipment_created'])
 const B2C_CANCELLED_STATUSES = new Set(['cancelled', 'canceled', 'cancellation_requested'])
 
@@ -42,6 +42,13 @@ const getB2CActionProvider = (order: B2COrderActionShape) => {
   ) {
     return 'deliveryone'
   }
+  if (
+    combinedProvider.includes('delhivery') ||
+    combinedProvider.includes('delhivery_surface') ||
+    combinedProvider.includes('delhivery_express')
+  ) {
+    return 'delhivery'
+  }
 
   return integrationType || courierPartner
 }
@@ -50,7 +57,7 @@ export const getB2CManifestIdentifier = (order: B2COrderActionShape) =>
   order.order_number || order.awb_number || null
 
 export const getB2CManifestProvider = (order: B2COrderActionShape) => {
-  return getB2CActionProvider(order) || 'deliveryone'
+  return getB2CActionProvider(order) || 'delhivery'
 }
 
 export const isB2CCancelledStatus = (status: unknown) => {

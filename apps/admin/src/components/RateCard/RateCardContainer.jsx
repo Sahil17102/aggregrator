@@ -41,8 +41,15 @@ const getCourierFilterOptions = (courierList = []) => {
     const serviceProvider = normalizeProvider(
       courier?.serviceProvider || courier?.service_provider || '',
     )
-    const isDeliveryOne = serviceProvider === 'deliveryone'
     const displayName = getCourierDisplayName(courier)
+    const normalizedDisplayName = displayName.toLowerCase().replace(/[\s_-]+/g, '')
+    const isDeliveryOne =
+      serviceProvider === 'delhivery' ||
+      serviceProvider === 'deliveryone' ||
+      normalizedDisplayName === 'delhiverysurface' ||
+      normalizedDisplayName === 'delhiveryexpress'
+    if (!isDeliveryOne) return
+
     const key = isDeliveryOne ? displayName.toLowerCase().replace(/[\s_-]+/g, '') : courier?.name || courier?.id
     const option = isDeliveryOne
       ? { label: displayName, value: displayName }

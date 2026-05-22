@@ -15,6 +15,7 @@ import {
 import { useServiceProviders, useUpdateServiceProviderStatus } from 'hooks/useCouriers'
 
 const providerLabels = {
+  delhivery: 'Delhivery',
   deliveryone: 'Delhivery',
 }
 

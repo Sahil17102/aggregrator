@@ -72,7 +72,7 @@ const ImportChargesModal = memo(
     const csvHeaders = [
       {
         courier_id: 'Numeric ID',
-        service_provider: 'Text (must be: deliveryone)',
+        service_provider: 'Text (must be: delhivery)',
         plan_id: planId || 'Optional UUID',
         awb_charges: 'Numeric',
         cft_factor: 'Numeric',
@@ -115,7 +115,7 @@ const ImportChargesModal = memo(
       },
       {
         courier_id: '1',
-        service_provider: 'deliveryone',
+        service_provider: 'delhivery',
         plan_id: planId || '',
         awb_charges: '50',
         cft_factor: '5',

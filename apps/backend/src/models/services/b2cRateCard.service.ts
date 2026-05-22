@@ -501,6 +501,22 @@ export function computeB2CRateCardCharge(params: {
     }
   }
 
+  const firstSlab = params.rateCard.slabs[0]
+  if (firstSlab && chargeableWeightKg < firstSlab.weight_from) {
+    return {
+      actual_weight: preview.actual_weight,
+      volumetric_weight: preview.volumetric_weight,
+      chargeable_weight: chargeableWeight,
+      slabs: null,
+      freight: firstSlab.rate,
+      slab_weight: null,
+      base_price: firstSlab.rate,
+      selected_slab: firstSlab,
+      max_slab_weight: firstSlab.weight_to,
+      matched_by: 'slab',
+    }
+  }
+
   if (
     lastFiniteSlab &&
     lastFiniteSlab.weight_to !== null &&

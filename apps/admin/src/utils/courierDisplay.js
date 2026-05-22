@@ -9,7 +9,10 @@ const isDeliveryOneValue = (value) => {
   return (
     ['deliveryone', 'delivery1', 'delhiveryone', 'delhivery'].includes(normalized) ||
     normalized.startsWith('deliveryone') ||
-    normalized.startsWith('delhiveryone')
+    normalized.startsWith('delhiveryone') ||
+    normalized.startsWith('delhiverysurface') ||
+    normalized.startsWith('delhiveryexpress') ||
+    normalized.startsWith('delhiveryair')
   )
 }
 

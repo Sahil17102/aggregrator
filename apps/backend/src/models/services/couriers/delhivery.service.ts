@@ -3,6 +3,7 @@ import qs from 'qs'
 import { DelhiveryManifestError, HttpError } from '../../../utils/classes'
 import {
   getDelhiveryShippingModeByCourierId,
+  normalizeDelhiveryShippingMode,
   normalizeCourierId,
 } from '../../../utils/delhiveryCourier'
 import { getDelhiveryCredentials } from '../delhiveryCredentials.service'
@@ -326,14 +327,16 @@ export class DelhiveryService {
       if (normalizedCourierId === null) {
         throw new HttpError(
           400,
-          'Delhivery courier_id is required for Surface/Express bookings. Provide 99 for Surface or 100 for Express.',
+          'Delhivery courier_id is required for bookings.',
         )
       }
-      const shippingMode = getDelhiveryShippingModeByCourierId(normalizedCourierId)
+      const shippingMode =
+        getDelhiveryShippingModeByCourierId(normalizedCourierId) ||
+        normalizeDelhiveryShippingMode(params.shipping_mode)
       if (!shippingMode) {
         throw new HttpError(
           400,
-          `Invalid Delhivery courier_id: ${normalizedCourierId}. Allowed IDs are 100 (Express) and 99 (Surface).`,
+          `Unable to resolve Delhivery shipping mode for courier_id: ${normalizedCourierId}. Please include shipping_mode as Surface or Express.`,
         )
       }
 
