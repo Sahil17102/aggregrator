@@ -24,6 +24,8 @@
     "seed:delivery-one-express-b2c:force": "tsx src/scripts/seedDeliveryOneExpressB2CRatecard.ts --force",
     "purge:legacy-couriers": "tsx src/scripts/purgeLegacyCourierSeeds.ts",
     "purge:legacy-couriers:dry-run": "tsx src/scripts/purgeLegacyCourierSeeds.ts --dry-run",
+    "recover:sumair-upgrade": "tsx src/scripts/recoverSumairUpgradeRateCard.ts",
+    "recover:sumair-upgrade:dry-run": "tsx src/scripts/recoverSumairUpgradeRateCard.ts --dry-run",
     "repair:delhivery-visibility": "tsx src/scripts/repairDelhiveryVisibility.ts",
     "zones:remove-kashmir-special": "tsx src/scripts/removeKashmirFromSpecialZone.ts",
     "verify:smtp": "tsx src/scripts/verifySmtp.ts",

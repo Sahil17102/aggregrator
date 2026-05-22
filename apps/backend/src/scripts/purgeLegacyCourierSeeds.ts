@@ -91,6 +91,13 @@ const migratableDelhiveryRateRowsSql = `
       when sr.courier_id = ${DELIVERY_ONE_EXPRESS_ID}
         or lower(coalesce(sr.courier_name, '')) like '%express%'
         or ${modeSql('sr.mode')} = 'air'
+      then ${DELIVERY_ONE_EXPRESS_ID}
+      else ${DELIVERY_ONE_SURFACE_ID}
+    end as target_courier_id,
+    case
+      when sr.courier_id = ${DELIVERY_ONE_EXPRESS_ID}
+        or lower(coalesce(sr.courier_name, '')) like '%express%'
+        or ${modeSql('sr.mode')} = 'air'
       then 'air'
       else 'surface'
     end as target_mode,
@@ -102,33 +109,59 @@ const migratableDelhiveryRateRowsSql = `
       else 'Delhivery Surface'
     end as target_name
   from shipping_rates sr
-  where sr.courier_id in (${DELIVERY_ONE_SURFACE_ID}, ${DELIVERY_ONE_EXPRESS_ID})
-    and (
-      ${compactSql('sr.service_provider')} = 'delhivery'
-      or (
-        ${compactSql('sr.service_provider')} = ''
-        and lower(coalesce(sr.courier_name, '')) like '%delhivery%'
-      )
+  where (
+    ${compactSql('sr.service_provider')} = 'delhivery'
+    or (
+      ${compactSql('sr.service_provider')} = ''
+      and lower(coalesce(sr.courier_name, '')) like '%delhivery%'
     )
+  )
 `
 
 const duplicateMigratableRateRowsSql = `
   with candidates as (
     ${migratableDelhiveryRateRowsSql}
+  ),
+  candidate_counts as (
+    select
+      c.*,
+      count(distinct srs.id)::int as weight_slab_count,
+      count(distinct cod.id)::int as cod_slab_count,
+      greatest(coalesce(max(sr.last_updated), max(sr.created_at)), max(sr.created_at)) as candidate_updated_at
+    from candidates c
+    join shipping_rates sr on sr.id = c.id
+    left join shipping_rate_slabs srs on srs.shipping_rate_id = c.id
+    left join shipping_rate_cod_slabs cod on cod.shipping_rate_id = c.id
+    group by
+      c.id,
+      c.plan_id,
+      c.business_type,
+      c.zone_id,
+      c.type,
+      c.courier_id,
+      c.target_courier_id,
+      c.target_mode,
+      c.target_name
   )
   select c.id
-  from candidates c
+  from candidate_counts c
   where exists (
-    select 1
+    select keep.id
     from shipping_rates keep
+    left join shipping_rate_slabs keep_srs on keep_srs.shipping_rate_id = keep.id
+    left join shipping_rate_cod_slabs keep_cod on keep_cod.shipping_rate_id = keep.id
     where keep.id <> c.id
       and keep.plan_id = c.plan_id
       and keep.business_type = c.business_type
       and keep.zone_id = c.zone_id
       and keep.type = c.type
-      and keep.courier_id = c.courier_id
+      and keep.courier_id = c.target_courier_id
       and ${compactSql('keep.service_provider')} in ('deliveryone', 'delhiveryone', 'delivery1')
       and ${modeSql('keep.mode')} = c.target_mode
+    group by keep.id, keep.last_updated, keep.created_at
+    having count(distinct keep_srs.id)::int >= c.weight_slab_count
+      and count(distinct keep_cod.id)::int >= c.cod_slab_count
+      and greatest(coalesce(keep.last_updated, keep.created_at), keep.created_at) >= c.candidate_updated_at
   )
 `
 
@@ -309,6 +342,7 @@ async function main() {
         update shipping_rates sr
         set
           service_provider = '${DELIVERY_ONE_PROVIDER}',
+          courier_id = candidates.target_courier_id,
           courier_name = candidates.target_name,
           mode = candidates.target_mode,
           last_updated = now()
