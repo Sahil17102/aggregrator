@@ -34,34 +34,10 @@ import { PlansService } from 'services/plan.service'
 import { getCourierDisplayName } from 'utils/courierDisplay'
 
 const normalizeProvider = (value) => String(value || '').trim().toLowerCase()
-const getCourierFilterOptions = (courierList = []) => {
-  const optionsByKey = new Map()
-
-  courierList.forEach((courier) => {
-    const serviceProvider = normalizeProvider(
-      courier?.serviceProvider || courier?.service_provider || '',
-    )
-    const displayName = getCourierDisplayName(courier)
-    const normalizedDisplayName = displayName.toLowerCase().replace(/[\s_-]+/g, '')
-    const isDeliveryOne =
-      serviceProvider === 'delhivery' ||
-      serviceProvider === 'deliveryone' ||
-      normalizedDisplayName === 'delhiverysurface' ||
-      normalizedDisplayName === 'delhiveryexpress'
-    if (!isDeliveryOne) return
-
-    const key = isDeliveryOne ? displayName.toLowerCase().replace(/[\s_-]+/g, '') : courier?.name || courier?.id
-    const option = isDeliveryOne
-      ? { label: displayName, value: displayName }
-      : { label: displayName, value: courier?.name }
-
-    if (key && option.value && !optionsByKey.has(key)) {
-      optionsByKey.set(key, option)
-    }
-  })
-
-  return Array.from(optionsByKey.values())
-}
+const DELIVERY_ONE_COURIER_FILTER_OPTIONS = [
+  { label: 'Delhivery Surface', value: 'Delhivery Surface' },
+  { label: 'Delhivery Express', value: 'Delhivery Express' },
+]
 
 const normalizeMode = (value) => {
   const raw = String(value || '').trim().toLowerCase()
@@ -317,7 +293,7 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
           key: 'courier_name',
           label: 'Courier',
           type: 'multiselect',
-          options: getCourierFilterOptions(courierList),
+          options: DELIVERY_ONE_COURIER_FILTER_OPTIONS,
         },
         {
           key: 'mode',
@@ -343,7 +319,7 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
 
       return options
     },
-    [courierList, selectedBusinessType, zones],
+    [selectedBusinessType, zones],
   )
 
   return (

@@ -15,6 +15,15 @@ import { useMemo, useState } from 'react'
 
 export const MultiSelect = ({ label, options, value = [], onChange }) => {
   const [search, setSearch] = useState('')
+  const uniqueOptions = useMemo(() => {
+    const seen = new Set()
+    return (options || []).filter((opt) => {
+      const key = String(opt?.value ?? opt?.label ?? '').trim().toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [options])
 
   const handleCheckboxChange = (optionValue) => {
     if (value.includes(optionValue)) {
@@ -26,9 +35,9 @@ export const MultiSelect = ({ label, options, value = [], onChange }) => {
 
   // Filter options based on search input
   const filteredOptions = useMemo(() => {
-    if (!search.trim()) return options
-    return options.filter((opt) => opt.label.toLowerCase().includes(search.trim().toLowerCase()))
-  }, [search, options])
+    if (!search.trim()) return uniqueOptions
+    return uniqueOptions.filter((opt) => opt.label.toLowerCase().includes(search.trim().toLowerCase()))
+  }, [search, uniqueOptions])
 
   return (
     <Box>
