@@ -14,7 +14,7 @@ const WalletMenu = () => {
   const { data, isLoading } = useWalletBalance(true)
 
   useEffect(() => {
-    const balance = Number((data as any)?.data?.balance ?? data)
+    const balance = Number(data?.data?.balance ?? 0)
     if (!isNaN(balance)) {
       setWalletBalance(balance)
     } else {

@@ -23,20 +23,31 @@ import { cancelShipment as cancelShipmentApi } from '../../api/pickups'
 import { createReverseShipment } from '../../api/returns'
 import { toast } from '../../components/UI/Toast'
 
+type ApiError = {
+  response?: { data?: { message?: string } }
+  message?: string
+}
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const apiError = error as ApiError
+  return apiError.response?.data?.message ?? apiError.message ?? fallback
+}
+
+const getApiErrorDetails = (error: unknown) => {
+  const apiError = error as ApiError
+  return apiError.response?.data ?? apiError.message ?? error
+}
+
 export const useCreateShipment = (onClose?: () => void) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateShipmentParams) => createShipment(data),
 
     // 🔹 Error handling
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to create shipment. Please try again.'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to create shipment. Please try again.')
       toast.open({ message, severity: 'error' })
-      console.error('Failed to create shipment:', error.response?.data || error.message)
+      console.error('Failed to create shipment:', getApiErrorDetails(error))
     },
 
     // 🔹 Success handling
@@ -55,14 +66,13 @@ export const useCreateB2BShipment = (onClose?: () => void) => {
     mutationFn: (data: CreateB2BShipmentParams) => createB2BShipment(data),
 
     // 🔹 Error handling
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to create B2B shipment. Please try again.'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(
+        error,
+        'Failed to create B2B shipment. Please try again.',
+      )
       toast.open({ message, severity: 'error' })
-      console.error('Failed to create B2B shipment:', error.response?.data || error.message)
+      console.error('Failed to create B2B shipment:', getApiErrorDetails(error))
     },
 
     // 🔹 Success handling
@@ -160,10 +170,8 @@ export const useGenerateManifest = () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       console.log('Manifest generated:', data)
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to generate manifest'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to generate manifest')
       toast.open({ message, severity: 'error' })
       console.error('Manifest generation error:', error)
     },
@@ -181,10 +189,8 @@ export const useRetryFailedManifest = () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       console.log('Manifest retried:', data)
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to retry manifest'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to retry manifest')
       toast.open({ message, severity: 'error' })
       console.error('Manifest retry error:', error)
     },
@@ -204,10 +210,8 @@ export const useSyncB2CTracking = () => {
       queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to sync tracking status'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to sync tracking status')
       toast.open({ message, severity: 'error' })
       console.error('Tracking sync error:', error)
     },
@@ -231,10 +235,8 @@ export const useRequestB2CPickup = () => {
       queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to request pickup'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to request pickup')
       toast.open({ message, severity: 'error' })
       console.error('Pickup request error:', error)
     },
@@ -260,9 +262,8 @@ export const useRegenerateOrderDocuments = () => {
       queryClient.invalidateQueries({ queryKey: ['b2bOrdersByUser'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to regenerate documents'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to regenerate documents')
       toast.open({ message, severity: 'error' })
     },
   })
@@ -277,10 +278,8 @@ export const useCancelShipment = () => {
       queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to cancel shipment'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to cancel shipment')
       toast.open({ message, severity: 'error' })
     },
   })
@@ -289,16 +288,13 @@ export const useCancelShipment = () => {
 export const useCreateReverseShipment = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: (payload: any) => createReverseShipment(payload),
+    mutationFn: (payload: Record<string, unknown>) => createReverseShipment(payload),
     onSuccess: () => {
       toast.open({ message: 'Reverse shipment created', severity: 'success' })
       queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to create reverse shipment'
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to create reverse shipment')
       toast.open({ message, severity: 'error' })
     },
   })

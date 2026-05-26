@@ -62,6 +62,7 @@ interface SidebarProps {
   handleDrawerToggle: () => void
   setHovered: Dispatch<SetStateAction<boolean>>
   hovered: boolean
+  temporary?: boolean
   onNavigate?: () => void
 }
 
@@ -238,6 +239,7 @@ export default function Sidebar({
   pinned,
   hovered,
   setHovered,
+  temporary = false,
   onNavigate,
 }: SidebarProps) {
   const location = useLocation()
@@ -403,27 +405,31 @@ export default function Sidebar({
   return (
     <Box
       sx={{
-        width: isSidebarExpanded ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-        height: '100dvh',
-        maxHeight: '100dvh',
+        width: temporary ? '100%' : isSidebarExpanded ? DRAWER_WIDTH : COLLAPSED_WIDTH,
+        height: temporary ? '100%' : '100dvh',
+        maxHeight: temporary ? '100%' : '100dvh',
         background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.96) 100%)',
         borderRight: `1px solid ${alpha(brand.ink, 0.08)}`,
         transition: 'width 220ms ease',
         display: 'flex',
         flexDirection: 'column',
         zIndex: theme.zIndex.drawer,
-        position: 'fixed',
-        left: 0,
-        top: 0,
+        position: temporary ? 'relative' : 'fixed',
+        left: temporary ? 'auto' : 0,
+        top: temporary ? 'auto' : 0,
         overflow: 'hidden',
-        boxShadow: '8px 0 24px rgba(15,44,67,0.08)',
+        boxShadow: temporary ? 'none' : '8px 0 24px rgba(15,44,67,0.08)',
         backdropFilter: 'none',
         WebkitBackdropFilter: 'none',
         contain: 'layout paint style',
-        willChange: 'width',
+        willChange: temporary ? 'auto' : 'width',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        if (!temporary) setHovered(true)
+      }}
+      onMouseLeave={() => {
+        if (!temporary) setHovered(false)
+      }}
     >
       <Box sx={{ p: 1.25, mb: 0.85, flexShrink: 0 }}>
         <Box

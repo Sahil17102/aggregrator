@@ -27,6 +27,10 @@ export type FormErrors = {
   [K in keyof UserInfoData]: any
 }
 
+type UserContactFallback = {
+  phone?: string
+}
+
 const steps = [
   { key: 1, title: 'Account Details', helper: 'Primary contact and company information' },
   { key: 2, title: 'Shipping Profile', helper: 'Business model and shipment volume' },
@@ -75,7 +79,11 @@ export default function UserOnboarding() {
           prefill?.lastName ||
           '',
         email: userData?.companyInfo?.contactEmail || userData?.email || prefill?.email || '',
-        phone: userData?.companyInfo?.contactNumber || (userData as any)?.phone || prefill?.phone || '',
+        phone:
+          userData?.companyInfo?.contactNumber ||
+          (userData as typeof userData & UserContactFallback)?.phone ||
+          prefill?.phone ||
+          '',
         companyName: userData?.companyInfo?.businessName ?? '',
         pincode: userData?.companyInfo?.pincode ?? '',
         state: userData?.companyInfo?.state ?? '',
@@ -137,8 +145,7 @@ export default function UserOnboarding() {
 
     if (hasValidationErrors(errors)) return
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response: any = await completeOnboarding({ step, data: formData })
+    const response = (await completeOnboarding({ step, data: formData })) as { user?: unknown }
 
     if (response?.user) {
       if (step < steps.length) {

@@ -14,6 +14,16 @@ import ImageCaptureStep from './ImageCaptureStep'
 
 const steps = ['Business Structure', 'Selfie', 'Additional Details']
 
+type ApiError = {
+  response?: { data?: { message?: string } }
+  message?: string
+}
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const apiError = error as ApiError
+  return apiError.response?.data?.message ?? apiError.message ?? fallback
+}
+
 const getInitialStep = (details?: Partial<KycDetails> | null) => {
   if (!details?.structure || (details.structure === 'company' && !details.companyType)) {
     return 0
@@ -169,9 +179,9 @@ const KYCVerificationStep: React.FC<{
         } else {
           setActiveStep((prev) => Math.min(prev + 1, steps.length - 1))
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.open({
-          message: err?.response?.data?.message ?? err?.message ?? 'Failed to submit KYC details',
+          message: getApiErrorMessage(err, 'Failed to submit KYC details'),
           severity: 'error',
         })
 

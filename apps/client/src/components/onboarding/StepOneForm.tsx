@@ -24,15 +24,21 @@ interface StepOneProps {
 const DE_BLUE = '#8A1F43'
 const BRAND_ORANGE = '#56C0A5'
 
+type UserVerificationState = {
+  emailVerified?: boolean
+  phoneVerified?: boolean
+}
+
 export default function StepOneForm({ formData, onChange, errors, setFormData, setErrors }: StepOneProps) {
   const { user: userData } = useAuth()
   const [loadingPincode, setLoadingPincode] = useState(false)
   const [location, setLocation] = useState<{ city: string; state: string }>({ city: '', state: '' })
+  const verificationState = userData as typeof userData & UserVerificationState
   const emailVerified = Boolean(
-    userData?.companyInfo?.POCEmailVerified || (userData as any)?.emailVerified,
+    userData?.companyInfo?.POCEmailVerified || verificationState.emailVerified,
   )
   const phoneVerified = Boolean(
-    userData?.companyInfo?.POCPhoneVerified || (userData as any)?.phoneVerified,
+    userData?.companyInfo?.POCPhoneVerified || verificationState.phoneVerified,
   )
 
   useEffect(() => {

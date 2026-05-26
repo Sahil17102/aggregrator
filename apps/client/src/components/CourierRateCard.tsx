@@ -39,6 +39,8 @@ type ProviderRate = {
   chargeable_weight?: number | string | null
 }
 
+type ApproxZone = string | { code?: string | null; name?: string | null } | null
+
 export type Courier = {
   id: string
   name?: string | null
@@ -66,7 +68,7 @@ export type Courier = {
   localRates?: LocalRates | null
   special_zone?: boolean | null
   notes?: string | null
-  approxZone: any
+  approxZone?: ApproxZone
 }
 
 type Props = {
@@ -161,7 +163,11 @@ export default function CourierRateList({
           const rateCardTotal = freight + codIncluded
           const eddText = courier?.edd ?? '-'
           const isClickable = Boolean(onSelect)
-          const zoneLabel = courier?.approxZone?.code || courier?.approxZone?.name || null
+          const approxZone = courier?.approxZone
+          const zoneLabel =
+            typeof approxZone === 'string'
+              ? approxZone
+              : approxZone?.code || approxZone?.name || null
 
           return (
             <Grid size={{ xs: 12, sm: 6, xl: 4 }} key={courier.id}>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CircularProgress, Grid } from '@mui/material'
 import { useEffect } from 'react'
 import { Controller, type FieldErrors, useFormContext } from 'react-hook-form'

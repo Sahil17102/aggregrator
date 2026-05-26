@@ -60,9 +60,12 @@ export default function Layout() {
           sx={{
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,
+              maxWidth: '86vw',
+              height: '100dvh',
               bgcolor: '#ffffff',
               color: '#10324A',
               borderRight: '1px solid rgba(16, 50, 74, 0.08)',
+              overflow: 'hidden',
             },
           }}
         >
@@ -70,6 +73,7 @@ export default function Layout() {
             hovered={hovered}
             setHovered={setHovered}
             pinned
+            temporary
             handleDrawerToggle={handleDrawerToggle}
             onNavigate={() => setMobileOpen(false)}
           />
@@ -121,7 +125,6 @@ export default function Layout() {
               height: '100%',
               minHeight: 0,
               overscrollBehavior: 'contain',
-              scrollBehavior: 'smooth',
               scrollbarGutter: 'stable',
               WebkitOverflowScrolling: 'touch',
             }}

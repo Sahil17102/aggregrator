@@ -11,6 +11,12 @@ import {
 
 type DashboardKey = 'pickups' | 'distribution' | 'destinations'
 
+type DashboardDataMap = {
+  pickups: Pickup[]
+  distribution: CourierDistribution[]
+  destinations: TopDestination[]
+}
+
 interface DataState<T> {
   data: T
   isLoading: boolean
@@ -31,9 +37,13 @@ const shouldShowLoading = (currentData: unknown) => {
   return currentData === null || currentData === undefined
 }
 
-type PollConfig<T> = {
-  setter: Dispatch<SetStateAction<DataState<T>>>
-  fetcher: (signal: AbortSignal) => Promise<T>
+type PollConfig<K extends DashboardKey> = {
+  setter: Dispatch<SetStateAction<DataState<DashboardDataMap[K]>>>
+  fetcher: (signal: AbortSignal) => Promise<DashboardDataMap[K]>
+}
+
+type PollConfigMap = {
+  [K in DashboardKey]: PollConfig<K>
 }
 
 export const useRealtimeHomeDashboard = () => {
@@ -75,7 +85,7 @@ export const useRealtimeHomeDashboard = () => {
     destinations: false,
   })
 
-  const fetchMap = useMemo((): Record<DashboardKey, PollConfig<any>> => {
+  const fetchMap = useMemo((): PollConfigMap => {
     return {
       pickups: {
         setter: setPickupsState,
@@ -93,7 +103,7 @@ export const useRealtimeHomeDashboard = () => {
   }, [setPickupsState, setDistributionState, setDestinationsState])
 
   const runFetch = useCallback(
-    async (key: DashboardKey) => {
+    async <K extends DashboardKey>(key: K) => {
       if (isFetchingRef.current[key]) return
       isFetchingRef.current[key] = true
       const controller = new AbortController()
@@ -101,7 +111,7 @@ export const useRealtimeHomeDashboard = () => {
       controllersRef.current[key] = controller
 
       const { setter, fetcher } = fetchMap[key]
-      setter((prev: DataState<any>) => ({
+      setter((prev) => ({
         ...prev,
         isLoading: shouldShowLoading(prev.data),
       }))
@@ -121,7 +131,7 @@ export const useRealtimeHomeDashboard = () => {
           err instanceof Error
             ? err.message
             : `Unable to refresh ${key}`
-        setter((prev: DataState<any>) => ({
+        setter((prev) => ({
           ...prev,
           isLoading: shouldShowLoading(prev.data),
           error: message,
