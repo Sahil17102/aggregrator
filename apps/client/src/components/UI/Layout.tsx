@@ -110,7 +110,15 @@ export default function Layout() {
         }}
       >
         <Stack sx={{ flexGrow: 1, height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: 'transparent' }}>
-          <Navbar handleDrawerToggle={handleDrawerToggle} pinned={pinned} />
+          <Box
+            sx={{
+              flexShrink: 0,
+              position: 'relative',
+              zIndex: (layoutTheme) => layoutTheme.zIndex.drawer + 2,
+            }}
+          >
+            <Navbar handleDrawerToggle={handleDrawerToggle} pinned={pinned} />
+          </Box>
 
           <Box
             component="main"
@@ -120,6 +128,8 @@ export default function Layout() {
               overflowY: 'auto',
               overflowX: 'hidden',
               bgcolor: 'transparent',
+              position: 'relative',
+              zIndex: 0,
               px: { xs: 1, md: 2 },
               pb: { xs: 1.5, md: 2.5 },
               height: '100%',

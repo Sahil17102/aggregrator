@@ -46,7 +46,13 @@ export default function Navbar({ handleDrawerToggle, pinned }: NavbarProps) {
   const activeSection = getSectionLabel(location.pathname)
 
   return (
-    <BrandTopBar sx={{ zIndex: (muiTheme) => muiTheme.zIndex.appBar }}>
+    <BrandTopBar
+      component="header"
+      sx={{
+        zIndex: (muiTheme) => muiTheme.zIndex.drawer + 2,
+        isolation: 'isolate',
+      }}
+    >
       <Stack
         direction={{ xs: 'column', lg: 'row' }}
         spacing={{ xs: 1, lg: 1.25 }}
