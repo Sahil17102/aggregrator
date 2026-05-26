@@ -76,29 +76,32 @@ const formatTrackingStatus = (status?: string | null) => {
 const trackingHeroSx = {
   position: 'relative',
   overflow: 'hidden',
-  borderRadius: '12px',
+  borderRadius: '10px',
   border: `1px solid ${alpha(brand.ink, 0.08)}`,
-  background: `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,254,0.98) 58%, rgba(235,241,249,0.96) 100%)`,
-  boxShadow: '0 16px 34px rgba(68, 92, 138, 0.1)',
-  p: { xs: 1.5, sm: 1.8, md: 2 },
+  background: `
+    radial-gradient(circle at 100% 0%, ${alpha(brand.accent, 0.08)} 0%, transparent 28%),
+    linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,254,0.98) 100%)
+  `,
+  boxShadow: '0 12px 28px rgba(68, 92, 138, 0.09)',
+  p: { xs: 1.25, sm: 1.45, md: 1.6 },
 }
 
 const compactSurfaceSx = {
-  borderRadius: '10px',
+  borderRadius: '8px',
   border: `1px solid ${alpha(brand.ink, 0.08)}`,
   background: 'rgba(255,255,255,0.92)',
-  boxShadow: '0 12px 26px rgba(68, 92, 138, 0.08)',
+  boxShadow: '0 10px 22px rgba(68, 92, 138, 0.07)',
 }
 
 const modeButtonSx = (active: boolean) => ({
-  minHeight: 36,
-  px: 1.45,
+  minHeight: 32,
+  px: 1.25,
   borderRadius: '8px',
   border: `1px solid ${active ? alpha(brand.accent, 0.38) : alpha(brand.ink, 0.08)}`,
   bgcolor: active ? alpha(brand.accent, 0.12) : '#FFFFFF',
   color: active ? brand.ink : brand.inkSoft,
   boxShadow: active ? '0 10px 20px rgba(255, 122, 21, 0.12)' : 'none',
-  fontSize: '0.82rem',
+  fontSize: '0.8rem',
   fontWeight: 800,
   whiteSpace: 'nowrap',
   textTransform: 'none',
@@ -232,36 +235,81 @@ export default function OrderTrackingForm() {
     resetResults()
   }
 
+  const actionButtons = (
+    <Stack
+      direction={{ xs: 'column', sm: 'row' }}
+      spacing={1}
+      alignItems={{ xs: 'stretch', sm: 'center' }}
+      sx={{ width: '100%' }}
+    >
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        startIcon={trackingLoading ? <CircularProgress size={18} /> : <FaSearch />}
+        disabled={!canSubmit || trackingLoading}
+        sx={{
+          minHeight: 40,
+          px: 2,
+          borderRadius: '8px',
+          fontWeight: 800,
+          textTransform: 'none',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {trackingLoading ? 'Tracking...' : 'Track Order'}
+      </Button>
+      <Button
+        type="button"
+        variant="text"
+        color="inherit"
+        onClick={() => {
+          reset()
+          resetResults()
+        }}
+        sx={{
+          minHeight: 40,
+          borderRadius: '8px',
+          fontWeight: 800,
+          textTransform: 'none',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Reset
+      </Button>
+    </Stack>
+  )
+
   return (
-    <Stack spacing={2.2} sx={{ py: { xs: 1.4, md: 2.2 } }}>
+    <Stack spacing={1.4} sx={{ py: { xs: 0.9, md: 1.2 } }}>
       <Box sx={trackingHeroSx}>
-        <Grid container spacing={{ xs: 1.6, md: 2 }} alignItems="stretch">
-          <Grid size={{ xs: 12, md: 5 }}>
+        <Grid container spacing={{ xs: 1.2, md: 1.45 }} alignItems="stretch">
+          <Grid size={{ xs: 12, md: 4 }}>
             <Stack
-              spacing={1.15}
-              sx={{ height: '100%', justifyContent: 'center', pr: { md: 1.2 } }}
+              spacing={0.85}
+              sx={{ height: '100%', justifyContent: 'center', pr: { md: 0.8 } }}
             >
-              <Stack direction="row" spacing={1.2} alignItems="center">
+              <Stack direction="row" spacing={1} alignItems="center">
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '10px',
+                    width: 34,
+                    height: 34,
+                    borderRadius: '9px',
                     background: brandGradients.button,
                     color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 12px 22px rgba(255, 122, 21, 0.2)',
+                    boxShadow: '0 10px 18px rgba(255, 122, 21, 0.18)',
                   }}
                 >
-                  <FaBoxOpen size={18} />
+                  <FaBoxOpen size={15} />
                 </Box>
                 <Stack spacing={0.2}>
                   <Typography
                     sx={{
                       color: brand.inkSoft,
-                      fontSize: '0.68rem',
+                      fontSize: '0.64rem',
                       fontWeight: 800,
                       letterSpacing: '0.14em',
                       textTransform: 'uppercase',
@@ -272,7 +320,7 @@ export default function OrderTrackingForm() {
                   <Typography
                     sx={{
                       color: brand.ink,
-                      fontSize: { xs: '1.55rem', md: '1.95rem' },
+                      fontSize: { xs: '1.35rem', md: '1.55rem' },
                       fontWeight: 900,
                       lineHeight: 1.04,
                     }}
@@ -284,9 +332,9 @@ export default function OrderTrackingForm() {
               <Typography
                 sx={{
                   color: brand.inkSoft,
-                  fontSize: { xs: '0.88rem', md: '0.94rem' },
-                  lineHeight: 1.58,
-                  maxWidth: 540,
+                  fontSize: { xs: '0.84rem', md: '0.87rem' },
+                  lineHeight: 1.48,
+                  maxWidth: 430,
                 }}
               >
                 Track by AWB or order details, review shipment timelines, and keep the utility view
@@ -295,33 +343,37 @@ export default function OrderTrackingForm() {
             </Stack>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 7 }}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Box
               component="form"
               onSubmit={handleSubmit(onSubmit)}
-              sx={{ ...compactSurfaceSx, p: { xs: 1.5, sm: 1.75 } }}
+              sx={{ ...compactSurfaceSx, p: { xs: 1.2, sm: 1.35 } }}
             >
-              <Stack spacing={1.35}>
+              <Stack spacing={1.05}>
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1.1}
+                  spacing={0.9}
                   justifyContent="space-between"
                   alignItems={{ xs: 'flex-start', sm: 'center' }}
                 >
                   <Box>
-                    <Typography sx={{ color: brand.ink, fontSize: '1.08rem', fontWeight: 800 }}>
+                    <Typography sx={{ color: brand.ink, fontSize: '1rem', fontWeight: 800 }}>
                       Track Your <Box component="span" sx={{ color: brand.accent }}>Order</Box>
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.15, fontSize: '0.84rem', lineHeight: 1.45 }}
+                    >
                       Enter your AWB number or order details to track shipment.
                     </Typography>
                   </Box>
                   <Stack
                     direction="row"
-                    spacing={0.7}
+                    spacing={0.55}
                     sx={{
-                      p: 0.45,
-                      borderRadius: '10px',
+                      p: 0.35,
+                      borderRadius: '9px',
                       width: { xs: '100%', sm: 'auto' },
                       flexWrap: 'wrap',
                       bgcolor: alpha(brand.ink, 0.035),
@@ -349,29 +401,36 @@ export default function OrderTrackingForm() {
                 </Stack>
 
                 {mode === 'awb' ? (
-                  <FormControl fullWidth sx={{ mb: 0.2 }}>
-                    <Controller
-                      name="awb"
-                      control={control}
-                      render={({ field }) => (
-                        <CustomInput
-                          {...field}
-                          id="awb"
-                          placeholder="e.g. 1234567890"
-                          prefix={<FaHashtag />}
-                          error={!!errors.awb}
-                          label="AWB Number"
-                          topMargin={false}
+                  <Grid container spacing={1.05} alignItems="flex-end">
+                    <Grid size={{ xs: 12, md: 8.4 }}>
+                      <FormControl fullWidth sx={{ mb: 0 }}>
+                        <Controller
+                          name="awb"
+                          control={control}
+                          render={({ field }) => (
+                            <CustomInput
+                              {...field}
+                              id="awb"
+                              placeholder="e.g. 1234567890"
+                              prefix={<FaHashtag />}
+                              error={!!errors.awb}
+                              label="AWB Number"
+                              topMargin={false}
+                            />
+                          )}
+                          rules={{ required: 'AWB number is required' }}
                         />
-                      )}
-                      rules={{ required: 'AWB number is required' }}
-                    />
-                    {errors.awb && <FormHelperText error>{errors.awb.message}</FormHelperText>}
-                  </FormControl>
+                        {errors.awb && <FormHelperText error>{errors.awb.message}</FormHelperText>}
+                      </FormControl>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 3.6 }}>
+                      {actionButtons}
+                    </Grid>
+                  </Grid>
                 ) : (
-                  <Grid container spacing={1.3}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <FormControl fullWidth sx={{ mb: 0.2 }}>
+                  <Grid container spacing={1.05} alignItems="flex-end">
+                    <Grid size={{ xs: 12, md: 4.5 }}>
+                      <FormControl fullWidth sx={{ mb: 0 }}>
                         <Controller
                           name="orderNumber"
                           control={control}
@@ -394,8 +453,8 @@ export default function OrderTrackingForm() {
                       </FormControl>
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <FormControl fullWidth sx={{ mb: 0.2 }}>
+                    <Grid size={{ xs: 12, md: 4.5 }}>
+                      <FormControl fullWidth sx={{ mb: 0 }}>
                         <Controller
                           name="contact"
                           control={control}
@@ -417,6 +476,9 @@ export default function OrderTrackingForm() {
                         )}
                       </FormControl>
                     </Grid>
+                    <Grid size={{ xs: 12, md: 3 }}>
+                      {actionButtons}
+                    </Grid>
                   </Grid>
                 )}
 
@@ -426,45 +488,6 @@ export default function OrderTrackingForm() {
                   </Typography>
                 )}
 
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1}
-                  alignItems={{ xs: 'stretch', sm: 'center' }}
-                >
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    startIcon={trackingLoading ? <CircularProgress size={18} /> : <FaSearch />}
-                    disabled={!canSubmit || trackingLoading}
-                    sx={{
-                      minHeight: 42,
-                      px: 2.2,
-                      borderRadius: '8px',
-                      fontWeight: 800,
-                      textTransform: 'none',
-                    }}
-                  >
-                    {trackingLoading ? 'Tracking…' : 'Track Order'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="text"
-                    color="inherit"
-                    onClick={() => {
-                      reset()
-                      resetResults()
-                    }}
-                    sx={{
-                      minHeight: 42,
-                      borderRadius: '8px',
-                      fontWeight: 800,
-                      textTransform: 'none',
-                    }}
-                  >
-                    Reset
-                  </Button>
-                </Stack>
               </Stack>
             </Box>
           </Grid>
