@@ -15,7 +15,7 @@ import {
   type TabsProps,
 } from '@mui/material'
 import * as React from 'react'
-import { FiMoreHorizontal } from 'react-icons/fi'
+import { MdKeyboardArrowDown } from 'react-icons/md'
 
 type StatusColor = 'primary' | 'success' | 'warning' | 'error' | undefined
 
@@ -166,7 +166,7 @@ export function SmartTabs<T extends string = string>({
               <BottomNavigationAction
                 label="More"
                 value="__more__"
-                icon={<FiMoreHorizontal />}
+                icon={<MdKeyboardArrowDown />}
                 onClick={handleOpen}
                 sx={{
                   '&.Mui-selected': {
@@ -271,7 +271,12 @@ export function SmartTabs<T extends string = string>({
           {overflowTabs.length > 0 && (
             <>
               <StyledTab
-                label={<FiMoreHorizontal />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.45 }}>
+                    More
+                    <MdKeyboardArrowDown size={17} />
+                  </Box>
+                }
                 value="__more__"
                 onClick={handleOpen}
                 disableRipple
