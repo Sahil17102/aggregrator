@@ -231,26 +231,30 @@ export default function DataTable<T extends { id: string | number }>(props: Data
         sx={{
           position: 'relative',
           zIndex: 2,
-          p: isCompact ? { xs: 1, sm: 1.15, md: 1.25 } : { xs: 1.6, sm: 2.1, md: 2.4 },
+          p: isShipmentVariant
+            ? { xs: 0.65, sm: 0.75, md: 0.85 }
+            : isCompact ? { xs: 1, sm: 1.15, md: 1.25 } : { xs: 1.6, sm: 2.1, md: 2.4 },
         }}
       >
         {(title || subTitle || pagination) && (
           <Stack
-            mb={isCompact ? 1 : 2}
+            mb={isShipmentVariant ? 0.45 : isCompact ? 1 : 2}
             direction={{ xs: 'column', sm: 'row' }}
             alignItems={{ xs: 'flex-start', sm: 'center' }}
             justifyContent="space-between"
-            spacing={isCompact ? 0.75 : 1.5}
+            spacing={isShipmentVariant ? 0.45 : isCompact ? 0.75 : 1.5}
             sx={{
-              px: isCompact ? { xs: 0.1, sm: 0.2 } : { xs: 0.4, sm: 0.6 },
-              py: isCompact ? { xs: 0.1, sm: 0.25 } : { xs: 0.5, sm: 0.8 },
+              px: isShipmentVariant ? { xs: 0, sm: 0.05 } : isCompact ? { xs: 0.1, sm: 0.2 } : { xs: 0.4, sm: 0.6 },
+              py: isShipmentVariant ? 0 : isCompact ? { xs: 0.1, sm: 0.25 } : { xs: 0.5, sm: 0.8 },
             }}
           >
             <Stack spacing={isCompact ? 0.3 : 0.8}>
               {title && (
                 <Typography
                   sx={{
-                    fontSize: isCompact ? { xs: '0.95rem', sm: '1.02rem' } : { xs: '1.02rem', sm: '1.18rem' },
+                    fontSize: isShipmentVariant
+                      ? { xs: '0.9rem', sm: '0.96rem' }
+                      : isCompact ? { xs: '0.95rem', sm: '1.02rem' } : { xs: '1.02rem', sm: '1.18rem' },
                     fontWeight: 600,
                     letterSpacing: 0,
                     color: textPrimary,
@@ -284,12 +288,12 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 sx={{
                   borderRadius: '10px',
-                  px: isCompact ? 0.4 : 1.2,
+                  px: isShipmentVariant ? 0.2 : isCompact ? 0.4 : 1.2,
                   backgroundColor: alpha('#ffffff', 0.92),
                   border: `1px solid ${borderColor}`,
                   boxShadow: isCompact ? 'none' : `0 10px 24px ${alpha(textPrimary, 0.05)}`,
                   '& .MuiToolbar-root': {
-                    minHeight: isCompact ? 34 : undefined,
+                    minHeight: isShipmentVariant ? 30 : isCompact ? 34 : undefined,
                     px: isCompact ? 0.5 : undefined,
                   },
                   '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {

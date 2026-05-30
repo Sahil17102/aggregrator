@@ -161,14 +161,14 @@ export const FilterBar = <T extends Record<string, any>>({
 
   const renderFormContent = () => (
     <form onSubmit={handleSubmit(submit)}>
-      <Stack gap={compact ? 0.8 : 1.2}>
+      <Stack gap={compact ? 0.55 : 1.2}>
         <Stack
           direction={{ xs: 'column', lg: 'row' }}
           alignItems={{ xs: 'stretch', lg: 'center' }}
           justifyContent="space-between"
-          gap={compact ? 0.9 : 1.2}
+          gap={compact ? 0.65 : 1.2}
         >
-          <Grid container spacing={compact ? 1 : 1.4} sx={{ flex: 1 }}>
+          <Grid container spacing={compact ? 0.75 : 1.4} sx={{ flex: 1 }}>
             {primaryFields.map((field) => (
               <Grid size={{ md: 4, xs: 12 }} key={field.name}>
                 <Controller
@@ -181,7 +181,7 @@ export const FilterBar = <T extends Record<string, any>>({
           </Grid>
 
           {!isMobile ? (
-            <Stack mt={{ lg: compact ? 1.2 : 1.6 }} gap={compact ? 0.55 : 0.8} direction="row" alignItems="center">
+            <Stack mt={{ lg: compact ? 0.95 : 1.6 }} gap={compact ? 0.45 : 0.8} direction="row" alignItems="center">
               {advancedFields.length ? (
                 <Tooltip title={showAdvanced ? 'Hide advanced filters' : 'Show advanced filters'}>
                   <IconButton
@@ -202,7 +202,7 @@ export const FilterBar = <T extends Record<string, any>>({
                   fontWeight: 700,
                   borderRadius: 1,
                   minWidth: 92,
-                  py: compact ? 0.75 : 1,
+                  py: compact ? 0.58 : 1,
                   background: `linear-gradient(135deg, ${DE_BLUE} 0%, #2a5fbe 100%)`,
                 }}
               >
@@ -294,8 +294,8 @@ export const FilterBar = <T extends Record<string, any>>({
             border: `1px solid ${alpha(DE_BLUE, 0.16)}`,
             borderRadius: 1,
             boxShadow: compact ? '0 3px 10px rgba(0, 82, 204, 0.08)' : '0 6px 18px rgba(0, 82, 204, 0.1)',
-            px: compact ? { xs: 1, md: 1.15 } : { xs: 1.25, md: 1.5 },
-            py: compact ? { xs: 0.8, md: 0.9 } : { xs: 1.1, md: 1.3 },
+            px: compact ? { xs: 0.8, md: 0.95 } : { xs: 1.25, md: 1.5 },
+            py: compact ? { xs: 0.5, md: 0.58 } : { xs: 1.1, md: 1.3 },
           }}
         >
           {bgOverlayImg && (

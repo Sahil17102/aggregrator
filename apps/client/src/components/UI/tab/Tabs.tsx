@@ -225,9 +225,9 @@ export function SmartTabs<T extends string = string>({
           background: alpha('#fff9f3', 0.86),
           border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
           boxShadow: compact
-            ? `0 8px 18px ${alpha(theme.palette.text.primary, 0.05)}`
+            ? `0 5px 12px ${alpha(theme.palette.text.primary, 0.045)}`
             : `0 18px 32px ${alpha(theme.palette.text.primary, 0.06)}`,
-          ...(compact ? { p: 0.55 } : {}),
+          ...(compact ? { p: 0.35 } : {}),
         }}
       >
         <StyledTabs
@@ -258,9 +258,9 @@ export function SmartTabs<T extends string = string>({
                   compact
                     ? {
                         borderRadius: '8px',
-                        px: 1.35,
-                        py: 0.75,
-                        fontSize: '0.82rem',
+                        px: 1.15,
+                        py: 0.55,
+                        fontSize: '0.78rem',
                       }
                     : undefined
                 }
@@ -288,18 +288,18 @@ export function SmartTabs<T extends string = string>({
                         ...(compact
                           ? {
                               borderRadius: '8px',
-                              px: 1.35,
-                              py: 0.75,
-                              fontSize: '0.82rem',
+                              px: 1.15,
+                              py: 0.55,
+                              fontSize: '0.78rem',
                             }
                           : {}),
                       }
                     : compact
                       ? {
                           borderRadius: '8px',
-                          px: 1.35,
-                          py: 0.75,
-                          fontSize: '0.82rem',
+                          px: 1.15,
+                          py: 0.55,
+                          fontSize: '0.78rem',
                       }
                     : undefined
                 }
@@ -340,7 +340,7 @@ export function SmartTabs<T extends string = string>({
           )}
         </StyledTabs>
       </Box>
-      <Divider sx={{ mt: compact ? 0.8 : 1.4, borderColor: alpha(theme.palette.primary.main, 0.08) }} />
+      <Divider sx={{ mt: compact ? 0.35 : 1.4, borderColor: alpha(theme.palette.primary.main, 0.08) }} />
     </Box>
   )
 }

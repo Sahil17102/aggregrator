@@ -1432,10 +1432,10 @@ const B2COrdersList = () => {
   }
 
   return (
-    <Stack spacing={1.1} sx={{ pt: 0 }}>
+    <Stack spacing={0.65} sx={{ pt: 0, pb: 0.5 }}>
       {/* Top row: Create button */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={1}>
-        <Box sx={{ width: { xs: '100%', sm: 190 } }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={0.65}>
+        <Box sx={{ width: { xs: '100%', sm: 176 } }}>
           <CustomSelect
             label="Sort by Created At"
             value={filters.sortOrder || 'desc'}
@@ -1452,13 +1452,13 @@ const B2COrdersList = () => {
             ]}
           />
         </Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} gap={0.75} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} gap={0.55} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={exportingCsv ? <CircularProgress size={14} /> : <MdDownload />}
             onClick={handleExportCsv}
             disabled={exportingCsv}
-            sx={{ minHeight: 36, px: 1.6, textTransform: 'none', fontWeight: 600 }}
+            sx={{ minHeight: 32, px: 1.35, fontSize: 12, textTransform: 'none', fontWeight: 600 }}
           >
             {exportingCsv ? 'Exporting' : 'Export CSV'}
           </Button>
@@ -1466,7 +1466,7 @@ const B2COrdersList = () => {
             variant="contained"
             color="primary"
             onClick={handleCreateB2COrder}
-            sx={{ minHeight: 36, px: 1.6, textTransform: 'none', fontWeight: 600 }}
+            sx={{ minHeight: 32, px: 1.35, fontSize: 12, textTransform: 'none', fontWeight: 600 }}
           >
             Create B2C Order
           </Button>
@@ -1499,7 +1499,7 @@ const B2COrdersList = () => {
       {selectedOrders.length > 0 && (
         <Box
           sx={{
-            p: 1.25,
+            p: 0.95,
             borderRadius: '8px',
             border: '1px solid rgba(51, 51, 105, 0.14)',
             backgroundColor: 'rgba(51, 51, 105, 0.04)',
@@ -1509,13 +1509,13 @@ const B2COrdersList = () => {
             direction={{ xs: 'column', lg: 'row' }}
             alignItems={{ xs: 'flex-start', lg: 'center' }}
             justifyContent="space-between"
-            gap={1.25}
+            gap={0.9}
           >
             <Box>
               <Typography sx={{ fontWeight: 600, color: '#333369', fontSize: '14px' }}>
                 {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
               </Typography>
-              <Typography sx={{ color: '#6B7280', fontSize: '12px', mt: 0.25 }}>
+              <Typography sx={{ color: '#6B7280', fontSize: '11.5px', mt: 0.15 }}>
                 Manifest up to {BULK_MANIFEST_LIMIT} eligible orders at once. Bulk label, invoice,
                 and manifest downloads have no selection limit.
               </Typography>
@@ -1526,12 +1526,12 @@ const B2COrdersList = () => {
               )}
             </Box>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} gap={0.75} flexWrap="wrap">
+            <Stack direction={{ xs: 'column', sm: 'row' }} gap={0.55} flexWrap="wrap">
               <Button
                 variant="contained"
                 onClick={openBulkManifestSchedule}
                 disabled={bulkManifesting || Boolean(manifestValidationMessage)}
-                sx={{ textTransform: 'none', minWidth: 150, minHeight: 34, fontSize: 12 }}
+                sx={{ textTransform: 'none', minWidth: 142, minHeight: 31, fontSize: 11.5 }}
               >
                 {bulkManifesting ? 'Manifesting...' : 'Manifest Selected'}
               </Button>
@@ -1539,7 +1539,7 @@ const B2COrdersList = () => {
                 variant="outlined"
                 onClick={() => handleBulkDownload('label')}
                 disabled={downloadingDocumentType !== null}
-                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
+                sx={{ textTransform: 'none', minHeight: 31, fontSize: 11.5 }}
               >
                 {downloadingDocumentType === 'label' ? 'Downloading...' : 'Download Labels'}
               </Button>
@@ -1547,7 +1547,7 @@ const B2COrdersList = () => {
                 variant="outlined"
                 onClick={() => handleBulkDownload('invoice')}
                 disabled={downloadingDocumentType !== null}
-                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
+                sx={{ textTransform: 'none', minHeight: 31, fontSize: 11.5 }}
               >
                 {downloadingDocumentType === 'invoice' ? 'Downloading...' : 'Download Invoices'}
               </Button>
@@ -1555,7 +1555,7 @@ const B2COrdersList = () => {
                 variant="outlined"
                 onClick={() => handleBulkDownload('manifest')}
                 disabled={downloadingDocumentType !== null}
-                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
+                sx={{ textTransform: 'none', minHeight: 31, fontSize: 11.5 }}
               >
                 {downloadingDocumentType === 'manifest' ? 'Downloading...' : 'Download Manifests'}
               </Button>
@@ -1565,7 +1565,7 @@ const B2COrdersList = () => {
                   clearSelection()
                   setBulkFeedback(null)
                 }}
-                sx={{ textTransform: 'none', minHeight: 34, fontSize: 12 }}
+                sx={{ textTransform: 'none', minHeight: 31, fontSize: 11.5 }}
               >
                 Clear
               </Button>
