@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {
+  computeB2CCodCharge,
   computeB2CRateCardCharge,
   type ResolvedB2CRateCard,
 } from '../models/services/b2cRateCard.service'
@@ -107,5 +108,42 @@ const gapResult = computeB2CRateCardCharge({
 
 assert.equal(gapResult.chargeable_weight, 500, '500g still uses the B2C minimum')
 assert.equal(gapResult.freight, 20, '500g below first configured slab uses the first slab rate')
+
+const codSlabRateCard: ResolvedB2CRateCard = {
+  ...rateCard,
+  cod_charges: 0,
+  cod_percent: 0,
+  cod_slabs: [
+    {
+      amount_from: 0,
+      amount_to: 2000,
+      charge_type: 'flat',
+      charge_value: 40,
+    },
+    {
+      amount_from: 2000,
+      amount_to: null,
+      charge_type: 'percent',
+      charge_value: 20,
+    },
+  ],
+}
+
+const lowValueCod = computeB2CCodCharge({
+  payment_type: 'cod',
+  cod_charge_basis: 2000,
+  rateCard: codSlabRateCard,
+})
+assert.equal(lowValueCod.cod_charges, 40, 'COD up to 2000 uses the configured flat slab')
+assert.equal(lowValueCod.cod_charge_basis, 2000, 'COD basis is retained in the result')
+assert.equal(lowValueCod.cod_charge_source, 'slab', 'COD slabs are used when configured')
+
+const highValueCod = computeB2CCodCharge({
+  payment_type: 'cod',
+  cod_charge_basis: 2500,
+  rateCard: codSlabRateCard,
+})
+assert.equal(highValueCod.cod_charges, 500, 'COD above 2000 uses the configured 20% slab')
+assert.equal(highValueCod.selected_cod_slab?.charge_type, 'percent')
 
 console.log('B2C rate-card slab selection checks passed')

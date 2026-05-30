@@ -37,7 +37,7 @@ const formatTimeInput = (date: Date) => `${pad(date.getHours())}:${pad(date.getM
 const getDefaultSchedule = () => {
   const now = new Date()
   const pickup = new Date(now)
-  pickup.setHours(11, 0, 0, 0)
+  pickup.setHours(now.getHours() + 1, 0, 0, 0)
   return {
     pickupDate: formatDateInput(pickup),
     pickupTime: formatTimeInput(pickup),
@@ -75,8 +75,11 @@ export default function ManifestScheduleDialog({
   }, [defaultShipmentCount, open])
 
   const today = formatDateInput(new Date())
+  const currentTime = formatTimeInput(new Date())
   const dateError = pickupDate < today
-  const timeError = !/^\d{2}:\d{2}$/.test(pickupTime)
+  const invalidTimeError = !/^\d{2}:\d{2}$/.test(pickupTime)
+  const pastTimeError = pickupDate === today && !invalidTimeError && pickupTime <= currentTime
+  const timeError = invalidTimeError || pastTimeError
   const normalizedShipmentCount = Number(shipmentCount)
   const shipmentCountError =
     showShipmentCount && (!Number.isFinite(normalizedShipmentCount) || normalizedShipmentCount < 1)
@@ -117,9 +120,16 @@ export default function ManifestScheduleDialog({
             value={pickupTime}
             onChange={(event) => setPickupTime(event.target.value)}
             error={timeError}
-            helperText={timeError ? 'Select a valid pickup time.' : ' '}
+            helperText={
+              invalidTimeError
+                ? 'Select a valid pickup time.'
+                : pastTimeError
+                  ? 'Pickup time must be later than the current time.'
+                  : ' '
+            }
             fullWidth
             InputLabelProps={{ shrink: true }}
+            inputProps={{ min: pickupDate === today ? currentTime : undefined }}
           />
           {showShipmentCount && (
             <TextField

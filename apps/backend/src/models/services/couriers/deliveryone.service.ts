@@ -1664,6 +1664,7 @@ export class DeliveryOneService {
       }
       const raw = response.data
       const extractedMessage = this.extractErrorMessage(raw, '')
+      const pickupId = raw?.pickup_id ?? raw?.data?.pickup_id ?? null
       const rawText = (() => {
         try {
           return JSON.stringify(raw)
@@ -1673,35 +1674,42 @@ export class DeliveryOneService {
       })().toLowerCase()
       const existingPickupRequest =
         raw?.pr_exist === true ||
-        Number(raw?.pickup_id || 0) > 0 ||
         Number(raw?.error?.code || 0) === 669 ||
         extractedMessage.toLowerCase().includes('already exist') ||
         rawText.includes('pickup request') && rawText.includes('already exist')
+      const statusText = String(raw?.status ?? raw?.Status ?? '').trim().toLowerCase()
+      const accepted =
+        existingPickupRequest ||
+        Boolean(pickupId) ||
+        raw?.success === true ||
+        raw?.Success === true ||
+        raw?.status === true ||
+        ['success', 'succeeded', 'created', 'scheduled'].includes(statusText)
       const explicitFailure =
         !existingPickupRequest &&
         (raw?.error === true ||
           (typeof raw?.error === 'string' && raw.error.trim().length > 0) ||
           raw?.success === false ||
           raw?.Success === false ||
-          String(raw?.status || '').toLowerCase() === 'fail')
+          ['fail', 'failed', 'error', 'false'].includes(statusText))
 
       this.log(
         existingPickupRequest
           ? 'Pickup request already exists'
-          : explicitFailure
+          : explicitFailure || !accepted
             ? 'Pickup request rejected'
             : 'Pickup request created',
         {
-        pickupDate: payload.pickup_date,
-        pickupTime: payload.pickup_time,
-        pickupLocation: payload.pickup_location,
-        expectedPackageCount: payload.expected_package_count,
-        status: response.status,
-        response: explicitFailure || existingPickupRequest ? raw : undefined,
+          pickupDate: payload.pickup_date,
+          pickupTime: payload.pickup_time,
+          pickupLocation: payload.pickup_location,
+          expectedPackageCount: payload.expected_package_count,
+          status: response.status,
+          response: explicitFailure || existingPickupRequest || !accepted ? raw : undefined,
         },
       )
 
-      if (explicitFailure) {
+      if (explicitFailure || !accepted) {
         throw new HttpError(
           502,
           this.extractErrorMessage(raw, 'Delhivery pickup request failed.'),
@@ -1711,7 +1719,7 @@ export class DeliveryOneService {
       return {
         payload,
         existing: existingPickupRequest,
-        pickupId: raw?.pickup_id ?? raw?.data?.pickup_id ?? null,
+        pickupId,
         raw,
       }
     } catch (error: any) {

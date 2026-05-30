@@ -143,6 +143,8 @@ const run = async () => {
       assert.equal(res.body?.data?.[0]?.final_courier_charge, 150)
       assert.equal(guestCall?.params?.shipment_type, 'b2c')
       assert.equal(guestCall?.params?.isCalculator, true)
+      assert.equal(guestCall?.params?.order_amount, 2500)
+      assert.equal(guestCall?.params?.cod_charge_basis, 2500)
     }
 
     {
@@ -187,6 +189,8 @@ const run = async () => {
       assert.equal(res.body?.data?.[0]?.name, 'Mock B2C')
       assert.equal(b2cCall?.userId, 'user-1')
       assert.equal(b2cCall?.params?.isCalculator, true)
+      assert.equal(b2cCall?.params?.order_amount, 1500)
+      assert.equal(b2cCall?.params?.cod_charge_basis, 1500)
     }
 
     {
@@ -241,6 +245,8 @@ const run = async () => {
       assert.equal(res.body?.success, true)
       assert.equal(res.body?.data?.[0]?.name, 'Mock Admin')
       assert.equal(adminCall?.params?.isCalculator, true)
+      assert.equal(adminCall?.params?.order_amount, 1200)
+      assert.equal(adminCall?.params?.cod_charge_basis, 1200)
     }
 
     {

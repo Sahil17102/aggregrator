@@ -18,7 +18,12 @@ const B2C_CANCELLABLE_STATUSES = new Set([
   'manifest_generated',
 ])
 const B2C_CANCELLABLE_PROVIDERS = new Set(['delhivery', 'deliveryone'])
-const B2C_MANIFESTABLE_STATUSES = new Set(['pending', 'booked', 'shipment_created'])
+const B2C_MANIFESTABLE_STATUSES = new Set([
+  'pending',
+  'booked',
+  'shipment_created',
+  'pickup_initiated',
+])
 const B2C_CANCELLED_STATUSES = new Set(['cancelled', 'canceled', 'cancellation_requested'])
 
 export const BULK_MANIFEST_LIMIT = 5

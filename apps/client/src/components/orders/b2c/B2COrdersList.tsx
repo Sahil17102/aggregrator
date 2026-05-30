@@ -342,29 +342,59 @@ const B2COrdersList = () => {
       toast.open({ message, severity: 'error' })
       return
     }
+    const providerKey = getB2CManifestProvider(order)
+    const shouldRequestPickupFirst = ['deliveryone', 'delhivery'].includes(providerKey)
+    if (shouldRequestPickupFirst && !order.id) {
+      const message = `Pickup cannot be scheduled for ${order.order_number} because the order identifier is missing.`
+      setBulkFeedback({
+        severity: 'error',
+        title: 'Ship Now unavailable',
+        message,
+      })
+      toast.open({ message, severity: 'error' })
+      return
+    }
     try {
       setManifestingRef(manifestRef)
       setBulkFeedback({
         severity: 'info',
-        title: 'Manifest in progress',
-        message: `Processing ${order.order_number}.`,
+        title: shouldRequestPickupFirst ? 'Scheduling pickup' : 'Manifest in progress',
+        message: shouldRequestPickupFirst
+          ? `Sending pickup request for ${order.order_number}.`
+          : `Processing ${order.order_number}.`,
       })
+      if (shouldRequestPickupFirst) {
+        await requestB2CPickup({
+          orderId: String(order.id),
+          ...schedule,
+        })
+        setBulkFeedback({
+          severity: 'info',
+          title: 'Generating PDFs',
+          message: `Pickup scheduled for ${order.order_number}. Generating documents now.`,
+        })
+      }
       const response = await generateManifestService({
         awbs: [manifestRef],
         type: 'b2c',
         ...schedule,
+        skip_pickup_request: shouldRequestPickupFirst,
       })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] }),
         queryClient.invalidateQueries({ queryKey: ['orders'] }),
       ])
-      const successMessage = `Manifest completed for ${order.order_number}.`
+      const successMessage = shouldRequestPickupFirst
+        ? `Pickup scheduled and PDFs generated for ${order.order_number}.`
+        : `Manifest completed for ${order.order_number}.`
       const warningSummary = summarizeMessages(response.warnings || [])
       if (warningSummary) {
         const warningMessage = `${successMessage} ${warningSummary}`
         setBulkFeedback({
           severity: 'warning',
-          title: 'Manifest completed with warnings',
+          title: shouldRequestPickupFirst
+            ? 'Ship Now completed with warnings'
+            : 'Manifest completed with warnings',
           message: warningMessage,
         })
         toast.open({ message: warningMessage, severity: 'info' })
@@ -372,19 +402,19 @@ const B2COrdersList = () => {
       }
       setBulkFeedback({
         severity: 'success',
-        title: 'Manifest completed',
+        title: shouldRequestPickupFirst ? 'Ship Now completed' : 'Manifest completed',
         message: successMessage,
       })
       toast.open({ message: successMessage, severity: 'success' })
     } catch (error) {
-      console.error('Manifest failed for order:', order.order_number, error)
+      console.error('Ship Now failed for order:', order.order_number, error)
       const errorMessage = getActionableErrorMessage(
         error,
-        `Manifest failed for ${order.order_number}.`,
+        `Ship Now failed for ${order.order_number}.`,
       )
       setBulkFeedback({
         severity: 'error',
-        title: 'Manifest failed',
+        title: shouldRequestPickupFirst ? 'Ship Now failed' : 'Manifest failed',
         message: `${order.order_number}: ${errorMessage}`,
       })
       toast.open({
@@ -1010,30 +1040,18 @@ const B2COrdersList = () => {
     return shippingStatusMap[normalizedStatus] || status || 'Unknown'
   }
 
-  const isDeliveryOneOrder = (row: B2COrder) => {
-    const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`
-      .toLowerCase()
-      .replace(/[\s_-]+/g, '')
-    return (
-      provider.includes('deliveryone') ||
-      provider.includes('delhiveryone')
-    )
-  }
-
-  const isDelhiveryOrder = (row: B2COrder) => {
-    const provider = `${row.integration_type || ''} ${row.courier_partner || ''}`.toLowerCase()
-    return !isDeliveryOneOrder(row) && provider.includes('delhivery')
-  }
+  const isPickupRequestOrder = (row: B2COrder) =>
+    ['deliveryone', 'delhivery'].includes(getB2CManifestProvider(row))
 
   const shouldShowManifestShipmentCount =
     pendingManifestRequest?.mode === 'single'
-      ? isDelhiveryOrder(pendingManifestRequest.order)
-      : selectedOrders.some(isDelhiveryOrder)
+      ? isPickupRequestOrder(pendingManifestRequest.order)
+      : selectedOrders.some(isPickupRequestOrder)
 
   const defaultManifestShipmentCount =
     pendingManifestRequest?.mode === 'single'
       ? 1
-      : Math.max(1, selectedOrders.filter(isDelhiveryOrder).length || selectedOrders.length)
+      : Math.max(1, selectedOrders.filter(isPickupRequestOrder).length || selectedOrders.length)
 
   const hasDocument = (row: B2COrder, type: DocumentType) => {
     const { key, url } = getDocumentReference(row, type)
@@ -1595,9 +1613,13 @@ const B2COrdersList = () => {
         title={
           pendingManifestRequest?.mode === 'bulk'
             ? 'Schedule Selected Manifests'
-            : 'Schedule Manifest Pickup'
+            : 'Ship Now'
         }
-        description="Choose the pickup date and time before sending this manifest to the courier."
+        description={
+          pendingManifestRequest?.mode === 'bulk'
+            ? 'Choose the pickup date and time before sending this manifest to the courier.'
+            : 'Enter the pickup request details. PDFs will be generated after the pickup is accepted.'
+        }
         onClose={closeManifestSchedule}
         onConfirm={handleManifestScheduleConfirm}
       />

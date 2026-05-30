@@ -262,6 +262,7 @@ export interface GenerateManifestParams {
   pickup_date?: string
   pickup_time?: string
   expected_package_count?: number
+  skip_pickup_request?: boolean
 }
 
 export interface GenerateManifestResponse {
@@ -294,6 +295,7 @@ export const retryFailedManifestService = async (orderId: string) => {
 export interface RequestB2CPickupParams {
   pickup_date?: string
   pickup_time?: string
+  expected_package_count?: number
 }
 
 export interface RequestB2CPickupResponse {
@@ -305,6 +307,7 @@ export interface RequestB2CPickupResponse {
     awb_number: string
     pickup_date: string
     pickup_time: string
+    expected_package_count?: number
     pickup_location: string
     pickup_status: string
     existing?: boolean

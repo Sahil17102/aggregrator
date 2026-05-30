@@ -242,6 +242,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
   const watchedWeight = watch('weight')
   const watchedPaymentType = watch('paymentType')
   const watchedMovementType = watch('movementType')
+  const watchedOrderAmount = watch('orderAmount')
   const pickupLocationLabel = formatLocation(watch('pickupCity'), watch('pickupState'), pickupPincode)
   const deliveryLocationLabel = formatLocation(
     watch('deliveryCity'),
@@ -305,18 +306,18 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
       const length = toNumber(formData.length)
       const breadth = toNumber(formData.breadth)
       const height = toNumber(formData.height)
-      const orderAmount = toNumber(formData.orderAmount)
+      const shipmentValue = formData.paymentType === 'cod' ? toNumber(formData.orderAmount) : 0
 
       const result = await mutateAsync({
         pickupPincode: formData.pickupPincode,
         deliveryPincode: formData.deliveryPincode,
         weight: clientMetrics.applicableWeightGrams,
-        cod: formData.paymentType === 'cod' ? Math.max(orderAmount, 1) : 0,
+        cod: formData.paymentType === 'cod' ? Math.max(shipmentValue, 1) : 0,
         length,
         breadth,
         height,
-        orderAmount: orderAmount > 0 ? orderAmount : undefined,
-        codChargeBasis: Math.max(orderAmount, 0),
+        orderAmount: shipmentValue > 0 ? shipmentValue : undefined,
+        codChargeBasis: Math.max(shipmentValue, 0),
         shipmentType: 'b2c',
         payment_type: formData.paymentType,
         context: 'rate_calculator',
@@ -584,7 +585,10 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                   <Stack direction="row" spacing={1}>
                     {(!paymentOptions || paymentOptions.prepaidEnabled) && (
                       <Button
-                        onClick={() => setValue('paymentType', 'prepaid')}
+                        onClick={() => {
+                          setValue('paymentType', 'prepaid')
+                          clearErrors('orderAmount')
+                        }}
                         sx={optionSx(watchedPaymentType === 'prepaid')}
                       >
                         {renderRadioDot(watchedPaymentType === 'prepaid')}
@@ -602,6 +606,33 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                     )}
                   </Stack>
                 </Stack>
+
+                {watchedPaymentType === 'cod' && (
+                  <Stack spacing={0.7}>
+                    <Typography sx={{ fontSize: '0.79rem', fontWeight: 900, color: ui.ink }}>
+                      Shipment Value
+                    </Typography>
+                    <TextField
+                      type="number"
+                      {...register('orderAmount', {
+                        validate: (value) =>
+                          watchedPaymentType !== 'cod' ||
+                          toNumber(value) > 0 ||
+                          'Shipment value is required for COD',
+                      })}
+                      fullWidth
+                      error={!!errors.orderAmount}
+                      helperText={
+                        errors.orderAmount?.message ||
+                        (watchedOrderAmount
+                          ? `COD basis: Rs. ${formatAmount(toNumber(watchedOrderAmount))}`
+                          : ' ')
+                      }
+                      inputProps={{ min: 1, step: 1 }}
+                      sx={inputSx}
+                    />
+                  </Stack>
+                )}
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.05}>
                   <Button

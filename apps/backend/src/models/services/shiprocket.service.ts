@@ -4877,6 +4877,7 @@ export const createB2CShipmentService = async (
     })
 
     if (
+      is_external_api &&
       ['delhivery', 'deliveryone'].includes(integrationType) &&
       !isReverseShipment &&
       result?.order?.id &&
@@ -5550,6 +5551,7 @@ export const generateManifestService = async (params: {
   pickup_date?: string
   pickup_time?: string
   expected_package_count?: number | string
+  skip_pickup_request?: boolean
 }): Promise<{
   manifest_id: string | null
   manifest_url: string | null
@@ -5559,6 +5561,7 @@ export const generateManifestService = async (params: {
   const table = params.type === 'b2c' ? b2c_orders : b2b_orders
   const scheduledPickupDate = normalizeManifestPickupDate(params.pickup_date)
   const scheduledPickupTime = normalizeManifestPickupTime(params.pickup_time)
+  const skipPickupRequest = params.skip_pickup_request === true
   const requestedExpectedPackageCount = Number(params.expected_package_count)
   if (
     params.expected_package_count !== undefined &&
@@ -6716,36 +6719,45 @@ export const generateManifestService = async (params: {
             })
           }
 
-          try {
-            const pickupResponse = await delhivery.createPickupRequest({
-              pickup_date: pickupDate,
-              pickup_time: pickupTime,
-              pickup_location: pickupLocationName,
-              expected_package_count: expectedPackageCount,
-            })
-            delhiveryPickupScheduled = true
-            console.log('[Manifest] Delhivery pickup request accepted', {
+          if (skipPickupRequest) {
+            console.log('[Manifest] Delhivery pickup request skipped before PDF generation', {
               pickup_location: pickupLocationName,
               pickup_date: pickupDate,
               pickup_time: pickupTime,
               expected_package_count: expectedPackageCount,
-              existing: Boolean(pickupResponse?.existing),
-              pickup_id: pickupResponse?.pickupId ?? pickupResponse?.raw?.pickup_id ?? null,
             })
-          } catch (pickupErr: any) {
-            const warning =
-              pickupErr?.message ||
-              'Delhivery pickup request could not be scheduled automatically.'
-            delhiveryPickupError = warning
-            console.error('[Manifest] Delhivery pickup request failed after shipment creation', {
-              pickup_location: pickupLocationName,
-              pickup_date: pickupDate,
-              pickup_time: pickupTime,
-              error: warning,
-            })
-            delhiveryPickupWarnings.push(
-              `Delhivery pickup scheduling warning: ${warning}`,
-            )
+          } else {
+            try {
+              const pickupResponse = await delhivery.createPickupRequest({
+                pickup_date: pickupDate,
+                pickup_time: pickupTime,
+                pickup_location: pickupLocationName,
+                expected_package_count: expectedPackageCount,
+              })
+              delhiveryPickupScheduled = true
+              console.log('[Manifest] Delhivery pickup request accepted', {
+                pickup_location: pickupLocationName,
+                pickup_date: pickupDate,
+                pickup_time: pickupTime,
+                expected_package_count: expectedPackageCount,
+                existing: Boolean(pickupResponse?.existing),
+                pickup_id: pickupResponse?.pickupId ?? pickupResponse?.raw?.pickup_id ?? null,
+              })
+            } catch (pickupErr: any) {
+              const warning =
+                pickupErr?.message ||
+                'Delhivery pickup request could not be scheduled automatically.'
+              delhiveryPickupError = warning
+              console.error('[Manifest] Delhivery pickup request failed after shipment creation', {
+                pickup_location: pickupLocationName,
+                pickup_date: pickupDate,
+                pickup_time: pickupTime,
+                error: warning,
+              })
+              delhiveryPickupWarnings.push(
+                `Delhivery pickup scheduling warning: ${warning}`,
+              )
+            }
           }
 
           const createManifestCard = (order: any) => ({
@@ -7048,15 +7060,21 @@ export const generateManifestService = async (params: {
             const updateDataDel: any = {
               manifest: manifestKey,
               manifest_error: null,
-              order_status: delhiveryPickupScheduled ? 'pickup_initiated' : 'shipment_created',
-              pickup_status: delhiveryPickupScheduled ? 'scheduled' : 'failed',
-              pickup_error: delhiveryPickupScheduled
+              order_status:
+                skipPickupRequest || delhiveryPickupScheduled
+                  ? 'pickup_initiated'
+                  : 'shipment_created',
+              updated_at: new Date(),
+            }
+
+            if (!skipPickupRequest) {
+              updateDataDel.pickup_status = delhiveryPickupScheduled ? 'scheduled' : 'failed'
+              updateDataDel.pickup_error = delhiveryPickupScheduled
                 ? null
                 : truncateColumnValue(
                     delhiveryPickupError ||
                       'Delhivery pickup request could not be scheduled automatically.',
-                  ),
-              updated_at: new Date(),
+                  )
             }
 
             // Only set label if it was generated and is valid
@@ -7803,7 +7821,7 @@ export const generateManifestService = async (params: {
           }
         }
 
-        if (params.type === 'b2c' && integrationType === 'deliveryone') {
+        if (params.type === 'b2c' && integrationType === 'deliveryone' && !skipPickupRequest) {
           const orderIds = orders.map((order) => order.id).filter(Boolean)
           const deliveryOneOrders = orderIds.length
             ? await tx.select().from(b2c_orders).where(inArray(b2c_orders.id, orderIds))
@@ -8077,85 +8095,91 @@ export const generateManifestService = async (params: {
             }
           }
 
-          const defaultPickupDate = normalizePickupDateForCourier(scheduledPickupDate)
-          const defaultPickupTime = normalizePickupTimeForCourier(scheduledPickupTime)
-          const pickupGroups = new Map<
-            string,
-            {
-              pickupDate: string
-              pickupTime: string
-              expectedPackageCount: number
-              orderIds: string[]
-            }
-          >()
+          if (skipPickupRequest) {
+            console.log('[Delhivery] Pickup request skipped after manifest booking', {
+              orderCount: pendingDeliveryOneOrders.length,
+            })
+          } else {
+            const defaultPickupDate = normalizePickupDateForCourier(scheduledPickupDate)
+            const defaultPickupTime = normalizePickupTimeForCourier(scheduledPickupTime)
+            const pickupGroups = new Map<
+              string,
+              {
+                pickupDate: string
+                pickupTime: string
+                expectedPackageCount: number
+                orderIds: string[]
+              }
+            >()
 
-          for (const order of pendingDeliveryOneOrders) {
-            const pickupDetails = normalizePickupDetails(order.pickup_details) as any
-            const pickupLocation = String(
-              pickupDetails?.warehouse_name || order.pickup_location_id || '',
-            ).trim()
+            for (const order of pendingDeliveryOneOrders) {
+              const pickupDetails = normalizePickupDetails(order.pickup_details) as any
+              const pickupLocation = String(
+                pickupDetails?.warehouse_name || order.pickup_location_id || '',
+              ).trim()
 
-            if (!pickupLocation) {
-              deliveryOnePickupWarnings.push(
-                `${order.order_number}: pickup request skipped because pickup warehouse name is missing.`,
-              )
-              continue
-            }
+              if (!pickupLocation) {
+                deliveryOnePickupWarnings.push(
+                  `${order.order_number}: pickup request skipped because pickup warehouse name is missing.`,
+                )
+                continue
+              }
 
-            const existingGroup = pickupGroups.get(pickupLocation)
-            if (existingGroup) {
-              existingGroup.expectedPackageCount += 1
-              existingGroup.orderIds.push(order.id)
-            } else {
-              pickupGroups.set(pickupLocation, {
-                pickupDate: normalizePickupDateForCourier(
-                  scheduledPickupDate || pickupDetails?.pickup_date || defaultPickupDate,
-                ),
-                pickupTime: normalizePickupTimeForCourier(
-                  scheduledPickupTime || pickupDetails?.pickup_time || defaultPickupTime,
-                ),
-                expectedPackageCount: 1,
-                orderIds: [order.id],
-              })
-            }
-          }
-
-          for (const [pickupLocation, pickupGroup] of pickupGroups.entries()) {
-            try {
-              await deliveryOneManifestService.createPickupRequest({
-                pickup_date: pickupGroup.pickupDate,
-                pickup_time: pickupGroup.pickupTime,
-                pickup_location: pickupLocation,
-                expected_package_count: pickupGroup.expectedPackageCount,
-              })
-              await tx
-                .update(b2c_orders)
-                .set({
-                  pickup_status: 'scheduled',
-                  pickup_error: null,
-                  updated_at: new Date(),
+              const existingGroup = pickupGroups.get(pickupLocation)
+              if (existingGroup) {
+                existingGroup.expectedPackageCount += 1
+                existingGroup.orderIds.push(order.id)
+              } else {
+                pickupGroups.set(pickupLocation, {
+                  pickupDate: normalizePickupDateForCourier(
+                    scheduledPickupDate || pickupDetails?.pickup_date || defaultPickupDate,
+                  ),
+                  pickupTime: normalizePickupTimeForCourier(
+                    scheduledPickupTime || pickupDetails?.pickup_time || defaultPickupTime,
+                  ),
+                  expectedPackageCount: 1,
+                  orderIds: [order.id],
                 })
-                .where(inArray(b2c_orders.id, pickupGroup.orderIds))
-            } catch (pickupErr: any) {
-              const warning = `Delhivery pickup request failed for ${pickupLocation}: ${
-                pickupErr?.message || pickupErr
-              }`
-              deliveryOnePickupWarnings.push(warning)
-              console.warn('[Delhivery] Pickup request failed after manifest booking', {
-                pickupLocation,
-                pickupDate: pickupGroup.pickupDate,
-                pickupTime: pickupGroup.pickupTime,
-                expectedPackageCount: pickupGroup.expectedPackageCount,
-                message: pickupErr?.message || pickupErr,
-              })
-              await tx
-                .update(b2c_orders)
-                .set({
-                  pickup_status: 'failed',
-                  pickup_error: truncateColumnValue(warning),
-                  updated_at: new Date(),
+              }
+            }
+
+            for (const [pickupLocation, pickupGroup] of pickupGroups.entries()) {
+              try {
+                await deliveryOneManifestService.createPickupRequest({
+                  pickup_date: pickupGroup.pickupDate,
+                  pickup_time: pickupGroup.pickupTime,
+                  pickup_location: pickupLocation,
+                  expected_package_count: pickupGroup.expectedPackageCount,
                 })
-                .where(inArray(b2c_orders.id, pickupGroup.orderIds))
+                await tx
+                  .update(b2c_orders)
+                  .set({
+                    pickup_status: 'scheduled',
+                    pickup_error: null,
+                    updated_at: new Date(),
+                  })
+                  .where(inArray(b2c_orders.id, pickupGroup.orderIds))
+              } catch (pickupErr: any) {
+                const warning = `Delhivery pickup request failed for ${pickupLocation}: ${
+                  pickupErr?.message || pickupErr
+                }`
+                deliveryOnePickupWarnings.push(warning)
+                console.warn('[Delhivery] Pickup request failed after manifest booking', {
+                  pickupLocation,
+                  pickupDate: pickupGroup.pickupDate,
+                  pickupTime: pickupGroup.pickupTime,
+                  expectedPackageCount: pickupGroup.expectedPackageCount,
+                  message: pickupErr?.message || pickupErr,
+                })
+                await tx
+                  .update(b2c_orders)
+                  .set({
+                    pickup_status: 'failed',
+                    pickup_error: truncateColumnValue(warning),
+                    updated_at: new Date(),
+                  })
+                  .where(inArray(b2c_orders.id, pickupGroup.orderIds))
+              }
             }
           }
         }
@@ -9041,6 +9065,7 @@ export const requestB2CPickupByOrderIdService = async (
   params: {
     pickup_date?: string
     pickup_time?: string
+    expected_package_count?: number | string
   } = {},
 ) => {
   if (!orderId) throw new HttpError(400, 'Order ID is required')
@@ -9086,6 +9111,11 @@ export const requestB2CPickupByOrderIdService = async (
   const pickupTime = normalizePickupTimeForCourier(
     params.pickup_time || pickupDetails?.pickup_time,
   )
+  const requestedExpectedPackageCount = Number(params.expected_package_count ?? 1)
+  if (!Number.isFinite(requestedExpectedPackageCount) || requestedExpectedPackageCount < 1) {
+    throw new HttpError(400, 'expected_package_count must be at least 1.')
+  }
+  const expectedPackageCount = Math.floor(requestedExpectedPackageCount)
 
   try {
     const pickupService =
@@ -9094,7 +9124,7 @@ export const requestB2CPickupByOrderIdService = async (
       pickup_date: pickupDate,
       pickup_time: pickupTime,
       pickup_location: pickupLocation,
-      expected_package_count: 1,
+      expected_package_count: expectedPackageCount,
     })
 
     await db
@@ -9114,6 +9144,7 @@ export const requestB2CPickupByOrderIdService = async (
       pickup_date: pickupDate,
       pickup_time: pickupTime,
       pickup_location: pickupLocation,
+      expected_package_count: expectedPackageCount,
       pickup_status: 'scheduled',
       existing: Boolean(pickupResponse.existing),
       pickup_id: pickupResponse.pickupId ?? pickupResponse.raw?.pickup_id ?? null,
