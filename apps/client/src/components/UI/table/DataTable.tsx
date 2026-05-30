@@ -450,7 +450,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
             })}
           </Stack>
         ) : (
-          <Box sx={{ overflowX: 'auto', borderRadius: isCompact ? '8px' : '14px' }}>
+          <Box sx={{ overflowX: isShipmentVariant ? 'hidden' : 'auto', borderRadius: isCompact ? '8px' : '14px' }}>
             <TableContainer
               component={Paper}
               sx={{
@@ -461,6 +461,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                 boxShadow: 'none',
                 borderRadius: isCompact ? '8px' : '12px',
                 backdropFilter: 'none',
+                overflowX: isShipmentVariant ? 'hidden' : 'auto',
               }}
             >
               <Table
@@ -471,6 +472,8 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                     ? {
                         borderCollapse: 'separate',
                         borderSpacing: '0 6px',
+                        tableLayout: 'fixed',
+                        width: '100%',
                       }
                     : undefined
                 }
@@ -501,7 +504,11 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           background: headerBg,
                           borderBottom: isShipmentVariant ? 'none' : `1px solid ${borderColor}`,
                           zIndex: theme.zIndex.appBar + 1,
-                          py: isShipmentVariant ? 1.15 : isCompact ? 0.75 : 1.4,
+                          width: isShipmentVariant ? 38 : undefined,
+                          minWidth: isShipmentVariant ? 38 : undefined,
+                          maxWidth: isShipmentVariant ? 38 : undefined,
+                          py: isShipmentVariant ? 0.95 : isCompact ? 0.75 : 1.4,
+                          px: isShipmentVariant ? 0.45 : undefined,
                         }}
                       >
                         <CustomCheckbox
@@ -522,15 +529,20 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                             top: 0,
                             background: headerBg,
                             color: isShipmentVariant ? '#FFFFFF' : alpha(textPrimary, 0.86),
-                            minWidth: col.minWidth || (isCompact ? 80 : 100),
+                            minWidth: isShipmentVariant ? 0 : col.minWidth || (isCompact ? 80 : 100),
+                            width: isShipmentVariant ? col.minWidth || 100 : undefined,
+                            maxWidth: isShipmentVariant ? col.minWidth || 100 : undefined,
                             fontWeight: 600,
-                            fontSize: isShipmentVariant ? '12px' : isCompact ? '10.5px' : '11px',
+                            fontSize: isShipmentVariant ? '11.3px' : isCompact ? '10.5px' : '11px',
                             textTransform: isShipmentVariant ? 'none' : 'uppercase',
                             letterSpacing: 0,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                             zIndex: col.sticky ? theme.zIndex.appBar + 3 : theme.zIndex.appBar + 1,
                             borderBottom: isShipmentVariant ? 'none' : `1px solid ${borderColor}`,
-                            py: isShipmentVariant ? 1.15 : isCompact ? 0.75 : 1.4,
-                            px: isShipmentVariant ? 1.35 : isCompact ? 1 : 2,
+                            py: isShipmentVariant ? 0.95 : isCompact ? 0.75 : 1.4,
+                            px: isShipmentVariant ? 0.85 : isCompact ? 1 : 2,
                             ...(col.sticky === 'right'
                               ? {
                                   right: col.stickyOffset ?? 0,
@@ -614,7 +626,15 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           }}
                         >
                           {selectable && (
-                            <TableCell padding="checkbox">
+                            <TableCell
+                              padding="checkbox"
+                              sx={{
+                                width: isShipmentVariant ? 38 : undefined,
+                                minWidth: isShipmentVariant ? 38 : undefined,
+                                maxWidth: isShipmentVariant ? 38 : undefined,
+                                px: isShipmentVariant ? 0.45 : undefined,
+                              }}
+                            >
                               <CustomCheckbox
                                 checked={selectedIds.includes(row.id)}
                                 onChange={() => handleSelect(row.id)}
@@ -643,14 +663,20 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                                 sx={{
                                   position: col.sticky ? 'sticky' : 'static',
                                   color: textPrimary,
-                                  fontSize: '13px',
+                                  fontSize: isShipmentVariant ? '12.4px' : '13px',
                                   fontWeight: 400,
-                                  whiteSpace: shouldTruncate ? 'nowrap' : 'normal',
-                                  overflow: shouldTruncate ? 'hidden' : 'visible',
-                                  textOverflow: shouldTruncate ? 'ellipsis' : 'clip',
-                                  maxWidth: shouldTruncate ? (isCompact ? 180 : 240) : 'none',
-                                  py: isShipmentVariant ? 1.25 : isCompact ? 0.85 : 1.45,
-                                  px: isShipmentVariant ? 1.35 : isCompact ? 1 : 2,
+                                  width: isShipmentVariant ? col.minWidth || 100 : undefined,
+                                  minWidth: isShipmentVariant ? 0 : undefined,
+                                  maxWidth: isShipmentVariant
+                                    ? col.minWidth || 100
+                                    : shouldTruncate
+                                      ? isCompact ? 180 : 240
+                                      : 'none',
+                                  whiteSpace: shouldTruncate || isShipmentVariant ? 'nowrap' : 'normal',
+                                  overflow: shouldTruncate || isShipmentVariant ? 'hidden' : 'visible',
+                                  textOverflow: shouldTruncate || isShipmentVariant ? 'ellipsis' : 'clip',
+                                  py: isShipmentVariant ? 1.05 : isCompact ? 0.85 : 1.45,
+                                  px: isShipmentVariant ? 0.85 : isCompact ? 1 : 2,
                                   borderBottom: 'none',
                                   backgroundColor: col.sticky || isShipmentVariant ? '#FFFFFF' : undefined,
                                   zIndex: col.sticky ? 2 : 1,

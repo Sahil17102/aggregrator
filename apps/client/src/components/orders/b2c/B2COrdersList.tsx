@@ -1070,17 +1070,17 @@ const B2COrdersList = () => {
     {
       label: 'Order Details',
       id: 'order_number',
-      minWidth: 180,
+      minWidth: 128,
       truncate: false,
       render: (_v, row) => (
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: 'primary.dark', lineHeight: 1.25 }} noWrap>
+          <Typography sx={{ maxWidth: '100%', fontSize: 12.2, fontWeight: 600, color: 'primary.dark', lineHeight: 1.25 }} noWrap>
             {row.order_number || '-'}
           </Typography>
-          <Typography sx={{ fontSize: 11.2, color: 'text.secondary', lineHeight: 1.25 }} noWrap>
+          <Typography sx={{ maxWidth: '100%', fontSize: 10.7, color: 'text.secondary', lineHeight: 1.25 }} noWrap>
             {formatOrderDateTime(row.created_at || row.order_date)}
           </Typography>
-          <Typography sx={{ fontSize: 11.2, color: 'text.primary', lineHeight: 1.25 }} noWrap>
+          <Typography sx={{ maxWidth: '100%', fontSize: 10.7, color: 'text.primary', lineHeight: 1.25 }} noWrap>
             {row.is_external_api ? 'API' : 'Custom'}
           </Typography>
         </Stack>
@@ -1089,17 +1089,17 @@ const B2COrdersList = () => {
     {
       label: 'Customer Details',
       id: 'buyer_name',
-      minWidth: 230,
+      minWidth: 176,
       truncate: false,
       render: (_value, row) => (
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'text.primary', lineHeight: 1.28 }} noWrap>
+          <Typography sx={{ maxWidth: '100%', fontSize: 12.1, fontWeight: 500, color: 'text.primary', lineHeight: 1.28 }} noWrap>
             {row.buyer_name || '-'}
           </Typography>
-          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', lineHeight: 1.28 }} noWrap>
+          <Typography sx={{ maxWidth: '100%', fontSize: 10.9, color: 'text.secondary', lineHeight: 1.28 }} noWrap>
             {row.buyer_email || '-'}
           </Typography>
-          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', lineHeight: 1.28 }} noWrap>
+          <Typography sx={{ maxWidth: '100%', fontSize: 10.9, color: 'text.secondary', lineHeight: 1.28 }} noWrap>
             {row.buyer_phone || '-'}
           </Typography>
         </Stack>
@@ -1108,14 +1108,14 @@ const B2COrdersList = () => {
     {
       label: 'Product Details',
       id: 'products',
-      minWidth: 150,
+      minWidth: 112,
       truncate: false,
       render: (_value, row) => (
-        <Stack spacing={0.25}>
-          <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'text.primary', maxWidth: 150 }} noWrap>
+        <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 12.1, fontWeight: 500, color: 'text.primary', maxWidth: '100%' }} noWrap>
             {getProductName(row)}
           </Typography>
-          <Typography sx={{ fontSize: 11.5, color: 'text.primary', fontWeight: 500 }}>
+          <Typography sx={{ fontSize: 10.9, color: 'text.primary', fontWeight: 500 }} noWrap>
             QTY:{getProductQuantity(row)}
           </Typography>
         </Stack>
@@ -1124,21 +1124,21 @@ const B2COrdersList = () => {
     {
       label: 'Package Details',
       id: 'weight',
-      minWidth: 200,
+      minWidth: 158,
       truncate: false,
       render: (_value, row) => {
         const applicableWeight =
           row.charged_weight ?? row.selected_max_slab_weight ?? row.volumetric_weight ?? row.weight
         return (
-          <Stack spacing={0.25}>
-            <Typography sx={{ fontSize: 11.7, color: 'text.secondary', lineHeight: 1.3 }}>
+          <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+            <Typography sx={{ maxWidth: '100%', fontSize: 10.8, color: 'text.secondary', lineHeight: 1.3 }} noWrap>
               Dead wt. :{formatKg(row.weight)}
             </Typography>
-            <Typography sx={{ fontSize: 11.7, color: 'text.secondary', lineHeight: 1.3 }}>
+            <Typography sx={{ maxWidth: '100%', fontSize: 10.8, color: 'text.secondary', lineHeight: 1.3 }} noWrap>
               {formatDimensionValue(row.length)} X {formatDimensionValue(row.breadth)} X{' '}
               {formatDimensionValue(row.height)} (cm)
             </Typography>
-            <Typography sx={{ fontSize: 11.7, color: 'text.secondary', lineHeight: 1.3 }}>
+            <Typography sx={{ maxWidth: '100%', fontSize: 10.8, color: 'text.secondary', lineHeight: 1.3 }} noWrap>
               Applicable wt. :{formatKg(applicableWeight)}
             </Typography>
           </Stack>
@@ -1148,13 +1148,13 @@ const B2COrdersList = () => {
     {
       label: 'Payment',
       id: 'order_amount',
-      minWidth: 118,
+      minWidth: 88,
       truncate: false,
       render: (_value, row) => {
         const isCod = String(row.order_type || '').toLowerCase() === 'cod'
         return (
           <Stack spacing={0.45} alignItems="flex-start">
-            <Typography sx={{ fontSize: 12.5, color: 'text.primary', fontWeight: 500 }}>
+            <Typography sx={{ fontSize: 12.1, color: 'text.primary', fontWeight: 500 }} noWrap>
               {formatCurrency(row.order_amount, 0)}
             </Typography>
             <Chip
@@ -1168,8 +1168,8 @@ const B2COrdersList = () => {
                 bgcolor: isCod ? alpha(theme.palette.warning.main, 0.12) : alpha(theme.palette.primary.main, 0.12),
                 border: `1px solid ${isCod ? alpha(theme.palette.warning.dark, 0.24) : alpha(theme.palette.primary.dark, 0.2)}`,
                 '& .MuiChip-label': {
-                  px: 0.65,
-                  fontSize: 10.5,
+                  px: 0.5,
+                  fontSize: 10,
                   fontWeight: 600,
                 },
               }}
@@ -1181,14 +1181,14 @@ const B2COrdersList = () => {
     {
       label: 'Pickup Address',
       id: 'pickup_location_id',
-      minWidth: 150,
+      minWidth: 118,
       truncate: false,
       render: (_value, row) => (
         <Typography
           sx={{
             width: 'fit-content',
-            maxWidth: 145,
-            fontSize: 12.5,
+            maxWidth: '100%',
+            fontSize: 12,
             color: 'text.primary',
             fontWeight: 500,
             borderBottom: `1px dashed ${alpha(theme.palette.text.primary, 0.28)}`,
@@ -1203,7 +1203,7 @@ const B2COrdersList = () => {
     {
       label: 'Status',
       id: 'order_status',
-      minWidth: 112,
+      minWidth: 84,
       truncate: false,
       render: (_value, row) => (
         <Chip
@@ -1217,8 +1217,8 @@ const B2COrdersList = () => {
             bgcolor: alpha(theme.palette.secondary.main, 0.08),
             border: `1px solid ${alpha(theme.palette.secondary.main, 0.24)}`,
             '& .MuiChip-label': {
-              px: 0.9,
-              fontSize: 10.5,
+              px: 0.7,
+              fontSize: 10,
               fontWeight: 600,
             },
           }}
@@ -1228,7 +1228,7 @@ const B2COrdersList = () => {
     {
       label: 'Action',
       id: 'id',
-      minWidth: 198,
+      minWidth: 170,
       sticky: 'right',
       stickyOffset: 0,
       truncate: false,
@@ -1278,7 +1278,7 @@ const B2COrdersList = () => {
         )
 
         return (
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack direction="row" alignItems="center" spacing={0.55} sx={{ minWidth: 0 }}>
             <Button
               size="small"
               variant="contained"
@@ -1288,11 +1288,11 @@ const B2COrdersList = () => {
               }}
               disabled={isCancelled || !canManifest || bulkManifesting || isThisManifesting}
               sx={{
-                minWidth: 92,
-                minHeight: 34,
-                px: 1.45,
+                minWidth: 78,
+                minHeight: 31,
+                px: 1,
                 borderRadius: '8px',
-                fontSize: 12,
+                fontSize: 11.4,
                 fontWeight: 600,
                 textTransform: 'none',
                 whiteSpace: 'nowrap',
@@ -1307,18 +1307,18 @@ const B2COrdersList = () => {
                 onClick={(event) => handleActionMenuOpen(event, row.id)}
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen ? 'true' : undefined}
-                endIcon={<MdKeyboardArrowDown size={17} />}
+                endIcon={<MdKeyboardArrowDown size={15} />}
                 sx={{
-                  minWidth: 86,
-                  minHeight: 34,
-                  px: 1.1,
+                  minWidth: 72,
+                  minHeight: 31,
+                  px: 0.75,
                   borderRadius: '8px',
                   borderColor: isMenuOpen
                     ? 'secondary.main'
                     : alpha(theme.palette.secondary.main, 0.24),
                   color: 'secondary.main',
                   bgcolor: isMenuOpen ? alpha(theme.palette.secondary.main, 0.08) : '#FFFFFF',
-                  fontSize: 12,
+                  fontSize: 11.4,
                   fontWeight: 600,
                   textTransform: 'none',
                   whiteSpace: 'nowrap',
