@@ -62,6 +62,7 @@ export interface DataTableProps<T extends { id: string | number }> {
   onRowClick?: (row: T) => void
   selectionResetToken?: number | string
   density?: 'regular' | 'compact'
+  tableVariant?: 'default' | 'shipment'
 }
 
 export default function DataTable<T extends { id: string | number }>(props: DataTableProps<T>) {
@@ -87,6 +88,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
     onRowClick,
     selectionResetToken,
     density = 'regular',
+    tableVariant = 'default',
   } = props
 
   const theme = useTheme()
@@ -96,8 +98,13 @@ export default function DataTable<T extends { id: string | number }>(props: Data
   const textSecondary = theme.palette.text.secondary
   const borderColor = alpha(textPrimary, 0.1)
   const softBorderColor = alpha(textPrimary, 0.06)
-  const headerBg = 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)'
-  const tableBg = '#FFFCF8'
+  const isShipmentVariant = tableVariant === 'shipment'
+  const shipmentAccent = theme.palette.primary.main
+  const shipmentHeader = theme.palette.secondary.main
+  const headerBg = isShipmentVariant
+    ? shipmentHeader
+    : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)'
+  const tableBg = isShipmentVariant ? '#F5F6F8' : '#FFFCF8'
   const rowHover = alpha(primary, 0.045)
   const mobileCardBg = 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,244,238,0.96) 100%)'
   const isCompact = density === 'compact'
@@ -192,10 +199,14 @@ export default function DataTable<T extends { id: string | number }>(props: Data
         position: 'relative',
         width: '100%',
         overflow: 'hidden',
-        borderRadius: isCompact ? '8px' : '14px',
-        border: `1px solid ${borderColor}`,
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(252,247,241,0.98) 100%)',
-        boxShadow: isCompact
+        borderRadius: isShipmentVariant || isCompact ? '8px' : '14px',
+        border: `1px solid ${isShipmentVariant ? alpha(textPrimary, 0.08) : borderColor}`,
+        background: isShipmentVariant
+          ? '#F5F6F8'
+          : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(252,247,241,0.98) 100%)',
+        boxShadow: isShipmentVariant
+          ? `0 8px 18px ${alpha(textPrimary, 0.04)}`
+          : isCompact
           ? `0 8px 20px ${alpha(textPrimary, 0.06)}`
           : `0 20px 42px ${alpha(textPrimary, 0.07)}`,
         p: 0,
@@ -444,7 +455,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
               component={Paper}
               sx={{
                 background: tableBg,
-                border: `1px solid ${borderColor}`,
+                border: isShipmentVariant ? 'none' : `1px solid ${borderColor}`,
                 minWidth: '100%',
                 maxHeight,
                 boxShadow: 'none',
@@ -452,9 +463,35 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                 backdropFilter: 'none',
               }}
             >
-              <Table stickyHeader size="small">
+              <Table
+                stickyHeader
+                size="small"
+                sx={
+                  isShipmentVariant
+                    ? {
+                        borderCollapse: 'separate',
+                        borderSpacing: '0 6px',
+                      }
+                    : undefined
+                }
+              >
                 <TableHead>
-                  <TableRow>
+                  <TableRow
+                    sx={
+                      isShipmentVariant
+                        ? {
+                            '& th:first-of-type': {
+                              borderTopLeftRadius: '8px',
+                              borderBottomLeftRadius: '8px',
+                            },
+                            '& th:last-of-type': {
+                              borderTopRightRadius: '8px',
+                              borderBottomRightRadius: '8px',
+                            },
+                          }
+                        : undefined
+                    }
+                  >
                     {selectable && (
                       <TableCell
                         padding="checkbox"
@@ -462,9 +499,9 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           position: 'sticky',
                           top: 0,
                           background: headerBg,
-                          borderBottom: `1px solid ${borderColor}`,
+                          borderBottom: isShipmentVariant ? 'none' : `1px solid ${borderColor}`,
                           zIndex: theme.zIndex.appBar + 1,
-                          py: isCompact ? 0.75 : 1.4,
+                          py: isShipmentVariant ? 1.15 : isCompact ? 0.75 : 1.4,
                         }}
                       >
                         <CustomCheckbox
@@ -484,16 +521,16 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                             position: col.sticky ? 'sticky' : 'static',
                             top: 0,
                             background: headerBg,
-                            color: alpha(textPrimary, 0.86),
+                            color: isShipmentVariant ? '#FFFFFF' : alpha(textPrimary, 0.86),
                             minWidth: col.minWidth || (isCompact ? 80 : 100),
                             fontWeight: 800,
-                            fontSize: isCompact ? '10.5px' : '11px',
-                            textTransform: 'uppercase',
-                            letterSpacing: isCompact ? '0.04em' : '0.09em',
+                            fontSize: isShipmentVariant ? '12px' : isCompact ? '10.5px' : '11px',
+                            textTransform: isShipmentVariant ? 'none' : 'uppercase',
+                            letterSpacing: isShipmentVariant ? 0 : isCompact ? '0.04em' : '0.09em',
                             zIndex: col.sticky ? theme.zIndex.appBar + 3 : theme.zIndex.appBar + 1,
-                            borderBottom: `1px solid ${borderColor}`,
-                            py: isCompact ? 0.75 : 1.4,
-                            px: isCompact ? 1 : 2,
+                            borderBottom: isShipmentVariant ? 'none' : `1px solid ${borderColor}`,
+                            py: isShipmentVariant ? 1.15 : isCompact ? 0.75 : 1.4,
+                            px: isShipmentVariant ? 1.35 : isCompact ? 1 : 2,
                             ...(col.sticky === 'right'
                               ? {
                                   right: col.stickyOffset ?? 0,
@@ -545,19 +582,34 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           hover={!!onRowClick}
                           onClick={onRowClick ? () => onRowClick(row) : undefined}
                           sx={{
-                            borderBottom: `1px solid ${softBorderColor}`,
-                            backgroundColor: '#fffdfa',
+                            borderBottom: isShipmentVariant ? 'none' : `1px solid ${softBorderColor}`,
+                            backgroundColor: isShipmentVariant ? '#FFFFFF' : '#fffdfa',
                             transition: 'background-color .18s ease, box-shadow .18s ease',
-                            '&:nth-of-type(even)': {
+                            '&:nth-of-type(even)': isShipmentVariant
+                              ? undefined
+                              : {
                               backgroundColor: alpha('#F7F1EB', 0.5),
                             },
+                            ...(isShipmentVariant
+                              ? {
+                                  boxShadow: `0 1px 0 ${alpha(textPrimary, 0.08)}`,
+                                  '& > td:first-of-type': {
+                                    borderTopLeftRadius: '8px',
+                                    borderBottomLeftRadius: '8px',
+                                  },
+                                  '& > td:last-of-type': {
+                                    borderTopRightRadius: '8px',
+                                    borderBottomRightRadius: '8px',
+                                  },
+                                }
+                              : {}),
                             '&:hover': onRowClick
                               ? {
                                   backgroundColor: rowHover,
                                   cursor: 'pointer',
                                 }
                               : {
-                                  backgroundColor: alpha(primary, 0.025),
+                                  backgroundColor: isShipmentVariant ? alpha(shipmentAccent, 0.045) : alpha(primary, 0.025),
                                 },
                           }}
                         >
@@ -597,10 +649,10 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                                   overflow: shouldTruncate ? 'hidden' : 'visible',
                                   textOverflow: shouldTruncate ? 'ellipsis' : 'clip',
                                   maxWidth: shouldTruncate ? (isCompact ? 180 : 240) : 'none',
-                                  py: isCompact ? 0.85 : 1.45,
-                                  px: isCompact ? 1 : 2,
+                                  py: isShipmentVariant ? 1.25 : isCompact ? 0.85 : 1.45,
+                                  px: isShipmentVariant ? 1.35 : isCompact ? 1 : 2,
                                   borderBottom: 'none',
-                                  backgroundColor: col.sticky ? '#FFFFFF' : undefined,
+                                  backgroundColor: col.sticky || isShipmentVariant ? '#FFFFFF' : undefined,
                                   zIndex: col.sticky ? 2 : 1,
                                   ...(col.sticky === 'right'
                                     ? {

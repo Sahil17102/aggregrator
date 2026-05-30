@@ -147,6 +147,11 @@ export interface B2COrder {
   length: number
   breadth: number
   height: number
+  actual_weight?: number | null
+  volumetric_weight?: number | null
+  charged_weight?: number | null
+  weight_discrepancy?: boolean | null
+  charged_slabs?: number | null
 
   // Charges
   order_type: 'prepaid' | 'cod'
@@ -169,6 +174,8 @@ export interface B2COrder {
   // Courier info
   courier_partner?: string | null
   courier_id?: number | null
+  selected_max_slab_weight?: number | null
+  shipping_mode?: string | null
   shipment_id?: string | null
   is_insurance: boolean
   label?: string | null

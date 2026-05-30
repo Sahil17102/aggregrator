@@ -97,7 +97,12 @@ export type B2CFormData = {
   zoneId?: string
 }
 
-export default function B2COrderFormSteps({ onClose }: { onClose?: () => void }) {
+type B2COrderFormStepsProps = {
+  onClose?: () => void
+  initialValues?: Partial<B2CFormData>
+}
+
+export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFormStepsProps) {
   const createShipmentMutation = useCreateShipment(onClose)
   const navigate = useNavigate()
   const location = useLocation()
@@ -115,18 +120,27 @@ export default function B2COrderFormSteps({ onClose }: { onClose?: () => void })
     return 'prepaid' // Final fallback
   }
 
+  const baseDefaultValues: Partial<B2CFormData> = {
+    products: [{ productName: '', price: 0, quantity: 1 }],
+    weight: 0,
+    length: 0,
+    breadth: 0,
+    height: 0,
+    courierPartnerId: '',
+    pickupDate: defaultPickupDate,
+    pickupTime: '',
+    orderType: getDefaultOrderType(),
+    selectedMaxSlabWeight: null,
+  }
+
   const methods = useForm<B2CFormData>({
     defaultValues: {
-      products: [{ productName: '', price: 0, quantity: 1 }],
-      weight: 0,
-      length: 0,
-      breadth: 0,
-      height: 0,
-      courierPartnerId: '',
-      pickupDate: defaultPickupDate,
-      pickupTime: '',
-      orderType: getDefaultOrderType(),
-      selectedMaxSlabWeight: null,
+      ...baseDefaultValues,
+      ...initialValues,
+      products:
+        initialValues?.products && initialValues.products.length > 0
+          ? initialValues.products
+          : baseDefaultValues.products,
     },
   })
 

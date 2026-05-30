@@ -5,10 +5,10 @@ import {
   alpha,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Divider,
   IconButton,
-  Link,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -23,19 +23,16 @@ import moment from 'moment'
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react'
 import {
   MdAssignment,
-  MdCancel,
+  MdContentCopy,
+  MdDelete,
   MdDownload,
-  MdEventAvailable,
-  MdKeyboardReturn,
+  MdEdit,
+  MdFileDownload,
   MdLocalOffer,
-  MdLocalShipping,
   MdMoreVert,
   MdReceipt,
-  MdReplay,
-  MdSync,
-  MdVisibility,
 } from 'react-icons/md'
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { fetchOrdersForCsvExport, generateManifestService } from '../../../api/order.service'
 import {
   useB2COrdersByUser,
@@ -43,8 +40,6 @@ import {
   useCreateReverseShipment,
   useRegenerateOrderDocuments,
   useRequestB2CPickup,
-  useRetryFailedManifest,
-  useSyncB2CTracking,
 } from '../../../hooks/Orders/useOrders'
 import { usePickupAddresses } from '../../../hooks/Pickup/usePickupAddresses'
 import { usePresignedDownloadMutation } from '../../../hooks/Uploads/usePresignedDownloadUrls'
@@ -52,12 +47,10 @@ import { useKycVerification } from '../../../hooks/User/useKycVerification'
 import type { B2COrder } from '../../../types/generic.types'
 import {
   DELHIVERY_COURIER_FILTER_OPTIONS_BY_NAME,
-  getCourierDisplayName,
 } from '../../../utils/courierDisplay'
 import { downloadClientOrdersCsv } from '../../../utils/orderCsvExport'
 import { FilterBar, type FilterField } from '../../FilterBar'
 import { toast } from '../../UI/Toast'
-import StatusChip from '../../UI/chip/StatusChip'
 import CustomDrawer from '../../UI/drawer/CustomDrawer'
 import { SmartTabs } from '../../UI/tab/Tabs'
 import DataTable, { type Column } from '../../UI/table/DataTable'
@@ -83,7 +76,7 @@ import ManifestScheduleDialog, {
   type ManifestSchedulePayload,
 } from '../ManifestScheduleDialog'
 import ReverseModal from '../reverse/ReverseModal'
-import B2COrderFormSteps from './B2COrderForm'
+import B2COrderFormSteps, { type B2CFormData } from './B2COrderForm'
 import { isB2CCancelEligible } from './orderActionRules'
 
 /* ───────────── Types ───────────── */
@@ -202,7 +195,6 @@ const shippingStatusMap: Record<string, string> = {
 const B2COrdersList = () => {
   const theme = useTheme()
   const location = useLocation()
-  const navigate = useNavigate()
   const isXs = useMediaQuery(theme.breakpoints.down('sm')) // mobile
   const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md')) // tablet
   const isMd = useMediaQuery(theme.breakpoints.between('md', 'lg')) // small desktop
@@ -215,6 +207,9 @@ const B2COrdersList = () => {
   else if (isLgUp) drawerWidth = 1200 // large desktop fixed width
   const [page, setPage] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [orderDrawerTitle, setOrderDrawerTitle] = useState('Create New B2C Order')
+  const [orderFormDefaults, setOrderFormDefaults] = useState<Partial<B2CFormData> | null>(null)
+  const [orderFormKey, setOrderFormKey] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [selectedOrderIds, setSelectedOrderIds] = useState<Array<B2COrder['id']>>([])
   const [selectionResetToken, setSelectionResetToken] = useState(0)
@@ -246,8 +241,6 @@ const B2COrdersList = () => {
   }
 
   const { data, isLoading, isError } = useB2COrdersByUser(page, rowsPerPage, effectiveFilters)
-  const { mutateAsync: retryFailedManifest, isPending: retryingManifest } = useRetryFailedManifest()
-  const { mutateAsync: syncB2CTracking } = useSyncB2CTracking()
   const { mutateAsync: requestB2CPickup, isPending: requestingPickup } = useRequestB2CPickup()
   const { mutateAsync: regenerateDocuments, isPending: regeneratingDocuments } =
     useRegenerateOrderDocuments()
@@ -258,12 +251,12 @@ const B2COrdersList = () => {
   const { mutate: createReverse } = useCreateReverseShipment()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reverseOrder, setReverseOrder] = useState<any | null>(null)
-  const [syncingTrackingOrderId, setSyncingTrackingOrderId] = useState<string | null>(null)
   const [pickupScheduleOrder, setPickupScheduleOrder] = useState<B2COrder | null>(null)
-  const [requestingPickupOrderId, setRequestingPickupOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     setDrawerOpen(false)
+    setOrderDrawerTitle('Create New B2C Order')
+    setOrderFormDefaults(null)
     setReverseOrder(null)
     setManifestScheduleOpen(false)
     setPendingManifestRequest(null)
@@ -332,15 +325,6 @@ const B2COrdersList = () => {
 
   const handleViewDetails = (order: B2COrder) => {
     setDetailsOrder(order)
-  }
-
-  const handleTrackShipment = (order: B2COrder) => {
-    const awb = String(order.awb_number || '').trim()
-    if (!awb) {
-      toast.open({ message: 'AWB number is not available for this order.', severity: 'info' })
-      return
-    }
-    navigate(`/tools/order_tracking?awb=${encodeURIComponent(awb)}`)
   }
 
   const handleGenerateManifest = async (
@@ -412,11 +396,6 @@ const B2COrdersList = () => {
     }
   }
 
-  const handleRetryManifest = async (order: B2COrder) => {
-    if (!order.id) return
-    await retryFailedManifest(String(order.id))
-  }
-
   const handleGenerateOrderDocument = async (order: B2COrder, type: 'label' | 'invoice') => {
     const orderId = String(order.id || '').trim()
     if (!orderId) {
@@ -447,17 +426,6 @@ const B2COrdersList = () => {
     }
   }
 
-  const handleSyncTracking = async (order: B2COrder) => {
-    if (!order.id) return
-    const orderId = String(order.id)
-    try {
-      setSyncingTrackingOrderId(orderId)
-      await syncB2CTracking(orderId)
-    } finally {
-      setSyncingTrackingOrderId((current) => (current === orderId ? null : current))
-    }
-  }
-
   const handleRequestPickup = async (
     order: B2COrder,
     schedule: ManifestSchedulePayload,
@@ -465,7 +433,6 @@ const B2COrdersList = () => {
     if (!order.id) return
     const orderId = String(order.id)
     try {
-      setRequestingPickupOrderId(orderId)
       const response = await requestB2CPickup({
         orderId,
         ...schedule,
@@ -476,8 +443,8 @@ const B2COrdersList = () => {
         title: 'Pickup scheduled',
         message,
       })
-    } finally {
-      setRequestingPickupOrderId((current) => (current === orderId ? null : current))
+    } catch (error) {
+      console.error('Pickup request failed:', error)
     }
   }
 
@@ -506,8 +473,60 @@ const B2COrdersList = () => {
 
   const handleCreateB2COrder = () => {
     checkKycBeforeAction(() => {
+      setOrderDrawerTitle('Create New B2C Order')
+      setOrderFormDefaults(null)
+      setOrderFormKey((current) => current + 1)
       setDrawerOpen(true)
     })
+  }
+
+  const handleCloneOrder = (order: B2COrder) => {
+    const products = getOrderProducts(order)
+    const generatedOrderNumber = `${order.order_number || 'ORDER'}-COPY-${Date.now().toString().slice(-4)}`
+    setOrderDrawerTitle(`Clone Order ${order.order_number || ''}`.trim())
+    setOrderFormDefaults({
+      buyerName: order.buyer_name || '',
+      buyerPhone: order.buyer_phone || '',
+      buyerEmail: order.buyer_email || '',
+      address: order.address || '',
+      pincode: order.pincode || '',
+      city: order.city || '',
+      state: order.state || '',
+      country: order.country || 'India',
+      products: products.length
+        ? products.map((product) => ({
+            productName: String(product.productName ?? product.name ?? ''),
+            price: Number(product.price ?? 0),
+            quantity: Number(product.quantity ?? product.qty ?? 1),
+            sku: String(product.sku ?? ''),
+            hsnCode: String(product.hsnCode ?? product.hsn ?? ''),
+            discount: Number(product.discount ?? 0),
+            taxRate: Number(product.taxRate ?? product.tax_rate ?? 0),
+          }))
+        : [{ productName: '', price: 0, quantity: 1 }],
+      weight: normalizeKgValue(order.weight),
+      length: Number(order.length ?? 0),
+      breadth: Number(order.breadth ?? 0),
+      height: Number(order.height ?? 0),
+      orderId: generatedOrderNumber,
+      orderDate: moment().format('YYYY-MM-DD'),
+      orderType: order.order_type || 'prepaid',
+      shippingCharges: Number(order.shipping_charges ?? 0),
+      transactionFee: Number(order.transaction_fee ?? 0),
+      giftWrap: Number(order.gift_wrap ?? 0),
+      discount: Number(order.discount ?? 0),
+      prepaidAmount: Number(order.prepaid_amount ?? 0),
+      pickupLocationId: order.pickup_location_id || '',
+      pickupLocationName: order.pickup_details?.warehouse_name || order.pickup_details?.name || '',
+      pickupLocationPincode: order.pickup_details?.pincode || '',
+      pickupLocationPOCName: order.pickup_details?.name || '',
+      pickupLocationPOCPhone: order.pickup_details?.phone || '',
+      pickupCity: order.pickup_details?.city || '',
+      pickupState: order.pickup_details?.state || '',
+      pickupAddress: order.pickup_details?.address || '',
+    })
+    setOrderFormKey((current) => current + 1)
+    setDrawerOpen(true)
   }
 
   const handleTabChange = (newValue: string) => {
@@ -928,14 +947,67 @@ const B2COrdersList = () => {
   }
 
   /* ───────────── Columns ───────────── */
-  const formatCurrency = (value?: number | string | null) => `Rs ${Number(value ?? 0).toFixed(2)}`
+  const formatCurrency = (value?: number | string | null, decimals = 2) =>
+    `Rs ${Number(value ?? 0).toFixed(decimals)}`
 
-  const getFinalCourierCharge = (row: B2COrder) => {
-    const fallback =
-      Number(row.freight_charges ?? 0) +
-      Number(row.other_charges ?? 0) +
-      ((row.order_type || '').toLowerCase() === 'cod' ? Number(row.cod_charges ?? 0) : 0)
-    return Number(row.final_courier_charge ?? row.courier_charge ?? fallback)
+  const normalizeKgValue = (value?: number | string | null) => {
+    const numericValue = Number(value ?? 0)
+    if (!Number.isFinite(numericValue) || numericValue <= 0) return 0
+    return numericValue > 50 ? numericValue / 1000 : numericValue
+  }
+
+  const formatKg = (value?: number | string | null) => `${normalizeKgValue(value).toFixed(1)} Kg`
+
+  const formatDimensionValue = (value?: number | string | null) => {
+    const numericValue = Number(value ?? 0)
+    if (!Number.isFinite(numericValue) || numericValue <= 0) return '0'
+    return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(1)
+  }
+
+  const formatOrderDateTime = (value?: string | null) => {
+    if (!value) return '-'
+    const date = moment(value)
+    return date.isValid() ? date.format('DD MMM YYYY | hh:mm A') : '-'
+  }
+
+  const getOrderProducts = (row: B2COrder): Array<Record<string, unknown>> => {
+    const rawProducts: unknown = row.products
+    if (Array.isArray(rawProducts)) return rawProducts as Array<Record<string, unknown>>
+    if (typeof rawProducts === 'string') {
+      try {
+        const parsedProducts: unknown = JSON.parse(rawProducts)
+        return Array.isArray(parsedProducts) ? parsedProducts as Array<Record<string, unknown>> : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  }
+
+  const getProductName = (row: B2COrder) => {
+    const products = getOrderProducts(row)
+    const firstProduct = products[0]
+    const rawName = String(firstProduct?.productName ?? firstProduct?.name ?? '').trim()
+    if (!rawName) return '-'
+    return products.length > 1 ? `${rawName} +${products.length - 1}` : rawName
+  }
+
+  const getProductQuantity = (row: B2COrder) => {
+    const products = getOrderProducts(row)
+    const quantity = products.reduce((sum, product) => {
+      const productQuantity = Number(product.quantity ?? product.qty ?? 0)
+      return sum + (Number.isFinite(productQuantity) ? productQuantity : 0)
+    }, 0)
+    return Math.max(quantity, 1)
+  }
+
+  const getPickupAddressName = (row: B2COrder) =>
+    String(row.pickup_details?.warehouse_name || row.pickup_details?.name || '-').trim() || '-'
+
+  const getDisplayStatusLabel = (status?: string | null) => {
+    const normalizedStatus = String(status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+    if (normalizedStatus === 'pending') return 'NEW'
+    return shippingStatusMap[normalizedStatus] || status || 'Unknown'
   }
 
   const isDeliveryOneOrder = (row: B2COrder) => {
@@ -953,21 +1025,6 @@ const B2COrdersList = () => {
     return !isDeliveryOneOrder(row) && provider.includes('delhivery')
   }
 
-  const isDeliveryOneTrackingOrder = (row: B2COrder) => {
-    return (
-      Boolean(String(row.awb_number || '').trim()) &&
-      isDeliveryOneOrder(row)
-    )
-  }
-
-  const isB2CPickupRequestEligible = (row: B2COrder) => {
-    const status = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
-    if (!isDeliveryOneOrder(row) && !isDelhiveryOrder(row)) return false
-    if (!String(row.awb_number || '').trim()) return false
-    if (isB2CCancelledStatus(status)) return false
-    return !['delivered', 'rto_delivered', 'returned'].includes(status)
-  }
-
   const shouldShowManifestShipmentCount =
     pendingManifestRequest?.mode === 'single'
       ? isDelhiveryOrder(pendingManifestRequest.order)
@@ -977,9 +1034,6 @@ const B2COrdersList = () => {
     pendingManifestRequest?.mode === 'single'
       ? 1
       : Math.max(1, selectedOrders.filter(isDelhiveryOrder).length || selectedOrders.length)
-
-  const formatCompactDate = (value?: string | null) =>
-    value ? moment(value).format('DD MMM, hh:mm A') : '-'
 
   const hasDocument = (row: B2COrder, type: DocumentType) => {
     const { key, url } = getDocumentReference(row, type)
@@ -994,207 +1048,182 @@ const B2COrdersList = () => {
     )
   }
 
-  const renderAwbLink = (value?: string | null) => {
-    const awb = String(value || '').trim()
-    if (!awb) return <Typography sx={{ color: 'text.secondary', fontSize: 12 }}>No AWB</Typography>
-
-    return (
-      <Link
-        component={RouterLink}
-        to={`/tools/order_tracking?awb=${encodeURIComponent(awb)}`}
-        underline="hover"
-        onClick={(event) => event.stopPropagation()}
-        sx={{ fontWeight: 800, fontSize: 12, lineHeight: 1.25 }}
-      >
-        {awb}
-      </Link>
-    )
-  }
-
-  const renderDocumentDownloadButton = (row: B2COrder, type: DocumentType) => {
-    const meta = documentButtonMeta[type]
-    const isAvailable = hasDocument(row, type)
-    const rowDownloadKey = `${row.id}-${type}`
-    const isDownloading = downloadingRowDocument === rowDownloadKey
-    const isDisabled =
-      !isAvailable || Boolean(downloadingDocumentType) || Boolean(downloadingRowDocument)
-
-    return (
-      <Tooltip
-        key={type}
-        title={
-          isAvailable
-            ? isDownloading
-              ? `Downloading ${meta.label}...`
-              : `Download ${meta.label}`
-            : `${meta.label} not available`
-        }
-        arrow
-      >
-        <Box component="span" sx={{ display: 'inline-flex' }}>
-          <IconButton
-            size="small"
-            aria-label={`Download ${meta.label}`}
-            disabled={isDisabled}
-            onClick={(event) => {
-              event.stopPropagation()
-              handleSingleDocumentDownload(row, type)
-            }}
-            sx={{
-              width: 28,
-              height: 28,
-              borderRadius: 1,
-              color: isAvailable ? '#0D3B8E' : 'text.disabled',
-              border: `1px solid ${
-                isAvailable
-                  ? alpha(theme.palette.primary.main, 0.22)
-                  : alpha(theme.palette.text.primary, 0.08)
-              }`,
-              backgroundColor: isAvailable
-                ? alpha(theme.palette.primary.main, 0.06)
-                : alpha(theme.palette.text.primary, 0.04),
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.12),
-              },
-              '& svg': {
-                fontSize: 16,
-              },
-            }}
-          >
-            {isDownloading ? <CircularProgress size={14} /> : meta.icon}
-          </IconButton>
-        </Box>
-      </Tooltip>
-    )
-  }
-
   const columns: Column<B2COrder>[] = [
     {
-      label: 'Source',
-      id: 'is_external_api',
-      minWidth: 68,
-      render: (_, row) => (
-        <StatusChip
-          label={row.is_external_api ? 'API' : 'Local'}
-          status={row.is_external_api ? 'info' : 'success'}
-        />
-      ),
-    },
-    {
-      label: 'Shipment',
+      label: 'Order Details',
       id: 'order_number',
-      minWidth: 148,
+      minWidth: 180,
       truncate: false,
       render: (_v, row) => (
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.25 }} noWrap>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: 'primary.dark', lineHeight: 1.25 }} noWrap>
             {row.order_number || '-'}
           </Typography>
-          {renderAwbLink(row.awb_number)}
+          <Typography sx={{ fontSize: 11.2, color: 'text.secondary', lineHeight: 1.25 }} noWrap>
+            {formatOrderDateTime(row.created_at || row.order_date)}
+          </Typography>
+          <Typography sx={{ fontSize: 11.2, color: 'text.primary', lineHeight: 1.25 }} noWrap>
+            {row.is_external_api ? 'API' : 'Custom'}
+          </Typography>
         </Stack>
       ),
     },
     {
-      label: 'Buyer',
+      label: 'Customer Details',
       id: 'buyer_name',
-      minWidth: 126,
-      render: (value) => (
-        <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 130 }} noWrap>
-          {String(value || '-')}
-        </Typography>
+      minWidth: 230,
+      truncate: false,
+      render: (_value, row) => (
+        <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.primary', lineHeight: 1.28 }} noWrap>
+            {row.buyer_name || '-'}
+          </Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', lineHeight: 1.28 }} noWrap>
+            {row.buyer_email || '-'}
+          </Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', lineHeight: 1.28 }} noWrap>
+            {row.buyer_phone || '-'}
+          </Typography>
+        </Stack>
       ),
     },
     {
-      label: 'Amount',
-      id: 'order_amount',
-      minWidth: 110,
+      label: 'Product Details',
+      id: 'products',
+      minWidth: 150,
       truncate: false,
-      render: (_v, row) => {
-        const finalCharge = getFinalCourierCharge(row)
+      render: (_value, row) => (
+        <Stack spacing={0.25}>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.primary', maxWidth: 150 }} noWrap>
+            {getProductName(row)}
+          </Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.primary', fontWeight: 700 }}>
+            QTY:{getProductQuantity(row)}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      label: 'Package Details',
+      id: 'weight',
+      minWidth: 200,
+      truncate: false,
+      render: (_value, row) => {
+        const applicableWeight =
+          row.charged_weight ?? row.selected_max_slab_weight ?? row.volumetric_weight ?? row.weight
         return (
-          <Stack spacing={0.2}>
-            <Typography sx={{ fontSize: 12.5, fontWeight: 800 }}>
-              {formatCurrency(row.order_amount)}
+          <Stack spacing={0.25}>
+            <Typography sx={{ fontSize: 11.7, color: 'text.secondary', lineHeight: 1.3 }}>
+              Dead wt. :{formatKg(row.weight)}
             </Typography>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
-              Ship {formatCurrency(finalCharge)}
+            <Typography sx={{ fontSize: 11.7, color: 'text.secondary', lineHeight: 1.3 }}>
+              {formatDimensionValue(row.length)} X {formatDimensionValue(row.breadth)} X{' '}
+              {formatDimensionValue(row.height)} (cm)
+            </Typography>
+            <Typography sx={{ fontSize: 11.7, color: 'text.secondary', lineHeight: 1.3 }}>
+              Applicable wt. :{formatKg(applicableWeight)}
             </Typography>
           </Stack>
         )
       },
     },
     {
-      label: 'Courier',
-      id: 'courier_partner',
-      minWidth: 132,
+      label: 'Payment',
+      id: 'order_amount',
+      minWidth: 118,
       truncate: false,
-      render: (_v, row) => (
-        <Typography sx={{ fontSize: 12.5, fontWeight: 700, maxWidth: 140 }} noWrap>
-          {getCourierDisplayName({
-            name: row.courier_partner,
-            courier_id: row.courier_id,
-            integration_type: row.integration_type,
-          }, '-')}
+      render: (_value, row) => {
+        const isCod = String(row.order_type || '').toLowerCase() === 'cod'
+        return (
+          <Stack spacing={0.45} alignItems="flex-start">
+            <Typography sx={{ fontSize: 12.5, color: 'text.primary', fontWeight: 700 }}>
+              {formatCurrency(row.order_amount, 0)}
+            </Typography>
+            <Chip
+              label={isCod ? 'COD' : 'Prepaid'}
+              size="small"
+              sx={{
+                height: 22,
+                px: 0.65,
+                borderRadius: '999px',
+                color: isCod ? 'warning.dark' : 'primary.dark',
+                bgcolor: isCod ? alpha(theme.palette.warning.main, 0.12) : alpha(theme.palette.primary.main, 0.12),
+                border: `1px solid ${isCod ? alpha(theme.palette.warning.dark, 0.24) : alpha(theme.palette.primary.dark, 0.2)}`,
+                '& .MuiChip-label': {
+                  px: 0.65,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                },
+              }}
+            />
+          </Stack>
+        )
+      },
+    },
+    {
+      label: 'Pickup Address',
+      id: 'pickup_location_id',
+      minWidth: 150,
+      truncate: false,
+      render: (_value, row) => (
+        <Typography
+          sx={{
+            width: 'fit-content',
+            maxWidth: 145,
+            fontSize: 12.5,
+            color: 'text.primary',
+            fontWeight: 700,
+            borderBottom: `1px dashed ${alpha(theme.palette.text.primary, 0.28)}`,
+            lineHeight: 1.3,
+          }}
+          noWrap
+        >
+          {getPickupAddressName(row)}
         </Typography>
       ),
     },
     {
       label: 'Status',
       id: 'order_status',
-      minWidth: 128,
+      minWidth: 112,
       truncate: false,
-      render: (_v, row) => (
-        <StatusChip
-          label={shippingStatusMap[row.order_status] || row.order_status || 'Unknown'}
-          status={statusColorMap[row.order_status] || 'info'}
+      render: (_value, row) => (
+        <Chip
+          label={getDisplayStatusLabel(row.order_status)}
+          size="small"
+          sx={{
+            height: 25,
+            minWidth: 58,
+            borderRadius: '999px',
+            color: 'secondary.main',
+            bgcolor: alpha(theme.palette.secondary.main, 0.08),
+            border: `1px solid ${alpha(theme.palette.secondary.main, 0.24)}`,
+            '& .MuiChip-label': {
+              px: 0.9,
+              fontSize: 10.5,
+              fontWeight: 800,
+            },
+          }}
         />
       ),
     },
     {
-      label: 'Dates',
-      id: 'created_at',
-      minWidth: 122,
-      truncate: false,
-      render: (_v, row) => (
-        <Stack spacing={0.2}>
-          <Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1.25 }}>
-            {formatCompactDate(row.created_at)}
-          </Typography>
-          <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
-            Upd {formatCompactDate(row.updated_at)}
-          </Typography>
-        </Stack>
-      ),
-    },
-    {
-      label: 'Actions',
+      label: 'Action',
       id: 'id',
-      minWidth: 128,
+      minWidth: 174,
       sticky: 'right',
-      stickyOffset: 160,
+      stickyOffset: 0,
       truncate: false,
-      render: (_, row) => {
+      render: (_value, row) => {
         const orderStatus = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
-        const canSyncTracking = isDeliveryOneTrackingOrder(row)
-        const isTrackingSyncing = syncingTrackingOrderId === String(row.id)
-        const canRequestPickup = isB2CPickupRequestEligible(row)
-        const isPickupRequesting =
-          requestingPickupOrderId === String(row.id) || (requestingPickup && pickupScheduleOrder?.id === row.id)
         const rowManifestRef = getB2CManifestIdentifier(row)
         const canManifest = isB2CManifestEligible(row)
         const isThisManifesting = Boolean(rowManifestRef && manifestingRef === rowManifestRef)
-        const retriesRemaining = Number(row.manifest_retries_remaining ?? 0)
-        const isDelhiveryIntegration = ['delhivery', 'deliveryone'].includes(
-          String(row.integration_type || '').toLowerCase(),
-        )
-        const canRetryManifest =
-          row.can_retry_manifest === true &&
-          isDelhiveryIntegration
-        const canTrackShipment = Boolean(String(row.awb_number || '').trim())
         const isCancelled = isB2CCancelledStatus(orderStatus)
         const isDocumentReady = isDocumentGenerationReady(row)
-        const isLabelGenerating = documentGenerationRef === `${row.id}-label`
         const isInvoiceGenerating = documentGenerationRef === `${row.id}-invoice`
+        const isInvoiceDownloading = downloadingRowDocument === `${row.id}-invoice`
+        const canDownloadInvoice = hasDocument(row, 'invoice')
         const isMenuOpen = activeActionOrderId === row.id && Boolean(actionMenuAnchor)
 
         const renderActionItem = ({
@@ -1225,33 +1254,54 @@ const B2COrdersList = () => {
             </ListItemIcon>
             <ListItemText
               primary={label}
-              primaryTypographyProps={{ fontSize: 13, fontWeight: 700 }}
+              primaryTypographyProps={{ fontSize: 13.5, fontWeight: 600 }}
             />
           </MenuItem>
         )
 
         return (
-          <>
+          <Stack direction="row" alignItems="center" spacing={1}>
             <Button
               size="small"
-              variant={isMenuOpen ? 'contained' : 'outlined'}
-              endIcon={<MdMoreVert size={16} />}
-              onClick={(event) => handleActionMenuOpen(event, row.id)}
-              aria-haspopup="menu"
-              aria-expanded={isMenuOpen ? 'true' : undefined}
+              variant="contained"
+              onClick={(event) => {
+                event.stopPropagation()
+                openSingleManifestSchedule(row)
+              }}
+              disabled={isCancelled || !canManifest || bulkManifesting || isThisManifesting}
               sx={{
-                minHeight: 32,
-                px: 1.15,
+                minWidth: 92,
+                minHeight: 34,
+                px: 1.45,
                 borderRadius: '8px',
                 fontSize: 12,
                 fontWeight: 800,
                 textTransform: 'none',
                 whiteSpace: 'nowrap',
-                boxShadow: isMenuOpen ? '0 10px 20px rgba(51, 51, 105, 0.14)' : 'none',
               }}
             >
-              Actions
+              {isThisManifesting ? 'Shipping' : 'Ship Now'}
             </Button>
+            <Tooltip title="More actions" arrow>
+              <IconButton
+                size="small"
+                onClick={(event) => handleActionMenuOpen(event, row.id)}
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen ? 'true' : undefined}
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  color: '#FFFFFF',
+                  bgcolor: isMenuOpen ? 'secondary.dark' : alpha(theme.palette.secondary.main, 0.82),
+                  '&:hover': {
+                    bgcolor: 'secondary.dark',
+                  },
+                }}
+              >
+                <MdMoreVert size={19} />
+              </IconButton>
+            </Tooltip>
             <Menu
               anchorEl={actionMenuAnchor}
               open={isMenuOpen}
@@ -1263,59 +1313,32 @@ const B2COrdersList = () => {
                 paper: {
                   sx: {
                     mt: 0.75,
-                    minWidth: 260,
-                    borderRadius: '10px',
-                    border: '1px solid rgba(51, 51, 105, 0.12)',
-                    background: 'rgba(255, 255, 255, 0.98)',
-                    boxShadow: '0 18px 38px rgba(51, 51, 105, 0.16)',
+                    minWidth: 238,
+                    borderRadius: '8px',
+                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.12)}`,
+                    background: '#FFFFFF',
+                    boxShadow: `0 18px 38px ${alpha(theme.palette.secondary.main, 0.18)}`,
                     overflow: 'hidden',
                   },
                 },
                 list: {
                   dense: true,
-                  sx: { py: 0.45 },
+                  sx: { py: 0.55 },
                 },
               }}
             >
               {renderActionItem({
-                key: 'view-details',
-                icon: <MdVisibility />,
-                label: 'View Details',
-                onClick: () => handleViewDetails(row),
-              })}
-              <Divider sx={{ my: 0.35 }} />
-              {renderActionItem({
-                key: 'generate-manifest',
-                icon: <MdAssignment />,
-                label: isThisManifesting ? 'Generating Manifest' : 'Generate Manifest',
-                onClick: () => openSingleManifestSchedule(row),
-                disabled: isCancelled || !canManifest || bulkManifesting,
-                loading: isThisManifesting,
-              })}
-              {renderActionItem({
-                key: 'generate-label',
-                icon: <MdLocalOffer />,
-                label: isLabelGenerating
-                  ? 'Generating Label'
-                  : hasDocument(row, 'label')
-                    ? 'Regenerate Label'
-                    : 'Generate Label',
-                onClick: () => handleGenerateOrderDocument(row, 'label'),
-                disabled:
-                  isCancelled ||
-                  !isDocumentReady ||
-                  regeneratingDocuments ||
-                  Boolean(documentGenerationRef),
-                loading: isLabelGenerating,
+                key: 'download-invoice',
+                icon: <MdFileDownload />,
+                label: 'Download Invoice',
+                onClick: () => handleSingleDocumentDownload(row, 'invoice'),
+                disabled: !canDownloadInvoice || Boolean(downloadingDocumentType) || Boolean(downloadingRowDocument),
+                loading: isInvoiceDownloading,
               })}
               {renderActionItem({
                 key: 'generate-invoice',
                 icon: <MdReceipt />,
-                label: isInvoiceGenerating
-                  ? 'Generating Invoice'
-                  : hasDocument(row, 'invoice')
-                    ? 'Regenerate Invoice'
-                    : 'Generate Invoice',
+                label: isInvoiceGenerating ? 'Generating New Invoice' : 'Generate New Invoice',
                 onClick: () => handleGenerateOrderDocument(row, 'invoice'),
                 disabled:
                   isCancelled ||
@@ -1324,78 +1347,38 @@ const B2COrdersList = () => {
                   Boolean(documentGenerationRef),
                 loading: isInvoiceGenerating,
               })}
-              {(canRequestPickup ||
-                (orderStatus === 'manifest_failed' && canRetryManifest) ||
-                orderStatus === 'delivered' ||
-                isB2CCancelEligible(row)) && <Divider sx={{ my: 0.35 }} />}
-              {canRequestPickup &&
-                renderActionItem({
-                  key: 'request-pickup',
-                  icon: <MdEventAvailable />,
-                  label: isPickupRequesting ? 'Scheduling Pickup' : 'Request Pickup',
-                  onClick: () => setPickupScheduleOrder(row),
-                  disabled: isPickupRequesting,
-                })}
-              {orderStatus === 'manifest_failed' &&
-                canRetryManifest &&
-                renderActionItem({
-                  key: 'retry-manifest',
-                  icon: <MdReplay />,
-                  label: retryingManifest ? 'Retrying Manifest' : `Retry Manifest (${retriesRemaining} left)`,
-                  onClick: () => handleRetryManifest(row),
-                  disabled: retryingManifest,
-                })}
-              {orderStatus === 'delivered' &&
-                renderActionItem({
-                  key: 'reverse',
-                  icon: <MdKeyboardReturn />,
-                  label: 'Create Reverse',
-                  onClick: () => setReverseOrder(row),
-                })}
-              {isB2CCancelEligible(row) &&
-                renderActionItem({
-                  key: 'cancel',
-                  icon: <MdCancel />,
-                  label: cancellingShipment ? 'Cancelling Shipment' : 'Cancel Shipment',
-                  onClick: () => cancelShipment(String(row.id)),
-                  disabled: cancellingShipment,
-                  danger: true,
-                })}
-              <Divider sx={{ my: 0.35 }} />
               {renderActionItem({
-                key: 'track-shipment',
-                icon: <MdLocalShipping />,
-                label: 'Track Shipment',
-                onClick: () => handleTrackShipment(row),
-                disabled: !canTrackShipment,
+                key: 'edit-order',
+                icon: <MdEdit />,
+                label: 'Edit Order',
+                onClick: () => {
+                  handleViewDetails(row)
+                  toast.open({
+                    message: 'Order details opened. Backend edit logic was not changed.',
+                    severity: 'info',
+                  })
+                },
               })}
               {renderActionItem({
-                key: 'sync-live-status',
-                icon: <MdSync />,
-                label: isTrackingSyncing ? 'Syncing Live Status' : 'Sync Live Status',
-                onClick: () => handleSyncTracking(row),
-                disabled: !canSyncTracking,
-                loading: isTrackingSyncing,
+                key: 'delete-order',
+                icon: <MdDelete />,
+                label: cancellingShipment ? 'Deleting Order' : 'Delete Order',
+                onClick: () => cancelShipment(String(row.id)),
+                disabled: !isB2CCancelEligible(row) || cancellingShipment,
+                loading: cancellingShipment,
+                danger: true,
+              })}
+              <Divider sx={{ my: 0.45 }} />
+              {renderActionItem({
+                key: 'clone-order',
+                icon: <MdContentCopy />,
+                label: 'Clone Order',
+                onClick: () => handleCloneOrder(row),
               })}
             </Menu>
-          </>
+          </Stack>
         )
       },
-    },
-    {
-      label: 'PDFs',
-      id: 'manifest',
-      minWidth: 116,
-      sticky: 'right',
-      stickyOffset: 44,
-      truncate: false,
-      render: (_v, row) => (
-        <Stack direction="row" spacing={0.35}>
-          {renderDocumentDownloadButton(row, 'label')}
-          {renderDocumentDownloadButton(row, 'invoice')}
-          {renderDocumentDownloadButton(row, 'manifest')}
-        </Stack>
-      ),
     },
   ]
 
@@ -1570,6 +1553,7 @@ const B2COrdersList = () => {
           pagination
           selectable
           density="compact"
+          tableVariant="shipment"
           maxHeight={640}
           currentPage={page}
           defaultRowsPerPage={rowsPerPage}
@@ -1590,8 +1574,6 @@ const B2COrdersList = () => {
           onSelectRows={(ids) => setSelectedOrderIds(ids)}
           selectedRowIds={selectedOrderIds}
           selectionResetToken={selectionResetToken}
-          expandable
-          renderExpandedRow={(row) => <OrderExpandedRow row={row} />}
         />
       )}
 
@@ -1643,10 +1625,22 @@ const B2COrdersList = () => {
       <CustomDrawer
         width={drawerWidth}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title="Create New B2C Order"
+        onClose={() => {
+          setDrawerOpen(false)
+          setOrderFormDefaults(null)
+          setOrderDrawerTitle('Create New B2C Order')
+        }}
+        title={orderDrawerTitle}
       >
-        <B2COrderFormSteps onClose={() => setDrawerOpen(false)} />
+        <B2COrderFormSteps
+          key={orderFormKey}
+          initialValues={orderFormDefaults || undefined}
+          onClose={() => {
+            setDrawerOpen(false)
+            setOrderFormDefaults(null)
+            setOrderDrawerTitle('Create New B2C Order')
+          }}
+        />
       </CustomDrawer>
     </Stack>
   )
