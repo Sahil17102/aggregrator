@@ -8,7 +8,6 @@ import {
   Chip,
   CircularProgress,
   Divider,
-  IconButton,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -28,8 +27,8 @@ import {
   MdDownload,
   MdEdit,
   MdFileDownload,
+  MdKeyboardArrowDown,
   MdLocalOffer,
-  MdMoreVert,
   MdReceipt,
 } from 'react-icons/md'
 import { useLocation } from 'react-router-dom'
@@ -1228,7 +1227,7 @@ const B2COrdersList = () => {
     {
       label: 'Action',
       id: 'id',
-      minWidth: 174,
+      minWidth: 198,
       sticky: 'right',
       stickyOffset: 0,
       truncate: false,
@@ -1301,24 +1300,38 @@ const B2COrdersList = () => {
               {isThisManifesting ? 'Shipping' : 'Ship Now'}
             </Button>
             <Tooltip title="More actions" arrow>
-              <IconButton
+              <Button
                 size="small"
+                variant="outlined"
                 onClick={(event) => handleActionMenuOpen(event, row.id)}
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen ? 'true' : undefined}
+                endIcon={<MdKeyboardArrowDown size={17} />}
                 sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  color: '#FFFFFF',
-                  bgcolor: isMenuOpen ? 'secondary.dark' : alpha(theme.palette.secondary.main, 0.82),
+                  minWidth: 86,
+                  minHeight: 34,
+                  px: 1.1,
+                  borderRadius: '8px',
+                  borderColor: isMenuOpen
+                    ? 'secondary.main'
+                    : alpha(theme.palette.secondary.main, 0.24),
+                  color: 'secondary.main',
+                  bgcolor: isMenuOpen ? alpha(theme.palette.secondary.main, 0.08) : '#FFFFFF',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  '& .MuiButton-endIcon': {
+                    ml: 0.35,
+                  },
                   '&:hover': {
-                    bgcolor: 'secondary.dark',
+                    borderColor: 'secondary.main',
+                    bgcolor: alpha(theme.palette.secondary.main, 0.08),
                   },
                 }}
               >
-                <MdMoreVert size={19} />
-              </IconButton>
+                Actions
+              </Button>
             </Tooltip>
             <Menu
               anchorEl={actionMenuAnchor}
