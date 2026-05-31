@@ -2083,11 +2083,34 @@ export const fetchAvailableCouriersWithRates = async (
         fallbackToBasicForUser: true,
       })
 
-      if (activePlanId) {
-        localRates = await fetchResolvedB2CRateCards({
-          planId: activePlanId,
+      const loadCalculatorRatesForPlan = async (planId: string) => {
+        let rateZone = zoneRow
+        let rates = await fetchResolvedB2CRateCards({
+          planId,
           zoneId: zoneRow.id,
         })
+
+        if (!rates.length && isCalculator) {
+          const roiZone = await fetchZoneIdByKey('ROI')
+          if (roiZone.id !== zoneRow.id) {
+            const roiRates = await fetchResolvedB2CRateCards({
+              planId,
+              zoneId: roiZone.id,
+            })
+            if (roiRates.length) {
+              rateZone = roiZone
+              rates = roiRates
+            }
+          }
+        }
+
+        return { rateZone, rates }
+      }
+
+      if (activePlanId) {
+        const rateResult = await loadCalculatorRatesForPlan(activePlanId)
+        approxZone = rateResult.rateZone
+        localRates = rateResult.rates
       }
 
       if (!localRates.length && isCalculator && !planIdOverride) {
@@ -2096,10 +2119,9 @@ export const fetchAvailableCouriersWithRates = async (
         })
 
         if (fallbackPlanId && fallbackPlanId !== activePlanId) {
-          localRates = await fetchResolvedB2CRateCards({
-            planId: fallbackPlanId,
-            zoneId: zoneRow.id,
-          })
+          const rateResult = await loadCalculatorRatesForPlan(fallbackPlanId)
+          approxZone = rateResult.rateZone
+          localRates = rateResult.rates
         }
       }
     }
@@ -2116,7 +2138,8 @@ export const fetchAvailableCouriersWithRates = async (
 
       for (const rateCard of localRates) {
         const providerKey = normalizeProviderKey(rateCard.service_provider)
-        if (!providerKey || !enabledProviders.has(providerKey)) continue
+        if (!providerKey) continue
+        if (!enabledProviders.has(providerKey) && !isCalculator) continue
 
         const candidateKey = `${String(rateCard.courier_id)}__${providerKey}`
         if (existingCandidateKeys.has(candidateKey)) continue
@@ -2125,19 +2148,19 @@ export const fetchAvailableCouriersWithRates = async (
         const courierRow = bucket?.rows.find(
           (row) => String(row.id) === String(rateCard.courier_id),
         )
-        if (!courierRow) continue
+        if (!courierRow && !isCalculator) continue
 
         existingCandidateKeys.add(candidateKey)
         combinedCouriers.push({
-          id: courierRow.id,
-          name: courierRow.name,
+          id: courierRow?.id ?? rateCard.courier_id,
+          name: courierRow?.name ?? getDelhiveryCourierDisplayName(rateCard.courier_id),
           integration_type: providerKey,
-          serviceProvider: courierRow.serviceProvider ?? providerKey,
+          serviceProvider: courierRow?.serviceProvider ?? providerKey,
           cod: true,
           prepaid: true,
           edd: '3-5 Days',
           approxZone,
-          createdAt: courierRow.createdAt,
+          createdAt: courierRow?.createdAt ?? null,
           courier_cost_estimate: null,
           provider_rate: null,
           freight_charges: null,
@@ -2416,17 +2439,20 @@ export const fetchAvailableCouriersWithRates = async (
       const inSystem = isCourierInSystem(providerKey, c.id)
       const requiredRateType = isReverseShipment ? 'rto' : 'forward'
       const localRatesAvailable = !requireLocalRates || Boolean(c.localRates?.[requiredRateType])
+      const calculatorLocalRate =
+        isCalculator && c.provider_serviceability?.source === 'local_rate_card'
 
-      if (!inSystem || !localRatesAvailable) {
-        console.log('🚫 Removing courier from final list', {
+      if ((!inSystem && !calculatorLocalRate) || !localRatesAvailable) {
+        console.log('Removing courier from final list', {
           courierId: c.id,
           providerKey,
           inSystem,
+          calculatorLocalRate,
           localRatesAvailable,
         })
       }
 
-      return inSystem && localRatesAvailable
+      return (inSystem || calculatorLocalRate) && localRatesAvailable
     })
 
     // ✅ Final filter: Ensure all couriers have correct business_type

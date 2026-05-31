@@ -218,6 +218,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
   const navigate = useNavigate()
   const { mutateAsync, isPending, isError, error } = useAvailableCouriersMutation()
   const [availableCouriers, setAvailableCouriers] = useState<Courier[]>([])
+  const [hasCalculated, setHasCalculated] = useState(false)
 
   const methods = useForm<RateCalculatorFormValues>({
     mode: 'onBlur',
@@ -250,7 +251,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
     deliveryPincode,
   )
   const routeZoneLabel = useMemo(() => {
-    if (!availableCouriers.length) return 'Calculate first'
+    if (!availableCouriers.length) return hasCalculated ? 'No rates found' : 'Calculate first'
 
     const returnedZones = availableCouriers
       .map(getZoneChipLabel)
@@ -260,7 +261,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
     if (uniqueZones.length === 1) return uniqueZones[0]
     if (uniqueZones.length > 1) return 'Multiple zones'
     return 'Not returned'
-  }, [availableCouriers])
+  }, [availableCouriers, hasCalculated])
 
   usePincodeLookup(pickupPincode, 'pickup', setValue, setError, clearErrors)
   usePincodeLookup(deliveryPincode, 'delivery', setValue, setError, clearErrors)
@@ -308,8 +309,10 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
       })
 
       setAvailableCouriers((result ?? []) as Courier[])
+      setHasCalculated(true)
     } catch (err) {
       setAvailableCouriers([])
+      setHasCalculated(true)
       console.error('Failed fetching couriers:', err)
     }
   }
@@ -317,6 +320,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
   const handleReset = () => {
     methods.reset(defaultFormValues)
     setAvailableCouriers([])
+    setHasCalculated(false)
   }
 
   const optionSx = (selected: boolean) => ({
@@ -736,15 +740,15 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                             py: 0.45,
                             borderRadius: '999px',
                             bgcolor:
-                              routeZoneLabel === 'Calculate first' || routeZoneLabel === 'Not returned'
+                              ['Calculate first', 'No rates found', 'Not returned'].includes(routeZoneLabel)
                                 ? alpha(ui.muted, 0.1)
                                 : alpha(ui.accent, 0.16),
                             color:
-                              routeZoneLabel === 'Calculate first' || routeZoneLabel === 'Not returned'
+                              ['Calculate first', 'No rates found', 'Not returned'].includes(routeZoneLabel)
                                 ? ui.muted
                                 : ui.accentDark,
                             border: `1px solid ${
-                              routeZoneLabel === 'Calculate first' || routeZoneLabel === 'Not returned'
+                              ['Calculate first', 'No rates found', 'Not returned'].includes(routeZoneLabel)
                                 ? alpha(ui.muted, 0.18)
                                 : alpha(ui.accent, 0.22)
                             }`,
@@ -938,7 +942,9 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                         }}
                       >
                         <Typography sx={{ fontSize: '0.86rem', fontWeight: 700 }}>
-                          Enter shipment details and calculate to see the rate card results.
+                          {hasCalculated
+                            ? 'No rate card results were returned for these shipment details. Please recheck the pincodes or try another route.'
+                            : 'Enter shipment details and click Calculate Rates to see the rate card results.'}
                         </Typography>
                       </Box>
                     )}
