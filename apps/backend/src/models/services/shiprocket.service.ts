@@ -2089,6 +2089,19 @@ export const fetchAvailableCouriersWithRates = async (
           zoneId: zoneRow.id,
         })
       }
+
+      if (!localRates.length && isCalculator && !planIdOverride) {
+        const fallbackPlanId = await resolveServiceabilityPlanId({
+          planFallbackName: DEFAULT_SERVICEABILITY_PLAN_FALLBACK,
+        })
+
+        if (fallbackPlanId && fallbackPlanId !== activePlanId) {
+          localRates = await fetchResolvedB2CRateCards({
+            planId: fallbackPlanId,
+            zoneId: zoneRow.id,
+          })
+        }
+      }
     }
 
     if (isCalculator && localRates.length) {

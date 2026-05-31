@@ -4,6 +4,7 @@ import { ShippingRateFilters } from '../../controllers/admin/courier.controller'
 import { db } from '../client'
 import { couriers } from '../schema/couriers'
 import { courierSummary } from '../schema/courierSummary'
+import { plans } from '../schema/plans'
 import { shippingRates } from '../schema/shippingRates'
 import { userPlans } from '../schema/userPlans'
 import { zones } from '../schema/zones'
@@ -501,14 +502,38 @@ export const getUserShippingRates = async (
     .where(and(eq(userPlans.userId, userId), eq(userPlans.is_active, true)))
     .limit(1)
 
-  if (!userPlan.length) {
-    throw new Error('No active plan found for this user')
+  const activePlanId = userPlan[0]?.plan_id
+  let planId = activePlanId
+  let basicPlanId: string | undefined
+
+  if (!planId) {
+    const [basicPlan] = await db
+      .select({ id: plans.id })
+      .from(plans)
+      .where(sql`lower(${plans.name}) = 'basic'`)
+      .limit(1)
+    basicPlanId = basicPlan?.id
+    planId = basicPlanId
   }
 
-  const planId = userPlan[0].plan_id
+  if (!planId) {
+    return []
+  }
 
   // 2. Call existing getShippingRates with plan_id injected
-  return getShippingRates({ ...filters, plan_id: planId })
+  const rates = await getShippingRates({ ...filters, plan_id: planId })
+  if (rates.length || !activePlanId) return rates
+
+  const [basicPlan] = await db
+    .select({ id: plans.id })
+    .from(plans)
+    .where(sql`lower(${plans.name}) = 'basic'`)
+    .limit(1)
+  basicPlanId = basicPlan?.id
+
+  if (!basicPlanId || basicPlanId === activePlanId) return rates
+
+  return getShippingRates({ ...filters, plan_id: basicPlanId })
 }
 
 export interface ShippingRateUpdatePayload {

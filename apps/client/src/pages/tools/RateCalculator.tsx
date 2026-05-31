@@ -9,15 +9,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { FaPlane, FaTruck } from 'react-icons/fa'
 import { TbScale } from 'react-icons/tb'
+import { useNavigate } from 'react-router-dom'
 import type { Courier } from '../../components/CourierRateCard'
 import PublicFooter from '../../components/public/PublicFooter'
 import PublicNavbar from '../../components/public/PublicNavbar'
 import { useAvailableCouriersMutation } from '../../hooks/Integrations/useCouriers'
-import { usePaymentOptions } from '../../hooks/usePaymentOptions'
 import { usePincodeLookup } from '../../hooks/User/usePincodeLookup'
 import { brand, brandGradients } from '../../theme/brand'
 import { defaultLogo } from '../../utils/constants'
@@ -215,8 +215,8 @@ const getZoneChipLabel = (courier: Courier) => {
 
 export function RateCalculator({ publicView }: RateCalculatorProps) {
   const isPublic = Boolean(publicView)
+  const navigate = useNavigate()
   const { mutateAsync, isPending, isError, error } = useAvailableCouriersMutation()
-  const { data: paymentOptions } = usePaymentOptions()
   const [availableCouriers, setAvailableCouriers] = useState<Courier[]>([])
 
   const methods = useForm<RateCalculatorFormValues>({
@@ -264,23 +264,6 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
 
   usePincodeLookup(pickupPincode, 'pickup', setValue, setError, clearErrors)
   usePincodeLookup(deliveryPincode, 'delivery', setValue, setError, clearErrors)
-
-  useEffect(() => {
-    if (!paymentOptions) return
-
-    const currentPaymentType = methods.watch('paymentType')
-    const currentEnabled =
-      (currentPaymentType === 'cod' && paymentOptions.codEnabled) ||
-      (currentPaymentType === 'prepaid' && paymentOptions.prepaidEnabled)
-
-    if (currentEnabled) return
-
-    if (paymentOptions.prepaidEnabled) {
-      methods.setValue('paymentType', 'prepaid')
-    } else if (paymentOptions.codEnabled) {
-      methods.setValue('paymentType', 'cod')
-    }
-  }, [methods, paymentOptions])
 
   const clientMetrics = useMemo(() => {
     const length = toNumber(watchedLength)
@@ -406,20 +389,35 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
     </Typography>
   )
 
+  const resultsGridColumns = {
+    xs: 'minmax(112px, 1.5fr) 38px 64px minmax(60px, 0.7fr) 66px 52px',
+    sm: 'minmax(132px, 1.5fr) 44px 72px minmax(70px, 0.72fr) 76px 58px',
+  }
+
+  const handleViewRateCard = () => {
+    if (!isPublic) navigate('/tools/rate_card')
+  }
+
   const calculatorPanel = (
     <FormProvider {...methods}>
       <Box
         sx={{
           width: '100%',
-          maxWidth: 1180,
+          maxWidth: 1340,
           mx: 'auto',
-          px: { xs: 0, lg: 0.5 },
+          px: { xs: 0, lg: 1 },
           pt: { xs: 1.2, md: 2.1 },
           pb: { xs: 2, md: 2.8 },
           color: ui.ink,
         }}
       >
-        <Stack sx={{ mb: 2.15 }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ mb: 2.15 }}
+        >
           <Box>
             <Typography sx={{ fontSize: '1.32rem', fontWeight: 900, color: ui.ink, lineHeight: 1.1 }}>
               Rate Calculator
@@ -428,10 +426,32 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
               Calculate shipping rates for your shipments
             </Typography>
           </Box>
+          {!isPublic && (
+            <Button
+              variant="outlined"
+              onClick={handleViewRateCard}
+              sx={{
+                minHeight: 38,
+                px: 1.6,
+                borderRadius: '8px',
+                color: ui.accentDark,
+                borderColor: alpha(ui.accent, 0.32),
+                bgcolor: '#FFFFFF',
+                textTransform: 'none',
+                fontWeight: 800,
+                '&:hover': {
+                  borderColor: ui.accent,
+                  bgcolor: alpha(ui.accent, 0.06),
+                },
+              }}
+            >
+              View Rate Card
+            </Button>
+          )}
         </Stack>
 
-        <Grid container spacing={{ xs: 1.8, lg: 2.4 }}>
-          <Grid size={{ xs: 12, lg: 6 }}>
+        <Grid container spacing={{ xs: 1.8, lg: 2.2 }}>
+          <Grid size={{ xs: 12, lg: 5 }}>
             <Box sx={{ ...panelSx, p: { xs: 2, md: 2.6 }, minHeight: { lg: 655 } }}>
               <Stack spacing={1.95}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -583,56 +603,69 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                     Payment Type
                   </Typography>
                   <Stack direction="row" spacing={1}>
-                    {(!paymentOptions || paymentOptions.prepaidEnabled) && (
-                      <Button
-                        onClick={() => {
-                          setValue('paymentType', 'prepaid')
-                          clearErrors('orderAmount')
-                        }}
-                        sx={optionSx(watchedPaymentType === 'prepaid')}
-                      >
-                        {renderRadioDot(watchedPaymentType === 'prepaid')}
-                        Prepaid
-                      </Button>
-                    )}
-                    {(!paymentOptions || paymentOptions.codEnabled) && (
-                      <Button
-                        onClick={() => setValue('paymentType', 'cod')}
-                        sx={optionSx(watchedPaymentType === 'cod')}
-                      >
-                        {renderRadioDot(watchedPaymentType === 'cod')}
-                        COD
-                      </Button>
-                    )}
+                    <Button
+                      onClick={() => {
+                        setValue('paymentType', 'prepaid')
+                        clearErrors('orderAmount')
+                      }}
+                      sx={optionSx(watchedPaymentType === 'prepaid')}
+                    >
+                      {renderRadioDot(watchedPaymentType === 'prepaid')}
+                      Prepaid
+                    </Button>
+                    <Button
+                      onClick={() => setValue('paymentType', 'cod')}
+                      sx={optionSx(watchedPaymentType === 'cod')}
+                    >
+                      {renderRadioDot(watchedPaymentType === 'cod')}
+                      COD
+                    </Button>
                   </Stack>
                 </Stack>
 
-                {watchedPaymentType === 'cod' && (
-                  <Stack spacing={0.7}>
+                <Stack spacing={0.7}>
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                     <Typography sx={{ fontSize: '0.79rem', fontWeight: 900, color: ui.ink }}>
                       Shipment Value
                     </Typography>
-                    <TextField
-                      type="number"
-                      {...register('orderAmount', {
-                        validate: (value) =>
-                          watchedPaymentType !== 'cod' ||
-                          toNumber(value) > 0 ||
-                          'Shipment value is required for COD',
-                      })}
-                      fullWidth
-                      error={!!errors.orderAmount}
-                      helperText={
-                        errors.orderAmount?.message ||
-                        (watchedOrderAmount
-                          ? `COD basis: Rs. ${formatAmount(toNumber(watchedOrderAmount))}`
-                          : ' ')
-                      }
-                      inputProps={{ min: 1, step: 1 }}
-                      sx={inputSx}
-                    />
+                    <Typography
+                      sx={{
+                        px: 0.75,
+                        py: 0.25,
+                        borderRadius: '999px',
+                        bgcolor: watchedPaymentType === 'cod' ? alpha(ui.accent, 0.14) : alpha(ui.muted, 0.1),
+                        color: watchedPaymentType === 'cod' ? ui.accentDark : ui.muted,
+                        fontSize: '0.64rem',
+                        fontWeight: 900,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Required for COD
+                    </Typography>
                   </Stack>
-                )}
+                  <TextField
+                    type="number"
+                    placeholder="Enter shipment value"
+                    {...register('orderAmount', {
+                      validate: (value) =>
+                        watchedPaymentType !== 'cod' ||
+                        toNumber(value) > 0 ||
+                        'Shipment value is required for COD',
+                    })}
+                    fullWidth
+                    error={!!errors.orderAmount}
+                    helperText={
+                      errors.orderAmount?.message ||
+                      (watchedPaymentType === 'cod'
+                        ? watchedOrderAmount
+                          ? `COD charge basis: Rs. ${formatAmount(toNumber(watchedOrderAmount))}`
+                          : 'Enter the invoice/shipment value to calculate exact COD charges.'
+                        : 'Used when COD is selected; prepaid calculations ignore this value.')
+                    }
+                    inputProps={{ min: 1, step: 1 }}
+                    sx={watchedPaymentType === 'cod' ? highlightedInputSx : inputSx}
+                  />
+                </Stack>
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.05}>
                   <Button
@@ -673,7 +706,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
             </Box>
           </Grid>
 
-          <Grid size={{ xs: 12, lg: 6 }}>
+          <Grid size={{ xs: 12, lg: 7 }}>
             <Box sx={{ ...panelSx, p: { xs: 2, md: 2.6 }, minHeight: { lg: 655 } }}>
               <Stack spacing={2.15}>
                 <Box
@@ -752,17 +785,24 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                   </Stack>
                 </Box>
 
-                <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: ui.ink }}>
-                  Available Couriers
-                </Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                  <Box>
+                    <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: ui.ink }}>
+                      Rate Card Results
+                    </Typography>
+                    <Typography sx={{ mt: 0.25, fontSize: '0.76rem', color: ui.muted, fontWeight: 600 }}>
+                      Courier pricing, zone, freight, and COD charge from the active rate card.
+                    </Typography>
+                  </Box>
+                </Stack>
 
-                <Box sx={{ overflowX: 'auto' }}>
-                  <Box sx={{ minWidth: 590 }}>
+                <Box sx={{ width: '100%', overflow: 'hidden' }}>
+                  <Box sx={{ width: '100%' }}>
                     <Box
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns:
-                          'minmax(138px, 1.45fr) 0.5fr 0.65fr 0.68fr 0.58fr 0.52fr',
+                        gridTemplateColumns: resultsGridColumns,
+                        columnGap: 0.75,
                         px: 1,
                         pb: 1,
                         color: ui.muted,
@@ -802,10 +842,10 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                               key={courier.id || `${displayName}-${index}`}
                               sx={{
                                 display: 'grid',
-                                gridTemplateColumns:
-                                  'minmax(138px, 1.45fr) 0.5fr 0.65fr 0.68fr 0.58fr 0.52fr',
+                                gridTemplateColumns: resultsGridColumns,
+                                columnGap: 0.75,
                                 alignItems: 'center',
-                                minHeight: 62,
+                                minHeight: 58,
                                 px: 1,
                                 bgcolor: '#F5F6F8',
                                 borderBottom: `1px solid ${alpha(ui.ink, 0.04)}`,
@@ -814,8 +854,8 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                               <Stack direction="row" alignItems="center" spacing={1.1} sx={{ minWidth: 0 }}>
                                 <Box
                                   sx={{
-                                    width: 36,
-                                    height: 36,
+                                    width: 32,
+                                    height: 32,
                                     borderRadius: '8px',
                                     bgcolor: '#FFFFFF',
                                     color: ui.muted,
@@ -839,7 +879,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                   )}
                                 </Box>
                                 <Stack spacing={0.35} sx={{ minWidth: 0 }}>
-                                  <Typography noWrap sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#273044' }}>
+                                  <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#273044' }}>
                                     {displayName}
                                   </Typography>
                                 </Stack>
@@ -847,7 +887,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                               <Box sx={{ color: mode === 'air' ? ui.accentDark : '#68707E', display: 'flex' }}>
                                 {mode === 'air' ? <FaPlane size={18} /> : <FaTruck size={18} />}
                               </Box>
-                              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#273044' }}>
+                              <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#273044' }}>
                                 {formatWeightKg(courier.chargeable_weight)}
                               </Typography>
                               <Box
@@ -898,7 +938,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                         }}
                       >
                         <Typography sx={{ fontSize: '0.86rem', fontWeight: 700 }}>
-                          Enter shipment details and calculate to see courier rates.
+                          Enter shipment details and calculate to see the rate card results.
                         </Typography>
                       </Box>
                     )}
