@@ -8,6 +8,7 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  IconButton,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -22,17 +23,17 @@ import moment from 'moment'
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react'
 import {
   MdAssignment,
-  MdContentCopy,
   MdDelete,
   MdDownload,
-  MdEdit,
   MdFileDownload,
-  MdKeyboardArrowDown,
-  MdLocalShipping,
   MdLocalOffer,
+  MdMoreHoriz,
   MdReceipt,
+  MdSync,
+  MdTrackChanges,
+  MdVisibility,
 } from 'react-icons/md'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchOrdersForCsvExport, generateManifestService } from '../../../api/order.service'
 import {
   useB2COrdersByUser,
@@ -40,6 +41,7 @@ import {
   useCreateReverseShipment,
   useRegenerateOrderDocuments,
   useRequestB2CPickup,
+  useSyncB2CTracking,
 } from '../../../hooks/Orders/useOrders'
 import { usePickupAddresses } from '../../../hooks/Pickup/usePickupAddresses'
 import { usePresignedDownloadMutation } from '../../../hooks/Uploads/usePresignedDownloadUrls'
@@ -198,6 +200,7 @@ const shippingStatusMap: Record<string, string> = {
 const B2COrdersList = () => {
   const theme = useTheme()
   const location = useLocation()
+  const navigate = useNavigate()
   const isXs = useMediaQuery(theme.breakpoints.down('sm')) // mobile
   const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md')) // tablet
   const isMd = useMediaQuery(theme.breakpoints.between('md', 'lg')) // small desktop
@@ -230,6 +233,7 @@ const B2COrdersList = () => {
   const [orderDetailsOrder, setOrderDetailsOrder] = useState<B2COrder | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [documentGenerationRef, setDocumentGenerationRef] = useState<string | null>(null)
+  const [syncingTrackingOrderId, setSyncingTrackingOrderId] = useState<B2COrder['id'] | null>(null)
   const [filters, setFilters] = useState<OrderFilters>({
     status: '',
     sortBy: 'created_at',
@@ -248,6 +252,7 @@ const B2COrdersList = () => {
   const { mutateAsync: requestB2CPickup, isPending: requestingPickup } = useRequestB2CPickup()
   const { mutateAsync: regenerateDocuments, isPending: regeneratingDocuments } =
     useRegenerateOrderDocuments()
+  const { mutate: syncB2CTracking, isPending: syncingTracking } = useSyncB2CTracking()
   const queryClient = useQueryClient()
   const { mutateAsync: presignDownloads } = usePresignedDownloadMutation()
   const { data: warehouses } = usePickupAddresses()
@@ -269,6 +274,7 @@ const B2COrdersList = () => {
     setSelectCourierOrder(null)
     setDetailsOrder(null)
     setOrderDetailsOrder(null)
+    setSyncingTrackingOrderId(null)
     setActionMenuAnchor(null)
     setActiveActionOrderId(null)
   }, [location.pathname, location.search, location.hash])
@@ -330,10 +336,6 @@ const B2COrdersList = () => {
     void action()
   }
 
-  const handleViewDetails = (order: B2COrder) => {
-    setDetailsOrder(order)
-  }
-
   const handleGenerateManifest = async (
     order: B2COrder,
     schedule: ManifestSchedulePayload,
@@ -355,7 +357,7 @@ const B2COrdersList = () => {
       const message = `Pickup cannot be scheduled for ${order.order_number} because the order identifier is missing.`
       setBulkFeedback({
         severity: 'error',
-        title: 'Ship Now unavailable',
+        title: 'Manifest unavailable',
         message,
       })
       toast.open({ message, severity: 'error' })
@@ -399,9 +401,7 @@ const B2COrdersList = () => {
         const warningMessage = `${successMessage} ${warningSummary}`
         setBulkFeedback({
           severity: 'warning',
-          title: shouldRequestPickupFirst
-            ? 'Ship Now completed with warnings'
-            : 'Manifest completed with warnings',
+          title: 'Manifest completed with warnings',
           message: warningMessage,
         })
         toast.open({ message: warningMessage, severity: 'info' })
@@ -409,19 +409,19 @@ const B2COrdersList = () => {
       }
       setBulkFeedback({
         severity: 'success',
-        title: shouldRequestPickupFirst ? 'Ship Now completed' : 'Manifest completed',
+        title: 'Manifest completed',
         message: successMessage,
       })
       toast.open({ message: successMessage, severity: 'success' })
     } catch (error) {
-      console.error('Ship Now failed for order:', order.order_number, error)
+      console.error('Manifest failed for order:', order.order_number, error)
       const errorMessage = getActionableErrorMessage(
         error,
-        `Ship Now failed for ${order.order_number}.`,
+        `Manifest failed for ${order.order_number}.`,
       )
       setBulkFeedback({
         severity: 'error',
-        title: shouldRequestPickupFirst ? 'Ship Now failed' : 'Manifest failed',
+        title: 'Manifest failed',
         message: `${order.order_number}: ${errorMessage}`,
       })
       toast.open({
@@ -461,6 +461,31 @@ const B2COrdersList = () => {
     } finally {
       setDocumentGenerationRef((current) => (current === documentRef ? null : current))
     }
+  }
+
+  const handleTrackShipment = (order: B2COrder) => {
+    const awb = String(order.awb_number || '').trim()
+    if (!awb) {
+      toast.open({ message: 'AWB is not available for tracking yet.', severity: 'info' })
+      return
+    }
+
+    navigate(`/tools/order_tracking?awb=${encodeURIComponent(awb)}`)
+  }
+
+  const handleSyncLiveStatus = (order: B2COrder) => {
+    const orderId = String(order.id || '').trim()
+    if (!orderId) {
+      toast.open({ message: 'Order identifier is not available.', severity: 'error' })
+      return
+    }
+
+    setSyncingTrackingOrderId(order.id)
+    syncB2CTracking(orderId, {
+      onSettled: () => {
+        setSyncingTrackingOrderId((current) => (current === order.id ? null : current))
+      },
+    })
   }
 
   const handleRequestPickup = async (
@@ -515,55 +540,6 @@ const B2COrdersList = () => {
       setOrderFormKey((current) => current + 1)
       setDrawerOpen(true)
     })
-  }
-
-  const handleCloneOrder = (order: B2COrder) => {
-    const products = getOrderProducts(order)
-    const generatedOrderNumber = `${order.order_number || 'ORDER'}-COPY-${Date.now().toString().slice(-4)}`
-    setOrderDrawerTitle(`Clone Order ${order.order_number || ''}`.trim())
-    setOrderFormDefaults({
-      buyerName: order.buyer_name || '',
-      buyerPhone: order.buyer_phone || '',
-      buyerEmail: order.buyer_email || '',
-      address: order.address || '',
-      pincode: order.pincode || '',
-      city: order.city || '',
-      state: order.state || '',
-      country: order.country || 'India',
-      products: products.length
-        ? products.map((product) => ({
-            productName: String(product.productName ?? product.name ?? ''),
-            price: Number(product.price ?? 0),
-            quantity: Number(product.quantity ?? product.qty ?? 1),
-            sku: String(product.sku ?? ''),
-            hsnCode: String(product.hsnCode ?? product.hsn ?? ''),
-            discount: Number(product.discount ?? 0),
-            taxRate: Number(product.taxRate ?? product.tax_rate ?? 0),
-          }))
-        : [{ productName: '', price: 0, quantity: 1 }],
-      weight: normalizeKgValue(order.weight),
-      length: Number(order.length ?? 0),
-      breadth: Number(order.breadth ?? 0),
-      height: Number(order.height ?? 0),
-      orderId: generatedOrderNumber,
-      orderDate: moment().format('YYYY-MM-DD'),
-      orderType: order.order_type || 'prepaid',
-      shippingCharges: Number(order.shipping_charges ?? 0),
-      transactionFee: Number(order.transaction_fee ?? 0),
-      giftWrap: Number(order.gift_wrap ?? 0),
-      discount: Number(order.discount ?? 0),
-      prepaidAmount: Number(order.prepaid_amount ?? 0),
-      pickupLocationId: order.pickup_location_id || '',
-      pickupLocationName: order.pickup_details?.warehouse_name || order.pickup_details?.name || '',
-      pickupLocationPincode: order.pickup_details?.pincode || '',
-      pickupLocationPOCName: order.pickup_details?.name || '',
-      pickupLocationPOCPhone: order.pickup_details?.phone || '',
-      pickupCity: order.pickup_details?.city || '',
-      pickupState: order.pickup_details?.state || '',
-      pickupAddress: order.pickup_details?.address || '',
-    })
-    setOrderFormKey((current) => current + 1)
-    setDrawerOpen(true)
   }
 
   const handleTabChange = (newValue: string) => {
@@ -1282,11 +1258,18 @@ const B2COrdersList = () => {
         const isThisManifesting = Boolean(rowManifestRef && manifestingRef === rowManifestRef)
         const isCancelled = isB2CCancelledStatus(orderStatus)
         const isDocumentReady = isDocumentGenerationReady(row)
+        const isLabelGenerating = documentGenerationRef === `${row.id}-label`
         const isInvoiceGenerating = documentGenerationRef === `${row.id}-invoice`
+        const isLabelDownloading = downloadingRowDocument === `${row.id}-label`
         const isInvoiceDownloading = downloadingRowDocument === `${row.id}-invoice`
+        const isManifestDownloading = downloadingRowDocument === `${row.id}-manifest`
+        const canDownloadLabel = hasDocument(row, 'label')
         const canDownloadInvoice = hasDocument(row, 'invoice')
+        const canDownloadManifest = hasDocument(row, 'manifest')
         const isMenuOpen = activeActionOrderId === row.id && Boolean(actionMenuAnchor)
         const canSelectCourier = isCourierSelectionPending(row)
+        const hasAwb = Boolean(String(row.awb_number || '').trim())
+        const isSyncingThisOrder = syncingTracking && syncingTrackingOrderId === row.id
 
         const renderActionItem = ({
           key,
@@ -1328,9 +1311,9 @@ const B2COrdersList = () => {
               variant="contained"
               onClick={(event) => {
                 event.stopPropagation()
-                openSingleManifestSchedule(row)
+                setSelectCourierOrder(row)
               }}
-              disabled={isCancelled || !canManifest || bulkManifesting || isThisManifesting}
+              disabled={isCancelled || !canSelectCourier}
               sx={{
                 minWidth: 78,
                 minHeight: 31,
@@ -1342,41 +1325,28 @@ const B2COrdersList = () => {
                 whiteSpace: 'nowrap',
               }}
             >
-              {isThisManifesting ? 'Shipping' : 'Ship Now'}
+              Ship Now
             </Button>
             <Tooltip title="More actions" arrow>
-              <Button
+              <IconButton
                 size="small"
-                variant="outlined"
                 onClick={(event) => handleActionMenuOpen(event, row.id)}
                 aria-haspopup="menu"
+                aria-label={`Actions for ${row.order_number || 'order'}`}
                 aria-expanded={isMenuOpen ? 'true' : undefined}
-                endIcon={<MdKeyboardArrowDown size={15} />}
                 sx={{
-                  minWidth: 72,
-                  minHeight: 31,
-                  px: 0.75,
-                  borderRadius: '8px',
-                  borderColor: isMenuOpen
-                    ? 'secondary.main'
-                    : alpha(theme.palette.secondary.main, 0.24),
-                  color: 'secondary.main',
-                  bgcolor: isMenuOpen ? alpha(theme.palette.secondary.main, 0.08) : '#FFFFFF',
-                  fontSize: 11.4,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  whiteSpace: 'nowrap',
-                  '& .MuiButton-endIcon': {
-                    ml: 0.35,
-                  },
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  color: '#FFFFFF',
+                  bgcolor: isMenuOpen ? '#5F646D' : '#7C818A',
                   '&:hover': {
-                    borderColor: 'secondary.main',
-                    bgcolor: alpha(theme.palette.secondary.main, 0.08),
+                    bgcolor: '#5F646D',
                   },
                 }}
               >
-                Actions
-              </Button>
+                <MdMoreHoriz size={22} />
+              </IconButton>
             </Tooltip>
             <Menu
               anchorEl={actionMenuAnchor}
@@ -1403,13 +1373,53 @@ const B2COrdersList = () => {
                 },
               }}
             >
-              {canSelectCourier && renderActionItem({
-                key: 'select-courier',
-                icon: <MdLocalShipping />,
-                label: 'Select Courier',
-                onClick: () => setSelectCourierOrder(row),
+              {renderActionItem({
+                key: 'view-details',
+                icon: <MdVisibility />,
+                label: 'View Details',
+                onClick: () => setOrderDetailsOrder(row),
               })}
-              {canSelectCourier && <Divider sx={{ my: 0.45 }} />}
+              {renderActionItem({
+                key: 'generate-manifest',
+                icon: <MdAssignment />,
+                label: isThisManifesting ? 'Generating Manifest' : 'Generate Manifest',
+                onClick: () => openSingleManifestSchedule(row),
+                disabled: !canManifest || bulkManifesting || Boolean(manifestingRef),
+                loading: isThisManifesting,
+              })}
+              {renderActionItem({
+                key: 'regenerate-label',
+                icon: <MdLocalOffer />,
+                label: isLabelGenerating ? 'Regenerating Label' : 'Regenerate Label',
+                onClick: () => handleGenerateOrderDocument(row, 'label'),
+                disabled:
+                  isCancelled ||
+                  !isDocumentReady ||
+                  regeneratingDocuments ||
+                  Boolean(documentGenerationRef),
+                loading: isLabelGenerating,
+              })}
+              {renderActionItem({
+                key: 'regenerate-invoice',
+                icon: <MdReceipt />,
+                label: isInvoiceGenerating ? 'Regenerating Invoice' : 'Regenerate Invoice',
+                onClick: () => handleGenerateOrderDocument(row, 'invoice'),
+                disabled:
+                  isCancelled ||
+                  !isDocumentReady ||
+                  regeneratingDocuments ||
+                  Boolean(documentGenerationRef),
+                loading: isInvoiceGenerating,
+              })}
+              <Divider sx={{ my: 0.45 }} />
+              {renderActionItem({
+                key: 'download-label',
+                icon: <MdFileDownload />,
+                label: 'Download Label',
+                onClick: () => handleSingleDocumentDownload(row, 'label'),
+                disabled: !canDownloadLabel || Boolean(downloadingDocumentType) || Boolean(downloadingRowDocument),
+                loading: isLabelDownloading,
+              })}
               {renderActionItem({
                 key: 'download-invoice',
                 icon: <MdFileDownload />,
@@ -1419,44 +1429,37 @@ const B2COrdersList = () => {
                 loading: isInvoiceDownloading,
               })}
               {renderActionItem({
-                key: 'generate-invoice',
-                icon: <MdReceipt />,
-                label: isInvoiceGenerating ? 'Generating New Invoice' : 'Generate New Invoice',
-                onClick: () => handleGenerateOrderDocument(row, 'invoice'),
-                disabled:
-                  isCancelled ||
-                  !isDocumentReady ||
-                  regeneratingDocuments ||
-                  Boolean(documentGenerationRef),
-                loading: isInvoiceGenerating,
+                key: 'download-manifest',
+                icon: <MdFileDownload />,
+                label: 'Download Manifest',
+                onClick: () => handleSingleDocumentDownload(row, 'manifest'),
+                disabled: !canDownloadManifest || Boolean(downloadingDocumentType) || Boolean(downloadingRowDocument),
+                loading: isManifestDownloading,
               })}
+              <Divider sx={{ my: 0.45 }} />
               {renderActionItem({
-                key: 'edit-order',
-                icon: <MdEdit />,
-                label: 'Edit Order',
-                onClick: () => {
-                  handleViewDetails(row)
-                  toast.open({
-                    message: 'Order details opened. Backend edit logic was not changed.',
-                    severity: 'info',
-                  })
-                },
-              })}
-              {renderActionItem({
-                key: 'delete-order',
+                key: 'cancel-shipment',
                 icon: <MdDelete />,
-                label: cancellingShipment ? 'Deleting Order' : 'Delete Order',
+                label: cancellingShipment ? 'Cancelling Shipment' : 'Cancel Shipment',
                 onClick: () => cancelShipment(String(row.id)),
                 disabled: !isB2CCancelEligible(row) || cancellingShipment,
                 loading: cancellingShipment,
                 danger: true,
               })}
-              <Divider sx={{ my: 0.45 }} />
               {renderActionItem({
-                key: 'clone-order',
-                icon: <MdContentCopy />,
-                label: 'Clone Order',
-                onClick: () => handleCloneOrder(row),
+                key: 'track-shipment',
+                icon: <MdTrackChanges />,
+                label: 'Track Shipment',
+                onClick: () => handleTrackShipment(row),
+                disabled: !hasAwb,
+              })}
+              {renderActionItem({
+                key: 'sync-live-status',
+                icon: <MdSync />,
+                label: isSyncingThisOrder ? 'Syncing Live Status' : 'Sync Live Status',
+                onClick: () => handleSyncLiveStatus(row),
+                disabled: !hasAwb || syncingTracking,
+                loading: isSyncingThisOrder,
               })}
             </Menu>
           </Stack>
@@ -1678,7 +1681,7 @@ const B2COrdersList = () => {
         title={
           pendingManifestRequest?.mode === 'bulk'
             ? 'Schedule Selected Manifests'
-            : 'Ship Now'
+            : 'Generate Manifest'
         }
         description={
           pendingManifestRequest?.mode === 'bulk'

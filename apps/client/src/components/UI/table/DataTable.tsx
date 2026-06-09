@@ -100,7 +100,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
   const softBorderColor = alpha(textPrimary, 0.06)
   const isShipmentVariant = tableVariant === 'shipment'
   const shipmentAccent = theme.palette.primary.main
-  const shipmentHeader = theme.palette.secondary.main
+  const shipmentHeader = '#05BD7E'
   const headerBg = isShipmentVariant
     ? shipmentHeader
     : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)'
