@@ -34,6 +34,8 @@ interface SmartTabsProps<T extends string = string> {
   onChange: (value: T) => void
   muiTabsProps?: Omit<TabsProps, 'value' | 'onChange'>
   compact?: boolean
+  desktopVisibleCount?: number
+  mobileVisibleCount?: number
 }
 
 const StyledTabs = styled(Tabs)(() => ({
@@ -87,6 +89,8 @@ export function SmartTabs<T extends string = string>({
   onChange,
   muiTabsProps,
   compact = false,
+  desktopVisibleCount = 6,
+  mobileVisibleCount = 3,
 }: SmartTabsProps<T>) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -96,11 +100,25 @@ export function SmartTabs<T extends string = string>({
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget)
   const handleClose = () => setAnchorEl(null)
 
-  const visibleCount = isMobile ? 3 : 6
+  const visibleCount = isMobile ? mobileVisibleCount : desktopVisibleCount
   const visibleTabs = tabs.slice(0, visibleCount)
   const overflowTabs = tabs.slice(visibleCount)
-  const isOverflowSelected = overflowTabs.some((t) => t.value === value)
+  const selectedOverflowTab = overflowTabs.find((t) => t.value === value)
+  const isOverflowSelected = Boolean(selectedOverflowTab)
   const controlledValue = isOverflowSelected ? '__more__' : value
+
+  const getSelectedSx = (statusColor: StatusColor) => {
+    if (statusColor !== 'success') return undefined
+
+    return {
+      '&.Mui-selected': {
+        color: '#FFFFFF',
+        background: '#05BD7E',
+        borderColor: '#05BD7E',
+        boxShadow: `0 12px 24px ${alpha('#05BD7E', 0.24)}`,
+      },
+    }
+  }
 
   const handleChange = (_: React.SyntheticEvent, val: unknown) => {
     if (val === '__more__') return
@@ -261,8 +279,9 @@ export function SmartTabs<T extends string = string>({
                         px: 1.15,
                         py: 0.55,
                         fontSize: '0.78rem',
+                        ...getSelectedSx(tab.statusColor),
                       }
-                    : undefined
+                    : getSelectedSx(tab.statusColor)
                 }
               />
             )
@@ -283,8 +302,18 @@ export function SmartTabs<T extends string = string>({
                 sx={
                   isOverflowSelected
                     ? {
-                        color: theme.palette.text.primary,
-                        background: alpha(theme.palette.primary.main, 0.12),
+                        color:
+                          selectedOverflowTab?.statusColor === 'success'
+                            ? '#FFFFFF'
+                            : theme.palette.text.primary,
+                        background:
+                          selectedOverflowTab?.statusColor === 'success'
+                            ? '#05BD7E'
+                            : alpha(theme.palette.primary.main, 0.12),
+                        borderColor:
+                          selectedOverflowTab?.statusColor === 'success'
+                            ? '#05BD7E'
+                            : undefined,
                         ...(compact
                           ? {
                               borderRadius: '8px',

@@ -85,7 +85,7 @@ import { isB2CCancelEligible } from './orderActionRules'
 
 /* ───────────── Types ───────────── */
 interface OrderFilters {
-  status?: string
+  status?: string | string[]
   sortBy?: 'created_at'
   sortOrder?: 'asc' | 'desc'
   type?: string
@@ -106,6 +106,34 @@ type PendingManifestRequest =
   | { mode: 'single'; order: B2COrder }
   | { mode: 'bulk' }
   | null
+
+const orderStatusFilterTabs = [
+  { label: 'New', value: 'new', statuses: ['pending'] },
+  { label: 'Ready To Ship', value: 'ready_to_ship', statuses: ['booked', 'shipment_created'] },
+  {
+    label: 'Pickup & Manifests',
+    value: 'pickup_manifests',
+    statuses: ['pickup_initiated', 'manifest_generated'],
+  },
+  { label: 'In-Transit', value: 'in_transit', statuses: ['in_transit'] },
+  { label: 'Out For Delivery', value: 'out_for_delivery', statuses: ['out_for_delivery'] },
+  { label: 'Delivered', value: 'delivered', statuses: ['delivered'] },
+  { label: 'Exception', value: 'exception', statuses: ['ndr', 'manifest_failed'] },
+  { label: 'Undeliverable', value: 'undeliverable', statuses: ['undelivered'] },
+  { label: 'RTO', value: 'rto', statuses: ['rto_initiated', 'rto', 'rto_in_transit', 'rto_delivered'] },
+  { label: 'Lost', value: 'lost', statuses: ['lost'] },
+  { label: 'Cancelled', value: 'cancelled', statuses: ['cancelled', 'cancellation_requested'] },
+  { label: 'All', value: 'all', statuses: undefined },
+] as const
+
+type OrderStatusFilterValue = (typeof orderStatusFilterTabs)[number]['value']
+
+const orderStatusFilterMap = orderStatusFilterTabs.reduce<
+  Record<string, readonly string[] | undefined>
+>((filters, tab) => {
+  filters[tab.value] = tab.statuses
+  return filters
+}, {})
 
 /* ───────────── Status Color Mapping ───────────── */
 const documentButtonMeta: Record<DocumentType, { label: string; icon: ReactNode }> = {
@@ -239,11 +267,12 @@ const B2COrdersList = () => {
     sortBy: 'created_at',
     sortOrder: 'desc',
   })
-  const [selectedTab, setSelectedTab] = useState<string>('')
+  const [selectedTab, setSelectedTab] = useState<OrderStatusFilterValue>('new')
+  const selectedStatusFilter = orderStatusFilterMap[selectedTab]
 
   const effectiveFilters: OrderFilters = {
     ...filters,
-    status: selectedTab || undefined,
+    status: selectedStatusFilter ? [...selectedStatusFilter] : undefined,
     sortBy: filters.sortBy || 'created_at',
     sortOrder: filters.sortOrder || 'desc',
   }
@@ -542,7 +571,7 @@ const B2COrdersList = () => {
     })
   }
 
-  const handleTabChange = (newValue: string) => {
+  const handleTabChange = (newValue: OrderStatusFilterValue) => {
     setSelectedTab(newValue)
     setPage(1)
     clearSelection()
@@ -1469,13 +1498,11 @@ const B2COrdersList = () => {
   ]
 
   /* ───────────── Tabs ───────────── */
-  const tabs = [
-    { label: 'All', value: '' },
-    ...Object.entries(shippingStatusMap).map(([value, label]) => ({
-      label,
-      value,
-    })),
-  ]
+  const tabs = orderStatusFilterTabs.map((tab) => ({
+    label: tab.label,
+    value: tab.value,
+    statusColor: 'success' as const,
+  }))
 
   if (isError) {
     return (
@@ -1528,7 +1555,13 @@ const B2COrdersList = () => {
       </Stack>
 
       {/* 🔹 Status Tabs Row */}
-      <SmartTabs tabs={tabs} value={selectedTab} onChange={handleTabChange} compact />
+      <SmartTabs
+        tabs={tabs}
+        value={selectedTab}
+        onChange={handleTabChange}
+        compact
+        desktopVisibleCount={7}
+      />
 
       {/* 🔹 Advanced Filter Bar */}
       <FilterBar

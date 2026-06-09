@@ -208,7 +208,7 @@ export const checkOrderNumberAvailability = async (orderNumber: string) => {
 export interface FetchOrdersListParams {
   page?: number
   limit?: number
-  status?: string
+  status?: string | string[]
   type?: string
   courier?: string
   warehouse?: string

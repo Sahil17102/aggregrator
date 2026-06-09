@@ -214,13 +214,18 @@ export const getB2COrdersController = async (req: Request, res: Response) => {
     const page = Math.max(parseInt(req.query.page as string, 10) || 1, 1)
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 10, 100)
 
-    const rawStatus = (req.query.status as string | undefined) || undefined
-    const normalizedStatus = rawStatus
-      ? rawStatus
+    const rawStatusQuery = req.query['status[]'] ?? req.query.status
+    const statusValues = (Array.isArray(rawStatusQuery) ? rawStatusQuery : [rawStatusQuery])
+      .flatMap((status) => String(status || '').split(','))
+      .map((status) =>
+        status
           .trim()
           .toLowerCase()
-          .replace(/[\s-]+/g, '_')
-      : undefined
+          .replace(/[\s-]+/g, '_'),
+      )
+      .filter(Boolean)
+    const normalizedStatus =
+      statusValues.length > 1 ? statusValues : statusValues[0] || undefined
 
     // Filters from query
     const filters = {
