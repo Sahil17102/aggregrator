@@ -3234,7 +3234,7 @@ export async function createB2COrder({
         order_date: params.order_date ?? new Date().toISOString().slice(0, 10), // 'YYYY-MM-DD'
         order_amount: orderAmount,
         cod_charges: storedCodCharges,
-        integration_type: params?.integration_type,
+        integration_type: params?.integration_type ?? null,
 
         // Buyer info
         buyer_name: params.consignee?.name ?? '',
@@ -3258,7 +3258,7 @@ export async function createB2COrder({
         prepaid_amount: Number(params.prepaid_amount ?? 0),
         shipping_charges: shippingCharges, // What seller charges customer (total shipping including other_charges)
         other_charges: otherCharges, // Other charges from courier serviceability API
-        freight_charges: freightCharges || shippingCharges, // What platform charges seller (based on rate card)
+        freight_charges: freightCharges, // What platform charges seller (based on rate card)
         courier_cost: courierCost ?? null, // What platform pays courier (actual courier cost - can be null initially, updated via webhook)
         transaction_fee: transactionFee,
         gift_wrap: giftWrap,
@@ -3320,11 +3320,266 @@ export async function createB2COrder({
     throw err
   }
 }
+
+type B2COrderRow = typeof b2c_orders.$inferSelect
+
+const getB2COrderPickupDetails = (order: B2COrderRow) =>
+  (order.pickup_details || {}) as NonNullable<B2COrderRow['pickup_details']> & {
+    name?: string
+    pickup_date?: string
+    pickup_time?: string
+    gst_number?: string
+  }
+
+const getB2COrderRtoDetails = (order: B2COrderRow) =>
+  (order.rto_details || null) as
+    | {
+        warehouse_name?: string
+        name?: string
+        address?: string
+        address_2?: string
+        city?: string
+        state?: string
+        country?: string
+        pincode?: string
+        phone?: string
+      }
+    | null
+
+const normalizeB2COrderItemsForBooking = (products: unknown) => {
+  const rawProducts = Array.isArray(products) ? products : []
+
+  return rawProducts.map((product: any) => ({
+    name: String(product?.name ?? product?.productName ?? 'Item'),
+    sku: String(product?.sku ?? 'NA'),
+    qty: Number(product?.qty ?? product?.quantity ?? 1),
+    price: Number(product?.price ?? 0),
+    hsn: String(product?.hsn ?? product?.hsnCode ?? ''),
+    discount: Number(product?.discount ?? 0),
+    tax_rate: Number(product?.tax_rate ?? product?.taxRate ?? 0),
+  }))
+}
+
+const buildB2CBookingParamsFromOrder = (
+  order: B2COrderRow,
+  courierParams: Partial<ShipmentParams>,
+): ShipmentParams => {
+  const pickupDetails = getB2COrderPickupDetails(order)
+  const rtoDetails = getB2COrderRtoDetails(order)
+  const pickupDate =
+    courierParams.pickup_date ||
+    courierParams.pickup?.pickup_date ||
+    pickupDetails.pickup_date
+  const pickupTime =
+    courierParams.pickup_time ||
+    courierParams.pickup?.pickup_time ||
+    pickupDetails.pickup_time
+
+  const params: ShipmentParams = {
+    ...courierParams,
+    order_number: String(order.order_number || ''),
+    payment_type: String(order.order_type || 'prepaid').toLowerCase() as ShipmentParams['payment_type'],
+    order_amount: Number(order.order_amount ?? 0),
+    order_date: (order.order_date || new Date().toISOString().slice(0, 10)) as any,
+    package_weight: Number(order.weight ?? 0),
+    package_length: Number(order.length ?? 0),
+    package_breadth: Number(order.breadth ?? 0),
+    package_height: Number(order.height ?? 0),
+    shipping_charges: Number(order.shipping_charges ?? 0),
+    transaction_fee: Number(order.transaction_fee ?? 0),
+    gift_wrap: String(order.gift_wrap ?? 0),
+    discount: Number(order.discount ?? 0),
+    prepaid_amount: String(order.prepaid_amount ?? 0),
+    consignee: {
+      name: order.buyer_name,
+      address: order.address,
+      city: order.city,
+      state: order.state,
+      country: order.country || 'India',
+      pincode: order.pincode,
+      phone: order.buyer_phone,
+      email: order.buyer_email ?? undefined,
+    },
+    pickup_location_id: order.pickup_location_id ?? courierParams.pickup_location_id,
+    pickup: {
+      warehouse_name: pickupDetails.warehouse_name || pickupDetails.name || 'Warehouse',
+      name: pickupDetails.name || pickupDetails.warehouse_name || 'ChoiceMe',
+      address: pickupDetails.address || '',
+      city: pickupDetails.city || '',
+      state: pickupDetails.state || '',
+      country: 'India',
+      pincode: pickupDetails.pincode || '',
+      phone: pickupDetails.phone || '',
+      gst_number: pickupDetails.gst_number,
+      pickup_date: pickupDate,
+      pickup_time: pickupTime,
+    },
+    company: {},
+    is_rto_different: order.is_rto_different ? 'yes' : 'no',
+    order_items: normalizeB2COrderItemsForBooking(order.products),
+    pickup_date: pickupDate,
+    pickup_time: pickupTime,
+  }
+
+  if (order.is_rto_different && rtoDetails) {
+    params.rto = {
+      warehouse_name: rtoDetails.warehouse_name || rtoDetails.name || 'RTO',
+      name: rtoDetails.name || rtoDetails.warehouse_name || 'RTO',
+      address: rtoDetails.address || '',
+      address_2: rtoDetails.address_2,
+      city: rtoDetails.city || '',
+      state: rtoDetails.state || '',
+      country: rtoDetails.country || 'India',
+      pincode: rtoDetails.pincode || '',
+      phone: rtoDetails.phone || '',
+    }
+  }
+
+  return params
+}
+
+export const createB2CDraftOrderService = async (
+  params: ShipmentParams,
+  userId: string,
+  is_external_api: boolean = false,
+) => {
+  await requireMerchantOrderReadiness(userId)
+
+  const normalizedPaymentType = String(params.payment_type || '').trim().toLowerCase()
+  if (!['cod', 'prepaid'].includes(normalizedPaymentType)) {
+    throw new HttpError(400, 'payment_type is required and must be cod or prepaid.')
+  }
+  params.payment_type = normalizedPaymentType as ShipmentParams['payment_type']
+
+  if (!params.consignee) {
+    throw new HttpError(400, 'Consignee details are required.')
+  }
+
+  const requiredConsigneeFields = ['name', 'address', 'city', 'state', 'pincode', 'phone'] as const
+  const missingConsigneeFields = requiredConsigneeFields.filter(
+    (field) => !params.consignee?.[field] || String(params.consignee[field]).trim().length === 0,
+  )
+  if (missingConsigneeFields.length > 0) {
+    throw new HttpError(
+      400,
+      `Consignee details incomplete. Missing fields: ${missingConsigneeFields.join(', ')}.`,
+    )
+  }
+
+  if (!Array.isArray(params.order_items) || params.order_items.length === 0) {
+    throw new HttpError(400, 'At least one product is required.')
+  }
+
+  const orderAmount = Number(params.order_amount ?? 0)
+  if (!orderAmount || Number.isNaN(orderAmount)) {
+    throw new HttpError(400, 'order_amount is required and must be greater than 0.')
+  }
+
+  if (params.pickup_location_id) {
+    const resolvedPickupWarehouse = await fetchPickupWarehouseRecord(userId, params.pickup_location_id)
+    if (!resolvedPickupWarehouse) {
+      throw new HttpError(
+        400,
+        'Pickup warehouse not found or not enabled. Please select a valid pickup location.',
+      )
+    }
+
+    params.pickup = buildPickupFromWarehouse(
+      resolvedPickupWarehouse,
+      params.pickup,
+      params.pickup_date,
+      params.pickup_time,
+    )
+  }
+
+  const isMissingPickupField = (val?: string) => !val || val.toString().trim().length === 0
+  const requiredPickupFields: Array<keyof ShipmentParams['pickup']> = [
+    'warehouse_name',
+    'address',
+    'city',
+    'state',
+    'pincode',
+    'phone',
+  ]
+  const missingPickupFields = requiredPickupFields.filter((key) =>
+    isMissingPickupField(params.pickup?.[key] as string | undefined),
+  )
+  if (missingPickupFields.length > 0) {
+    throw new HttpError(
+      400,
+      `Pickup details incomplete. Missing fields: ${missingPickupFields.join(', ')}.`,
+    )
+  }
+
+  params.integration_type = undefined
+  params.courier_id = undefined
+  params.courier_partner = undefined
+
+  const result = await db.transaction(async (tx) => {
+    const order = await createB2COrder({
+      tx,
+      params,
+      shipmentData: null,
+      userId,
+      shippingCharges: Number(params.shipping_charges ?? 0),
+      otherCharges: 0,
+      freightCharges: 0,
+      codCharges: 0,
+      courierCost: null,
+      transactionFee: Number(params.transaction_fee ?? 0),
+      giftWrap: Number(params.gift_wrap ?? 0),
+      discount: Number(params.discount ?? 0),
+      status: 'pending',
+      manifestError: null,
+      integration_type: '',
+      is_external_api,
+      shippingMode: null,
+      selectedMaxSlabWeight: null,
+    })
+
+    return { order, shipment: null }
+  })
+
+  return result
+}
+
+export const bookB2CCourierForOrderService = async (
+  orderId: string,
+  courierParams: Partial<ShipmentParams>,
+  userId: string,
+) => {
+  const [order] = await db
+    .select()
+    .from(b2c_orders)
+    .where(and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId)))
+    .limit(1)
+
+  if (!order) {
+    throw new HttpError(404, 'Order not found.')
+  }
+
+  if (order.awb_number || order.shipment_id || order.courier_id) {
+    throw new HttpError(400, 'Courier is already selected for this order.')
+  }
+
+  const status = String(order.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  if (!['pending', 'booked'].includes(status)) {
+    throw new HttpError(400, 'Courier can be selected only for pending orders.')
+  }
+
+  if (!courierParams.courier_id) {
+    throw new HttpError(400, 'Please select a courier before booking.')
+  }
+
+  const bookingParams = buildB2CBookingParamsFromOrder(order, courierParams)
+  return createB2CShipmentService(bookingParams, userId, false, { existingOrderId: order.id })
+}
 // Main service function
 export const createB2CShipmentService = async (
   params: ShipmentParams,
   userId: string,
   is_external_api: boolean = false,
+  options: { existingOrderId?: string } = {},
 ) => {
   await requireMerchantOrderReadiness(userId)
 
@@ -3966,6 +4221,7 @@ export const createB2CShipmentService = async (
     courier_id?: string | number | null
     label?: string
     manifest?: string
+    invoice_link?: string | null
     courier_cost?: number | null // Actual courier cost from API response
     sort_code?: string | null
   } = {}
@@ -4705,30 +4961,114 @@ export const createB2CShipmentService = async (
           ? 'shipment_created'
           : 'pending'
       const manifestErrorMessage = null
+      const orderDateForStorage =
+        params.order_date instanceof Date
+          ? params.order_date.toISOString().slice(0, 10)
+          : String(params.order_date ?? new Date().toISOString().slice(0, 10))
 
-      const newOrder = await createB2COrder({
-        tx,
-        params,
-        shipmentData: shipmentMeta,
-        userId,
-        shippingCharges: totalShippingCharges, // Total shipping (base + other charges)
-        otherCharges, // Store other_charges separately
-        freightCharges,
-        codCharges,
-        courierCost: courierCost ?? undefined, // Save courier cost (actual from API or estimated from serviceability)
-        transactionFee,
-        giftWrap,
-        discount,
-        status: orderStatus,
-        manifestError: manifestErrorMessage,
-        integration_type: params?.integration_type!,
-        is_external_api,
-        volumetricWeight: finalSlabbedFreight.volumetric_weight ?? undefined,
-        chargedWeight: finalSlabbedFreight.chargeable_weight ?? undefined,
-        chargedSlabs: finalSlabbedFreight.slabs ?? undefined,
-        shippingMode: selectedProviderShippingMode,
-        selectedMaxSlabWeight: finalSlabbedFreight.max_slab_weight ?? selectedMaxSlabWeight,
-      })
+      const newOrder = options.existingOrderId
+        ? await (async () => {
+            const [updatedOrder] = await tx
+              .update(b2c_orders)
+              .set({
+                order_date: orderDateForStorage,
+                order_amount: orderAmount,
+                cod_charges: isCodOrder ? codCharges : 0,
+                integration_type: params.integration_type ?? null,
+
+                buyer_name: params.consignee?.name ?? '',
+                buyer_phone: params.consignee?.phone ?? '',
+                buyer_email: params.consignee?.email || null,
+                address: params.consignee?.address ?? '',
+                city: params.consignee?.city ?? '',
+                state: params.consignee?.state ?? '',
+                country: params.consignee?.country || 'India',
+                pincode: params.consignee?.pincode ?? '',
+
+                products: Array.isArray(params.order_items) ? params.order_items : [],
+                weight: Number(params.package_weight ?? 0),
+                length: Number(params.package_length ?? 0),
+                breadth: Number(params.package_breadth ?? 0),
+                height: Number(params.package_height ?? 0),
+
+                order_type: params.payment_type,
+                prepaid_amount: Number(params.prepaid_amount ?? 0),
+                shipping_charges: totalShippingCharges,
+                other_charges: otherCharges,
+                freight_charges: freightCharges || totalShippingCharges,
+                courier_cost: courierCost ?? null,
+                transaction_fee: transactionFee,
+                gift_wrap: giftWrap,
+                discount,
+                volumetric_weight: finalSlabbedFreight.volumetric_weight ?? null,
+                charged_weight: finalSlabbedFreight.chargeable_weight ?? null,
+                weight_discrepancy: false,
+                charged_slabs: finalSlabbedFreight.slabs ?? null,
+
+                order_status: orderStatus,
+                pickup_status: 'pending',
+                pickup_error: null,
+
+                is_rto_different: params.is_rto_different === 'yes',
+                courier_partner: shipmentMeta?.courier_name ?? null,
+                delivery_location: params.delivery_location ?? params.zone ?? null,
+                courier_id: params.courier_id ? Number(params.courier_id) : null,
+                shipping_mode: selectedProviderShippingMode ?? null,
+                selected_max_slab_weight:
+                  finalSlabbedFreight.max_slab_weight ?? selectedMaxSlabWeight,
+                shipment_id: shipmentMeta?.shipment_id?.toString() ?? null,
+                awb_number: shipmentMeta?.awb_number ?? null,
+                label: typeof shipmentMeta?.label === 'string' ? shipmentMeta.label : null,
+                manifest:
+                  typeof shipmentMeta?.manifest === 'string' && shipmentMeta.manifest.length <= 100
+                    ? shipmentMeta.manifest
+                    : null,
+                manifest_error: manifestErrorMessage,
+                manifest_retry_count: 0,
+                manifest_last_retry_at: null,
+                sort_code:
+                  (shipmentMeta as any)?.sort_code || (shipmentMeta as any)?.sortCode || null,
+
+                pickup_location_id:
+                  params.pickup_location_id ?? params.pickup?.warehouse_name ?? null,
+                pickup_details: params.pickup ?? null,
+                rto_details: params.rto ?? null,
+                tags: params.tags ?? null,
+                invoice_link: shipmentMeta?.invoice_link ?? null,
+                updated_at: new Date(),
+              })
+              .where(and(eq(b2c_orders.id, options.existingOrderId!), eq(b2c_orders.user_id, userId)))
+              .returning({ id: b2c_orders.id })
+
+            if (!updatedOrder) {
+              throw new HttpError(404, 'Order not found.')
+            }
+
+            return updatedOrder
+          })()
+        : await createB2COrder({
+            tx,
+            params,
+            shipmentData: shipmentMeta,
+            userId,
+            shippingCharges: totalShippingCharges, // Total shipping (base + other charges)
+            otherCharges, // Store other_charges separately
+            freightCharges,
+            codCharges,
+            courierCost: courierCost ?? undefined, // Save courier cost (actual from API or estimated from serviceability)
+            transactionFee,
+            giftWrap,
+            discount,
+            status: orderStatus,
+            manifestError: manifestErrorMessage,
+            integration_type: params?.integration_type!,
+            is_external_api,
+            volumetricWeight: finalSlabbedFreight.volumetric_weight ?? undefined,
+            chargedWeight: finalSlabbedFreight.chargeable_weight ?? undefined,
+            chargedSlabs: finalSlabbedFreight.slabs ?? undefined,
+            shippingMode: selectedProviderShippingMode,
+            selectedMaxSlabWeight: finalSlabbedFreight.max_slab_weight ?? selectedMaxSlabWeight,
+          })
 
       if (selectedDelhiveryShippingMode && selectedDelhiveryCourierId !== null) {
         console.log('💾 Delhivery service persisted with order record', {

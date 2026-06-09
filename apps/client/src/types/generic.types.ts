@@ -173,6 +173,7 @@ export interface B2COrder {
 
   // Courier info
   courier_partner?: string | null
+  delivery_location?: string | null
   courier_id?: number | null
   selected_max_slab_weight?: number | null
   shipping_mode?: string | null

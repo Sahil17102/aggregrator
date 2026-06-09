@@ -28,6 +28,7 @@ import {
   MdEdit,
   MdFileDownload,
   MdKeyboardArrowDown,
+  MdLocalShipping,
   MdLocalOffer,
   MdReceipt,
 } from 'react-icons/md'
@@ -76,6 +77,7 @@ import ManifestScheduleDialog, {
 } from '../ManifestScheduleDialog'
 import ReverseModal from '../reverse/ReverseModal'
 import B2COrderFormSteps, { type B2CFormData } from './B2COrderForm'
+import B2CSelectCourierDialog from './B2CSelectCourierDialog'
 import { isB2CCancelEligible } from './orderActionRules'
 
 /* ───────────── Types ───────────── */
@@ -252,6 +254,7 @@ const B2COrdersList = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reverseOrder, setReverseOrder] = useState<any | null>(null)
   const [pickupScheduleOrder, setPickupScheduleOrder] = useState<B2COrder | null>(null)
+  const [selectCourierOrder, setSelectCourierOrder] = useState<B2COrder | null>(null)
 
   useEffect(() => {
     setDrawerOpen(false)
@@ -261,6 +264,7 @@ const B2COrdersList = () => {
     setManifestScheduleOpen(false)
     setPendingManifestRequest(null)
     setPickupScheduleOrder(null)
+    setSelectCourierOrder(null)
     setDetailsOrder(null)
     setActionMenuAnchor(null)
     setActiveActionOrderId(null)
@@ -1043,6 +1047,17 @@ const B2COrdersList = () => {
   const isPickupRequestOrder = (row: B2COrder) =>
     ['deliveryone', 'delhivery'].includes(getB2CManifestProvider(row))
 
+  const isCourierSelectionPending = (row: B2COrder) => {
+    const status = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+    return (
+      status === 'pending' &&
+      !row.awb_number &&
+      !row.shipment_id &&
+      !row.courier_id &&
+      !row.courier_partner
+    )
+  }
+
   const shouldShowManifestShipmentCount =
     pendingManifestRequest?.mode === 'single'
       ? isPickupRequestOrder(pendingManifestRequest.order)
@@ -1243,6 +1258,7 @@ const B2COrdersList = () => {
         const isInvoiceDownloading = downloadingRowDocument === `${row.id}-invoice`
         const canDownloadInvoice = hasDocument(row, 'invoice')
         const isMenuOpen = activeActionOrderId === row.id && Boolean(actionMenuAnchor)
+        const canSelectCourier = isCourierSelectionPending(row)
 
         const renderActionItem = ({
           key,
@@ -1359,6 +1375,13 @@ const B2COrdersList = () => {
                 },
               }}
             >
+              {canSelectCourier && renderActionItem({
+                key: 'select-courier',
+                icon: <MdLocalShipping />,
+                label: 'Select Courier',
+                onClick: () => setSelectCourierOrder(row),
+              })}
+              {canSelectCourier && <Divider sx={{ my: 0.45 }} />}
               {renderActionItem({
                 key: 'download-invoice',
                 icon: <MdFileDownload />,
@@ -1647,6 +1670,12 @@ const B2COrdersList = () => {
           if (!requestingPickup) setPickupScheduleOrder(null)
         }}
         onConfirm={handlePickupScheduleConfirm}
+      />
+
+      <B2CSelectCourierDialog
+        open={Boolean(selectCourierOrder)}
+        order={selectCourierOrder}
+        onClose={() => setSelectCourierOrder(null)}
       />
 
       <CustomDrawer

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  bookB2CCourier,
   createB2BShipment,
   createShipment,
   fetchAllOrders,
@@ -12,6 +13,7 @@ import {
   syncB2COrderTrackingService,
   type CreateB2BShipmentParams,
   type CreateShipmentParams,
+  type BookB2CCourierParams,
   type GenerateManifestParams,
   type GenerateManifestResponse,
   type RequestB2CPickupParams,
@@ -81,6 +83,33 @@ export const useCreateB2BShipment = (onClose?: () => void) => {
       console.log('B2B Shipment created successfully:', data)
       queryClient.invalidateQueries({ queryKey: ['b2bOrdersByUser'] })
       if (onClose) onClose() // ✅ Close modal/drawer after success
+    },
+  })
+}
+
+export const useBookB2CCourier = (onClose?: () => void) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      data,
+    }: {
+      orderId: string
+      data: BookB2CCourierParams
+    }) => bookB2CCourier(orderId, data),
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to book courier. Please try again.')
+      toast.open({ message, severity: 'error' })
+      console.error('Failed to book courier:', getApiErrorDetails(error))
+    },
+    onSuccess: (data) => {
+      toast.open({
+        message: data?.message || 'Courier selected and shipment booked successfully',
+        severity: 'success',
+      })
+      queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      if (onClose) onClose()
     },
   })
 }

@@ -6,6 +6,7 @@ export type B2COrderActionShape = {
   pickup_status?: string | null
   integration_type?: string | null
   courier_partner?: string | null
+  courier_id?: string | number | null
   manifest?: string | null
 }
 
@@ -74,9 +75,15 @@ export const isB2CCancelledStatus = (status: unknown) => {
 export const isB2CManifestEligible = (order: B2COrderActionShape) => {
   const status = normalizeB2CActionValue(order.order_status)
   const manifestReference = normalizeB2CActionValue(order.manifest)
+  const hasBookedCourier = Boolean(
+    normalizeB2CActionValue(order.awb_number) ||
+      normalizeB2CActionValue(order.courier_partner) ||
+      (order.courier_id !== undefined && order.courier_id !== null && String(order.courier_id).trim()),
+  )
 
   return (
     !manifestReference &&
+    hasBookedCourier &&
     Boolean(getB2CManifestIdentifier(order)) &&
     B2C_MANIFESTABLE_STATUSES.has(status)
   )

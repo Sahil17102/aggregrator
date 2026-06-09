@@ -94,6 +94,21 @@ export const createShipment = async (data: CreateShipmentParams) => {
   }
 }
 
+export type BookB2CCourierParams = CreateShipmentParams
+
+export const bookB2CCourier = async (orderId: string, data: BookB2CCourierParams) => {
+  try {
+    const res = await axiosInstance.post(`/orders/b2c/${orderId}/select-courier`, data, {
+      timeout: 210000,
+    })
+    return res.data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error('Error booking B2C courier:', error.response?.data || error.message)
+    throw error
+  }
+}
+
 export type CreateB2BShipmentParams = {
   order_number: string
   order_date: string

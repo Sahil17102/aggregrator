@@ -1,8 +1,8 @@
-import { Alert, Box, Button, Chip, Paper, Stack, Typography, alpha } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { Box, Button, Chip, Paper, Stack, Typography, alpha } from '@mui/material'
+import { useEffect, useState } from 'react'
 import { FormProvider, useFieldArray, useForm, type FieldErrors } from 'react-hook-form'
 import { BiRupee } from 'react-icons/bi'
-import { FaBox, FaTruck, FaUser } from 'react-icons/fa'
+import { FaBox, FaUser } from 'react-icons/fa'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchLocations } from '../../../api/locations'
 import type { CreateShipmentParams } from '../../../api/order.service'
@@ -15,7 +15,6 @@ import DeliveryDetailsForm from '../DeliveryDetailsForm'
 import OptionalChargesForm from '../OptionalChargesForm'
 import OrderDetailsForm from '../OrderDetailsForm'
 import PickupLocationForm from '../PickupLocationForm'
-import { SelectCourierForm } from '../SelectCourierForm'
 import PackageDetailsForm from './PackageDetailsForm'
 import PackageDimensionsForm from './PackageDimensionsForm'
 
@@ -107,7 +106,7 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
   const navigate = useNavigate()
   const location = useLocation()
   const [currentStep, setCurrentStep] = useState(0)
-  const steps = ['Order & Delivery', 'Pickup Location', 'Courier Selection']
+  const steps = ['Order & Delivery', 'Pickup Location']
   const { data: paymentOptions } = usePaymentOptions()
 
   const defaultPickupDate = getLocalDateInputValue()
@@ -150,7 +149,6 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
     setValue,
     handleSubmit,
     trigger,
-    register,
     formState: { errors },
   } = methods
   const { fields, append, remove } = useFieldArray({ control, name: 'products' })
@@ -161,18 +159,6 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
   const discount = Number(watch('discount') || 0)
   const prepaidAmount = Number(watch('prepaidAmount') || 0)
   const orderType = watch('orderType') || getDefaultOrderType()
-  const packageWeight = watch('weight')
-  const packageLength = watch('length')
-  const packageBreadth = watch('breadth')
-  const packageHeight = watch('height')
-  const selectedCourierPartnerId = watch('courierPartnerId')
-  const packageSignature = [
-    packageWeight,
-    packageLength,
-    packageBreadth,
-    packageHeight,
-  ].join('|')
-  const previousPackageSignatureRef = useRef(packageSignature)
 
   // Ensure orderType is valid based on payment options
   useEffect(() => {
@@ -213,14 +199,6 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
         methods.setError('orderId', {
           type: 'manual',
           message: 'Order ID is required',
-        })
-        return
-      }
-
-      if (!data.courierPartnerId) {
-        methods.setError('courierPartnerId', {
-          type: 'manual',
-          message: 'Please select a courier partner',
         })
         return
       }
@@ -289,16 +267,20 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
           discount: p.discount ?? 0,
           tax_rate: p.taxRate ?? 0,
         })),
-        courier_id: Number(data.courierPartnerId),
-        courier_option_key: data.courierOptionKey,
-        selected_max_slab_weight:
-          data.selectedMaxSlabWeight !== undefined && data.selectedMaxSlabWeight !== null
-            ? Number(data.selectedMaxSlabWeight)
-            : undefined,
         pickup_date: data.pickupDate,
         pickup_time: data.pickupTime,
-        delivery_location: data.zone,
-        zone_id: data.zoneId,
+        ...(data.courierPartnerId
+          ? {
+              courier_id: Number(data.courierPartnerId),
+              courier_option_key: data.courierOptionKey,
+              selected_max_slab_weight:
+                data.selectedMaxSlabWeight !== undefined && data.selectedMaxSlabWeight !== null
+                  ? Number(data.selectedMaxSlabWeight)
+                  : undefined,
+              delivery_location: data.zone,
+              zone_id: data.zoneId,
+            }
+          : {}),
       }
       createShipmentMutation.mutate(payload, {
         onSuccess: () => {
@@ -358,16 +340,12 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
       return true
     }
 
-    if (currentStep === 2) {
-      return await trigger(['courierPartnerId'])
-    }
-
     return true
   }
 
   const nextStep = async () => {
     const valid = await validateStep()
-    if (valid) setCurrentStep((prev) => Math.min(prev + 1, 2))
+    if (valid) setCurrentStep((prev) => Math.min(prev + 1, stepLabels.length - 1))
   }
 
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0))
@@ -375,7 +353,6 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
   const stepLabels = [
     { title: 'Order & Delivery', caption: 'Customer, products and package details' },
     { title: 'Pickup Location', caption: 'Pickup and RTO warehouse details' },
-    { title: 'Courier Selection', caption: 'Choose the best shipping partner' },
   ]
 
   const stepCompletion = ((currentStep + 1) / stepLabels.length) * 100
@@ -383,31 +360,6 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
   useEffect(() => {
     setValue('orderAmount', totalCollectable, { shouldValidate: true })
   }, [setValue, totalCollectable])
-
-  useEffect(() => {
-    if (previousPackageSignatureRef.current === packageSignature) return
-
-    previousPackageSignatureRef.current = packageSignature
-    if (!selectedCourierPartnerId) return
-
-    setValue('courierPartner', '')
-    setValue('courierPartnerId', '')
-    setValue('courierOptionKey', '')
-    setValue('selectedMaxSlabWeight', null)
-    setValue('courierCod', 0)
-    setValue('forwardCharges', 0)
-    setValue('otherCharges', 0)
-    setValue('courierCost', null)
-    setValue('chargeableWeight', null)
-    setValue('volumetricWeight', null)
-    setValue('slabs', null)
-  }, [packageSignature, selectedCourierPartnerId, setValue])
-
-  useEffect(() => {
-    register('courierPartnerId', {
-      required: 'Please select a courier partner',
-    })
-  }, [register])
 
   return (
     <FormProvider {...methods}>
@@ -602,19 +554,6 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
           )}
 
           {currentStep === 1 && <PickupLocationForm />}
-          {currentStep === 2 && (
-            <FormSectionAccordion title="Courier Selection" icon={<FaTruck />} defaultExpanded>
-              {errors.courierPartnerId && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {errors.courierPartnerId.message as string}
-                </Alert>
-              )}
-              <SelectCourierForm shipment_type="b2c" />
-
-              {/* Error shown as Alert */}
-            </FormSectionAccordion>
-          )}
-
           {/* Sticky footer inside scroll */}
           <Box
             sx={{
@@ -656,7 +595,7 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
                   Back
                 </Button>
               )}
-              {currentStep < 2 ? (
+              {currentStep < stepLabels.length - 1 ? (
                 <Button
                   type="button" // ✅ no accidental submit
                   variant="contained"

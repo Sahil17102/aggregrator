@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useEffect, useState, type ReactNode } from 'react'
-import { MdAssignment, MdLocalOffer, MdReceipt } from 'react-icons/md'
+import { MdAssignment, MdLocalOffer, MdLocalShipping, MdReceipt } from 'react-icons/md'
 import { TbDownload, TbFilter, TbPlus, TbRefresh } from 'react-icons/tb'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchOrdersForCsvExport, generateManifestService } from '../../api/order.service'
@@ -43,6 +43,7 @@ import ManifestScheduleDialog, {
   type ManifestSchedulePayload,
 } from './ManifestScheduleDialog'
 import { OrderExpandedRow } from './OrderExpandedRow'
+import B2CSelectCourierDialog from './b2c/B2CSelectCourierDialog'
 
 interface Order {
   id: string | number
@@ -89,6 +90,7 @@ const AllOrders = () => {
   const [bulkManifesting, setBulkManifesting] = useState(false)
   const [exportingCsv, setExportingCsv] = useState(false)
   const [manifestScheduleOpen, setManifestScheduleOpen] = useState(false)
+  const [selectCourierOrder, setSelectCourierOrder] = useState<Order | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [filters, setFilters] = useState<OrdersFilters>({
     status: undefined,
@@ -110,6 +112,7 @@ const AllOrders = () => {
   useEffect(() => {
     setManifestScheduleOpen(false)
     setBulkFeedback(null)
+    setSelectCourierOrder(null)
     setSelectedOrderIds([])
     setSelectionResetToken((current) => current + 1)
   }, [location.pathname, location.search, location.hash])
@@ -561,6 +564,18 @@ const AllOrders = () => {
     return Boolean(key || url)
   }
 
+  const isCourierSelectionPending = (order: Order) => {
+    const status = String(order.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+    return (
+      order.type === 'b2c' &&
+      status === 'pending' &&
+      !order.awb_number &&
+      !order.shipment_id &&
+      !order.courier_id &&
+      !order.courier_partner
+    )
+  }
+
   const renderDocumentDownloadButton = (order: Order, type: DocumentType) => {
     const meta = documentButtonMeta[type]
     const isAvailable = hasDocument(order, type)
@@ -662,7 +677,7 @@ const AllOrders = () => {
       id: 'order_status',
       minWidth: 142,
       sticky: 'right',
-      stickyOffset: 116,
+      stickyOffset: 244,
       render: (v) => <StatusChip label={v} status={statusColorMap[v] || 'info'} />,
     },
     {
@@ -670,7 +685,7 @@ const AllOrders = () => {
       id: 'manifest',
       minWidth: 116,
       sticky: 'right',
-      stickyOffset: 0,
+      stickyOffset: 128,
       truncate: false,
       render: (_v, row) => (
         <Stack direction="row" spacing={0.35}>
@@ -679,6 +694,39 @@ const AllOrders = () => {
           {renderDocumentDownloadButton(row, 'manifest')}
         </Stack>
       ),
+    },
+    {
+      label: 'Action',
+      id: 'id',
+      minWidth: 128,
+      sticky: 'right',
+      stickyOffset: 0,
+      truncate: false,
+      render: (_v, row) =>
+        isCourierSelectionPending(row) ? (
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<MdLocalShipping size={15} />}
+            onClick={(event) => {
+              event.stopPropagation()
+              setSelectCourierOrder(row)
+            }}
+            sx={{
+              minHeight: 30,
+              px: 1,
+              borderRadius: '8px',
+              fontSize: 11.5,
+              fontWeight: 700,
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Select Courier
+          </Button>
+        ) : (
+          <Typography sx={{ color: 'text.disabled', fontSize: 12 }}>-</Typography>
+        ),
     },
   ]
 
@@ -957,6 +1005,12 @@ const AllOrders = () => {
           if (!bulkManifesting) setManifestScheduleOpen(false)
         }}
         onConfirm={handleManifestScheduleConfirm}
+      />
+
+      <B2CSelectCourierDialog
+        open={Boolean(selectCourierOrder)}
+        order={selectCourierOrder as any}
+        onClose={() => setSelectCourierOrder(null)}
       />
     </Stack>
   )

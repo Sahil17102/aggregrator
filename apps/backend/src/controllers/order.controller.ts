@@ -2,6 +2,8 @@
 import { Request, Response } from 'express'
 import {
   checkMerchantOrderNumberAvailability,
+  bookB2CCourierForOrderService,
+  createB2CDraftOrderService,
   createB2BShipmentService,
   createB2CShipmentService,
   generateManifestService,
@@ -28,7 +30,15 @@ export const createB2CShipmentController = async (req: any, res: Response) => {
       setTimeout(() => reject(new Error('Order creation timed out after 3 minutes')), 180000)
     })
 
-    const shipmentPromise = createB2CShipmentService(req.body, id, false)
+    const hasSelectedCourier =
+      req.body?.courier_id !== undefined &&
+      req.body?.courier_id !== null &&
+      String(req.body.courier_id).trim() !== '' &&
+      Number(req.body.courier_id) > 0
+
+    const shipmentPromise = hasSelectedCourier
+      ? createB2CShipmentService(req.body, id, false)
+      : createB2CDraftOrderService(req.body, id, false)
 
     const shipment = (await Promise.race([shipmentPromise, timeoutPromise])) as Awaited<
       ReturnType<typeof createB2CShipmentService>
@@ -55,6 +65,54 @@ export const createB2CShipmentController = async (req: any, res: Response) => {
         ? 'Order creation is taking longer than expected. Please try again or contact support if the issue persists.'
         : error.message || 'Failed to create order. Please try again.'
     res.status(statusCode).json({ success: false, message: errorMessage })
+  }
+}
+
+export const selectB2CCourierController = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.sub
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const orderId = String(req.params.orderId || '').trim()
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' })
+    }
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Courier booking timed out after 3 minutes')), 180000)
+    })
+
+    const bookingPromise = bookB2CCourierForOrderService(orderId, req.body, userId)
+    const result = (await Promise.race([bookingPromise, timeoutPromise])) as Awaited<
+      ReturnType<typeof bookB2CCourierForOrderService>
+    >
+
+    return res.status(200).json({
+      success: true,
+      message: 'Courier selected and shipment booked successfully',
+      shipment: result,
+    })
+  } catch (error: any) {
+    console.error('Error selecting B2C courier:', {
+      message: error?.message || 'Unknown error',
+      statusCode: error?.statusCode ?? error?.response?.status ?? 500,
+      response: error?.response?.data || null,
+      request: {
+        orderId: req.params?.orderId,
+        integration_type: req.body?.integration_type,
+        courier_id: req.body?.courier_id ?? null,
+      },
+    })
+
+    const statusCode = typeof error?.statusCode === 'number' ? error.statusCode : 500
+    const errorMessage =
+      error.message?.includes('timeout') || error.code === 'ECONNABORTED'
+        ? 'Courier booking is taking longer than expected. Please try again or contact support if the issue persists.'
+        : error.message || 'Failed to book courier. Please try again.'
+
+    return res.status(statusCode).json({ success: false, message: errorMessage })
   }
 }
 
