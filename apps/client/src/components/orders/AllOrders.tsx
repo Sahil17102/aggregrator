@@ -43,6 +43,7 @@ import ManifestScheduleDialog, {
   type ManifestSchedulePayload,
 } from './ManifestScheduleDialog'
 import { OrderExpandedRow } from './OrderExpandedRow'
+import OrderDetailsDialog from './OrderDetailsDialog'
 import B2CSelectCourierDialog from './b2c/B2CSelectCourierDialog'
 
 interface Order {
@@ -91,6 +92,7 @@ const AllOrders = () => {
   const [exportingCsv, setExportingCsv] = useState(false)
   const [manifestScheduleOpen, setManifestScheduleOpen] = useState(false)
   const [selectCourierOrder, setSelectCourierOrder] = useState<Order | null>(null)
+  const [orderDetailsOrder, setOrderDetailsOrder] = useState<Order | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [filters, setFilters] = useState<OrdersFilters>({
     status: undefined,
@@ -113,6 +115,7 @@ const AllOrders = () => {
     setManifestScheduleOpen(false)
     setBulkFeedback(null)
     setSelectCourierOrder(null)
+    setOrderDetailsOrder(null)
     setSelectedOrderIds([])
     setSelectionResetToken((current) => current + 1)
   }, [location.pathname, location.search, location.hash])
@@ -637,7 +640,32 @@ const AllOrders = () => {
       truncate: false,
       render: (_v, row) => (
         <Stack spacing={0.25}>
-          <Typography sx={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.25 }} noWrap>
+          <Typography
+            component="button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              setOrderDetailsOrder(row)
+            }}
+            sx={{
+              all: 'unset',
+              maxWidth: '100%',
+              cursor: 'pointer',
+              color: 'primary.dark',
+              fontSize: 12.5,
+              fontWeight: 800,
+              lineHeight: 1.25,
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+              '&:focus-visible': {
+                outline: '2px solid rgba(13, 59, 142, 0.35)',
+                outlineOffset: '2px',
+                borderRadius: '4px',
+              },
+            }}
+            noWrap
+          >
             {row.order_number || '-'}
           </Typography>
           <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase' }}>
@@ -1011,6 +1039,12 @@ const AllOrders = () => {
         open={Boolean(selectCourierOrder)}
         order={selectCourierOrder as any}
         onClose={() => setSelectCourierOrder(null)}
+      />
+
+      <OrderDetailsDialog
+        open={Boolean(orderDetailsOrder)}
+        order={orderDetailsOrder}
+        onClose={() => setOrderDetailsOrder(null)}
       />
     </Stack>
   )

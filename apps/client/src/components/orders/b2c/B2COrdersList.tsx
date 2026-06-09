@@ -72,6 +72,7 @@ import {
   summarizeOrderNumbers,
 } from '../bulkActionUtils'
 import { OrderExpandedRow } from '../OrderExpandedRow'
+import OrderDetailsDialog from '../OrderDetailsDialog'
 import ManifestScheduleDialog, {
   type ManifestSchedulePayload,
 } from '../ManifestScheduleDialog'
@@ -226,6 +227,7 @@ const B2COrdersList = () => {
   const [actionMenuAnchor, setActionMenuAnchor] = useState<HTMLElement | null>(null)
   const [activeActionOrderId, setActiveActionOrderId] = useState<B2COrder['id'] | null>(null)
   const [detailsOrder, setDetailsOrder] = useState<B2COrder | null>(null)
+  const [orderDetailsOrder, setOrderDetailsOrder] = useState<B2COrder | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [documentGenerationRef, setDocumentGenerationRef] = useState<string | null>(null)
   const [filters, setFilters] = useState<OrderFilters>({
@@ -266,6 +268,7 @@ const B2COrdersList = () => {
     setPickupScheduleOrder(null)
     setSelectCourierOrder(null)
     setDetailsOrder(null)
+    setOrderDetailsOrder(null)
     setActionMenuAnchor(null)
     setActiveActionOrderId(null)
   }, [location.pathname, location.search, location.hash])
@@ -1089,7 +1092,32 @@ const B2COrdersList = () => {
       truncate: false,
       render: (_v, row) => (
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-          <Typography sx={{ maxWidth: '100%', fontSize: 12.2, fontWeight: 600, color: 'primary.dark', lineHeight: 1.25 }} noWrap>
+          <Typography
+            component="button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              setOrderDetailsOrder(row)
+            }}
+            sx={{
+              all: 'unset',
+              maxWidth: '100%',
+              cursor: 'pointer',
+              color: 'primary.dark',
+              fontSize: 12.2,
+              fontWeight: 600,
+              lineHeight: 1.25,
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+              '&:focus-visible': {
+                outline: `2px solid ${alpha(theme.palette.primary.main, 0.35)}`,
+                outlineOffset: '2px',
+                borderRadius: '4px',
+              },
+            }}
+            noWrap
+          >
             {row.order_number || '-'}
           </Typography>
           <Typography sx={{ maxWidth: '100%', fontSize: 10.7, color: 'text.secondary', lineHeight: 1.25 }} noWrap>
@@ -1676,6 +1704,12 @@ const B2COrdersList = () => {
         open={Boolean(selectCourierOrder)}
         order={selectCourierOrder}
         onClose={() => setSelectCourierOrder(null)}
+      />
+
+      <OrderDetailsDialog
+        open={Boolean(orderDetailsOrder)}
+        order={orderDetailsOrder}
+        onClose={() => setOrderDetailsOrder(null)}
       />
 
       <CustomDrawer
