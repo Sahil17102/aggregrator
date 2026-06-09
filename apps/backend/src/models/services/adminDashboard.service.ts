@@ -10,6 +10,14 @@ import { rto_events } from '../schema/rto'
 import { supportTickets } from '../schema/supportTickets'
 import { users } from '../schema/users'
 import { weight_discrepancies } from '../schema/weightDiscrepancies'
+import {
+  DEFAULT_BUSINESS_TIME_ZONE,
+  addDaysToBusinessDateKey,
+  differenceInBusinessDateKeys,
+  formatBusinessDateKey,
+  getBusinessDateKey,
+  getFirstBusinessDateKey,
+} from '../../utils/businessDate'
 
 const numberValue = (value: unknown) => {
   const parsed = Number(value)
@@ -25,18 +33,14 @@ const getFirstValidDate = (...values: unknown[]) => {
   return new Date(0)
 }
 
-const isSameLocalDay = (date: Date, target: Date) =>
-  date.getFullYear() === target.getFullYear() &&
-  date.getMonth() === target.getMonth() &&
-  date.getDate() === target.getDate()
-
-const formatLocalDateKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
-  ).padStart(2, '0')}`
-
 const getOrderTimestamp = (order: any) =>
   getFirstValidDate(order.order_date, order.orderDate, order.created_at, order.createdAt, order.updated_at)
+
+const getOrderBusinessDateKey = (order: any) =>
+  getFirstBusinessDateKey(order.order_date, order.orderDate, order.created_at, order.createdAt, order.updated_at)
+
+const getDeliveredBusinessDateKey = (order: any) =>
+  getFirstBusinessDateKey(order.delivered_at, order.deliveredAt, order.updated_at, order.updatedAt)
 
 const getOrderStatus = (order: any) => String(order.order_status || order.orderStatus || '').toLowerCase()
 
@@ -92,11 +96,10 @@ export const getAdminDashboardStats = async () => {
 
   const orders: any[] = [...b2cOrders, ...b2bOrders]
   const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const lastWeek = new Date(today)
-  lastWeek.setDate(lastWeek.getDate() - 7)
-  const lastMonth = new Date(today)
-  lastMonth.setMonth(lastMonth.getMonth() - 1)
+  const todayKey = formatBusinessDateKey(now) || getBusinessDateKey(now) || ''
+  const yesterdayKey = todayKey ? addDaysToBusinessDateKey(todayKey, -1) || '' : ''
+  const lastWeekKey = todayKey ? addDaysToBusinessDateKey(todayKey, -7) || '' : ''
+  const lastMonthKey = todayKey ? addDaysToBusinessDateKey(todayKey, -30) || '' : ''
 
   const customerUsers = userRows.filter((user) => user.role !== 'admin')
   const kycByUser = new Map(kycRows.map((row) => [String(row.userId), row.status]))
@@ -112,8 +115,11 @@ export const getAdminDashboardStats = async () => {
   const operationalBaseCount = nonCancelledOrders.length
 
   const todayOrders = orders.filter((order) => {
-    const orderDate = getOrderTimestamp(order)
-    return !Number.isNaN(orderDate.getTime()) && isSameLocalDay(orderDate, today)
+    return getOrderBusinessDateKey(order) === todayKey
+  })
+
+  const yesterdayOrders = orders.filter((order) => {
+    return getOrderBusinessDateKey(order) === yesterdayKey
   })
 
   const todayPendingOrders = todayOrders.filter((order) =>
@@ -123,10 +129,7 @@ export const getAdminDashboardStats = async () => {
     ['shipment_created', 'in_transit', 'out_for_delivery'].includes(getOrderStatus(order)),
   )
   const deliveredToday = orders.filter((order) => {
-    const deliveredDate = getFirstValidDate(order.delivered_at, order.deliveredAt, order.updated_at, order.updatedAt)
-    return getOrderStatus(order) === 'delivered' &&
-      !Number.isNaN(deliveredDate.getTime()) &&
-      isSameLocalDay(deliveredDate, today)
+    return getOrderStatus(order) === 'delivered' && getDeliveredBusinessDateKey(order) === todayKey
   })
   const activeNdrOrders = orders.filter((order) => {
     const status = getOrderStatus(order)
@@ -142,8 +145,8 @@ export const getAdminDashboardStats = async () => {
   const todayNdrOrders = todayOrders.filter((order) => activeNdrOrders.some((ndr) => String(ndr.id) === String(order.id)))
   const todayStuckOrders = todayOrders.filter((order) => {
     const status = getOrderStatus(order)
-    const orderDate = getOrderTimestamp(order)
-    const daysDiff = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24))
+    const orderDateKey = getOrderBusinessDateKey(order)
+    const daysDiff = orderDateKey ? differenceInBusinessDateKeys(orderDateKey, todayKey) : 0
     return ['in_transit', 'out_for_delivery'].includes(status) && daysDiff > 5
   })
 
@@ -179,7 +182,7 @@ export const getAdminDashboardStats = async () => {
       if (row.status === 'credited') {
         acc.totalCredited.amount += amount
         acc.totalCredited.count += 1
-        if (row.creditedAt && isSameLocalDay(new Date(row.creditedAt), today)) {
+        if (row.creditedAt && getBusinessDateKey(row.creditedAt) === todayKey) {
           acc.todayCredited.amount += amount
           acc.todayCredited.count += 1
         }
@@ -301,12 +304,9 @@ export const getAdminDashboardStats = async () => {
   const revenueByDate: Record<string, number> = {}
 
   for (let i = 6; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    const dateStr = formatLocalDateKey(date)
+    const dateStr = todayKey ? addDaysToBusinessDateKey(todayKey, -i) || todayKey : ''
     const dayOrders = orders.filter((order) => {
-      const orderDate = getOrderTimestamp(order)
-      return !Number.isNaN(orderDate.getTime()) && isSameLocalDay(orderDate, date)
+      return getOrderBusinessDateKey(order) === dateStr
     })
     ordersByDate[dateStr] = dayOrders.length
     ordersByDateByIntegration[dateStr] = dayOrders.reduce<Record<string, number>>((acc, order) => {
@@ -319,26 +319,25 @@ export const getAdminDashboardStats = async () => {
   }
 
   const todayUsers = customerUsers.filter((user) => {
-    const userDate = getFirstValidDate(user.createdAt)
-    return !Number.isNaN(userDate.getTime()) && isSameLocalDay(userDate, today)
+    return getBusinessDateKey(user.createdAt) === todayKey
   })
   const lastWeekUsers = customerUsers.filter((user) => {
-    const userDate = getFirstValidDate(user.createdAt)
-    return !Number.isNaN(userDate.getTime()) && userDate >= lastWeek
+    const userDateKey = getBusinessDateKey(user.createdAt)
+    return Boolean(userDateKey && lastWeekKey && userDateKey >= lastWeekKey)
   })
   const activeUsers = customerUsers.filter((user) =>
     orders.some((order) => {
       if (getOrderUserId(order) !== String(user.id)) return false
       if (getOrderStatus(order) === 'cancelled') return false
-      const orderDate = getOrderTimestamp(order)
-      return !Number.isNaN(orderDate.getTime()) && orderDate >= lastMonth
+      const orderDateKey = getOrderBusinessDateKey(order)
+      return Boolean(orderDateKey && lastMonthKey && orderDateKey >= lastMonthKey)
     }),
   )
   const veryActiveUsers = customerUsers.filter((user) =>
     orders.some((order) => {
       if (getOrderUserId(order) !== String(user.id)) return false
-      const orderDate = getOrderTimestamp(order)
-      return !Number.isNaN(orderDate.getTime()) && orderDate >= lastWeek
+      const orderDateKey = getOrderBusinessDateKey(order)
+      return Boolean(orderDateKey && lastWeekKey && orderDateKey >= lastWeekKey)
     }),
   )
 
@@ -366,6 +365,14 @@ export const getAdminDashboardStats = async () => {
         delivered: deliveredToday.length,
         ndr: todayNdrOrders.length,
         stuck: todayStuckOrders.length,
+      },
+      yesterdayOperations: {
+        orders: yesterdayOrders.length,
+      },
+      businessDate: {
+        today: todayKey,
+        yesterday: yesterdayKey,
+        timeZone: DEFAULT_BUSINESS_TIME_ZONE,
       },
       financial: {
         todayShippingCharges,

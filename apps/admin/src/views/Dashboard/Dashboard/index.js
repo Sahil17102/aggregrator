@@ -98,6 +98,7 @@ export default function Dashboard() {
 
   const stats = statsData?.data || {}
   const todayOps = stats.todayOperations || {}
+  const yesterdayOps = stats.yesterdayOperations || {}
   const financial = stats.financial || {}
   const operational = stats.operational || {}
   const alerts = stats.alerts || {}
@@ -107,8 +108,8 @@ export default function Dashboard() {
 
   const heroHighlights = [
     {
-      title: 'Today orders',
-      value: toNum(todayOps.orders).toLocaleString(),
+      title: 'Total orders',
+      value: toNum(operational.totalOrders).toLocaleString(),
     },
     {
       title: 'Delivery success',
@@ -259,9 +260,9 @@ export default function Dashboard() {
 
         <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4} mb={6}>
           <MetricCard
-            title="Today Orders"
-            value={toNum(todayOps.orders).toLocaleString()}
-            subtitle={`${toNum(todayOps.pending)} of today's orders pending dispatch`}
+            title="Total Orders"
+            value={toNum(operational.totalOrders).toLocaleString()}
+            subtitle={`${toNum(todayOps.orders)} today | ${toNum(yesterdayOps.orders)} yesterday`}
             icon={<IconPackageExport size={18} />}
             color="accent.500"
           />
