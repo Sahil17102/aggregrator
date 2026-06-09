@@ -262,7 +262,19 @@ export default function Dashboard() {
           <MetricCard
             title="Total Orders"
             value={toNum(operational.totalOrders).toLocaleString()}
-            subtitle={`${toNum(todayOps.orders)} today | ${toNum(yesterdayOps.orders)} yesterday`}
+            subtitle={
+              <>
+                <Box as="span" color="accent.700" fontWeight="700">
+                  {toNum(todayOps.orders)} today
+                </Box>
+                <Box as="span" color={textSecondary}>
+                  {' | '}
+                </Box>
+                <Box as="span" color="accent.600" fontWeight="700">
+                  {toNum(yesterdayOps.orders)} yesterday
+                </Box>
+              </>
+            }
             icon={<IconPackageExport size={18} />}
             color="accent.500"
           />
