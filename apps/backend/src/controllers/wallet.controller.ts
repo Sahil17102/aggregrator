@@ -12,7 +12,12 @@ export const getUserWalletBalance = async (req: Request, res: Response): Promise
     res.status(200).json({ message: 'success', data: { ...balance } })
   } catch (error) {
     console.error('Wallet balance error:', error)
-    res.status(404).json({ error: 'Wallet not found' })
+    const message = error instanceof Error ? error.message : ''
+    if (message === 'Wallet not found for this user' || message === 'Wallet not found') {
+      return res.status(404).json({ error: 'Wallet not found' })
+    }
+
+    res.status(500).json({ error: 'Server error fetching wallet balance' })
   }
 }
 

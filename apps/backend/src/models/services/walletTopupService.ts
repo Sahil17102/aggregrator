@@ -7,7 +7,7 @@ import {
 } from '../../utils/razorpay'
 import { db } from '../client'
 import { wallets, walletTopups } from '../schema/wallet'
-import { createWalletTransaction } from './wallet.service'
+import { createWalletTransaction, getOrCreateWalletForUser } from './wallet.service'
 
 const WALLET_TOPUP_DESCRIPTION = 'Wallet Top-up'
 
@@ -23,11 +23,7 @@ type RazorpayPaymentEntity = {
 }
 
 export async function walletOfUser(userId: string, tx: any = db) {
-  const w = await tx?.query.wallets.findFirst({
-    where: eq(wallets.userId, userId),
-  })
-  if (!w) throw new Error('Wallet not found')
-  return w
+  return getOrCreateWalletForUser(userId, tx)
 }
 
 export async function createWalletOrder(

@@ -16,6 +16,35 @@ interface WalletTransactionParams {
   tx?: any // optional, for passing an existing transaction
 }
 
+export const getOrCreateWalletForUser = async (userId: string, tx: any = db) => {
+  if (!userId) {
+    throw new Error('Unauthorized')
+  }
+
+  const executor = tx ?? db
+
+  const wallet = await executor.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
+  if (wallet[0]) return wallet[0]
+
+  await executor
+    .insert(wallets)
+    .values({
+      userId,
+      balance: '0.00',
+      currency: 'INR',
+    })
+    .onConflictDoNothing({
+      target: wallets.userId,
+    })
+
+  const refreshedWallet = await executor.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
+  if (!refreshedWallet[0]) {
+    throw new Error('Wallet not found for this user')
+  }
+
+  return refreshedWallet[0]
+}
+
 /**
  * Inserts a wallet transaction and updates the wallet balance accordingly.
  */
@@ -34,10 +63,12 @@ export const createWalletTransaction = async ({
   const executor = tx ?? db
 
   const wallet = await executor.select().from(wallets).where(eq(wallets.id, walletId)).limit(1)
+  if (!wallet[0]) {
+    throw new Error('Wallet not found')
+  }
   const currentBalance = Number(wallet[0]?.balance ?? 0)
   // Get current wallet balance if debit
   if (type === 'debit') {
-    if (!wallet[0]) throw new Error('Wallet not found')
     if (!allowNegativeBalance && currentBalance < Number(amount)) {
       throw new Error('Insufficient wallet balance')
     }
@@ -128,14 +159,11 @@ export const getUserWalletTransactions = async ({
   dateTo,
 }: GetUserWalletTransactionsParams) => {
   // 1️⃣ Get wallet of the user
-  const userWallet = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-  if (!userWallet[0]) {
-    throw new Error('Wallet not found for this user')
-  }
+  const userWallet = await getOrCreateWalletForUser(userId)
   // 2️⃣ Build dynamic where clause
-  let filter: any = eq(walletTransactions.wallet_id, userWallet[0].id)
+  let filter: any = eq(walletTransactions.wallet_id, userWallet.id)
   if (type || reason || dateFrom || dateTo) {
-    const conditions: any[] = [eq(walletTransactions.wallet_id, userWallet[0].id)]
+    const conditions: any[] = [eq(walletTransactions.wallet_id, userWallet.id)]
     if (type) conditions.push(eq(walletTransactions.type, type))
     if (reason) conditions.push(ilike(walletTransactions.reason, `%${reason}%`))
     if (dateFrom) conditions.push(gte(walletTransactions.created_at, dateFrom))
@@ -160,7 +188,7 @@ export const getUserWalletTransactions = async ({
     .offset(offset)
 
   return {
-    wallet: userWallet[0],
+    wallet: userWallet,
     transactions,
     totalCount,
     limit,
