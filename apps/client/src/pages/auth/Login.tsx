@@ -14,7 +14,7 @@ const AUTH_ORANGE = '#E86F00'
 
 export default function Login() {
   const { loading, isAuthenticated, user } = useAuth()
-  const [mode, setMode] = useState<'otp' | 'password'>('otp')
+  const [mode, setMode] = useState<'otp' | 'password'>('password')
 
   if (loading) return <FullScreenLoader />
   if (isAuthenticated) return <Navigate to={getPostAuthRedirect(user)} replace />
