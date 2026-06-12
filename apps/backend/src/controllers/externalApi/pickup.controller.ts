@@ -411,6 +411,7 @@ export const requestPickupController = async (req: any, res: Response) => {
         id: b2c_orders.id,
         user_id: b2c_orders.user_id,
         order_number: b2c_orders.order_number,
+        products: b2c_orders.products,
         awb_number: b2c_orders.awb_number,
         order_status: b2c_orders.order_status,
         integration_type: b2c_orders.integration_type,
@@ -544,6 +545,7 @@ export const requestPickupController = async (req: any, res: Response) => {
               userId: order.user_id,
               awbNumber: order.awb_number || '',
               orderNumber: order.order_number,
+              orderDetails: order,
               previousStatus: order.order_status,
               nextStatus: 'pickup_initiated',
             })

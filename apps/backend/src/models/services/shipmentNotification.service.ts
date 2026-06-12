@@ -5,6 +5,8 @@ import { users } from '../schema/users'
 import {
   sendShipmentStatusEmail,
   type ShipmentStatusEmailStage,
+  type ShipmentOrderLike,
+  resolveShipmentOrderLabel,
 } from '../../utils/emailSender'
 
 const normalizeStatus = (value?: string | null) => String(value || '').trim().toLowerCase()
@@ -80,10 +82,11 @@ export async function sendShipmentStatusEmailIfChanged(params: {
   userId: string
   awbNumber: string
   orderNumber?: string | null
+  orderDetails?: ShipmentOrderLike | null
   previousStatus?: string | null
   nextStatus?: string | null
 }) {
-  const { userId, awbNumber, orderNumber, previousStatus, nextStatus } = params
+  const { userId, awbNumber, orderNumber, orderDetails, previousStatus, nextStatus } = params
   const nextStage = deriveShipmentEmailStage(nextStatus)
   if (!nextStage) {
     return { sent: false, reason: 'unsupported_status' as const }
@@ -99,10 +102,13 @@ export async function sendShipmentStatusEmailIfChanged(params: {
     return { sent: false, reason: 'missing_recipient' as const }
   }
 
+  const orderLabel = resolveShipmentOrderLabel(orderDetails) || orderNumber || null
+
   await sendShipmentStatusEmail({
     to,
     awbNumber,
     orderNumber,
+    orderLabel,
     stage: nextStage,
   })
 

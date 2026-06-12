@@ -502,17 +502,114 @@ export type ShipmentStatusEmailStage =
   | 'delivered'
   | 'failed'
 
+export type ShipmentOrderLike = {
+  orderNumber?: string | null
+  order_number?: string | null
+  orderName?: string | null
+  order_name?: string | null
+  name?: string | null
+  title?: string | null
+  products?: unknown
+  order_items?: unknown
+  packages?: unknown
+}
+
+const firstString = (...values: Array<string | null | undefined>) => {
+  for (const value of values) {
+    const trimmed = String(value || '').trim()
+    if (trimmed) return trimmed
+  }
+
+  return ''
+}
+
+const extractItemLabel = (value: unknown) => {
+  const items = Array.isArray(value) ? value : []
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    const candidate = firstString(
+      (item as Record<string, unknown>).order_name as string | null | undefined,
+      (item as Record<string, unknown>).orderName as string | null | undefined,
+      (item as Record<string, unknown>).name as string | null | undefined,
+      (item as Record<string, unknown>).productName as string | null | undefined,
+      (item as Record<string, unknown>).box_name as string | null | undefined,
+      (item as Record<string, unknown>).boxName as string | null | undefined,
+      (item as Record<string, unknown>).title as string | null | undefined,
+      (item as Record<string, unknown>).label as string | null | undefined,
+      (item as Record<string, unknown>).itemName as string | null | undefined,
+    )
+
+    if (candidate) return candidate
+  }
+
+  return ''
+}
+
+export const resolveShipmentOrderLabel = (order?: ShipmentOrderLike | null) => {
+  if (!order) return ''
+
+  return firstString(
+    order.orderName,
+    order.order_name,
+    order.name,
+    order.title,
+    extractItemLabel(order.products),
+    extractItemLabel(order.order_items),
+    extractItemLabel(order.packages),
+    order.orderNumber,
+    order.order_number,
+  )
+}
+
+const formatShipmentDetailRows = (rows: Array<{ label: string; value?: string | null }>) => {
+  const visibleRows = rows
+    .map((row) => ({
+      label: row.label,
+      value: String(row.value || '').trim(),
+    }))
+    .filter((row) => row.value)
+
+  if (!visibleRows.length) {
+    return { html: '', text: '' }
+  }
+
+  return {
+    html: `
+      <div style="margin:18px 0 0;padding:16px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+        ${visibleRows
+          .map(
+            (row) => `
+              <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#111827;">
+                <strong>${escapeHtml(row.label)}:</strong> ${escapeHtml(row.value)}
+              </p>
+            `,
+          )
+          .join('')}
+      </div>
+    `,
+    text: visibleRows.map((row) => `${row.label}: ${row.value}`).join('\n'),
+  }
+}
+
 export const sendShipmentStatusEmail = async (opts: {
   to: string
   awbNumber: string
   orderNumber?: string | null
+  orderLabel?: string | null
   stage: ShipmentStatusEmailStage
 }) => {
-  const { to, awbNumber, orderNumber, stage } = opts
+  const { to, awbNumber, orderNumber, orderLabel, stage } = opts
   const safeAwb = escapeHtml(String(awbNumber || '').trim())
-  const safeOrderNumber = String(orderNumber || '').trim()
-    ? `Order ${escapeHtml(String(orderNumber || '').trim())}`
-    : ''
+  const safeOrderNumber = escapeHtml(String(orderNumber || '').trim())
+  const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
+  const detailRows = formatShipmentDetailRows([
+    { label: 'AWB Number', value: safeAwb },
+    { label: 'Order Number', value: safeOrderNumber },
+    {
+      label: 'Order Name',
+      value: safeOrderLabel && safeOrderLabel !== safeOrderNumber ? safeOrderLabel : null,
+    },
+  ])
 
   const templates: Record<
     ShipmentStatusEmailStage,
@@ -576,7 +673,7 @@ export const sendShipmentStatusEmail = async (opts: {
 
       <div style="font-size: 16px; line-height: 1.8; color: #1f2937;">
         ${template.htmlBody}
-        ${safeOrderNumber ? `<p style="margin:0 0 14px;">${safeOrderNumber}</p>` : ''}
+        ${detailRows.html}
       </div>
 
       <div style="margin-top: 24px; font-size: 15px; line-height: 1.8; color: #111827;">
@@ -591,7 +688,7 @@ export const sendShipmentStatusEmail = async (opts: {
     template.subject,
     html,
     undefined,
-    `${template.body}${safeOrderNumber ? `\n\n${safeOrderNumber}` : ''}`,
+    `${template.body}${detailRows.text ? `\n\n${detailRows.text}` : ''}`,
   )
 }
 

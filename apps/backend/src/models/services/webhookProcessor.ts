@@ -713,6 +713,7 @@ export async function processEkartWebhookV2(payload: any, tx = db) {
       userId: order.user_id,
       awbNumber: awb || order.awb_number || '',
       orderNumber: order.order_number,
+      orderDetails: order,
       previousStatus: prevStatus,
       nextStatus: mapped,
     })
@@ -1193,6 +1194,7 @@ export async function processDelhiveryWebhook(payload: any, tx = db) {
       userId: order.user_id,
       awbNumber: order.awb_number || waybill,
       orderNumber: order.order_number,
+      orderDetails: order,
       previousStatus: currentStatus,
       nextStatus: internalStatus,
     })
@@ -1575,6 +1577,7 @@ export async function processEkartWebhook(payload: any, tx = db) {
       userId: order.user_id,
       awbNumber: order.awb_number || awb || '',
       orderNumber: order.order_number,
+      orderDetails: order,
       previousStatus,
       nextStatus: internalStatus,
     })
@@ -1809,6 +1812,7 @@ export async function processXpressbeesWebhook(payload: any, tx = db) {
       userId: order.user_id,
       awbNumber: order.awb_number || awb || '',
       orderNumber: order.order_number,
+      orderDetails: order,
       previousStatus,
       nextStatus: internalStatus,
     })

@@ -81,6 +81,7 @@ export async function pollEkartTracking(batchSize = 50) {
           userId: order.user_id,
           awbNumber: order.awb_number || awb,
           orderNumber: order.order_number,
+          orderDetails: order,
           previousStatus: prevStatus,
           nextStatus: mapped,
         })

@@ -6358,13 +6358,14 @@ export const generateManifestService = async (params: {
               .where(eq(b2c_orders.id, freshOrder.id))
 
             try {
-              await sendShipmentStatusEmailIfChanged({
-                userId: freshOrder.user_id,
-                awbNumber: freshOrder.awb_number || order.awb_number || '',
-                orderNumber: freshOrder.order_number,
-                previousStatus: freshOrder.order_status,
-                nextStatus: 'pickup_initiated',
-              })
+            await sendShipmentStatusEmailIfChanged({
+              userId: freshOrder.user_id,
+              awbNumber: freshOrder.awb_number || order.awb_number || '',
+              orderNumber: freshOrder.order_number,
+              orderDetails: freshOrder,
+              previousStatus: freshOrder.order_status,
+              nextStatus: 'pickup_initiated',
+            })
             } catch (emailError) {
               console.warn('[Manifest] Shipment email notification failed', {
                 order_number: freshOrder.order_number,
@@ -8072,13 +8073,14 @@ export const generateManifestService = async (params: {
             .where(eq(table.id, order.id))
 
           try {
-            await sendShipmentStatusEmailIfChanged({
-              userId: order.user_id,
-              awbNumber: order.awb_number || '',
-              orderNumber: order.order_number,
-              previousStatus: order.order_status,
-              nextStatus: 'pickup_initiated',
-            })
+          await sendShipmentStatusEmailIfChanged({
+            userId: order.user_id,
+            awbNumber: order.awb_number || '',
+            orderNumber: order.order_number,
+            orderDetails: order,
+            previousStatus: order.order_status,
+            nextStatus: 'pickup_initiated',
+          })
           } catch (emailError) {
             console.warn('[Manifest] Shipment email notification failed', {
               order_number: order.order_number,
@@ -8408,6 +8410,7 @@ export const generateManifestService = async (params: {
                     userId: order.user_id,
                     awbNumber: order.awb_number || '',
                     orderNumber: order.order_number,
+                    orderDetails: order,
                     previousStatus: order.order_status,
                     nextStatus: 'pickup_initiated',
                   })
@@ -8501,13 +8504,14 @@ export const generateManifestService = async (params: {
               .where(eq(b2c_orders.id, order.id))
 
             try {
-              await sendShipmentStatusEmailIfChanged({
-                userId: order.user_id,
-                awbNumber: deliveryOneAwb,
-                orderNumber: order.order_number,
-                previousStatus: order.order_status,
-                nextStatus: 'pickup_initiated',
-              })
+            await sendShipmentStatusEmailIfChanged({
+              userId: order.user_id,
+              awbNumber: deliveryOneAwb,
+              orderNumber: order.order_number,
+              orderDetails: order,
+              previousStatus: order.order_status,
+              nextStatus: 'pickup_initiated',
+            })
             } catch (emailError) {
               console.warn('[Manifest] Shipment email notification failed', {
                 order_number: order.order_number,
@@ -9421,6 +9425,7 @@ const persistB2CTrackingStatus = async (
         userId: order.user_id,
         awbNumber: order.awb_number,
         orderNumber: order.order_number,
+        orderDetails: order,
         previousStatus: order.order_status,
         nextStatus,
       })
@@ -9614,6 +9619,7 @@ export const requestB2CPickupByOrderIdService = async (
         userId: order.user_id,
         awbNumber: order.awb_number || '',
         orderNumber: order.order_number,
+        orderDetails: order,
         previousStatus: order.order_status,
         nextStatus: 'pickup_initiated',
       })
