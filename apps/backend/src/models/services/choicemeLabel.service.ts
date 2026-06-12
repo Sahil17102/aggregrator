@@ -1,41 +1,25 @@
 import axios from 'axios'
-import bwipjs from 'bwip-js'
 import { and, eq } from 'drizzle-orm'
-import { existsSync, readFileSync } from 'fs'
-import path from 'path'
 import PdfPrinter from 'pdfmake'
 import { db } from '../client'
 import { b2b_orders } from '../schema/b2bOrders'
 import { b2c_orders } from '../schema/b2cOrders'
 import { userProfiles } from '../schema/userProfile'
 import { users } from '../schema/users'
+import { getDelhiveryCredentials } from './delhiveryCredentials.service'
+import { getEffectiveCourierConfig, type DeliveryOneConfig } from './courierCredentials.service'
 import { presignUpload } from './upload.service'
-
-type FontFiles = {
-  normal: string
-  bold: string
-  italics: string
-  bolditalics: string
-}
-
-type FontPreset = {
-  family: string
-  files: FontFiles
-  probeFiles: string[]
-}
 
 type LabelSnapshot = {
   order: any
   sourceTable: 'b2c' | 'b2b' | 'memory'
 }
 
-const compactStorageToken = (...values: Array<string | number | null | undefined>) => {
-  const raw = values.find((value) => value !== null && value !== undefined && String(value).trim())
-  const cleaned = String(raw ?? Date.now())
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .slice(-12)
-
-  return cleaned || Date.now().toString(36)
+type FontFiles = {
+  normal: string
+  bold: string
+  italics: string
+  bolditalics: string
 }
 
 const normalizeText = (value: unknown, fallback = '-') => {
@@ -48,11 +32,22 @@ const normalizeNumber = (value: unknown) => {
   return Number.isFinite(n) ? n : 0
 }
 
-const formatMoney = (value: number | string | null | undefined, short = false) => {
-  const symbol = selectedFont.family === 'Helvetica' ? 'Rs.' : '\u20B9'
+const formatMoney = (value: number | string | null | undefined) => {
   const amount = normalizeNumber(value)
-  const formatted = `${symbol} ${amount.toFixed(2)}`
-  return short ? formatted.replace(/\.00$/, '.0') : formatted
+  return `Rs. ${amount.toFixed(2)}`
+}
+
+const parseMaybeJson = <T>(value: unknown): T | null => {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'object') return value as T
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  try {
+    return JSON.parse(trimmed) as T
+  } catch {
+    return null
+  }
 }
 
 const splitTextLines = (value: unknown) =>
@@ -61,209 +56,17 @@ const splitTextLines = (value: unknown) =>
     .map((line) => line.trim())
     .filter(Boolean)
 
+const buildAddressLines = (...parts: Array<unknown>) =>
+  parts.flatMap((part) => splitTextLines(part)).filter(Boolean)
+
 const compactPlaceLine = (city?: unknown, state?: unknown, pincode?: unknown) => {
   const place = [city, state]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean)
     .join(', ')
   const pin = String(pincode ?? '').trim()
-
   if (place && pin) return `${place} ${pin}`
   return place || pin
-}
-
-const buildAddressLines = (...parts: Array<unknown>) =>
-  parts
-    .flatMap((part) => splitTextLines(part))
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-const parseMaybeJson = <T>(value: unknown): T | null => {
-  if (value === null || value === undefined) return null
-  if (typeof value === 'object') return value as T
-  if (typeof value !== 'string') return null
-
-  const trimmed = value.trim()
-  if (!trimmed) return null
-
-  try {
-    return JSON.parse(trimmed) as T
-  } catch {
-    return null
-  }
-}
-
-const formatDisplayDate = (value: unknown, includeSeconds = false) => {
-  if (value === null || value === undefined || String(value).trim() === '') return '-'
-
-  const date = new Date(String(value))
-  if (Number.isNaN(date.getTime())) return String(value)
-
-  const formatOptions: Intl.DateTimeFormatOptions = {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Kolkata',
-  }
-
-  if (includeSeconds) formatOptions.second = '2-digit'
-
-  const parts = new Intl.DateTimeFormat('en-GB', formatOptions)
-    .formatToParts(date)
-    .reduce<Record<string, string>>((acc, part) => {
-      if (part.type !== 'literal') acc[part.type] = part.value
-      return acc
-    }, {})
-
-  const hour = (parts.hour || '').replace(/^0/, '') || '12'
-  const minute = parts.minute || '00'
-  const second = includeSeconds ? `:${parts.second || '00'}` : ''
-  const dayPeriod = parts.dayPeriod ? ` ${parts.dayPeriod.toUpperCase()}` : ''
-
-  return `${parts.day || '01'} ${parts.month || 'Jan'} ${parts.year || '1970'}, ${hour}:${minute}${second}${dayPeriod}`
-}
-
-const isValidDataUrl = (str: string | null | undefined): str is string =>
-  typeof str === 'string' && str.startsWith('data:image/')
-
-const bufferToDataUrl = async (buffer: Buffer): Promise<string | null> => {
-  if (!buffer || buffer.length === 0) return null
-
-  try {
-    return `data:image/png;base64,${buffer.toString('base64')}`
-  } catch {
-    return null
-  }
-}
-
-async function generateQrBase64(text: string): Promise<string | null> {
-  if (!text) return null
-
-  try {
-    const png = await bwipjs.toBuffer({
-      bcid: 'qrcode',
-      text,
-      scale: 4,
-      includetext: false,
-      padding: 4,
-    } as any)
-
-    return `data:image/png;base64,${png.toString('base64')}`
-  } catch (err) {
-    console.warn('ChoiceMee label QR generation failed:', err)
-    return null
-  }
-}
-
-const loadChoiceMeeLogoDataUrl = () => {
-  const candidates = [
-    path.resolve(process.cwd(), 'apps/client/public/brand/choiceme-logo.png'),
-    path.resolve(process.cwd(), '../client/public/brand/choiceme-logo.png'),
-    path.resolve(__dirname, '../../../../client/public/brand/choiceme-logo.png'),
-  ]
-
-  for (const candidate of candidates) {
-    try {
-      if (!existsSync(candidate)) continue
-      const file = readFileSync(candidate)
-      const dataUrl = file.length > 0 ? `data:image/png;base64,${file.toString('base64')}` : null
-      if (isValidDataUrl(dataUrl)) return dataUrl
-    } catch {
-      // Try next candidate.
-    }
-  }
-
-  return null
-}
-
-const FONT_PRESETS: FontPreset[] = [
-  {
-    family: 'Arial',
-    files: {
-      normal: 'C:/Windows/Fonts/arial.ttf',
-      bold: 'C:/Windows/Fonts/arialbd.ttf',
-      italics: 'C:/Windows/Fonts/ariali.ttf',
-      bolditalics: 'C:/Windows/Fonts/arialbi.ttf',
-    },
-    probeFiles: [
-      'C:/Windows/Fonts/arial.ttf',
-      'C:/Windows/Fonts/arialbd.ttf',
-      'C:/Windows/Fonts/ariali.ttf',
-      'C:/Windows/Fonts/arialbi.ttf',
-    ],
-  },
-  {
-    family: 'DejaVuSans',
-    files: {
-      normal: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-      bold: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-      italics: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf',
-      bolditalics: '/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf',
-    },
-    probeFiles: [
-      '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-      '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-      '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf',
-      '/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf',
-    ],
-  },
-  {
-    family: 'LiberationSans',
-    files: {
-      normal: '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
-      bold: '/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf',
-      italics: '/usr/share/fonts/truetype/liberation2/LiberationSans-Italic.ttf',
-      bolditalics: '/usr/share/fonts/truetype/liberation2/LiberationSans-BoldItalic.ttf',
-    },
-    probeFiles: [
-      '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
-      '/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf',
-      '/usr/share/fonts/truetype/liberation2/LiberationSans-Italic.ttf',
-      '/usr/share/fonts/truetype/liberation2/LiberationSans-BoldItalic.ttf',
-    ],
-  },
-  {
-    family: 'Helvetica',
-    files: {
-      normal: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      italics: 'Helvetica-Oblique',
-      bolditalics: 'Helvetica-BoldOblique',
-    },
-    probeFiles: [],
-  },
-]
-
-const selectedFont =
-  FONT_PRESETS.find((preset) =>
-    preset.probeFiles.length === 0 ? true : preset.probeFiles.every((file) => existsSync(file)),
-  ) ?? FONT_PRESETS[FONT_PRESETS.length - 1]
-
-const fonts = {
-  [selectedFont.family]: selectedFont.files,
-} as Record<string, FontFiles>
-
-const printer = new PdfPrinter(fonts as any)
-const pageWidth = 612
-const pageHeight = 792
-const innerWidth = 564
-
-const divider = {
-  canvas: [
-    {
-      type: 'line',
-      x1: 0,
-      y1: 0,
-      x2: innerWidth,
-      y2: 0,
-      lineWidth: 0.5,
-      lineColor: '#e5e7eb',
-    },
-  ],
-  margin: [0, 10, 0, 10],
 }
 
 const pickRuntimeLabelFields = (order: any) => {
@@ -283,7 +86,6 @@ const pickRuntimeLabelFields = (order: any) => {
       extras[key] = order[key]
     }
   }
-
   return extras
 }
 
@@ -304,14 +106,9 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
   if (orderId) {
     candidates.push(async () => {
       const b2cRow = await selectOrderFromTable(tx, b2c_orders, eq(b2c_orders.id, orderId))
-      if (b2cRow) {
-        return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' as const }
-      }
-
+      if (b2cRow) return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' }
       const b2bRow = await selectOrderFromTable(tx, b2b_orders, eq(b2b_orders.id, orderId))
-      if (b2bRow) {
-        return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' as const }
-      }
+      if (b2bRow) return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' }
       return null
     })
   }
@@ -323,18 +120,13 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
         b2c_orders,
         and(eq(b2c_orders.user_id, userId), eq(b2c_orders.order_number, orderNumber)),
       )
-      if (b2cRow) {
-        return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' as const }
-      }
-
+      if (b2cRow) return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' }
       const b2bRow = await selectOrderFromTable(
         tx,
         b2b_orders,
         and(eq(b2b_orders.user_id, userId), eq(b2b_orders.order_number, orderNumber)),
       )
-      if (b2bRow) {
-        return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' as const }
-      }
+      if (b2bRow) return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' }
       return null
     })
   }
@@ -342,14 +134,9 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
   if (orderRef) {
     candidates.push(async () => {
       const b2cRow = await selectOrderFromTable(tx, b2c_orders, eq(b2c_orders.order_id, orderRef))
-      if (b2cRow) {
-        return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' as const }
-      }
-
+      if (b2cRow) return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' }
       const b2bRow = await selectOrderFromTable(tx, b2b_orders, eq(b2b_orders.order_id, orderRef))
-      if (b2bRow) {
-        return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' as const }
-      }
+      if (b2bRow) return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' }
       return null
     })
   }
@@ -357,14 +144,9 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
   if (awbNumber) {
     candidates.push(async () => {
       const b2cRow = await selectOrderFromTable(tx, b2c_orders, eq(b2c_orders.awb_number, awbNumber))
-      if (b2cRow) {
-        return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' as const }
-      }
-
+      if (b2cRow) return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' }
       const b2bRow = await selectOrderFromTable(tx, b2b_orders, eq(b2b_orders.awb_number, awbNumber))
-      if (b2bRow) {
-        return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' as const }
-      }
+      if (b2bRow) return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' }
       return null
     })
   }
@@ -372,14 +154,9 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
   if (orderNumber) {
     candidates.push(async () => {
       const b2cRow = await selectOrderFromTable(tx, b2c_orders, eq(b2c_orders.order_number, orderNumber))
-      if (b2cRow) {
-        return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' as const }
-      }
-
+      if (b2cRow) return { order: { ...b2cRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2c' }
       const b2bRow = await selectOrderFromTable(tx, b2b_orders, eq(b2b_orders.order_number, orderNumber))
-      if (b2bRow) {
-        return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' as const }
-      }
+      if (b2bRow) return { order: { ...b2bRow, ...pickRuntimeLabelFields(order) }, sourceTable: 'b2b' }
       return null
     })
   }
@@ -399,11 +176,7 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
 export async function resolveLabelOrderSnapshot(order: any, tx: any = db): Promise<LabelSnapshot> {
   const resolved = await resolveOrderCandidate(tx, order)
   if (resolved) return resolved
-
-  return {
-    order: { ...order, ...pickRuntimeLabelFields(order) },
-    sourceTable: 'memory',
-  }
+  return { order: { ...order, ...pickRuntimeLabelFields(order) }, sourceTable: 'memory' }
 }
 
 const extractLineItems = (order: any) => {
@@ -413,7 +186,7 @@ const extractLineItems = (order: any) => {
   const packageRows = parseMaybeJson<any[]>(order?.packages)
   if (!Array.isArray(packageRows) || packageRows.length === 0) return []
 
-  const flattened = packageRows.flatMap((pkg) => {
+  return packageRows.flatMap((pkg) => {
     if (Array.isArray(pkg?.products) && pkg.products.length > 0) {
       return pkg.products.map((product: any) => ({
         ...product,
@@ -431,8 +204,6 @@ const extractLineItems = (order: any) => {
       },
     ]
   })
-
-  return flattened
 }
 
 const normalizeLineItem = (item: any) => {
@@ -451,38 +222,321 @@ const normalizeLineItem = (item: any) => {
     item?.productName ?? item?.name ?? item?.title ?? item?.boxName ?? item?.box_name,
   )
 
-  return {
-    productId,
-    productName,
-    unitPrice,
-    quantity,
-    lineTotal,
+  return { productId, productName, unitPrice, quantity, lineTotal }
+}
+
+const resolveProviderKey = (order: any) => {
+  const integration = String(order?.integration_type ?? '').trim().toLowerCase()
+  const courierPartner = String(order?.courier_partner ?? '').trim().toLowerCase()
+
+  if (order?.delhivery_label_meta) return 'delhivery'
+  if (order?.deliveryone_label_meta) return 'deliveryone'
+  if (integration === 'delhivery' || courierPartner.includes('delhivery')) return 'delhivery'
+  if (integration === 'deliveryone' || courierPartner.includes('deliveryone')) return 'deliveryone'
+  if (String(order?.shipment_id ?? '').trim()) return 'deliveryone'
+  return 'delhivery'
+}
+
+const extractFirstUrl = (value: any): string | null => {
+  if (!value) return null
+  if (typeof value === 'string') {
+    const match = value.match(/https?:\/\/[^\s"'<>]+/i)
+    return match?.[0] ?? null
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const url = extractFirstUrl(entry)
+      if (url) return url
+    }
+    return null
+  }
+  if (typeof value === 'object') {
+    for (const key of ['label', 'label_url', 'labelUrl', 'pdf_url', 'pdfUrl', 'download_url', 'url']) {
+      const url = extractFirstUrl((value as Record<string, any>)[key])
+      if (url) return url
+    }
+    for (const nested of Object.values(value)) {
+      const url = extractFirstUrl(nested)
+      if (url) return url
+    }
+  }
+  return null
+}
+
+const fetchProviderLabelPdf = async (order: any): Promise<Buffer | null> => {
+  const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '')
+  if (!awb) return null
+
+  try {
+    const providerKey = resolveProviderKey(order)
+    if (providerKey === 'delhivery') {
+      const credentials = await getDelhiveryCredentials()
+      const apiKey = normalizeText(credentials.apiKey, '')
+      if (!apiKey) return null
+
+      const response = await axios.get(`${credentials.apiBase}/api/p/packing_slip`, {
+        headers: {
+          Authorization: `Token ${apiKey}`,
+          Accept: 'application/json',
+        },
+        params: { wbns: awb, pdf: true },
+        responseType: 'arraybuffer',
+        timeout: 30000,
+      })
+
+      return Buffer.from(response.data)
+    }
+
+    const config = (await getEffectiveCourierConfig<DeliveryOneConfig>('deliveryone', 'b2c')) || null
+    const apiBase = normalizeText(
+      config?.apiBase || process.env.DELIVERY_ONE_API_BASE || process.env.DELIVERYONE_API_BASE,
+      'https://track.delhivery.com',
+    ).replace(/\/+$/, '')
+    const apiKey = normalizeText(
+      config?.apiKey || process.env.DELIVERY_ONE_API_KEY || process.env.DELIVERYONE_API_KEY,
+      '',
+    )
+    if (!apiKey) return null
+
+    const response = await axios.get(`${apiBase}/api/p/packing_slip`, {
+      headers: {
+        Authorization: `Token ${apiKey}`,
+        Accept: 'application/json',
+      },
+      params: { wbns: awb, pdf: true, pdf_size: '4R' },
+      timeout: 30000,
+    })
+
+    const labelUrl = extractFirstUrl(response.data)
+    if (!labelUrl) return null
+    const pdfResp = await axios.get(labelUrl, { responseType: 'arraybuffer', timeout: 30000 })
+    return Buffer.from(pdfResp.data)
+  } catch (err) {
+    console.warn('ChoiceMee provider label fetch failed, using local label template:', err)
+    return null
   }
 }
 
-const getPartyName = (order: any, companyInfo: Record<string, any>, userRow: any, pickupDetails: Record<string, any>) =>
-  normalizeText(
-    pickupDetails?.warehouse_name ||
-      companyInfo?.brandName ||
-      companyInfo?.businessName ||
-      companyInfo?.companyName ||
-      userRow?.email?.split('@')?.[0] ||
-      order?.merchant_name ||
-      'ChoiceMee',
-  )
+const loadFonts = () => ({
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique',
+  },
+})
 
-const getSellerId = (order: any, userId: string, pickupDetails: Record<string, any>) =>
-  normalizeText(
-    pickupDetails?.pickup_location_id ||
-      order?.pickup_location_id ||
-      order?.pickupLocationId ||
-      order?.warehouse_id ||
-      `CM-${userId.slice(0, 8).toUpperCase()}`,
-  )
+const printer = new PdfPrinter(loadFonts() as any)
 
-const getFooterUrl = (order: any) => {
-  const reference = normalizeText(order?.order_number ?? order?.invoice_number ?? order?.order_id ?? order?.id, '')
-  return `https://choicemee.in/tax-invoice/${encodeURIComponent(reference || String(order?.id ?? 'label'))}`
+const buildFallbackLabelPdf = async (params: {
+  order: any
+  sellerName: string
+  sellerAddressLines: string[]
+  sellerContact: string
+  customerName: string
+  customerPhone: string
+  customerAddressLines: string[]
+  orderDate: string
+  invoiceNo: string
+  paymentMethod: string
+  paymentColor: string
+  normalizedItems: Array<ReturnType<typeof normalizeLineItem>>
+  footerUrl: string
+}) => {
+  const { order, sellerName, sellerAddressLines, sellerContact, customerName, customerPhone, customerAddressLines, orderDate, invoiceNo, paymentMethod, paymentColor, normalizedItems, footerUrl } = params
+  const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '-')
+  const providerLabel = resolveProviderKey(order) === 'delhivery' ? 'DELHIVERY' : 'DELIVERYONE'
+  const totalAmount = normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0)
+  const rows: any[] = normalizedItems.slice(0, 4).map((item) => [
+    { text: item.productId || '-', fontSize: 6.8, color: '#374151' },
+    { text: item.productName || '-', fontSize: 6.8, color: '#111111' },
+    { text: formatMoney(item.unitPrice), fontSize: 6.8, alignment: 'right', color: '#111111' },
+    { text: String(item.quantity), fontSize: 6.8, alignment: 'right', color: '#111111' },
+    { text: formatMoney(item.lineTotal), fontSize: 6.8, alignment: 'right', color: '#111111' },
+  ])
+
+  if (!rows.length) {
+    rows.push([{ text: '-', colSpan: 5, fontSize: 6.8, color: '#374151' }, {}, {}, {}, {}])
+  }
+
+  const docDefinition: any = {
+    info: {
+      title: 'ChoiceMee Shipment Label',
+      author: 'ChoiceMee',
+      subject: 'ChoiceMee shipment label',
+      creator: 'ChoiceMee Label Generator',
+    },
+    pageSize: { width: 288, height: 432 },
+    pageMargins: [12, 12, 12, 12],
+    defaultStyle: {
+      font: 'Helvetica',
+      fontSize: 7,
+      color: '#111111',
+    },
+    footer: () => ({
+      margin: [12, 0, 12, 6],
+      columns: [
+        { text: footerUrl, fontSize: 6.1, color: '#4b5563' },
+        { text: 'ChoiceMee', fontSize: 6.1, color: '#4b5563', alignment: 'right' },
+      ],
+    }),
+    content: [
+      {
+        columns: [
+          {
+            stack: [
+              { text: 'ChoiceMee', fontSize: 14, bold: true, color: '#111111' },
+              { text: providerLabel, fontSize: 7, color: '#4b5563' },
+            ],
+          },
+          {
+            stack: [
+              { text: 'SHIPMENT LABEL', fontSize: 8, bold: true, alignment: 'right' },
+              { text: `Order: ${invoiceNo}`, fontSize: 6.8, alignment: 'right', color: '#4b5563' },
+              { text: `AWB: ${awb}`, fontSize: 6.8, alignment: 'right', color: '#4b5563' },
+              { text: `Date: ${orderDate || '-'}`, fontSize: 6.8, alignment: 'right', color: '#4b5563' },
+            ],
+          },
+        ],
+        columnGap: 8,
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [
+            [
+              {
+                stack: [
+                  { text: 'FROM', fontSize: 7, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
+                  { text: sellerName, fontSize: 8, bold: true, color: '#111111' },
+                  ...sellerAddressLines.map((line) => ({ text: line, fontSize: 6.6, color: '#4b5563' })),
+                  { text: `Phone: ${sellerContact || '-'}`, fontSize: 6.6, color: '#4b5563' },
+                ],
+                margin: [5, 5, 5, 5],
+              },
+              {
+                stack: [
+                  { text: 'TO', fontSize: 7, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
+                  { text: customerName, fontSize: 8, bold: true, color: '#111111' },
+                  ...customerAddressLines.map((line) => ({ text: line, fontSize: 6.6, color: '#4b5563' })),
+                  { text: `Phone: ${customerPhone || '-'}`, fontSize: 6.6, color: '#4b5563' },
+                ],
+                margin: [5, 5, 5, 5],
+              },
+            ],
+          ],
+        },
+        layout: {
+          hLineColor: () => '#d1d5db',
+          vLineColor: () => '#d1d5db',
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [
+            [
+              { text: 'Payment', fontSize: 6.8, bold: true, color: '#374151' },
+              { text: paymentMethod, fontSize: 6.8, bold: true, alignment: 'right', color: paymentColor },
+            ],
+            [
+              { text: 'Order Date', fontSize: 6.8, bold: true, color: '#374151' },
+              { text: orderDate || '-', fontSize: 6.8, alignment: 'right', color: '#111111' },
+            ],
+          ],
+        },
+        layout: {
+          hLineColor: () => '#e5e7eb',
+          vLineColor: () => '#ffffff',
+          hLineWidth: () => 0.4,
+          vLineWidth: () => 0,
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 2,
+          paddingBottom: () => 2,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: [48, '*', 34, 24, 34],
+          body: [
+            [
+              { text: 'SKU', bold: true, fontSize: 6.4, color: '#374151' },
+              { text: 'Item', bold: true, fontSize: 6.4, color: '#374151' },
+              { text: 'Rate', bold: true, fontSize: 6.4, color: '#374151', alignment: 'right' },
+              { text: 'Qty', bold: true, fontSize: 6.4, color: '#374151', alignment: 'right' },
+              { text: 'Total', bold: true, fontSize: 6.4, color: '#374151', alignment: 'right' },
+            ],
+            ...rows,
+          ],
+        },
+        layout: {
+          hLineColor: () => '#e5e7eb',
+          vLineColor: () => '#ffffff',
+          hLineWidth: (i: number) => (i === 0 ? 0.75 : 0.4),
+          vLineWidth: () => 0,
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 2,
+          paddingBottom: () => 2,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'NOTES', fontSize: 7, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
+              { text: 'Courier label template restored from the order snapshot.', fontSize: 6.4, color: '#4b5563' },
+            ],
+          },
+          {
+            width: 84,
+            table: {
+              widths: ['*', 'auto'],
+              body: [
+                [
+                  { text: 'Total', fontSize: 7, bold: true, color: '#111111' },
+                  { text: formatMoney(totalAmount), fontSize: 7, bold: true, alignment: 'right', color: '#111111' },
+                ],
+              ],
+            },
+            layout: {
+              hLineColor: () => '#d1d5db',
+              vLineColor: () => '#d1d5db',
+              hLineWidth: () => 0.5,
+              vLineWidth: () => 0.5,
+              paddingLeft: () => 4,
+              paddingRight: () => 4,
+              paddingTop: () => 4,
+              paddingBottom: () => 4,
+            },
+          },
+        ],
+        columnGap: 8,
+      },
+    ],
+  }
+
+  const pdfDoc = printer.createPdfKitDocument(docDefinition)
+  const chunks: Buffer[] = []
+  return await new Promise<Buffer>((resolve, reject) => {
+    pdfDoc.on('data', (chunk) => chunks.push(chunk))
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)))
+    pdfDoc.on('error', (err) => reject(err))
+    pdfDoc.end()
+  })
 }
 
 export async function generateLabelForOrder(order: any, userId: string, tx: any = db) {
@@ -499,578 +553,124 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   }
 
   const [profileRow, userRow] = await Promise.all([
-    tx.select().from(userProfiles).where(eq(userProfiles.userId, resolvedUserId)).limit(1).then((rows: any[]) => rows[0] ?? null),
-    tx.select().from(users).where(eq(users.id, resolvedUserId)).limit(1).then((rows: any[]) => rows[0] ?? null),
+    tx
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, resolvedUserId))
+      .limit(1)
+      .then((rows: any[]) => rows[0] ?? null),
+    tx
+      .select()
+      .from(users)
+      .where(eq(users.id, resolvedUserId))
+      .limit(1)
+      .then((rows: any[]) => rows[0] ?? null),
   ])
 
   const companyInfo = (profileRow?.companyInfo || {}) as Record<string, any>
-  const gstDetails = (profileRow?.gstDetails || {}) as Record<string, any>
   const pickupDetails = (parseMaybeJson<Record<string, any>>(resolvedOrder?.pickup_details) || {}) as Record<string, any>
   const lineItems = extractLineItems(resolvedOrder)
   const normalizedItems = lineItems.map(normalizeLineItem)
 
-  const logoDataUrl = loadChoiceMeeLogoDataUrl()
-  const footerUrl = getFooterUrl(resolvedOrder)
-  const qrDataUrl = await generateQrBase64(footerUrl)
-
-  const sellerName = getPartyName(resolvedOrder, companyInfo, userRow, pickupDetails)
-  const sellerAddress = pickupDetails?.address || companyInfo?.companyAddress || companyInfo?.address || ''
-  const sellerPlace = compactPlaceLine(
-    pickupDetails?.city || companyInfo?.city,
-    pickupDetails?.state || companyInfo?.state,
-    pickupDetails?.pincode || companyInfo?.pincode,
+  const sellerName = normalizeText(
+    pickupDetails?.warehouse_name ||
+      companyInfo?.brandName ||
+      companyInfo?.businessName ||
+      companyInfo?.companyName ||
+      userRow?.email?.split('@')?.[0] ||
+      resolvedOrder?.merchant_name ||
+      'ChoiceMee',
   )
-  const sellerCountry = normalizeText(
+  const sellerAddressLines = buildAddressLines(
+    pickupDetails?.address || companyInfo?.companyAddress || companyInfo?.address || '',
+    compactPlaceLine(pickupDetails?.city || companyInfo?.city, pickupDetails?.state || companyInfo?.state, pickupDetails?.pincode || companyInfo?.pincode),
     pickupDetails?.country || companyInfo?.country || resolvedOrder?.country || 'India',
-  )
-  const sellerAddressLines = buildAddressLines(sellerAddress, sellerPlace, sellerCountry).slice(0, 3)
-  const sellerGst = normalizeText(
-    companyInfo?.companyGst ||
-      companyInfo?.companyGST ||
-      gstDetails?.gstNumber ||
-      pickupDetails?.gst_number ||
-      pickupDetails?.gstNumber,
-  )
-  const sellerEmail = normalizeText(
-    companyInfo?.companyEmail || companyInfo?.contactEmail || userRow?.email || '-',
-  )
+  ).slice(0, 3)
   const sellerContact = normalizeText(
     companyInfo?.companyContactNumber || companyInfo?.contactNumber || userRow?.phone || pickupDetails?.phone || '-',
   )
-  const sellerIdentifier = getSellerId(resolvedOrder, resolvedUserId, pickupDetails)
 
   const customerName = normalizeText(
-    resolvedOrder?.buyer_name || resolvedOrder?.company_name || resolvedOrder?.consignee_name || resolvedOrder?.name || 'Customer',
+    resolvedOrder?.buyer_name ||
+      resolvedOrder?.company_name ||
+      resolvedOrder?.consignee_name ||
+      resolvedOrder?.name ||
+      'Customer',
   )
-  const customerPhone = normalizeText(resolvedOrder?.buyer_phone || resolvedOrder?.phone || resolvedOrder?.customer_phone || '-')
+  const customerPhone = normalizeText(
+    resolvedOrder?.buyer_phone || resolvedOrder?.phone || resolvedOrder?.customer_phone || '-',
+  )
   const customerAddressLines = buildAddressLines(
     resolvedOrder?.address,
     compactPlaceLine(resolvedOrder?.city, resolvedOrder?.state, resolvedOrder?.pincode),
     normalizeText(resolvedOrder?.country || 'India'),
   ).slice(0, 3)
 
-  const billingAddressLines = customerAddressLines
-  const shippingAddressLines = customerAddressLines
-  const billingPhone = customerPhone
-  const shippingPhone = customerPhone
-
   const invoiceNo = normalizeText(
     resolvedOrder?.invoice_number || resolvedOrder?.order_number || resolvedOrder?.order_id || resolvedOrder?.id,
   )
-  const orderId = normalizeText(
-    resolvedOrder?.order_id || resolvedOrder?.order_number || resolvedOrder?.id,
-  )
-  const orderDate = formatDisplayDate(
+  const orderDate = normalizeText(
     resolvedOrder?.order_date || resolvedOrder?.created_at || resolvedOrder?.updated_at,
-    true,
+    '',
   )
-  const generatedAt = formatDisplayDate(
-    resolvedOrder?.label_generated_at || resolvedOrder?.updated_at || resolvedOrder?.created_at || new Date(),
-  )
-  const paymentRaw = String(
-    resolvedOrder?.payment_type || resolvedOrder?.order_type || resolvedOrder?.type || '',
-  )
-    .trim()
-    .toLowerCase()
+  const paymentRaw = String(resolvedOrder?.payment_type || resolvedOrder?.order_type || '').trim().toLowerCase()
   const paymentMethod =
-    paymentRaw === 'cod'
-      ? 'COD'
-      : paymentRaw === 'prepaid'
-        ? 'PREPAID'
-        : paymentRaw
-          ? paymentRaw.toUpperCase()
-          : 'PREPAID'
-  const paymentColor = paymentMethod === 'COD' ? '#d97706' : '#00c7a8'
-  const subtotal = normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0)
-  const estimatedTax = normalizeNumber(
-    resolvedOrder?.tax_amount ??
-      resolvedOrder?.gst_amount ??
-      resolvedOrder?.total_tax ??
-      resolvedOrder?.tax ??
-      0,
-  )
-  const shippingCharge = normalizeNumber(
-    resolvedOrder?.shipping_charges ?? resolvedOrder?.freight_charges ?? 0,
-  )
-  const totalAmount = normalizeNumber(
-    resolvedOrder?.invoice_amount ?? resolvedOrder?.order_amount ?? subtotal + estimatedTax + shippingCharge,
-  )
+    paymentRaw === 'cod' ? 'COD' : paymentRaw === 'prepaid' ? 'PREPAID' : paymentRaw ? paymentRaw.toUpperCase() : 'PREPAID'
+  const paymentColor = paymentMethod === 'COD' ? '#d97706' : '#059669'
+  const footerUrl = `https://choicemee.in/tax-invoice/${encodeURIComponent(invoiceNo || String(resolvedOrder?.id ?? 'label'))}`
 
-  const productRows: any[] =
-    normalizedItems.length > 0
-      ? normalizedItems.slice(0, 8).map((item) => [
-          {
-            text: item.productId || '-',
-            fontSize: 7.7,
-            color: '#374151',
-            border: [false, false, false, true],
-            margin: [0, 10, 0, 10],
-          },
-          {
-            text: item.productName || '-',
-            fontSize: 7.7,
-            color: '#111111',
-            border: [false, false, false, true],
-            margin: [0, 10, 0, 10],
-          },
-          {
-            text: formatMoney(item.unitPrice),
-            fontSize: 7.7,
-            color: '#111111',
-            border: [false, false, false, true],
-            margin: [0, 10, 0, 10],
-          },
-          {
-            text: String(item.quantity),
-            fontSize: 7.7,
-            color: '#111111',
-            border: [false, false, false, true],
-            margin: [0, 10, 0, 10],
-          },
-          {
-            text: formatMoney(item.lineTotal, true),
-            fontSize: 7.7,
-            color: '#111111',
-            border: [false, false, false, true],
-            margin: [0, 10, 0, 10],
-          },
-        ] as any)
-      : [
-          [
-            {
-              text: '-',
-              fontSize: 7.7,
-              color: '#374151',
-              border: [false, false, false, true],
-              margin: [0, 10, 0, 10],
-              colSpan: 5,
-            },
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-          ] as any,
-        ]
+  const providerPdf = await fetchProviderLabelPdf(resolvedOrder)
+  const pdfBuffer = providerPdf || (await buildFallbackLabelPdf({
+    order: resolvedOrder,
+    sellerName,
+    sellerAddressLines,
+    sellerContact,
+    customerName,
+    customerPhone,
+    customerAddressLines,
+    orderDate,
+    invoiceNo,
+    paymentMethod,
+    paymentColor,
+    normalizedItems,
+    footerUrl,
+  }))
 
-  if (normalizedItems.length > 8) {
-    productRows.push([
-      {
-        text: `+ ${normalizedItems.length - 8} more item(s)`,
-        fontSize: 7.2,
-        italics: true,
-        color: '#6b7280',
-        border: [false, false, false, true],
-        margin: [0, 8, 0, 8],
-        colSpan: 5,
-      },
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-    ] as any)
+  if (!pdfBuffer || pdfBuffer.length === 0) {
+    throw new Error('PDF buffer is empty or invalid')
   }
 
-  const productTable = {
-    table: {
-      headerRows: 1,
-      widths: [72, 220, 88, 84, '*'],
-      body: [
-        [
-          {
-            text: 'Product ID',
-            fontSize: 6.6,
-            bold: true,
-            color: '#4b5563',
-            border: [false, false, false, true],
-            margin: [0, 0, 0, 8],
-          },
-          {
-            text: 'Product Name',
-            fontSize: 6.6,
-            bold: true,
-            color: '#4b5563',
-            border: [false, false, false, true],
-            margin: [0, 0, 0, 8],
-          },
-          {
-            text: 'Amount',
-            fontSize: 6.6,
-            bold: true,
-            color: '#4b5563',
-            border: [false, false, false, true],
-            margin: [0, 0, 0, 8],
-          },
-          {
-            text: 'Quantity',
-            fontSize: 6.6,
-            bold: true,
-            color: '#4b5563',
-            border: [false, false, false, true],
-            margin: [0, 0, 0, 8],
-          },
-          {
-            text: 'Total',
-            fontSize: 6.6,
-            bold: true,
-            color: '#4b5563',
-            border: [false, false, false, true],
-            margin: [0, 0, 0, 8],
-          },
-        ],
-        ...productRows,
-      ],
-    },
-    layout: {
-      hLineColor: () => '#e5e7eb',
-      vLineColor: () => '#ffffff',
-      hLineWidth: (i: number) => (i === 0 ? 0 : 0.5),
-      vLineWidth: () => 0,
-      paddingLeft: () => 0,
-      paddingRight: () => 0,
-      paddingTop: () => 0,
-      paddingBottom: () => 0,
-    },
-    margin: [0, 0, 0, 12],
+  const { uploadUrl, key } = await presignUpload({
+    filename: `l-${String(resolvedOrder?.order_number || resolvedOrder?.id || resolvedOrder?.order_id || Date.now())
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(-12)}.pdf`,
+    contentType: 'application/pdf',
+    userId: resolvedUserId,
+    folderKey: 'labels',
+  })
+
+  const finalUploadUrl = Array.isArray(uploadUrl) ? uploadUrl[0] : uploadUrl
+  const labelKey = Array.isArray(key) ? key[0] : key
+
+  if (!finalUploadUrl || !labelKey) {
+    throw new Error('Failed to get presigned URL for label upload')
   }
 
-  const summaryTable = {
-    table: {
-      widths: ['*', 92],
-      body: [
-        [
-          { text: 'Sub Total:', fontSize: 7.7, color: '#111111', border: [false, false, false, false], margin: [0, 6, 0, 6] },
-          { text: formatMoney(subtotal), fontSize: 7.7, alignment: 'right', color: '#111111', border: [false, false, false, false], margin: [0, 6, 0, 6] },
-        ],
-        [
-          { text: 'Estimated Tax:', fontSize: 7.7, color: '#111111', border: [false, false, false, false], margin: [0, 6, 0, 6] },
-          { text: formatMoney(estimatedTax), fontSize: 7.7, alignment: 'right', color: '#111111', border: [false, false, false, false], margin: [0, 6, 0, 6] },
-        ],
-        [
-          { text: 'Shipping Charge:', fontSize: 7.7, color: '#111111', border: [false, false, false, false], margin: [0, 6, 0, 6] },
-          { text: formatMoney(shippingCharge), fontSize: 7.7, alignment: 'right', color: '#111111', border: [false, false, false, false], margin: [0, 6, 0, 6] },
-        ],
-        [
-          {
-            text: 'Total (\u20B9):',
-            fontSize: 8.2,
-            bold: true,
-            color: '#111111',
-            border: [false, true, false, false],
-            margin: [0, 8, 0, 6],
-          },
-          {
-            text: formatMoney(totalAmount),
-            fontSize: 8.2,
-            bold: true,
-            alignment: 'right',
-            color: '#111111',
-            border: [false, true, false, false],
-            margin: [0, 8, 0, 6],
-          },
-        ],
-      ],
-    },
-    layout: 'noBorders',
+  const uploadResponse = await axios.put(finalUploadUrl, pdfBuffer, {
+    headers: { 'Content-Type': 'application/pdf' },
+    timeout: 60000,
+    validateStatus: (status) => status >= 200 && status < 300,
+  })
+
+  if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
+    throw new Error(`Label upload failed with status ${uploadResponse.status}`)
   }
 
-  const content: any[] = [
-    {
-      columns: [
-        {
-          width: 130,
-          text: generatedAt,
-          fontSize: 8,
-          color: '#111111',
-        },
-        {
-          width: '*',
-          text: 'ChoiceMee',
-          fontSize: 8,
-          color: '#111111',
-          alignment: 'center',
-        },
-      ],
-      margin: [0, 0, 0, 64],
-    },
-    {
-      columns: [
-        {
-          width: '*',
-          stack: [
-            logoDataUrl
-              ? {
-                  image: 'logo',
-                  fit: [104, 52],
-                  margin: [0, 0, 0, 6],
-                }
-              : {
-                  text: 'ChoiceMee',
-                  fontSize: 18,
-                  bold: true,
-                  color: '#111111',
-                  margin: [0, 0, 0, 6],
-                },
-            { text: sellerName, fontSize: 12, color: '#111111', margin: [0, 2, 0, 10] },
-            { text: 'ADDRESS', fontSize: 7.7, bold: true, color: '#374151', margin: [0, 0, 0, 8] },
-            ...sellerAddressLines.map((line) => ({
-              text: line,
-              fontSize: 7.7,
-              color: '#374151',
-              margin: [0, 0, 0, 2],
-            })),
-          ],
-        },
-        {
-          width: 180,
-          stack: [
-            {
-              text: `GST Number: ${sellerGst || '-'}`,
-              fontSize: 7.7,
-              color: '#2b2b2b',
-              margin: [0, 0, 0, 6],
-            },
-            {
-              text: [
-                { text: 'Email: ', fontSize: 7.7, color: '#2b2b2b' },
-                { text: sellerEmail || '-', bold: true, fontSize: 7.7, color: '#111111' },
-              ],
-              margin: [0, 0, 0, 6],
-            },
-            {
-              text: [
-                { text: 'Contact No: ', fontSize: 7.7, color: '#2b2b2b' },
-                { text: sellerContact || '-', bold: true, fontSize: 7.7, color: '#111111' },
-              ],
-              margin: [0, 0, 0, 8],
-            },
-            {
-              text: `Seller Id: ${sellerIdentifier}`,
-              fontSize: 4.9,
-              color: '#444444',
-              margin: [0, 0, 0, 6],
-            },
-            qrDataUrl
-              ? {
-                  image: 'qrCode',
-                  width: 74,
-                  alignment: 'right',
-                  margin: [0, 2, 0, 0],
-                }
-              : { text: '' },
-          ],
-          alignment: 'right',
-        },
-      ],
-      columnGap: 12,
-      margin: [0, 0, 0, 10],
-    },
-    divider,
-    {
-      table: {
-        widths: [88, 88, 132, 108, 148],
-        body: [
-          [
-            {
-              stack: [
-                { text: 'INVOICE NO', fontSize: 6.6, bold: true, color: '#4b5563', margin: [0, 0, 0, 4] },
-                { text: `# ${invoiceNo}`, fontSize: 6.6, bold: true, color: '#111111' },
-              ],
-              border: [false, false, false, false],
-            },
-            {
-              stack: [
-                { text: 'ORDER ID', fontSize: 6.6, bold: true, color: '#4b5563', margin: [0, 0, 0, 4] },
-                { text: `# ${orderId}`, fontSize: 6.6, bold: true, color: '#111111' },
-              ],
-              border: [false, false, false, false],
-            },
-            {
-              stack: [
-                { text: 'DATE', fontSize: 6.6, bold: true, color: '#4b5563', margin: [0, 0, 0, 4] },
-                { text: orderDate, fontSize: 6.6, bold: true, color: '#111111' },
-              ],
-              border: [false, false, false, false],
-            },
-            {
-              stack: [
-                { text: 'PAYMENT METHOD', fontSize: 6.6, bold: true, color: '#4b5563', margin: [0, 0, 0, 4] },
-                { text: paymentMethod, fontSize: 5.5, bold: true, color: paymentColor },
-              ],
-              border: [false, false, false, false],
-            },
-            {
-              stack: [
-                { text: 'TOTAL AMOUNT', fontSize: 6.6, bold: true, color: '#4b5563', margin: [0, 0, 0, 4] },
-                { text: formatMoney(totalAmount), fontSize: 6.6, bold: true, color: '#111111' },
-              ],
-              border: [false, false, false, false],
-            },
-          ],
-        ],
-      },
-      layout: 'noBorders',
-      margin: [0, 0, 0, 8],
-    },
-    divider,
-    {
-      columns: [
-        {
-          width: '*',
-          stack: [
-            { text: 'BILLING ADDRESS', fontSize: 8.8, bold: true, color: '#4b5563', margin: [0, 0, 0, 8] },
-            { text: customerName, fontSize: 8.8, bold: true, color: '#111111', margin: [0, 0, 0, 6] },
-            ...billingAddressLines.map((line) => ({
-              text: line,
-              fontSize: 7.7,
-              color: '#374151',
-              margin: [0, 0, 0, 2],
-            })),
-            { text: `Phone: ${billingPhone || '-'}`, fontSize: 7.7, color: '#374151', margin: [0, 0, 0, 0] },
-          ].filter(Boolean),
-        },
-        {
-          width: '*',
-          stack: [
-            { text: 'SHIPPING ADDRESS', fontSize: 8.8, bold: true, color: '#4b5563', margin: [0, 0, 0, 8] },
-            { text: customerName, fontSize: 8.8, bold: true, color: '#111111', margin: [0, 0, 0, 6] },
-            ...shippingAddressLines.map((line) => ({
-              text: line,
-              fontSize: 7.7,
-              color: '#374151',
-              margin: [0, 0, 0, 2],
-            })),
-            { text: `Phone: ${shippingPhone || '-'}`, fontSize: 7.7, color: '#374151', margin: [0, 0, 0, 0] },
-          ].filter(Boolean),
-        },
-      ],
-      columnGap: 24,
-      margin: [0, 0, 0, 34],
-    },
-    productTable,
-    {
-      columns: [
-        { width: '*', text: '' },
-        {
-          width: 270,
-          stack: [summaryTable],
-        },
-      ],
-      columnGap: 12,
-      margin: [0, 0, 0, 54],
-    },
-    {
-      columns: [
-        {
-          width: 340,
-          table: {
-            widths: ['*'],
-            body: [
-              [
-                {
-                  text: `Authorized Signature for ${sellerName}`,
-                  fontSize: 7.7,
-                  color: '#0f5f8d',
-                  fillColor: '#ffffff',
-                  margin: [14, 12, 14, 12],
-                },
-              ],
-            ],
-          },
-          layout: {
-            hLineWidth: () => 0.75,
-            vLineWidth: () => 0.75,
-            hLineColor: () => '#8fd0f5',
-            vLineColor: () => '#8fd0f5',
-            paddingLeft: () => 0,
-            paddingRight: () => 0,
-            paddingTop: () => 0,
-            paddingBottom: () => 0,
-          },
-        },
-        { width: '*', text: '' },
-      ],
-      columnGap: 12,
-      margin: [0, 0, 0, 0],
-    },
-  ]
-
-  const docDefinition: any = {
-    info: {
-      title: 'ChoiceMee Shipment Label',
-      author: 'ChoiceMee',
-      subject: 'ChoiceMee invoice-style shipment label',
-      creator: 'ChoiceMee Label Generator',
-    },
-    pageSize: { width: pageWidth, height: pageHeight },
-    pageMargins: [24, 24, 24, 24],
-    defaultStyle: {
-      font: selectedFont.family,
-      fontSize: 8,
-      color: '#2b2b2b',
-    },
-    footer: (currentPage: number, pageCount: number) => ({
-      margin: [24, 0, 24, 18],
-      columns: [
-        { text: footerUrl, fontSize: 8, color: '#111111', alignment: 'left' },
-        { text: `${currentPage}/${pageCount}`, fontSize: 8, color: '#111111', alignment: 'right' },
-      ],
-    }),
-    content,
-    ...(logoDataUrl || qrDataUrl ? { images: { ...(logoDataUrl ? { logo: logoDataUrl } : {}), ...(qrDataUrl ? { qrCode: qrDataUrl } : {}) } } : {}),
+  const finalKey = typeof labelKey === 'string' ? labelKey.trim() : ''
+  if (!finalKey) {
+    throw new Error('Label key is invalid or empty after upload')
   }
 
-  try {
-    const pdfDoc = printer.createPdfKitDocument(docDefinition)
-    const chunks: Buffer[] = []
-
-    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-      pdfDoc.on('data', (chunk) => chunks.push(chunk))
-      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)))
-      pdfDoc.on('error', (err) => reject(err))
-      pdfDoc.end()
-    })
-
-    if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new Error('PDF buffer is empty or invalid')
-    }
-
-    const { uploadUrl, key } = await presignUpload({
-      filename: `l-${compactStorageToken(resolvedOrder?.order_number, resolvedOrder?.id, resolvedOrder?.order_id)}.pdf`,
-      contentType: 'application/pdf',
-      userId: resolvedUserId,
-      folderKey: 'labels',
-    })
-
-    const finalUploadUrl = Array.isArray(uploadUrl) ? uploadUrl[0] : uploadUrl
-    const labelKey = Array.isArray(key) ? key[0] : key
-
-    if (!finalUploadUrl || !labelKey) {
-      throw new Error('Failed to get presigned URL for label upload')
-    }
-
-    const uploadResponse = await axios.put(finalUploadUrl, pdfBuffer, {
-      headers: { 'Content-Type': 'application/pdf' },
-      timeout: 60000,
-      validateStatus: (status) => status >= 200 && status < 300,
-    })
-
-    if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
-      throw new Error(`Label upload failed with status ${uploadResponse.status}`)
-    }
-
-    const finalKey = typeof labelKey === 'string' ? labelKey.trim() : ''
-    if (!finalKey) {
-      throw new Error('Label key is invalid or empty after upload')
-    }
-
-    console.log(`ChoiceMee label generated for ${resolvedOrder?.order_number || resolvedOrder?.id}: ${finalKey}`)
-    return finalKey
-  } catch (err: any) {
-    console.error(
-      `Failed to generate/upload label for order ${resolvedOrder?.order_number || resolvedOrder?.id}:`,
-      err?.message || err,
-      err?.stack,
-    )
-    throw new Error(`Label generation/upload failed: ${err?.message || err}`)
-  }
+  console.log(`ChoiceMee label generated for ${resolvedOrder?.order_number || resolvedOrder?.id}: ${finalKey}`)
+  return finalKey
 }

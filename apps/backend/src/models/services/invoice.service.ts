@@ -904,7 +904,261 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
     ].filter(Boolean)
   }
 
-  const contentClassic: any[] = [buildHeaderBand(), ...buildClassicLayout()]
+  const contentClassic: any[] = [
+    {
+      columns: [
+        {
+          width: 130,
+          text: invoice.invoiceDate,
+          fontSize: 8,
+          color: '#111111',
+        },
+        {
+          width: '*',
+          text: PLATFORM_BRAND_NAME,
+          fontSize: 8,
+          color: '#111111',
+          alignment: 'center',
+        },
+      ],
+      margin: [0, 0, 0, 12],
+    },
+    {
+      columns: [
+        {
+          width: '*',
+          stack: [
+            images.logo
+              ? { image: 'logo', fit: [104, 52], margin: [0, 0, 0, 6] }
+              : {
+                  text: sellerDisplayName,
+                  fontSize: 18,
+                  bold: true,
+                  color: '#111111',
+                  margin: [0, 0, 0, 6],
+                },
+            { text: sellerDisplayName, fontSize: 12, color: '#111111', margin: [0, 2, 0, 10] },
+            { text: 'FROM', fontSize: 7.7, bold: true, color: '#374151', margin: [0, 0, 0, 8] },
+            ...sellerAddressLines.map((line) => ({
+              text: line,
+              fontSize: 7.7,
+              color: '#374151',
+              margin: [0, 0, 0, 2],
+            })),
+            sellerStateCode ? { text: `State Code: ${sellerStateCode}`, fontSize: 7.7, color: '#374151', margin: [0, 4, 0, 0] } : null,
+            invoice.gstNumber ? { text: `GSTIN: ${invoice.gstNumber}`, fontSize: 7.7, color: '#374151', margin: [0, 2, 0, 0] } : null,
+            invoice.panNumber ? { text: `PAN: ${invoice.panNumber}`, fontSize: 7.7, color: '#374151', margin: [0, 2, 0, 0] } : null,
+            supportContact ? { text: `Support: ${supportContact}`, fontSize: 7.7, color: '#374151', margin: [0, 2, 0, 0] } : null,
+          ].filter(Boolean),
+        },
+        {
+          width: 160,
+          stack: [
+            {
+              text: badgeIsCOD ? 'PAY ON DELIVERY' : 'PAID',
+              fontSize: 8.5,
+              bold: true,
+              color: '#111111',
+              alignment: 'center',
+              fillColor: badgeIsCOD ? '#fed7aa' : '#d1fad4',
+              margin: [0, 0, 0, 8],
+            },
+            {
+              table: {
+                widths: ['*'],
+                body: [
+                  [
+                    {
+                      stack: [
+                        { text: 'INVOICE NO.', fontSize: 6.8, bold: true, color: '#4b5563' },
+                        { text: invoiceNumber, fontSize: 11, bold: true, color: '#111111' },
+                      ],
+                      border: [false, false, false, false],
+                    },
+                  ],
+                ],
+              },
+              layout: 'noBorders',
+              margin: [0, 0, 0, 6],
+            },
+            {
+              table: {
+                widths: ['*'],
+                body: [
+                  [
+                    {
+                      stack: [
+                        { text: 'DATE', fontSize: 6.8, bold: true, color: '#4b5563' },
+                        { text: invoice.invoiceDate, fontSize: 9, color: '#111111' },
+                      ],
+                      border: [false, false, false, false],
+                    },
+                  ],
+                ],
+              },
+              layout: 'noBorders',
+              margin: [0, 0, 0, 8],
+            },
+          ].filter(Boolean),
+        },
+      ],
+      columnGap: 16,
+      margin: [0, 0, 0, 14],
+    },
+    {
+      columns: [
+        {
+          width: '*',
+          stack: [
+            { text: 'BILLING ADDRESS', fontSize: 8.8, bold: true, color: '#4b5563', margin: [0, 0, 0, 8] },
+            { text: invoice.buyerName, fontSize: 8.8, bold: true, color: '#111111', margin: [0, 0, 0, 6] },
+            ...buyerAddressLines.map((line) => ({
+              text: line,
+              fontSize: 7.7,
+              color: '#374151',
+              margin: [0, 0, 0, 2],
+            })),
+            invoice.buyerPhone ? { text: `Phone: ${invoice.buyerPhone}`, fontSize: 7.7, color: '#374151' } : null,
+            invoice.buyerEmail ? { text: `Email: ${invoice.buyerEmail}`, fontSize: 7.7, color: '#374151' } : null,
+          ].filter(Boolean),
+        },
+        {
+          width: '*',
+          stack: [
+            { text: 'SHIP TO', fontSize: 8.8, bold: true, color: '#4b5563', margin: [0, 0, 0, 8] },
+            { text: invoice.buyerName, fontSize: 8.8, bold: true, color: '#111111', margin: [0, 0, 0, 6] },
+            ...buyerAddressLines.map((line) => ({
+              text: line,
+              fontSize: 7.7,
+              color: '#374151',
+              margin: [0, 0, 0, 2],
+            })),
+            invoice.buyerPhone ? { text: `Phone: ${invoice.buyerPhone}`, fontSize: 7.7, color: '#374151' } : null,
+          ].filter(Boolean),
+        },
+      ],
+      columnGap: 24,
+      margin: [0, 0, 0, 20],
+    },
+    {
+      columns: [
+        {
+          width: '*',
+          stack: [
+            { text: 'Shipment Details', fontSize: 8.8, bold: true, color: '#000', margin: [0, 0, 0, 6] },
+            {
+              table: {
+                widths: ['*', 'auto'],
+                body: [
+                  ['Order ID', invoice.orderId || invoiceNumber],
+                  ['AWB Number', invoice.awbNumber || '-'],
+                  ['Pickup Pincode', invoice.pickupPincode || '-'],
+                  ['Delivery Pincode', invoice.deliveryPincode || invoice.buyerPincode || '-'],
+                  ['Order Date', invoice.orderDate || invoice.invoiceDate || '-'],
+                ].map(([label, value]) => [
+                  { text: label, fontSize: 9, color: '#4b5563' },
+                  { text: value || '-', alignment: 'right', fontSize: 9, color: '#000' },
+                ]),
+              },
+              layout: {
+                defaultBorder: false,
+                hLineColor: () => '#e5e7eb',
+                hLineWidth: (i: number) => (i === 0 ? 0 : 0.5),
+                paddingTop: () => 4,
+                paddingBottom: () => 4,
+              },
+            },
+          ],
+          margin: [0, 0, 0, 12],
+        },
+      ],
+    },
+    {
+      table: {
+        headerRows: 1,
+        widths: [24, '*', 62, 40, 70, 50, 70],
+        body: [
+          [
+            { text: 'S.No', bold: true, fontSize: 9, color: '#4b5563', alignment: 'center' },
+            { text: 'Item Description', bold: true, fontSize: 9, color: '#4b5563' },
+            { text: 'HSN/SAC', bold: true, fontSize: 9, color: '#4b5563', alignment: 'center' },
+            { text: 'Qty', bold: true, fontSize: 9, color: '#4b5563', alignment: 'right' },
+            { text: 'Unit Price', bold: true, fontSize: 9, color: '#4b5563', alignment: 'right' },
+            { text: 'Tax', bold: true, fontSize: 9, color: '#4b5563', alignment: 'right' },
+            { text: 'Total', bold: true, fontSize: 9, color: '#4b5563', alignment: 'right' },
+          ],
+          ...productRows,
+        ],
+      },
+      layout: {
+        hLineColor: () => '#e5e7eb',
+        vLineWidth: () => 0,
+        hLineWidth: (i: number) => (i === 0 ? 1 : 0.5),
+        paddingTop: () => 6,
+        paddingBottom: () => 6,
+      },
+      margin: [0, 0, 0, 12],
+    },
+    {
+      columns: [
+        {
+          width: '*',
+          stack: [
+            { text: 'NOTES', fontSize: 7.2, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
+            { text: notesText || 'System generated invoice.', fontSize: 7.2, color: '#374151' },
+            supportContact ? { text: `Support: ${supportContact}`, fontSize: 7.2, color: '#374151', margin: [0, 4, 0, 0] } : null,
+            termsText ? { text: `Terms & Conditions: ${termsText}`, fontSize: 6.8, color: '#374151', margin: [0, 4, 0, 0] } : null,
+          ].filter(Boolean),
+        },
+        {
+          width: 220,
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              [{ text: 'Subtotal', fontSize: 8, color: '#111111' }, { text: formatCurrency(subtotal), fontSize: 8, alignment: 'right', color: '#111111' }],
+              [{ text: 'Shipping', fontSize: 8, color: '#111111' }, { text: formatCurrency(shipping), fontSize: 8, alignment: 'right', color: '#111111' }],
+              [{ text: 'Gift Wrap', fontSize: 8, color: '#111111' }, { text: formatCurrency(giftWrap), fontSize: 8, alignment: 'right', color: '#111111' }],
+              [{ text: 'Transaction Fee', fontSize: 8, color: '#111111' }, { text: formatCurrency(txnFee), fontSize: 8, alignment: 'right', color: '#111111' }],
+              ...(codCharges > 0 ? [[{ text: 'COD Charges', fontSize: 8, color: '#111111' }, { text: formatCurrency(codCharges), fontSize: 8, alignment: 'right', color: '#111111' }]] : []),
+              ...(rtoCharges > 0 ? [[{ text: 'RTO Charges', fontSize: 8, color: '#111111' }, { text: formatCurrency(rtoCharges), fontSize: 8, alignment: 'right', color: '#111111' }]] : []),
+              ...(discount > 0 ? [[{ text: 'Discount', fontSize: 8, color: '#111111' }, { text: formatCurrency(-discount), fontSize: 8, alignment: 'right', color: '#111111' }]] : []),
+              ...(prepaid > 0 ? [[{ text: 'Prepaid Amount', fontSize: 8, color: '#111111' }, { text: formatCurrency(-prepaid), fontSize: 8, alignment: 'right', color: '#111111' }]] : []),
+              ...(taxTotal > 0 ? [[{ text: 'Tax', fontSize: 8, color: '#111111' }, { text: formatCurrency(taxTotal), fontSize: 8, alignment: 'right', color: '#111111' }]] : []),
+              [
+                { text: 'Grand Total', fontSize: 11, bold: true, color: '#000', fillColor: grandTotalBg },
+                { text: formatCurrency(grandTotalModern), fontSize: 11, bold: true, alignment: 'right', color: '#000', fillColor: grandTotalBg },
+              ],
+            ],
+          },
+          layout: {
+            defaultBorder: false,
+          },
+        },
+      ],
+      columnGap: 16,
+      margin: [0, 0, 0, 12],
+    },
+    {
+      columns: [
+        {
+          width: '*',
+          text: 'Authorized Signatory',
+          fontSize: 10,
+          bold: true,
+          color: '#000',
+        },
+        {
+          width: '*',
+          text: 'This is a system generated invoice and does not require a physical signature.',
+          fontSize: 7.5,
+          italics: true,
+          color: '#6b7280',
+          alignment: 'right',
+        },
+      ],
+      margin: [0, 12, 0, 0],
+    },
+  ]
 
   // -------------------
   // Thermal Layout
