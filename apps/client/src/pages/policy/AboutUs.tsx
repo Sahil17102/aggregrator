@@ -71,6 +71,31 @@ const AboutUs = () => {
             }}
             dangerouslySetInnerHTML={{ __html: content }}
           />
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              mt: 4,
+              mb: 1,
+              px: 1,
+            }}
+          >
+            <Box
+              component="img"
+              src="/images/about-us-seller.jpeg"
+              alt="ChoiceMee Logistics team portrait"
+              loading="lazy"
+              sx={{
+                width: '100%',
+                maxWidth: 440,
+                height: 'auto',
+                display: 'block',
+                borderRadius: 3,
+                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
+                objectFit: 'cover',
+              }}
+            />
+          </Box>
         </>
       )}
     </Stack>
