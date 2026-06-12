@@ -13,6 +13,16 @@ interface PageHeadingProps {
   eyebrow?: string
 }
 
+const normalizeHeadingText = (value: string) =>
+  value
+    .replace(/â€“|â€”/g, '-')
+    .replace(/â€˜|â€™/g, "'")
+    .replace(/â€œ|â€�/g, '"')
+    .replace(/â€¢/g, '•')
+    .replace(/â€¦/g, '...')
+    .replace(/Â©/g, '©')
+    .replace(/Â®/g, '®')
+
 const PageHeading: React.FC<PageHeadingProps> = ({
   title,
   subtitle,
@@ -21,6 +31,11 @@ const PageHeading: React.FC<PageHeadingProps> = ({
   icon = <TbSparkles size={18} />,
   eyebrow = 'Panel',
 }) => {
+  const normalizedTitle = typeof title === 'string' ? normalizeHeadingText(title) : title
+  const normalizedSubtitle =
+    typeof subtitle === 'string' ? normalizeHeadingText(subtitle) : subtitle
+  const normalizedEyebrow = typeof eyebrow === 'string' ? normalizeHeadingText(eyebrow) : eyebrow
+
   return (
     <Box
       sx={{
@@ -75,7 +90,7 @@ const PageHeading: React.FC<PageHeadingProps> = ({
                 letterSpacing: 0,
               }}
             >
-              {eyebrow}
+              {normalizedEyebrow}
             </Typography>
             <Typography
               fontSize={fontSize ?? { xs: '1.45rem', md: '1.95rem' }}
@@ -86,12 +101,12 @@ const PageHeading: React.FC<PageHeadingProps> = ({
                 letterSpacing: 0,
               }}
             >
-              {title}
+              {normalizedTitle}
             </Typography>
           </Stack>
         </Stack>
 
-        {subtitle && (
+        {normalizedSubtitle && (
           <Typography
             sx={{
               color: brand.inkSoft,
@@ -102,7 +117,7 @@ const PageHeading: React.FC<PageHeadingProps> = ({
               pl: center ? 0 : { xs: 0, sm: 6 },
             }}
           >
-            {subtitle}
+            {normalizedSubtitle}
           </Typography>
         )}
       </Stack>
