@@ -21,7 +21,7 @@ interface AuthCtx {
   user: IUserProfileDB
   loading: boolean
   isAuthenticated: boolean
-  setTokens: (access: string, refresh: string) => void
+  setTokens: (access: string, refresh: string, keepSignedIn?: boolean) => void
   clearTokens: () => void
   logout: () => Promise<void>
   refetchUser: () => void
@@ -58,8 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // is done in axios interceptors which clear tokens and redirect as needed.
   }, [user])
 
-  const setTokens = (access: string, refresh: string) => {
-    setAuthTokens(access, refresh)
+  const setTokens = (access: string, refresh: string, keepSignedIn?: boolean) => {
+    setAuthTokens(access, refresh, keepSignedIn)
     setIsAuthenticated(true)
     refetchUser()
   }

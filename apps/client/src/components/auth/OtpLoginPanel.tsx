@@ -9,8 +9,6 @@ import { getPostAuthRedirect } from '../../utils/authRedirect'
 import CustomIconLoadingButton from '../UI/button/CustomLoadingButton'
 import CustomCheckbox from '../UI/inputs/CustomCheckbox'
 import CustomInput from '../UI/inputs/CustomInput'
-import CustomModal from '../UI/modal/CustomModal'
-import TermsAndConditionsText from '../terms/TermsAndConditionsText'
 import { toast } from '../UI/Toast'
 import { getAuthErrorMessage } from './getAuthErrorMessage'
 import AuthCodePreview from './AuthCodePreview'
@@ -65,10 +63,9 @@ export default function OtpLoginPanel({
   const [step, setStep] = useState<'request' | 'verify'>('request')
   const [email, setEmail] = useState(sessionStorage.getItem('activeEmail') ?? '')
   const [code, setCode] = useState('')
-  const [termsChecked, setTermsChecked] = useState(false)
+  const [keepMeSignedIn, setKeepMeSignedIn] = useState(false)
   const [inlineOtp, setInlineOtp] = useState('')
   const [error, setError] = useState('')
-  const [openTerms, setOpenTerms] = useState(false)
 
   const { mutate: requestOtp, isPending: requesting } = useRequestOtp()
   const { mutate: verifyOtp, isPending: verifying } = useVerifyOtp()
@@ -89,14 +86,6 @@ export default function OtpLoginPanel({
 
     if (emailError) {
       setError(emailError)
-      return
-    }
-
-    if (!termsChecked) {
-      toast.open({
-        message: 'Accept the Terms and Conditions to continue.',
-        severity: 'warning',
-      })
       return
     }
 
@@ -143,7 +132,7 @@ export default function OtpLoginPanel({
         }) => {
           sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
           setUserId(user?.id ?? '')
-          setTokens(token, refreshToken)
+          setTokens(token, refreshToken, keepMeSignedIn)
           navigate(getPostAuthRedirect(user), { replace: true })
         },
         onError: (err: unknown) => {
@@ -197,22 +186,14 @@ export default function OtpLoginPanel({
             sx={{ mt: compactLogin ? 0.45 : 1, mb: compactLogin ? 0.85 : 1.8, alignItems: 'flex-start' }}
             control={
               <CustomCheckbox
-                checked={termsChecked}
-                onChange={(event) => setTermsChecked(event.target.checked)}
+                checked={keepMeSignedIn}
+                onChange={(event) => setKeepMeSignedIn(event.target.checked)}
                 color="primary"
               />
             }
             label={
               <Typography sx={{ color: compactLogin ? '#111111' : brand.inkSoft, fontSize: '0.82rem', mt: 0.25 }}>
-                I agree to{' '}
-                <Link
-                  component="button"
-                  underline="hover"
-                  onClick={() => setOpenTerms(true)}
-                  sx={{ color: compactLogin ? AUTH_ORANGE : brand.ink, fontWeight: 700 }}
-                >
-                  Terms and Conditions
-                </Link>
+                Keep me signed in on this device
               </Typography>
             }
           />
@@ -222,7 +203,7 @@ export default function OtpLoginPanel({
             text={compactLogin ? 'Log In' : 'Send verification code'}
             loading={requesting}
             loadingText="Sending..."
-            disabled={Boolean(emailError) || !termsChecked}
+            disabled={Boolean(emailError)}
             styles={compactLogin ? loginButtonStyles : { width: '100%' }}
             textColor={compactLogin ? '#FFFFFF' : undefined}
             endIconNode={compactLogin ? <FiArrowRight size={22} /> : undefined}
@@ -293,14 +274,6 @@ export default function OtpLoginPanel({
           />
         </Stack>
       )}
-
-      <CustomModal
-        open={openTerms}
-        onClose={() => setOpenTerms(false)}
-        title="Terms and Conditions"
-      >
-        <TermsAndConditionsText />
-      </CustomModal>
     </Stack>
   )
 }

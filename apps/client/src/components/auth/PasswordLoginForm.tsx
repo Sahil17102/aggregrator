@@ -29,10 +29,9 @@ const primaryButtonStyles = {
 interface IPasswordFormProps {
   setStep: Dispatch<SetStateAction<number>>
   step: number
-  setOpenTerms: Dispatch<SetStateAction<boolean>>
 }
 
-export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPasswordFormProps) {
+export default function PasswordLoginForm({ setStep, step }: IPasswordFormProps) {
   const { setTokens, setUserId } = useAuth()
   const navigate = useNavigate()
   const { mutate: requestPasswordLogin, isPending } = useRequestPasswordLogin()
@@ -52,7 +51,7 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
     password: false,
   })
 
-  const [termsChecked, setTermsChecked] = useState(false)
+  const [keepMeSignedIn, setKeepMeSignedIn] = useState(false)
 
   const handleSignupRedirect = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
@@ -88,32 +87,9 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
     setErrors((prev) => ({ ...prev, [field]: error }))
   }
 
-  const termsLabel = (
-    <Typography fontSize="13px" display="flex" alignItems="center" gap="3px" color="#6A616A">
-      I agree to{' '}
-      <Link
-        component="button"
-        underline="hover"
-        onClick={() => setOpenTerms(true)}
-        sx={{ cursor: 'pointer', color: DE_BLUE, fontWeight: 700 }}
-      >
-        Terms and Conditions
-      </Link>
-    </Typography>
-  )
-
   const isFormValid = !validateEmail(emailForm.email) && !validatePassword(emailForm.password)
 
   const handleSubmit = () => {
-    if (!termsChecked) {
-      toast.open({
-        message: 'Please accept the Terms and Conditions to continue.',
-        severity: 'warning',
-        position: { vertical: 'top', horizontal: 'center' },
-      })
-      return
-    }
-
     const emailError = validateEmail(emailForm.email)
     const passwordError = validatePassword(emailForm.password)
 
@@ -147,7 +123,7 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
             }
 
             setUserId(user?.id)
-            setTokens(token, refreshToken)
+            setTokens(token, refreshToken, keepMeSignedIn)
             navigate(getPostAuthRedirect(user), { replace: true })
           },
           onError: (error: any) => {
@@ -226,14 +202,14 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
         sx={{ mt: 0.4, alignItems: 'flex-start' }}
         control={
           <CustomCheckbox
-            checked={termsChecked}
-            onChange={(e) => setTermsChecked(e.target.checked)}
+            checked={keepMeSignedIn}
+            onChange={(e) => setKeepMeSignedIn(e.target.checked)}
             color="primary"
           />
         }
         label={
-          <Typography mt={0.4} variant="body2">
-            {termsLabel}
+          <Typography mt={0.4} variant="body2" color="#6A616A">
+            Keep me signed in on this device
           </Typography>
         }
       />
@@ -282,6 +258,7 @@ export default function PasswordLoginForm({ setStep, step, setOpenTerms }: IPass
       email={emailForm?.email}
       resendMail={handleSubmit}
       password={emailForm?.password}
+      keepMeSignedIn={keepMeSignedIn}
     />
   )
 }

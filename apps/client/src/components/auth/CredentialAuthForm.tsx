@@ -74,6 +74,7 @@ export default function CredentialAuthForm({
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [termsChecked, setTermsChecked] = useState(false)
+  const [keepMeSignedIn, setKeepMeSignedIn] = useState(false)
   const [inlineCode, setInlineCode] = useState('')
   const [openTerms, setOpenTerms] = useState(false)
   const [error, setError] = useState('')
@@ -120,7 +121,7 @@ export default function CredentialAuthForm({
       return
     }
 
-    if (!termsChecked) {
+    if (mode === 'signup' && !termsChecked) {
       toast.open({
         message: 'Accept the Terms and Conditions to continue.',
         severity: 'warning',
@@ -152,7 +153,7 @@ export default function CredentialAuthForm({
             }
             sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
             setUserId(response?.user?.id ?? '')
-            setTokens(response.token, response.refreshToken)
+            setTokens(response.token, response.refreshToken, mode === 'login' ? keepMeSignedIn : true)
             navigate(getPostAuthRedirect(response?.user), { replace: true })
             return
           }
@@ -218,7 +219,7 @@ export default function CredentialAuthForm({
         }) => {
           sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
           setUserId(user?.id ?? '')
-          setTokens(token, refreshToken)
+          setTokens(token, refreshToken, mode === 'login' ? keepMeSignedIn : true)
           navigate(getPostAuthRedirect(user), { replace: true })
         },
         onError: (err: unknown) => {
@@ -335,36 +336,57 @@ export default function CredentialAuthForm({
             </Typography>
           ) : null}
 
-          <FormControlLabel
-            sx={{ mt: compactLogin ? 0.1 : 0.35, mb: compactLogin ? 0.55 : 0.95, alignItems: 'flex-start' }}
-            control={
-              <CustomCheckbox
-                checked={termsChecked}
-                onChange={(event) => setTermsChecked(event.target.checked)}
-                color="primary"
-              />
-            }
-            label={
-              <Typography sx={{ color: compactLogin ? '#111111' : brand.inkSoft, fontSize: '0.82rem', mt: 0.25 }}>
-                I agree to{' '}
-                <Link
-                  component="button"
-                  underline="hover"
-                  onClick={() => setOpenTerms(true)}
-                  sx={{ color: compactLogin ? AUTH_ORANGE : brand.ink, fontWeight: 700 }}
-                >
-                  Terms and Conditions
-                </Link>
-              </Typography>
-            }
-          />
+          {mode === 'signup' ? (
+            <FormControlLabel
+              sx={{ mt: compactLogin ? 0.1 : 0.35, mb: compactLogin ? 0.55 : 0.95, alignItems: 'flex-start' }}
+              control={
+                <CustomCheckbox
+                  checked={termsChecked}
+                  onChange={(event) => setTermsChecked(event.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography sx={{ color: compactLogin ? '#111111' : brand.inkSoft, fontSize: '0.82rem', mt: 0.25 }}>
+                  I agree to{' '}
+                  <Link
+                    component="button"
+                    underline="hover"
+                    onClick={() => setOpenTerms(true)}
+                    sx={{ color: compactLogin ? AUTH_ORANGE : brand.ink, fontWeight: 700 }}
+                  >
+                    Terms and Conditions
+                  </Link>
+                </Typography>
+              }
+            />
+          ) : (
+            <FormControlLabel
+              sx={{ mt: compactLogin ? 0.1 : 0.35, mb: compactLogin ? 0.55 : 0.95, alignItems: 'flex-start' }}
+              control={
+                <CustomCheckbox
+                  checked={keepMeSignedIn}
+                  onChange={(event) => setKeepMeSignedIn(event.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography sx={{ color: compactLogin ? '#111111' : brand.inkSoft, fontSize: '0.82rem', mt: 0.25 }}>
+                  Keep me signed in on this device
+                </Typography>
+              }
+            />
+          )}
 
           <CustomIconLoadingButton
             type="submit"
             text={compactLogin ? 'Log In' : mode === 'signup' ? 'Create account' : 'Continue with password'}
             loading={requesting}
             loadingText={compactLogin ? 'Logging in...' : mode === 'signup' ? 'Creating...' : 'Checking...'}
-            disabled={Boolean(nameError || emailError || phoneError || passwordError) || !termsChecked}
+            disabled={
+              Boolean(nameError || emailError || phoneError || passwordError) ||
+              (mode === 'signup' && !termsChecked)
+            }
             styles={compactLogin ? loginButtonStyles : { width: '100%' }}
             textColor={compactLogin ? '#FFFFFF' : undefined}
             endIconNode={compactLogin ? <FiArrowRight size={22} /> : undefined}

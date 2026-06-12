@@ -2,7 +2,6 @@ import {
   Box,
   Chip,
   FormControlLabel,
-  Link,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -46,7 +45,7 @@ export default function PhoneForm() {
   const [step, setStep] = useState<number>(0)
   const [preferredLoginMethod, setPreferredLoginMethod] = useState<'phone' | 'password'>('phone')
   const [email, setEmail] = useState('')
-  const [termsChecked, setTermsChecked] = useState(false)
+  const [keepMeSignedIn, setKeepMeSignedIn] = useState(false)
   const [openTerms, setOpenTerms] = useState(false)
 
   const { mutate: sendOtpRequest, isPending } = useRequestOtp()
@@ -62,15 +61,6 @@ export default function PhoneForm() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-
-      if (!termsChecked) {
-        toast.open({
-          message: 'Please accept the Terms and Conditions to continue.',
-          severity: 'warning',
-          position: { vertical: 'top', horizontal: 'center' },
-        })
-        return
-      }
 
       setPreferredLoginMethod('phone')
       sessionStorage.setItem('preferredMethod', 'phone')
@@ -95,26 +85,12 @@ export default function PhoneForm() {
         },
       })
     },
-    [email, termsChecked, sendOtpRequest],
+    [email, sendOtpRequest],
   )
 
   useEffect(() => {
     if (activeEmail) setEmail(activeEmail)
   }, [activeEmail])
-
-  const termsLabel = (
-    <Typography fontSize="13px" display="flex" alignItems="center" gap="3px" color="#6A616A">
-      I agree to{' '}
-      <Link
-        component="button"
-        underline="hover"
-        onClick={() => setOpenTerms(true)}
-        sx={{ cursor: 'pointer', color: DE_BLUE, fontWeight: 700 }}
-      >
-        Terms and Conditions
-      </Link>
-    </Typography>
-  )
 
   const renderOtpEntry = () =>
     step === 0 ? (
@@ -137,14 +113,14 @@ export default function PhoneForm() {
           sx={{ mt: 1.2, mb: 2.3, alignItems: 'flex-start' }}
           control={
             <CustomCheckbox
-              checked={termsChecked}
-              onChange={(e) => setTermsChecked(e.target.checked)}
+              checked={keepMeSignedIn}
+              onChange={(e) => setKeepMeSignedIn(e.target.checked)}
               color="primary"
             />
           }
           label={
-            <Typography mt={0.5} variant="body2">
-              {termsLabel}
+            <Typography mt={0.5} variant="body2" color="#6A616A">
+              Keep me signed in on this device
             </Typography>
           }
         />
@@ -153,7 +129,7 @@ export default function PhoneForm() {
           type="submit"
           styles={primaryButtonStyles}
           textColor="#ffffff"
-          disabled={!email || !termsChecked || isPending || !isValidEmail}
+          disabled={!email || isPending || !isValidEmail}
           text="Send verification code"
           loading={isPending}
           loadingText="Sending..."
@@ -162,6 +138,7 @@ export default function PhoneForm() {
     ) : (
       <OtpForm
         email={email}
+        keepMeSignedIn={keepMeSignedIn}
         onEditEmail={() => {
           setStep(0)
         }}
@@ -233,7 +210,7 @@ export default function PhoneForm() {
       {preferredLoginMethod === 'phone' ? (
         renderOtpEntry()
       ) : (
-        <PasswordLoginForm step={step} setOpenTerms={setOpenTerms} setStep={setStep} />
+        <PasswordLoginForm step={step} setStep={setStep} />
       )}
 
       <CustomIconLoadingButton

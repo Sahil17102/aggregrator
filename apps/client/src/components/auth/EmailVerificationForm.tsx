@@ -35,6 +35,7 @@ interface IEmailVerificationProps {
   onEditEmail: () => void
   password: string
   resendMail: () => void
+  keepMeSignedIn?: boolean
 }
 
 const maskEmail = (value: string) => {
@@ -49,6 +50,7 @@ export default function EmailVerificationForm({
   password,
   onEditEmail,
   resendMail,
+  keepMeSignedIn = false,
 }: IEmailVerificationProps) {
   const { setTokens, setUserId } = useAuth()
   const navigate = useNavigate()
@@ -136,7 +138,7 @@ export default function EmailVerificationForm({
       { email, otp: code, password },
       {
         onSuccess: ({ token, refreshToken, user }) => {
-          setTokens(token, refreshToken)
+          setTokens(token, refreshToken, keepMeSignedIn)
           setUserId(user?.id)
           sessionStorage.setItem('activeEmail', email)
           setError('')

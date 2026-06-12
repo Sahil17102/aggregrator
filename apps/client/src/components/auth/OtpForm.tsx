@@ -40,9 +40,10 @@ const ghostButtonStyles = {
 type Props = {
   email: string
   onEditEmail: () => void
+  keepMeSignedIn?: boolean
 }
 
-export default function OtpForm({ email, onEditEmail }: Props) {
+export default function OtpForm({ email, onEditEmail, keepMeSignedIn = false }: Props) {
   const { setTokens, setUserId } = useAuth()
   const navigate = useNavigate()
   const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''))
@@ -144,7 +145,7 @@ export default function OtpForm({ email, onEditEmail }: Props) {
         onSuccess: ({ token, refreshToken, user }) => {
           sessionStorage.setItem('activeEmail', email)
           setUserId(user?.id)
-          setTokens(token, refreshToken)
+          setTokens(token, refreshToken, keepMeSignedIn)
           navigate(getPostAuthRedirect(user), { replace: true })
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
