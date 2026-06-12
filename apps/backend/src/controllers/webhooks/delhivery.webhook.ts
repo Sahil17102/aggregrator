@@ -1,11 +1,143 @@
 import { Request, Response } from 'express'
+import crypto from 'crypto'
 import { and, eq, gte, isNull } from 'drizzle-orm'
 import { db } from '../../models/client'
+import { getDelhiveryCredentials } from '../../models/services/delhiveryCredentials.service'
 import {
   processDelhiveryDocumentWebhook,
   processDelhiveryWebhook,
 } from '../../models/services/webhookProcessor'
 import { pending_webhooks } from '../../schema/schema'
+
+const DELHIVERY_WEBHOOK_SECRET_HEADERS = [
+  'x-delhivery-webhook-secret',
+  'x-delhivery-webhook-signature',
+  'x-webhook-secret',
+  'x-webhook-signature',
+  'authorization',
+]
+
+const normalizeDocType = (value?: string | null) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+
+const resolveDocumentTypeFromRequest = (req: Request, payload: any, shipment: any) => {
+  const routeHint = normalizeDocType(req.originalUrl || req.path || '')
+  const rawType =
+    payload?.DocumentType ||
+    payload?.documentType ||
+    shipment?.DocumentType ||
+    shipment?.documentType ||
+    null
+
+  const normalizedType = normalizeDocType(rawType)
+  if (normalizedType.includes('epod')) return 'EPOD'
+  if (normalizedType.includes('sorter')) return 'SorterImage'
+  if (normalizedType.includes('qc')) return 'QCImage'
+  if (normalizedType.includes('pod')) return 'POD'
+
+  const hasEpodPayload =
+    payload?.EPOD ||
+    payload?.epod ||
+    shipment?.EPOD ||
+    shipment?.epod ||
+    routeHint.includes('epod')
+  if (hasEpodPayload) return 'EPOD'
+
+  const hasSorterPayload =
+    payload?.SorterImage ||
+    payload?.sorterImage ||
+    payload?.Weight_images ||
+    payload?.weight_images ||
+    shipment?.SorterImage ||
+    shipment?.sorterImage ||
+    shipment?.Weight_images ||
+    shipment?.weight_images ||
+    routeHint.includes('sorter')
+  if (hasSorterPayload) return 'SorterImage'
+
+  const hasQcPayload =
+    payload?.QCImage ||
+    payload?.qcImage ||
+    payload?.Image ||
+    payload?.image ||
+    shipment?.QCImage ||
+    shipment?.qcImage ||
+    shipment?.Image ||
+    shipment?.image ||
+    routeHint.includes('qc')
+  if (hasQcPayload) return 'QCImage'
+
+  const hasPodPayload =
+    payload?.PODDocument ||
+    payload?.podDocument ||
+    payload?.POD ||
+    payload?.pod ||
+    shipment?.PODDocument ||
+    shipment?.podDocument ||
+    shipment?.POD ||
+    shipment?.pod ||
+    routeHint.includes('pod')
+  if (hasPodPayload) return 'POD'
+
+  return null
+}
+
+const getHeaderValue = (headers: Request['headers'], names: string[]) => {
+  const normalized = headers as Record<string, string | string[] | undefined>
+  for (const header of names) {
+    const value = normalized[header] || normalized[header.toLowerCase()]
+    if (!value) continue
+    if (Array.isArray(value) && value.length) return String(value[0]).trim()
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return ''
+}
+
+const verifyDelhiveryWebhookSecret = async (req: Request) => {
+  const configuredSecret = (await getDelhiveryCredentials()).webhookSecret.trim()
+  const receivedSecret = getHeaderValue(req.headers, DELHIVERY_WEBHOOK_SECRET_HEADERS)
+
+  if (!configuredSecret) {
+    if (receivedSecret) {
+      console.info('ℹ️ Delhivery webhook secret header received but no secret is configured.')
+    }
+    return true
+  }
+
+  if (!receivedSecret) {
+    console.warn('⚠️ Delhivery webhook missing secret header')
+    return false
+  }
+
+  const rawBody = String((req as any).rawBody || (req.body ? JSON.stringify(req.body) : ''))
+  const expectedHmac =
+    'sha256=' + crypto.createHmac('sha256', configuredSecret).update(rawBody).digest('hex')
+  const normalizedCandidates = [
+    receivedSecret,
+    receivedSecret.startsWith('Bearer ') ? receivedSecret.slice('Bearer '.length).trim() : receivedSecret,
+    receivedSecret.startsWith('sha256=') ? receivedSecret : `sha256=${receivedSecret}`,
+  ]
+
+  const matches = normalizedCandidates.some((candidate) => {
+    const candidateBuf = Buffer.from(candidate)
+    const secretBuf = Buffer.from(configuredSecret)
+    const hmacBuf = Buffer.from(expectedHmac)
+    return (
+      (candidateBuf.length === secretBuf.length && crypto.timingSafeEqual(candidateBuf, secretBuf)) ||
+      (candidateBuf.length === hmacBuf.length && crypto.timingSafeEqual(candidateBuf, hmacBuf))
+    )
+  })
+
+  if (!matches) {
+    console.warn('⚠️ Delhivery webhook rejected: invalid secret/signature')
+    return false
+  }
+
+  return true
+}
 
 /**
  * Delhivery Scan Push Webhook Handler
@@ -17,6 +149,10 @@ export const delhiveryScanPushHandler = async (req: Request, res: Response) => {
   const shipment = payload?.Shipment
   const awb = shipment?.AWB || payload?.waybill || payload?.AWB || null
   const status = shipment?.Status?.Status || payload?.status || 'unknown'
+
+  if (!(await verifyDelhiveryWebhookSecret(req))) {
+    return res.status(401).json({ success: false, message: 'invalid webhook secret' })
+  }
 
   console.log('='.repeat(80))
   console.log(`📦 [${timestamp}] Delhivery Scan Push Webhook Received`)
@@ -101,12 +237,12 @@ export const delhiveryDocumentPushHandler = async (req: Request, res: Response) 
   const shipment = payload?.Shipment || payload
   const awb = shipment?.AWB || payload?.AWB || payload?.waybill || null
 
+  if (!(await verifyDelhiveryWebhookSecret(req))) {
+    return res.status(401).json({ success: false, message: 'invalid webhook secret' })
+  }
+
   // Detect document type
-  const documentType =
-    payload?.DocumentType ||
-    (payload?.PODDocument || shipment?.PODDocument ? 'POD' : null) ||
-    (payload?.SorterImage || shipment?.SorterImage ? 'SorterImage' : null) ||
-    (payload?.QCImage || shipment?.QCImage ? 'QCImage' : null)
+  const documentType = resolveDocumentTypeFromRequest(req, payload, shipment)
 
   console.log('='.repeat(80))
   console.log(`📄 [${timestamp}] Delhivery Document Push Webhook Received`)
@@ -160,21 +296,30 @@ export const delhiveryWebhookHandler = async (req: Request, res: Response) => {
   const awb = shipment?.AWB || payload?.waybill || payload?.AWB || null
   const status = shipment?.Status?.Status || payload?.status || 'unknown'
 
+  if (!(await verifyDelhiveryWebhookSecret(req))) {
+    return res.status(401).json({ success: false, message: 'invalid webhook secret' })
+  }
+
   // Detect webhook type: Scan Push (status update) vs Document Push (POD, Sorter Image, QC Image)
   const isDocumentPush =
     payload?.DocumentType ||
+    payload?.documentType ||
     payload?.PODDocument ||
+    payload?.podDocument ||
     payload?.SorterImage ||
+    payload?.sorterImage ||
+    payload?.Weight_images ||
+    payload?.weight_images ||
     payload?.QCImage ||
+    payload?.qcImage ||
+    payload?.Image ||
+    payload?.image ||
     shipment?.PODDocument ||
     shipment?.SorterImage ||
-    shipment?.QCImage
-
-  const documentType =
-    payload?.DocumentType ||
-    (payload?.PODDocument || shipment?.PODDocument ? 'POD' : null) ||
-    (payload?.SorterImage || shipment?.SorterImage ? 'SorterImage' : null) ||
-    (payload?.QCImage || shipment?.QCImage ? 'QCImage' : null)
+    shipment?.Weight_images ||
+    shipment?.QCImage ||
+    shipment?.Image
+  const documentType = resolveDocumentTypeFromRequest(req, payload, shipment)
 
   console.log('='.repeat(80))
   console.log(`📦 [${timestamp}] Delhivery Webhook Received`)

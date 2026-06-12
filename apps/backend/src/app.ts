@@ -263,11 +263,30 @@ app.post(
   }),
   xpressbeesWebhookHandler,
 )
-// Delhivery webhooks - separate endpoints for Scan Push and Document Push
-app.post('/api/webhook/delhivery/scan', express.json(), delhiveryScanPushHandler) // Scan Push (Status Updates)
-app.post('/api/webhook/delhivery/document', express.json(), delhiveryDocumentPushHandler) // Document Push (POD, Sorter Image, QC Image)
+// Delhivery webhooks - aliased endpoints for Scan Push and Document Push
+const delhiveryWebhookJson = express.json({
+  verify: (req: any, _res, buf) => {
+    req.rawBody = Buffer.from(buf)
+  },
+})
+
+// Scan-style status updates are routed through the same processor so NDR, RTO,
+// and weight-discrepancy signals all share one consistent reconciliation path.
+app.post('/api/webhook/delhivery/scan', delhiveryWebhookJson, delhiveryScanPushHandler)
+app.post('/api/webhook/delhivery/scan-push', delhiveryWebhookJson, delhiveryScanPushHandler)
+app.post('/api/webhook/delhivery/ndr', delhiveryWebhookJson, delhiveryScanPushHandler)
+app.post('/api/webhook/delhivery/rto', delhiveryWebhookJson, delhiveryScanPushHandler)
+app.post('/api/webhook/delhivery/weight-discrepancy', delhiveryWebhookJson, delhiveryScanPushHandler)
+
+// Document-style payloads for EPOD, Sorter Image, and QC Image are normalized
+// in the same handler so Delhivery can keep separate forms while the backend
+// preserves one storage and reconciliation path.
+app.post('/api/webhook/delhivery/document', delhiveryWebhookJson, delhiveryDocumentPushHandler)
+app.post('/api/webhook/delhivery/epod', delhiveryWebhookJson, delhiveryDocumentPushHandler)
+app.post('/api/webhook/delhivery/sorter-image', delhiveryWebhookJson, delhiveryDocumentPushHandler)
+app.post('/api/webhook/delhivery/qc-image', delhiveryWebhookJson, delhiveryDocumentPushHandler)
 // Legacy unified endpoint (auto-detects type) - kept for backward compatibility
-app.post('/api/webhook/delhivery/order', express.json(), delhiveryWebhookHandler)
+app.post('/api/webhook/delhivery/order', delhiveryWebhookJson, delhiveryWebhookHandler)
 export { app, server } // Ã¢Å“â€¦ named exports
 
 

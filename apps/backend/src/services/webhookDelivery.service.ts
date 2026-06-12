@@ -14,6 +14,7 @@ export type WebhookEventType =
   | 'order.cancelled'
   | 'order.return_created'
   | 'order.ndr'
+  | 'order.weight_discrepancy'
   | 'shipment.label_generated'
   | 'shipment.manifest_generated'
   | 'tracking.updated'

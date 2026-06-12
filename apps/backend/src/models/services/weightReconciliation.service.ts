@@ -12,11 +12,61 @@ import {
 import { db } from '../client'
 import { createWalletTransaction } from './wallet.service'
 import { sendWeightDiscrepancyEmail } from './weightReconciliationEmail.service'
+import { sendWebhookEvent } from '../../services/webhookDelivery.service'
 import { calculateFreight } from './pricing/chargeableFreight'
 import { computeB2CFreightForOrder } from './shiprocket.service'
 
 const toChargeableGrams = (weightKg: number) =>
   Math.max(0, Math.round(Number(weightKg || 0) * 1000))
+
+const emitWeightDiscrepancyWebhook = async (params: {
+  userId: string
+  discrepancy: any
+  action: 'created' | 'accepted' | 'rejected' | 'disputed'
+  notes?: string | null
+  disputeId?: string | null
+}) => {
+  const { userId, discrepancy, action, notes, disputeId } = params
+
+  await sendWebhookEvent(userId, 'order.weight_discrepancy', {
+    action,
+    discrepancy_id: discrepancy.id,
+    dispute_id: disputeId || discrepancy.dispute_id || undefined,
+    order_id: discrepancy.b2c_order_id || discrepancy.b2b_order_id || undefined,
+    order_type: discrepancy.order_type,
+    order_number: discrepancy.order_number,
+    awb_number: discrepancy.awb_number || undefined,
+    courier_partner: discrepancy.courier_partner || undefined,
+    status: discrepancy.status,
+    declared_weight: Number(discrepancy.declared_weight || 0),
+    actual_weight:
+      discrepancy.actual_weight !== null && discrepancy.actual_weight !== undefined
+        ? Number(discrepancy.actual_weight)
+        : undefined,
+    volumetric_weight:
+      discrepancy.volumetric_weight !== null && discrepancy.volumetric_weight !== undefined
+        ? Number(discrepancy.volumetric_weight)
+        : undefined,
+    charged_weight: Number(discrepancy.charged_weight || 0),
+    weight_difference: Number(discrepancy.weight_difference || 0),
+    additional_charge: Number(discrepancy.additional_charge || 0),
+    original_shipping_charge:
+      discrepancy.original_shipping_charge !== null &&
+      discrepancy.original_shipping_charge !== undefined
+        ? Number(discrepancy.original_shipping_charge)
+        : undefined,
+    revised_shipping_charge:
+      discrepancy.revised_shipping_charge !== null &&
+      discrepancy.revised_shipping_charge !== undefined
+        ? Number(discrepancy.revised_shipping_charge)
+        : undefined,
+    notes: notes || discrepancy.resolution_notes || undefined,
+    detected_at: discrepancy.detected_at?.toISOString?.() || discrepancy.detected_at || undefined,
+    updated_at: discrepancy.updated_at?.toISOString?.() || discrepancy.updated_at || undefined,
+  }).catch((err) => {
+    console.error('Failed to send weight discrepancy webhook event:', err)
+  })
+}
 
 interface CreateDiscrepancyParams {
   orderType: 'b2c' | 'b2b'
@@ -357,6 +407,14 @@ export async function createWeightDiscrepancy(params: CreateDiscrepancyParams) {
       // Don't fail the entire operation if wallet charge fails
     }
   }
+
+  emitWeightDiscrepancyWebhook({
+    userId,
+    discrepancy,
+    action: 'created',
+  }).catch((err) => {
+    console.error('Failed to emit weight discrepancy created webhook:', err)
+  })
 
   // Send email notification based on user preferences
   if (settings) {
@@ -724,6 +782,20 @@ export async function acceptWeightDiscrepancy(
     })
   })
 
+  emitWeightDiscrepancyWebhook({
+    userId,
+    discrepancy: {
+      ...discrepancy,
+      status: 'accepted',
+      resolution_notes: notes || discrepancy.resolution_notes || null,
+      resolved_at: new Date(),
+    },
+    action: 'accepted',
+    notes,
+  }).catch((err) => {
+    console.error('Failed to emit weight discrepancy accepted webhook:', err)
+  })
+
   return true
 }
 
@@ -769,6 +841,20 @@ export async function rejectWeightDiscrepancy(
     changedByType: 'customer',
     reason: `Discrepancy rejected: ${reason}`,
     source: 'manual_entry',
+  })
+
+  emitWeightDiscrepancyWebhook({
+    userId,
+    discrepancy: {
+      ...discrepancy,
+      status: 'rejected',
+      resolution_notes: reason,
+      resolved_at: new Date(),
+    },
+    action: 'rejected',
+    notes: reason,
+  }).catch((err) => {
+    console.error('Failed to emit weight discrepancy rejected webhook:', err)
   })
 
   return true
@@ -850,6 +936,21 @@ export async function createWeightDispute(params: CreateDisputeParams) {
     reason: `Dispute raised: ${disputeReason}`,
     notes: customerComment,
     source: 'manual_entry',
+  })
+
+  emitWeightDiscrepancyWebhook({
+    userId,
+    discrepancy: {
+      ...discrepancy,
+      status: 'disputed',
+      dispute_id: dispute.id,
+      has_dispute: true,
+    },
+    action: 'disputed',
+    notes: customerComment,
+    disputeId: dispute.id,
+  }).catch((err) => {
+    console.error('Failed to emit weight discrepancy disputed webhook:', err)
   })
 
   return dispute
