@@ -88,6 +88,11 @@ export default function CredentialAuthForm({
     navigate('/signup')
   }
 
+  const handleForgotPasswordRedirect = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    navigate('/forgot-password')
+  }
+
   const emailError = useMemo(() => {
     if (!email) return 'Email is required.'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email address.'
@@ -401,6 +406,21 @@ export default function CredentialAuthForm({
               mt: 0.35,
             }}
           >
+            {mode === 'login' ? (
+              <>
+                <Link
+                  href="/forgot-password"
+                  underline="always"
+                  onClick={handleForgotPasswordRedirect}
+                  sx={{ color: AUTH_ORANGE, fontWeight: 800 }}
+                >
+                  Forgot password?
+                </Link>
+                <Box component="span" sx={{ mx: 0.75 }}>
+                  •
+                </Box>
+              </>
+            ) : null}
             {mode === 'signup' ? (
               'New users create an account here and continue to onboarding.'
             ) : (

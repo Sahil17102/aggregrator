@@ -68,7 +68,11 @@ export const changeAdminPassword = async (
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, adminId));
+  const passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+  await db
+    .update(users)
+    .set({ passwordHash, passwordChangedAt, updatedAt: new Date() })
+    .where(eq(users.id, adminId));
 
   // Invalidate old refresh token so admin re-auths cleanly on other sessions.
   await saveRefreshToken(adminId, null, 0, null);

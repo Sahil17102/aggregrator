@@ -17,6 +17,7 @@ import { plans } from '../schema/plans'
 import { userProfiles } from '../schema/userProfile'
 import { userPlans } from '../schema/userPlans'
 import { users } from '../schema/users'
+import { saveRefreshToken } from './userService'
 
 /**
  * Fetch the profile for a specific userId (returns null if none exists)
@@ -514,6 +515,11 @@ export async function changePassword(
   }
 
   const passwordHash = await hash(newPassword)
+  const passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000)
 
-  await db.update(users).set({ passwordHash }).where(eq(users.id, userId))
+  await db
+    .update(users)
+    .set({ passwordHash, passwordChangedAt })
+    .where(eq(users.id, userId))
+  await saveRefreshToken(userId, null, 0, null)
 }

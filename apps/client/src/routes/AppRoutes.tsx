@@ -19,6 +19,7 @@ import GlobalRedirectHandler from './WalletRedirectHandler'
 const UserOnboarding = lazy(() => import('../pages/onboarding/UserOnboarding'))
 const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'))
 const LandingPage = lazy(() => import('../pages/LandingPage'))
+const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'))
 
 // Orders
 const Orders = lazy(() => import('../pages/orders/Orders'))
@@ -218,6 +219,8 @@ function RoutedApp() {
           <Route path="/" element={<RootRoute />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ForgotPassword />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/app" element={<AppEntry />} />
           <Route path="/preview" element={<ClientPreview />} />

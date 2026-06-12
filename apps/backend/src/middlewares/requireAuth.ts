@@ -1,4 +1,7 @@
 import { NextFunction, Request, Response } from "express";
+import { eq } from "drizzle-orm";
+import { db } from "../models/client";
+import { users } from "../models/schema/users";
 import { verifyAccessToken } from "../utils/jwt";
 
 export const requireAuth = async (
@@ -18,6 +21,26 @@ export const requireAuth = async (
 
     if (!decoded || typeof decoded !== 'object') {
       return res.status(401).json({ error: "Invalid token payload" });
+    }
+
+    const user = await db
+      .select({
+        passwordChangedAt: users.passwordChangedAt,
+      })
+      .from(users)
+      .where(eq(users.id, decoded.sub))
+      .limit(1)
+
+    if (!user[0]) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const passwordChangedAt = user[0].passwordChangedAt
+    if (passwordChangedAt) {
+      const tokenIssuedAtMs = (decoded as any).iat ? Number((decoded as any).iat) * 1000 : 0
+      if (tokenIssuedAtMs && tokenIssuedAtMs < new Date(passwordChangedAt).getTime()) {
+        return res.status(401).json({ error: "Session expired" });
+      }
     }
 
     // Attach decoded token to request

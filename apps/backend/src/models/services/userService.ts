@@ -39,6 +39,7 @@ const maskEmailForLog = (email: string) => {
     localPart.length <= 2 ? `${localPart[0] ?? '*'}*` : `${localPart.slice(0, 2)}***`
   return `${visibleLocal}@${domain}`
 }
+const getPasswordChangeTimestamp = () => new Date(Math.floor(Date.now() / 1000) * 1000)
 const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false)
 const shouldExposeAuthCodes = () => exposeAuthCodes
 
@@ -180,6 +181,24 @@ export const updateUserVerificationToken = async (
     .returning()
   return updatedUser
 }
+
+export const updateUserPasswordResetToken = async (
+  email: string,
+  token: string | null,
+  expiresAt: Date | null,
+  tx: Tx = db,
+) => {
+  const normalized = email.trim().toLowerCase()
+  const [updatedUser] = await tx
+    .update(users)
+    .set({
+      passwordResetToken: token,
+      passwordResetTokenExpiresAt: expiresAt,
+    })
+    .where(eq(users.email, normalized))
+    .returning()
+  return updatedUser
+}
 // âœ… Update user by phone
 export const updateUser = async (userId: string, data: UserUpdate) => {
   const [user] = await db.update(users).set(data).where(eq(users.id, userId)).returning()
@@ -291,6 +310,16 @@ export const clearUserEmailToken = async (email: string) => {
     .set({
       emailVerificationToken: null,
       emailVerificationTokenExpiresAt: null,
+    })
+    .where(eq(users.email, email))
+}
+
+export const clearUserPasswordResetToken = async (email: string) => {
+  await db
+    .update(users)
+    .set({
+      passwordResetToken: null,
+      passwordResetTokenExpiresAt: null,
     })
     .where(eq(users.email, email))
 }
@@ -688,6 +717,7 @@ export async function createUserWithWallet(data: CreateUserWithWalletData, txn: 
 
   cleanUserData.email = normalizeEmail(cleanUserData.email)
   cleanUserData.phone = normalizePhone(cleanUserData.phone)
+  const passwordChangedAt = cleanUserData.passwordHash ? getPasswordChangeTimestamp() : null
 
   if (!cleanUserData.email) delete cleanUserData.email
   if (!cleanUserData.phone) delete cleanUserData.phone
@@ -696,7 +726,10 @@ export async function createUserWithWallet(data: CreateUserWithWalletData, txn: 
     // 1) insert user
     const [user] = await tx
       .insert(users)
-      .values(cleanUserData as IUser)
+      .values({
+        ...(cleanUserData as IUser),
+        ...(passwordChangedAt ? { passwordChangedAt } : {}),
+      })
       .returning()
 
     // 2) insert wallet
@@ -939,8 +972,13 @@ function generateTempPassword(length = 12) {
 export const resetUserPassword = async (userId: string) => {
   const tempPassword = generateTempPassword()
   const hashedPassword = await bcrypt.hash(tempPassword, 10)
+  const passwordChangedAt = getPasswordChangeTimestamp()
 
-  await db.update(users).set({ passwordHash: hashedPassword }).where(eq(users.id, userId))
+  await db
+    .update(users)
+    .set({ passwordHash: hashedPassword, passwordChangedAt })
+    .where(eq(users.id, userId))
+  await saveRefreshToken(userId, null, 0, null)
 
   const [user] = await db.select().from(users).where(eq(users.id, userId))
 

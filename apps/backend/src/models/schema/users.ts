@@ -31,8 +31,13 @@ export const users = pgTable('users', {
   emailVerificationTokenExpiresAt: timestamp('emailVerificationTokenExpiresAt', {
     withTimezone: true,
   }),
+  passwordResetToken: varchar('passwordResetToken', { length: 8 }),
+  passwordResetTokenExpiresAt: timestamp('passwordResetTokenExpiresAt', {
+    withTimezone: true,
+  }),
+  passwordChangedAt: timestamp('passwordChangedAt', { withTimezone: true }),
 
-  /** House‑keeping */
+  /** House-keeping */
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true })
     .defaultNow()

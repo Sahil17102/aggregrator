@@ -58,6 +58,11 @@ export default function PasswordLoginForm({ setStep, step }: IPasswordFormProps)
     navigate('/signup')
   }
 
+  const handleForgotPasswordRedirect = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    navigate('/forgot-password')
+  }
+
   const validateEmail = (email: string): string => {
     if (!email) return 'Email is required.'
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -234,6 +239,15 @@ export default function PasswordLoginForm({ setStep, step }: IPasswordFormProps)
           mt: 0.35,
         }}
       >
+        <Link
+          href="/forgot-password"
+          underline="always"
+          onClick={handleForgotPasswordRedirect}
+          sx={{ color: DE_AMBER, fontWeight: 800, mr: 0.5 }}
+        >
+          Forgot password?
+        </Link>
+        {'  '}
         New users?{' '}
         <Link
           href="/signup"

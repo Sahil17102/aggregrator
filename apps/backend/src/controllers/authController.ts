@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv'
+import * as bcrypt from 'bcryptjs'
 import { Request, Response } from 'express'
 import { OAuth2Client } from 'google-auth-library'
 import path from 'path'
@@ -12,6 +13,7 @@ import {
   handleEmailVerificationRequest,
   markEmailVerified,
   saveRefreshToken,
+  updateUserPasswordResetToken,
   updateUserByEmail,
   updateUserOtpByEmail,
   verifyGoogleToken,
@@ -19,12 +21,13 @@ import {
 
 import axios from 'axios'
 import { OTP_EXPIRY } from '../utils/constants'
+import { generate8DigitsVerificationToken } from '../utils/functions'
 
 import { eq } from 'drizzle-orm'
 import { db } from '../models/client'
 import { changeAdminPassword, loginAdmin } from '../models/services/adminAuth.service'
-import { employees } from '../schema/schema'
-import { logAuthCode, sendVerificationEmail } from '../utils/emailSender'
+import { employees, users } from '../schema/schema'
+import { logAuthCode, sendPasswordResetEmail, sendVerificationEmail } from '../utils/emailSender'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt'
 
 const resolveRuntimeEnv = () =>
@@ -62,6 +65,7 @@ const maskEmailForLog = (email: string) => {
 }
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+const PASSWORD_RESET_EXPIRY = 15 * 60 * 1000
 const allowInlineOtp = parseBooleanEnv(process.env.ALLOW_INLINE_OTP, false)
 const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false) || allowInlineOtp
 const shouldExposeAuthCodes = () => exposeAuthCodes
@@ -446,6 +450,132 @@ export const requestEmailVerification = async (req: Request, res: Response): Pro
           ? 'This email or phone number already has an account. Please log in instead.'
           : 'Invalid credentials or token',
     })
+  }
+}
+
+export const requestPasswordReset = async (req: Request, res: Response): Promise<any> => {
+  const body = getRequestBody(req)
+  const email = getStringField(body, 'email')
+
+  if (!email) return res.status(400).json({ error: 'Email is required' })
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' })
+  }
+
+  const normalizedEmail = email.trim().toLowerCase()
+  const resetToken = generate8DigitsVerificationToken()
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY)
+  const exposeCode = shouldExposeAuthCodes()
+
+  try {
+    const user = await findUserByEmail(normalizedEmail)
+
+    if (!user) {
+      return res.json({
+        message: 'If an account exists for this email, a password reset message has been sent.',
+      })
+    }
+
+    await updateUserPasswordResetToken(normalizedEmail, resetToken, expiresAt)
+
+    if (!exposeCode) {
+      await sendPasswordResetEmail(normalizedEmail, resetToken)
+    } else {
+      logAuthCode({ purpose: 'password-reset', to: normalizedEmail, code: resetToken })
+    }
+
+    return res.json({
+      message: exposeCode
+        ? 'Password reset code generated'
+        : 'If an account exists for this email, a password reset message has been sent.',
+      ...(exposeCode ? { resetToken } : {}),
+    })
+  } catch (err) {
+    console.error('Error in requestPasswordReset:', err)
+    const message = err instanceof Error ? err.message : 'Unable to request password reset'
+    const isEmailConfigError = message.includes('Email service is not configured')
+
+    return res.status(isEmailConfigError ? 500 : 500).json({
+      error: isEmailConfigError
+        ? message
+        : 'We could not send the password reset email right now. Please try again in a minute.',
+    })
+  }
+}
+
+export const resetPassword = async (req: Request, res: Response): Promise<any> => {
+  const body = getRequestBody(req)
+  const email = getStringField(body, 'email')
+  const token = getStringField(body, 'token')
+  const newPassword = getStringField(body, 'newPassword')
+
+  if (!email || !token || !newPassword) {
+    return res.status(400).json({ error: 'Email, token, and new password are required' })
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' })
+  }
+
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}/.test(newPassword)) {
+    return res.status(400).json({
+      error: 'Password must be at least 8 characters and include upper, lower, and a number',
+    })
+  }
+
+  try {
+    const normalizedEmail = email.trim().toLowerCase()
+    const user = await findUserByEmail(normalizedEmail)
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired password reset link' })
+    }
+
+    if (user.passwordResetToken !== token) {
+      return res.status(400).json({ error: 'Invalid or expired password reset link' })
+    }
+
+    const expiresAt = user.passwordResetTokenExpiresAt
+    if (!expiresAt || Date.now() > new Date(expiresAt).getTime()) {
+      return res.status(400).json({ error: 'Invalid or expired password reset link' })
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+    const passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000)
+
+    await db
+      .update(users)
+      .set({
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetTokenExpiresAt: null,
+        passwordChangedAt,
+      })
+      .where(eq(users.id, user.id))
+
+    await saveRefreshToken(user.id, null, 0, null)
+
+    const accessToken = signAccessToken(user.id, user.role ?? 'customer')
+    const { token: refreshToken } = signRefreshToken(user.id, user.role ?? 'customer')
+    await saveRefreshToken(user.id, refreshToken, ONE_WEEK_MS)
+
+    const authUser = await buildAuthUserPayload(user.id, {
+      ...user,
+      emailVerified: true,
+    })
+
+    return res.json({
+      message: 'Password reset successfully',
+      token: accessToken,
+      refreshToken,
+      user: authUser,
+    })
+  } catch (error) {
+    console.error('resetPassword error:', error)
+    return res.status(500).json({ error: 'Internal server error' })
   }
 }
 
