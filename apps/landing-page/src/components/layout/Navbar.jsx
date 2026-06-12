@@ -14,8 +14,8 @@ const defaultLinks = [
 
 export default function Navbar({
   links = defaultLinks,
-  primaryLabel = "Start Shipping",
-  primaryTo = "/login",
+  primaryLabel = "Sign Up",
+  primaryTo = "/signup",
 }) {
   const location = useLocation();
 
@@ -112,7 +112,7 @@ export default function Navbar({
               to="/login"
               variant="text"
             >
-              Portal Login
+              Sign In
             </Button>
             <Button
               component={RouterLink}

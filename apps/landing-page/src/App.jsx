@@ -4,6 +4,8 @@ import AppShell from "./components/layout/AppShell";
 import PageLoader from "./components/common/PageLoader";
 
 const clientAuthUrl = import.meta.env.VITE_CLIENT_AUTH_URL || "http://localhost:5173/login";
+const clientSignupUrl =
+  import.meta.env.VITE_CLIENT_SIGNUP_URL || clientAuthUrl.replace(/\/login\/?$/, "/signup");
 
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -30,10 +32,10 @@ function ScrollRestoration() {
   return null;
 }
 
-function AuthRedirect() {
+function AuthRedirect({ targetUrl }) {
   useEffect(() => {
-    window.location.assign(clientAuthUrl);
-  }, []);
+    window.location.assign(targetUrl);
+  }, [targetUrl]);
 
   return <PageLoader />;
 }
@@ -49,7 +51,8 @@ function App() {
             <Route element={<TrackingPage />} path="tracking" />
             <Route element={<RateCalculatorPage />} path="rate-calculator" />
             <Route element={<WeightCalculatorPage />} path="weight-calculator" />
-            <Route element={<AuthRedirect />} path="login" />
+            <Route element={<AuthRedirect targetUrl={clientAuthUrl} />} path="login" />
+            <Route element={<AuthRedirect targetUrl={clientSignupUrl} />} path="signup" />
             <Route element={<ContactPage />} path="contact" />
           </Route>
           <Route element={<Navigate replace to="/" />} path="*" />

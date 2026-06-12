@@ -98,6 +98,7 @@ build_landing() {
   npm_clean_install
   VITE_API_BASE_URL="$PUBLIC_API_URL" \
     VITE_CLIENT_AUTH_URL="$PUBLIC_APP_URL/login" \
+    VITE_CLIENT_SIGNUP_URL="$PUBLIC_APP_URL/signup" \
     npm run build
   $SUDO mkdir -p "$WEB_ROOT/landing"
   $SUDO rsync -a --delete dist/ "$WEB_ROOT/landing/"
