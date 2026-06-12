@@ -66,6 +66,16 @@ const allowInlineOtp = parseBooleanEnv(process.env.ALLOW_INLINE_OTP, false)
 const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false) || allowInlineOtp
 const shouldExposeAuthCodes = () => exposeAuthCodes
 
+const getRequestBody = (req: Request) => {
+  const body = req.body
+  return body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+}
+
+const getStringField = (body: Record<string, unknown>, key: string) => {
+  const value = body[key]
+  return typeof value === 'string' ? value : ''
+}
+
 const buildAuthUserPayload = async (userId: string, fallback?: any) => {
   const user = (await findUserById(userId)) || fallback || {}
 
@@ -192,7 +202,8 @@ export const logoutController = async (req: Request, res: Response): Promise<any
 // Request OTP (Email-based)
 // -------------------
 export const requestOtp = async (req: Request, res: Response): Promise<any> => {
-  const { email } = req.body
+  const body = getRequestBody(req)
+  const email = getStringField(body, 'email')
   if (!email) return res.status(400).json({ error: 'Email is required' })
 
   // Validate email format
@@ -276,7 +287,9 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
 }
 
 export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
-  const { email, otp } = req.body
+  const body = getRequestBody(req)
+  const email = getStringField(body, 'email')
+  const otp = getStringField(body, 'otp')
 
   if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' })
 
@@ -346,7 +359,13 @@ export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
 }
 
 export const requestEmailVerification = async (req: Request, res: Response): Promise<any> => {
-  const { idToken, password, email, flow, name, phone } = req.body
+  const body = getRequestBody(req)
+  const idToken = getStringField(body, 'idToken')
+  const password = getStringField(body, 'password')
+  const email = getStringField(body, 'email')
+  const flow = getStringField(body, 'flow')
+  const name = getStringField(body, 'name')
+  const phone = getStringField(body, 'phone')
   const authFlow = flow === 'signup' ? 'signup' : 'login'
 
   try {
@@ -372,11 +391,11 @@ export const requestEmailVerification = async (req: Request, res: Response): Pro
 
     const result = await handleEmailVerificationRequest(
       userEmail,
-      password,
+      password || null,
       googleId, // null for password logins
       authFlow,
       profileContactName,
-      typeof phone === 'string' ? phone : '',
+      phone,
     )
 
     const user = result.data?.user
@@ -431,7 +450,9 @@ export const requestEmailVerification = async (req: Request, res: Response): Pro
 }
 
 export const verifyEmailToken = async (req: Request, res: Response): Promise<any> => {
-  const { email, token } = req.body
+  const body = getRequestBody(req)
+  const email = getStringField(body, 'email')
+  const token = getStringField(body, 'token')
 
   if (!email || !token) {
     return res.status(400).json({ error: 'Email and token are required' })
@@ -484,7 +505,8 @@ export const verifyEmailToken = async (req: Request, res: Response): Promise<any
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 export const googleOAuthLogin = async (req: Request, res: Response): Promise<any> => {
-  const { code } = req.body
+  const body = getRequestBody(req)
+  const code = getStringField(body, 'code')
 
   if (!code) return res.status(400).json({ error: 'Missing authorization code' })
 
@@ -574,7 +596,9 @@ export const googleOAuthLogin = async (req: Request, res: Response): Promise<any
 }
 
 export const adminLoginController = async (req: Request, res: Response) => {
-  const { email, password } = req.body
+  const body = getRequestBody(req)
+  const email = getStringField(body, 'email')
+  const password = getStringField(body, 'password')
 
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' })
 
@@ -594,10 +618,9 @@ export const adminLoginController = async (req: Request, res: Response) => {
 
 export const adminChangePasswordController = async (req: Request, res: Response) => {
   const adminId = (req as any)?.user?.sub
-  const { currentPassword, newPassword } = req.body as {
-    currentPassword?: string
-    newPassword?: string
-  }
+  const body = getRequestBody(req)
+  const currentPassword = getStringField(body, 'currentPassword')
+  const newPassword = getStringField(body, 'newPassword')
 
   if (!adminId) return res.status(401).json({ error: 'Unauthorized' })
   if (!currentPassword || !newPassword) {

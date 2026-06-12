@@ -147,6 +147,23 @@ app.use(
   }),
 )
 
+app.use((req, _res, next) => {
+  const contentType = req.headers['content-type']
+
+  if (typeof contentType === 'string' && /^application\/json\b/i.test(contentType)) {
+    const normalizedContentType = contentType.replace(/charset\s*=\s*([^;]+)/i, (_match, charset) => {
+      const normalizedCharset = charset.trim().toLowerCase()
+      return `charset=${normalizedCharset}`
+    })
+
+    if (normalizedContentType !== contentType) {
+      req.headers['content-type'] = normalizedContentType
+    }
+  }
+
+  next()
+})
+
 app.get('/', (_req, res) => {
   res.status(200).json({
     ok: true,
