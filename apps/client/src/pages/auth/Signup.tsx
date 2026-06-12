@@ -45,7 +45,7 @@ export default function Signup() {
 
         <Typography sx={{ color: brand.inkSoft, textAlign: 'center', fontSize: '0.88rem' }}>
           Already have an account?{' '}
-          <Box component={RouterLink} to="/login" sx={{ color: brand.ink, fontWeight: 700 }}>
+          <Box component={RouterLink} to="/signin" sx={{ color: brand.ink, fontWeight: 700 }}>
             Login here
           </Box>
         </Typography>

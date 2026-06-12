@@ -9,6 +9,7 @@ import FullScreenLoader from '../components/UI/loader/FullScreenLoader'
 import NavigationLoader from '../components/UI/loader/NavigationLoader'
 import { useAuth } from '../context/auth/AuthContext'
 import Login from '../pages/auth/Login'
+import SignIn from '../pages/auth/SignIn'
 import Signup from '../pages/auth/Signup'
 import ClientPreview from '../pages/preview/ClientPreview'
 import AppEntry from './AppEntry'
@@ -219,6 +220,7 @@ function RoutedApp() {
           <Route path="/" element={<RootRoute />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signin" element={<SignIn />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ForgotPassword />} />
           <Route path="/signup" element={<Signup />} />

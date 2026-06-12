@@ -161,7 +161,7 @@ export default function LandingPage() {
 
   return (
     <Box className="site-shell">
-      <PublicNavbar primaryLabel="Sign Up" primaryTo="/signup" />
+      <PublicNavbar primaryLabel="Sign Up" primaryTo="/signup" secondaryLabel="Login" secondaryTo="/signin" />
 
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 6, md: 8 } }}>
         <Stack spacing={{ xs: 4.2, md: 7 }}>
