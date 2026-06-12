@@ -123,7 +123,7 @@ export default function PublicNavbar({
                 fontWeight: 800,
               }}
             >
-              Sign In
+              Login
             </Button>
             <Button
               component={RouterLink}
@@ -144,7 +144,12 @@ export default function PublicNavbar({
       </Drawer>
 
       <BrandTopBar
-        sx={{ px: { xs: 0.6, sm: 2.2, lg: 3 }, py: { xs: 0.45, sm: 0.85 } }}
+        sx={{
+          px: { xs: 0.6, sm: 2.2, lg: 3 },
+          py: { xs: 0.45, sm: 0.85 },
+          position: { xs: 'relative', md: 'sticky' },
+          top: { xs: 'auto', md: 0 },
+        }}
         innerSx={{
           background: alpha('#FFFFFF', 0.92),
           border: brandEffects.border,
@@ -245,7 +250,7 @@ export default function PublicNavbar({
                 },
               }}
             >
-              Sign In
+              Login
             </Button>
             <Button
               component={RouterLink}

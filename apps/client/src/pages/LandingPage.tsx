@@ -225,12 +225,24 @@ export default function LandingPage() {
                   <Stack direction="row" spacing={{ xs: 1, sm: 1.4 }} sx={{ flexWrap: 'wrap' }}>
                     <Button
                       component={RouterLink}
-                      to="/signup"
+                      to="/login"
                       variant="contained"
                       endIcon={<FiArrowRight size={18} />}
                       sx={{
-                        flex: { xs: '1 1 46%', sm: 'initial' },
+                        flex: { xs: '1 1 100%', sm: '1 1 180px' },
                         minWidth: { sm: 168 },
+                        minHeight: { xs: 44, sm: 48 },
+                      }}
+                    >
+                      Start Shipping
+                    </Button>
+                    <Button
+                      component={RouterLink}
+                      to="/signup"
+                      variant="outlined"
+                      sx={{
+                        flex: { xs: '1 1 46%', sm: '1 1 152px' },
+                        minWidth: { sm: 144 },
                         minHeight: { xs: 44, sm: 48 },
                       }}
                     >
@@ -241,19 +253,19 @@ export default function LandingPage() {
                       to="/login"
                       variant="outlined"
                       sx={{
-                        flex: { xs: '1 1 46%', sm: 'initial' },
+                        flex: { xs: '1 1 46%', sm: '1 1 152px' },
                         minWidth: { sm: 144 },
                         minHeight: { xs: 44, sm: 48 },
                       }}
                     >
-                      Sign In
+                      Login
                     </Button>
                     <Button
                       component={RouterLink}
                       to="/tracking"
                       variant="outlined"
                       sx={{
-                        flex: { xs: '1 1 100%', sm: 'initial' },
+                        flex: { xs: '1 1 100%', sm: '1 1 160px' },
                         minWidth: { sm: 144 },
                         minHeight: { xs: 44, sm: 48 },
                       }}
@@ -692,7 +704,7 @@ export default function LandingPage() {
                       Explore Rates
                     </Button>
                     <Button component={RouterLink} to="/login" variant="outlined" sx={{ borderColor: alpha('#FFFFFF', 0.32), color: '#FFFFFF', '&:hover': { borderColor: alpha('#FFFFFF', 0.58) } }}>
-                      Sign In
+                      Login
                     </Button>
                     <Button
                       component="a"
