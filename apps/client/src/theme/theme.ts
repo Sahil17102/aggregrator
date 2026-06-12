@@ -150,6 +150,9 @@ const theme = createTheme({
           backgroundImage: brandGradients.page,
           backgroundAttachment: 'fixed',
           backgroundRepeat: 'no-repeat',
+          '@media (hover: none), (pointer: coarse), (max-width: 899.98px)': {
+            backgroundAttachment: 'scroll',
+          },
           color: brand.ink,
           fontFamily: brandFonts.body,
           fontWeight: 400,

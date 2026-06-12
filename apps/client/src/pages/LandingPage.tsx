@@ -161,7 +161,7 @@ export default function LandingPage() {
 
   return (
     <Box className="site-shell">
-      <PublicNavbar />
+      <PublicNavbar primaryLabel="Sign Up" primaryTo="/signup" />
 
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 6, md: 8 } }}>
         <Stack spacing={{ xs: 4.2, md: 7 }}>
@@ -222,21 +222,41 @@ export default function LandingPage() {
                     and backend business logic intact.
                   </Typography>
 
-                  <Stack direction="row" spacing={{ xs: 1, sm: 1.4 }}>
+                  <Stack direction="row" spacing={{ xs: 1, sm: 1.4 }} sx={{ flexWrap: 'wrap' }}>
+                    <Button
+                      component={RouterLink}
+                      to="/signup"
+                      variant="contained"
+                      endIcon={<FiArrowRight size={18} />}
+                      sx={{
+                        flex: { xs: '1 1 46%', sm: 'initial' },
+                        minWidth: { sm: 168 },
+                        minHeight: { xs: 44, sm: 48 },
+                      }}
+                    >
+                      Sign Up
+                    </Button>
                     <Button
                       component={RouterLink}
                       to="/login"
-                      variant="contained"
-                      endIcon={<FiArrowRight size={18} />}
-                      sx={{ flex: { xs: 1, sm: 'initial' }, minWidth: { sm: 168 }, minHeight: { xs: 44, sm: 48 } }}
+                      variant="outlined"
+                      sx={{
+                        flex: { xs: '1 1 46%', sm: 'initial' },
+                        minWidth: { sm: 144 },
+                        minHeight: { xs: 44, sm: 48 },
+                      }}
                     >
-                      Start Shipping
+                      Sign In
                     </Button>
                     <Button
                       component={RouterLink}
                       to="/tracking"
                       variant="outlined"
-                      sx={{ flex: { xs: 1, sm: 'initial' }, minWidth: { sm: 144 }, minHeight: { xs: 44, sm: 48 } }}
+                      sx={{
+                        flex: { xs: '1 1 100%', sm: 'initial' },
+                        minWidth: { sm: 144 },
+                        minHeight: { xs: 44, sm: 48 },
+                      }}
                     >
                       Track Order
                     </Button>
@@ -672,7 +692,7 @@ export default function LandingPage() {
                       Explore Rates
                     </Button>
                     <Button component={RouterLink} to="/login" variant="outlined" sx={{ borderColor: alpha('#FFFFFF', 0.32), color: '#FFFFFF', '&:hover': { borderColor: alpha('#FFFFFF', 0.58) } }}>
-                      Open Portal
+                      Sign In
                     </Button>
                     <Button
                       component="a"
