@@ -2,6 +2,7 @@ import cron from 'node-cron'
 import { isRazorpayConfigured } from '../utils/razorpay'
 import { generateAutoBillingInvoices } from './invoiceGenerator'
 import { processPendingWebhooks } from './processPendingWebhooks'
+import { reconcileMissingCodRemittances } from '../models/services/codRemittanceReconciliation.service'
 import { reconcileWalletTopups } from './reconcileWalletTopups'
 import { seedHolidaysCron } from './seedHolidays'
 import {
@@ -10,6 +11,33 @@ import {
 } from './weightReconciliationEmails'
 import { pollEkartTracking } from './ekartTracking'
 import { pollDeliveryOneTracking } from './deliveryOneTracking'
+
+let isReconcilingCodRemittances = false
+
+const runCodRemittanceReconciliation = async () => {
+  if (isReconcilingCodRemittances) {
+    console.log('[Cron] Skipping COD remittance reconciliation: previous run still active')
+    return
+  }
+
+  isReconcilingCodRemittances = true
+
+  try {
+    const result = await reconcileMissingCodRemittances()
+    if (result.scanned > 0 || result.created > 0 || result.failed > 0 || result.skipped > 0) {
+      console.log('[Cron] COD remittance reconciliation complete', {
+        scanned: result.scanned,
+        created: result.created,
+        skipped: result.skipped,
+        failed: result.failed,
+      })
+    }
+  } catch (err) {
+    console.error('[Cron] COD remittance reconciliation failed:', err)
+  } finally {
+    isReconcilingCodRemittances = false
+  }
+}
 
 if (isRazorpayConfigured) {
   cron.schedule('*/20 * * * *', async () => {
@@ -65,6 +93,13 @@ cron.schedule('*/3 * * * *', async () => {
   } catch (err) {
     console.error('[Cron] Delhivery tracking poll failed:', err)
   }
+})
+
+void runCodRemittanceReconciliation()
+cron.schedule('*/5 * * * *', () => {
+  runCodRemittanceReconciliation().catch((err) => {
+    console.error('Error in cron COD remittance reconciliation', err)
+  })
 })
 
 cron.schedule('0 0 1 1 *', () => {
