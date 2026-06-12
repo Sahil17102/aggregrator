@@ -15,6 +15,7 @@
 } from '@chakra-ui/react'
 import { ContentState, EditorState, convertFromHTML, convertToRaw } from 'draft-js'
 import draftToHtml from 'draftjs-to-html'
+import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { Editor } from 'react-draft-wysiwyg'
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css'
@@ -97,22 +98,33 @@ const AboutUsEditor = () => {
 
   const uploadImageCallback = async (file) => {
     try {
+      const contentType = file.type || 'application/octet-stream'
       const { data } = await api.post('/uploads/presign', {
-        contentType: file.type || 'image/*',
+        contentType,
         filename: file.name,
         folder: 'about-us',
       })
 
-      await api.put(data.uploadUrl, file, {
-        headers: { 'Content-Type': file.type || 'image/*' },
+      if (!data?.uploadUrl || !data?.publicUrl) {
+        throw new Error('Upload service did not return a valid presigned URL')
+      }
+
+      await axios.put(data.uploadUrl, file, {
+        headers: { 'Content-Type': contentType },
+        withCredentials: false,
       })
 
       return { data: { link: data.publicUrl } }
     } catch (err) {
-      console.error('Image upload failed', err)
+      console.error('Image upload failed', {
+        message: err?.message,
+        response: err?.response?.data,
+        status: err?.response?.status,
+        stack: err?.stack,
+      })
       toast({
         title: 'Image upload failed',
-        description: 'Please try again or use a smaller image.',
+        description: err?.response?.data?.message || 'Please try again or use a smaller image.',
         status: 'error',
         duration: 4000,
         isClosable: true,
