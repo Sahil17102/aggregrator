@@ -79,6 +79,7 @@ import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
+import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
 import {
   computeB2CCodCharge,
   computeB2CRateCardCharge,
@@ -6355,6 +6356,22 @@ export const generateManifestService = async (params: {
               .update(b2c_orders)
               .set(updateDataXpress)
               .where(eq(b2c_orders.id, freshOrder.id))
+
+            try {
+              await sendShipmentStatusEmailIfChanged({
+                userId: freshOrder.user_id,
+                awbNumber: freshOrder.awb_number || order.awb_number || '',
+                orderNumber: freshOrder.order_number,
+                previousStatus: freshOrder.order_status,
+                nextStatus: 'pickup_initiated',
+              })
+            } catch (emailError) {
+              console.warn('[Manifest] Shipment email notification failed', {
+                order_number: freshOrder.order_number,
+                awb_number: freshOrder.awb_number || order.awb_number || null,
+                message: emailError instanceof Error ? emailError.message : String(emailError),
+              })
+            }
           })
 
           await Promise.all(orderUpdatePromises)
@@ -8054,6 +8071,22 @@ export const generateManifestService = async (params: {
             })
             .where(eq(table.id, order.id))
 
+          try {
+            await sendShipmentStatusEmailIfChanged({
+              userId: order.user_id,
+              awbNumber: order.awb_number || '',
+              orderNumber: order.order_number,
+              previousStatus: order.order_status,
+              nextStatus: 'pickup_initiated',
+            })
+          } catch (emailError) {
+            console.warn('[Manifest] Shipment email notification failed', {
+              order_number: order.order_number,
+              awb_number: order.awb_number || null,
+              message: emailError instanceof Error ? emailError.message : String(emailError),
+            })
+          }
+
           console.log(
             `✅ Invoice link saved to database for order ${order.order_number}: ${finalKey}`,
           )
@@ -8368,7 +8401,24 @@ export const generateManifestService = async (params: {
                 order_status: 'pickup_initiated',
                 updated_at: new Date(),
               })
-              .where(eq(table.id, order.id)),
+              .where(eq(table.id, order.id))
+              .then(async () => {
+                try {
+                  await sendShipmentStatusEmailIfChanged({
+                    userId: order.user_id,
+                    awbNumber: order.awb_number || '',
+                    orderNumber: order.order_number,
+                    previousStatus: order.order_status,
+                    nextStatus: 'pickup_initiated',
+                  })
+                } catch (emailError) {
+                  console.warn('[Manifest] Shipment email notification failed', {
+                    order_number: order.order_number,
+                    awb_number: order.awb_number || null,
+                    message: emailError instanceof Error ? emailError.message : String(emailError),
+                  })
+                }
+              }),
           ),
         )
 
@@ -8449,6 +8499,22 @@ export const generateManifestService = async (params: {
                 updated_at: new Date(),
               })
               .where(eq(b2c_orders.id, order.id))
+
+            try {
+              await sendShipmentStatusEmailIfChanged({
+                userId: order.user_id,
+                awbNumber: deliveryOneAwb,
+                orderNumber: order.order_number,
+                previousStatus: order.order_status,
+                nextStatus: 'pickup_initiated',
+              })
+            } catch (emailError) {
+              console.warn('[Manifest] Shipment email notification failed', {
+                order_number: order.order_number,
+                awb_number: deliveryOneAwb,
+                message: emailError instanceof Error ? emailError.message : String(emailError),
+              })
+            }
 
             order.awb_number = deliveryOneAwb
             order.shipment_id = deliveryOneShipmentId
@@ -9349,6 +9415,22 @@ const persistB2CTrackingStatus = async (
         order.courier_partner ??
         getDelhiveryCourierDisplayName(order.courier_id),
     })
+
+    try {
+      await sendShipmentStatusEmailIfChanged({
+        userId: order.user_id,
+        awbNumber: order.awb_number,
+        orderNumber: order.order_number,
+        previousStatus: order.order_status,
+        nextStatus,
+      })
+    } catch (emailError) {
+      console.warn('[Tracking] Shipment email notification failed', {
+        order_number: order.order_number,
+        awb_number: order.awb_number,
+        message: emailError instanceof Error ? emailError.message : String(emailError),
+      })
+    }
   }
 
   return synced
@@ -9526,6 +9608,22 @@ export const requestB2CPickupByOrderIdService = async (
         updated_at: new Date(),
       })
       .where(eq(b2c_orders.id, order.id))
+
+    try {
+      await sendShipmentStatusEmailIfChanged({
+        userId: order.user_id,
+        awbNumber: order.awb_number || '',
+        orderNumber: order.order_number,
+        previousStatus: order.order_status,
+        nextStatus: 'pickup_initiated',
+      })
+    } catch (emailError) {
+      console.warn('[Pickup] Shipment email notification failed', {
+        order_number: order.order_number,
+        awb_number: order.awb_number,
+        message: emailError instanceof Error ? emailError.message : String(emailError),
+      })
+    }
 
     return {
       order_id: order.id,

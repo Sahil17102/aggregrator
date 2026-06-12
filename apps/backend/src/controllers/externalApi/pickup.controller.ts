@@ -3,6 +3,7 @@ import { Response } from 'express'
 import { db } from '../../models/client'
 import { DelhiveryService } from '../../models/services/couriers/delhivery.service'
 import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
+import { sendShipmentStatusEmailIfChanged } from '../../models/services/shipmentNotification.service'
 import {
   createPickupAddressService,
   updatePickupAddressService,
@@ -411,6 +412,7 @@ export const requestPickupController = async (req: any, res: Response) => {
         user_id: b2c_orders.user_id,
         order_number: b2c_orders.order_number,
         awb_number: b2c_orders.awb_number,
+        order_status: b2c_orders.order_status,
         integration_type: b2c_orders.integration_type,
         pickup_details: b2c_orders.pickup_details,
       })
@@ -534,6 +536,26 @@ export const requestPickupController = async (req: any, res: Response) => {
           updated_at: new Date(),
         })
         .where(inArray(b2c_orders.id, orderIds))
+
+      await Promise.all(
+        orders.map(async (order) => {
+          try {
+            await sendShipmentStatusEmailIfChanged({
+              userId: order.user_id,
+              awbNumber: order.awb_number || '',
+              orderNumber: order.order_number,
+              previousStatus: order.order_status,
+              nextStatus: 'pickup_initiated',
+            })
+          } catch (emailError) {
+            console.warn('[Pickup API] Shipment email notification failed', {
+              order_number: order.order_number,
+              awb_number: order.awb_number || null,
+              message: emailError instanceof Error ? emailError.message : String(emailError),
+            })
+          }
+        }),
+      )
     }
 
     res.status(200).json({

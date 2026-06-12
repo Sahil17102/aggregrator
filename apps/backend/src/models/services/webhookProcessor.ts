@@ -34,6 +34,7 @@ import { resolveInvoiceNumber } from './invoiceNumber.service'
 import { syncShopifyStatusForLocalOrder } from './shopify.service'
 import { computeB2CFreightForOrder } from './shiprocket.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
+import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
 
 const WEBHOOK_INVOICE_UPLOAD_TIMEOUT_MS = 60000
 
@@ -707,6 +708,22 @@ export async function processEkartWebhookV2(payload: any, tx = db) {
     console.warn('⚠️ Failed Shopify status sync for Ekart webhook:', err)
   })
 
+  try {
+    await sendShipmentStatusEmailIfChanged({
+      userId: order.user_id,
+      awbNumber: awb || order.awb_number || '',
+      orderNumber: order.order_number,
+      previousStatus: prevStatus,
+      nextStatus: mapped,
+    })
+  } catch (emailError) {
+    console.warn('[Ekart V2] Shipment email notification failed', {
+      order_number: order.order_number,
+      awb_number: awb || order.awb_number || null,
+      message: emailError instanceof Error ? emailError.message : String(emailError),
+    })
+  }
+
   // emit tracking webhook
   await sendWebhookEvent(order.user_id, 'tracking.updated', {
     awb_number: awb || order.awb_number,
@@ -1171,6 +1188,22 @@ export async function processDelhiveryWebhook(payload: any, tx = db) {
     }
   })
 
+  try {
+    await sendShipmentStatusEmailIfChanged({
+      userId: order.user_id,
+      awbNumber: order.awb_number || waybill,
+      orderNumber: order.order_number,
+      previousStatus: currentStatus,
+      nextStatus: internalStatus,
+    })
+  } catch (emailError) {
+    console.warn('[Delhivery] Shipment email notification failed', {
+      order_number: order.order_number,
+      awb_number: order.awb_number || waybill,
+      message: emailError instanceof Error ? emailError.message : String(emailError),
+    })
+  }
+
   if (shouldRunManifestSideEffects) {
     try {
       const [freshOrder] = await db.select().from(b2c_orders).where(eq(b2c_orders.id, order.id))
@@ -1485,6 +1518,7 @@ export async function processEkartWebhook(payload: any, tx = db) {
     delivery_message: remarks || null,
     updated_at: new Date(),
   }
+  const previousStatus = String(order.order_status || '').toLowerCase()
 
   if (payload?.courier_cost !== undefined) updateData.courier_cost = Number(payload.courier_cost)
   if (payload?.charged_weight !== undefined) updateData.charged_weight = Number(payload.charged_weight)
@@ -1535,6 +1569,22 @@ export async function processEkartWebhook(payload: any, tx = db) {
       }
     }
   })
+
+  try {
+    await sendShipmentStatusEmailIfChanged({
+      userId: order.user_id,
+      awbNumber: order.awb_number || awb || '',
+      orderNumber: order.order_number,
+      previousStatus,
+      nextStatus: internalStatus,
+    })
+  } catch (emailError) {
+    console.warn('[Ekart] Shipment email notification failed', {
+      order_number: order.order_number,
+      awb_number: order.awb_number || awb || null,
+      message: emailError instanceof Error ? emailError.message : String(emailError),
+    })
+  }
 
   if (isNdrLikeStatus(statusLower) || isNdrLikeStatus(statusText) || isNdrLikeStatus(remarks)) {
     try {
@@ -1697,6 +1747,7 @@ export async function processXpressbeesWebhook(payload: any, tx = db) {
     delivery_message: remarks || null,
     updated_at: new Date(),
   }
+  const previousStatus = String(order.order_status || '').toLowerCase()
 
   if (event?.courier_cost !== undefined) updateData.courier_cost = Number(event.courier_cost)
   if (event?.freight_charges !== undefined && updateData.courier_cost === undefined) {
@@ -1752,6 +1803,22 @@ export async function processXpressbeesWebhook(payload: any, tx = db) {
       }
     }
   })
+
+  try {
+    await sendShipmentStatusEmailIfChanged({
+      userId: order.user_id,
+      awbNumber: order.awb_number || awb || '',
+      orderNumber: order.order_number,
+      previousStatus,
+      nextStatus: internalStatus,
+    })
+  } catch (emailError) {
+    console.warn('[Xpressbees] Shipment email notification failed', {
+      order_number: order.order_number,
+      awb_number: order.awb_number || awb || null,
+      message: emailError instanceof Error ? emailError.message : String(emailError),
+    })
+  }
 
   if (isNdrLikeStatus(statusLower) || isNdrLikeStatus(statusText) || isNdrLikeStatus(remarks)) {
     try {

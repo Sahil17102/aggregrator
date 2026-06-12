@@ -118,6 +118,14 @@ const createPlainTextFallback = (htmlContent: string) =>
     .replace(/[ \t]{2,}/g, ' ')
     .trim()
 
+const escapeHtml = (unsafe: string) =>
+  unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
 type AttachmentInput = {
   /** local file path OR Buffer */
   path?: string
@@ -487,6 +495,106 @@ const sendEmail = async (
   throw lastError
 }
 
+export type ShipmentStatusEmailStage =
+  | 'manifested'
+  | 'picked_up'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'failed'
+
+export const sendShipmentStatusEmail = async (opts: {
+  to: string
+  awbNumber: string
+  orderNumber?: string | null
+  stage: ShipmentStatusEmailStage
+}) => {
+  const { to, awbNumber, orderNumber, stage } = opts
+  const safeAwb = escapeHtml(String(awbNumber || '').trim())
+  const safeOrderNumber = String(orderNumber || '').trim()
+    ? `Order ${escapeHtml(String(orderNumber || '').trim())}`
+    : ''
+
+  const templates: Record<
+    ShipmentStatusEmailStage,
+    { subject: string; body: string; htmlBody: string }
+  > = {
+    manifested: {
+      subject: `ChoiceMee Shipment Manifested${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee has been manifested.\nYou will receive the next update shortly.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Seller,</p>
+        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee has been manifested.</p>
+        <p style="margin:0 0 14px;">You will receive the next update shortly.</p>
+      `,
+    },
+    picked_up: {
+      subject: `ChoiceMee Shipment Picked Up${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Sellers,\n\nYour order AWB ${awbNumber} from ChoiceMee has been picked up.\nYou will receive the next update shortly.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Sellers,</p>
+        <p style="margin:0 0 14px;">Your order AWB <strong>${safeAwb}</strong> from ChoiceMee has been picked up.</p>
+        <p style="margin:0 0 14px;">You will receive the next update shortly.</p>
+      `,
+    },
+    out_for_delivery: {
+      subject: `ChoiceMee Out for Delivery${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Sellers,\n\nYour order under AWB ${awbNumber} from ChoiceMee is now OUT FOR DELIVERY and will be delivered by EOD.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Sellers,</p>
+        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee is now <strong>OUT FOR DELIVERY</strong> and will be delivered by EOD.</p>
+      `,
+    },
+    delivered: {
+      subject: `ChoiceMee Delivered${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} is now successfully delivered.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Seller,</p>
+        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> is now successfully delivered.</p>
+      `,
+    },
+    failed: {
+      subject: `ChoiceMee Delivery Failed${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee delivery failed. Kindly contact the consignee.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Seller,</p>
+        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee delivery failed. Kindly contact the consignee.</p>
+      `,
+    },
+  }
+
+  const template = templates[stage]
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; color: #111827;">
+      <div style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
+        <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280;">
+          ChoiceMee Logistic
+        </div>
+        <h2 style="margin: 10px 0 0; font-size: 22px; line-height: 1.3; color: #0f172a;">
+          ${escapeHtml(template.subject)}
+        </h2>
+      </div>
+
+      <div style="font-size: 16px; line-height: 1.8; color: #1f2937;">
+        ${template.htmlBody}
+        ${safeOrderNumber ? `<p style="margin:0 0 14px;">${safeOrderNumber}</p>` : ''}
+      </div>
+
+      <div style="margin-top: 24px; font-size: 15px; line-height: 1.8; color: #111827;">
+        <p style="margin:0 0 14px;">Regards</p>
+        <p style="margin:0;">ChoiceMee Logistic</p>
+      </div>
+    </div>
+  `
+
+  await sendEmail(
+    to,
+    template.subject,
+    html,
+    undefined,
+    `${template.body}${safeOrderNumber ? `\n\n${safeOrderNumber}` : ''}`,
+  )
+}
+
 export const sendSmtpTestEmail = async (to?: string) => {
   const config = readEmailConfig()
   const recipient = to || config.emailFrom
@@ -676,14 +784,6 @@ export const sendEmployeeCredentials = async (
 
   await sendEmail(to, 'Your ChoiceMee Logistics Employee Account', html)
 }
-const escapeHtml = (unsafe: string) =>
-  unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-
 export const sendTempPasswordEmail = async (to: string, tempPassword: string) => {
   const safePassword = escapeHtml(tempPassword)
 

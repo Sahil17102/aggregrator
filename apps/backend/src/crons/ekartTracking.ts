@@ -3,6 +3,7 @@ import { EkartService } from '../models/services/couriers/ekart.service'
 import { db } from '../models/client'
 import { b2c_orders } from '../models/schema/b2cOrders'
 import { logTrackingEvent } from '../models/services/trackingEvents.service'
+import { sendShipmentStatusEmailIfChanged } from '../models/services/shipmentNotification.service'
 import { sendWebhookEvent } from '../services/webhookDelivery.service'
 import { wallets } from '../models/schema/wallet'
 import { createWalletTransaction } from '../models/services/wallet.service'
@@ -74,6 +75,22 @@ export async function pollEkartTracking(batchSize = 50) {
         .update(b2c_orders)
         .set({ order_status: mapped, updated_at: new Date() })
         .where(eq(b2c_orders.id, order.id))
+
+      try {
+        await sendShipmentStatusEmailIfChanged({
+          userId: order.user_id,
+          awbNumber: order.awb_number || awb,
+          orderNumber: order.order_number,
+          previousStatus: prevStatus,
+          nextStatus: mapped,
+        })
+      } catch (emailError) {
+        console.warn('[Cron] Ekart shipment email notification failed', {
+          order_number: order.order_number,
+          awb_number: order.awb_number || awb || null,
+          message: emailError instanceof Error ? emailError.message : String(emailError),
+        })
+      }
 
       await logTrackingEvent({
         orderId: order.id,
