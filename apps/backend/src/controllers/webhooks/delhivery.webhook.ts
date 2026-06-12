@@ -96,6 +96,28 @@ const getHeaderValue = (headers: Request['headers'], names: string[]) => {
   return ''
 }
 
+const normalizeWebhookSecretCandidate = (value: string) => {
+  const trimmed = String(value || '').trim().replace(/^['"]|['"]$/g, '')
+  if (!trimmed) return ''
+
+  const envPrefixMatch = trimmed.match(/^DELHIVERY_WEBHOOK_SECRET\s*[:=]\s*(.+)$/i)
+  if (envPrefixMatch?.[1]) {
+    return envPrefixMatch[1].trim().replace(/^['"]|['"]$/g, '')
+  }
+
+  const bearerMatch = trimmed.match(/^Bearer\s+(.+)$/i)
+  if (bearerMatch?.[1]) {
+    return bearerMatch[1].trim().replace(/^['"]|['"]$/g, '')
+  }
+
+  const shaMatch = trimmed.match(/^sha256=(.+)$/i)
+  if (shaMatch?.[1]) {
+    return `sha256=${shaMatch[1].trim().replace(/^['"]|['"]$/g, '')}`
+  }
+
+  return trimmed
+}
+
 const verifyDelhiveryWebhookSecret = async (req: Request) => {
   const configuredSecret = (await getDelhiveryCredentials()).webhookSecret.trim()
   const receivedSecret = getHeaderValue(req.headers, DELHIVERY_WEBHOOK_SECRET_HEADERS)
@@ -116,8 +138,8 @@ const verifyDelhiveryWebhookSecret = async (req: Request) => {
   const expectedHmac =
     'sha256=' + crypto.createHmac('sha256', configuredSecret).update(rawBody).digest('hex')
   const normalizedCandidates = [
+    normalizeWebhookSecretCandidate(receivedSecret),
     receivedSecret,
-    receivedSecret.startsWith('Bearer ') ? receivedSecret.slice('Bearer '.length).trim() : receivedSecret,
     receivedSecret.startsWith('sha256=') ? receivedSecret : `sha256=${receivedSecret}`,
   ]
 
