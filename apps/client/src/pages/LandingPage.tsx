@@ -161,7 +161,7 @@ export default function LandingPage() {
 
   return (
     <Box className="site-shell">
-      <PublicNavbar primaryLabel="Sign Up" primaryTo="/signup" secondaryLabel="Login" secondaryTo="/signin" />
+      <PublicNavbar primaryLabel="Sign Up" primaryTo="/signin" secondaryLabel="Login" secondaryTo="/login" />
 
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 6, md: 8 } }}>
         <Stack spacing={{ xs: 4.2, md: 7 }}>
@@ -238,7 +238,7 @@ export default function LandingPage() {
                     </Button>
                     <Button
                       component={RouterLink}
-                      to="/signup"
+                      to="/signin"
                       variant="outlined"
                       sx={{
                         flex: { xs: '1 1 46%', sm: '1 1 152px' },
