@@ -236,7 +236,7 @@ export default function HomePage() {
                           "& svg": { fontSize: { xs: 14, sm: 18 } },
                         },
                       }}
-                      to="/login"
+                      to="/signup"
                       variant="contained"
                     >
                       Start Shipping
