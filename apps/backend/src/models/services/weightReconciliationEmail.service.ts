@@ -1,11 +1,12 @@
 import * as dotenv from 'dotenv'
 import nodemailer from 'nodemailer'
 import path from 'path'
+import { getTransactionalFromAddress } from '../../utils/emailSender'
 
 const env = process.env.NODE_ENV || 'development'
 dotenv.config({ path: path.resolve(__dirname, `../../.env.${env}`) })
 
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@ChoiceMee.com'
+const EMAIL_FROM = getTransactionalFromAddress() || 'noreply@ChoiceMee.com'
 const GOOGLE_SMTP_USER = process.env.GOOGLE_SMTP_USER || EMAIL_FROM
 const GOOGLE_SMTP_PASSWORD = process.env.GOOGLE_SMTP_PASSWORD!
 const SMTP_HOST = process.env.SMTP_HOST

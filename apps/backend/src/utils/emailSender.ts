@@ -21,7 +21,7 @@ const AUTH_CODE_LOGGING_ENABLED =
   process.env.EXPOSE_AUTH_CODES === 'true' || process.env.ALLOW_INLINE_OTP === 'true'
 
 type EmailConfig = {
-  emailFrom: string
+  senderFrom: string
   smtpUser: string
   smtpPassword: string
   smtpHost: string
@@ -58,10 +58,11 @@ const parsePositiveIntEnv = (value: string | undefined, fallback: number) => {
 }
 
 const readEmailConfig = (): EmailConfig => {
+  const configuredSendGridFrom = trimEnv(process.env.SENDGRID_FROM_EMAIL)
   const configuredFrom = trimEnv(process.env.EMAIL_FROM)
   const configuredUser = trimEnv(process.env.GOOGLE_SMTP_USER)
-  const emailFrom = configuredFrom || configuredUser
-  const smtpUser = configuredUser || emailFrom
+  const senderFrom = configuredSendGridFrom || configuredFrom || configuredUser
+  const smtpUser = configuredUser || senderFrom
   const smtpPassword = trimEnv(process.env.GOOGLE_SMTP_PASSWORD)
   const smtpHost = trimEnv(process.env.SMTP_HOST)
   const smtpPort = parsePositiveIntEnv(process.env.SMTP_PORT, 587)
@@ -70,12 +71,12 @@ const readEmailConfig = (): EmailConfig => {
     trimEnv(process.env.SENDGRID_API_KEY) ||
     trimEnv(process.env.TWILIO_SENDGRID_API_KEY) ||
     trimEnv(process.env.TWILLIO_SENDGRID_API_KEY)
-  const sendGridFrom = trimEnv(process.env.SENDGRID_FROM_EMAIL) || emailFrom
+  const sendGridFrom = configuredSendGridFrom || senderFrom
   const isGmail =
     /(^|\.)gmail\.com$/i.test(smtpHost) || /@gmail\.com$/i.test(smtpUser)
 
   return {
-    emailFrom,
+    senderFrom,
     smtpUser,
     smtpPassword,
     smtpHost,
@@ -137,10 +138,12 @@ type AttachmentInput = {
 export const isEmailDeliveryConfigured = () => {
   const config = readEmailConfig()
   return Boolean(
-    config.emailFrom &&
+    config.senderFrom &&
       (config.sendGridApiKey || (config.smtpUser && config.smtpPassword)),
   )
 }
+
+export const getTransactionalFromAddress = () => readEmailConfig().senderFrom
 
 export const logAuthCode = ({
   purpose,
@@ -167,8 +170,10 @@ export const logAuthCode = ({
 }
 
 const assertEmailConfig = (config: EmailConfig) => {
-  if (!config.emailFrom || !config.smtpUser) {
-    throw new Error('Email service is not configured. Missing EMAIL_FROM or GOOGLE_SMTP_USER.')
+  if (!config.senderFrom || !config.smtpUser) {
+    throw new Error(
+      'Email service is not configured. Missing EMAIL_FROM, SENDGRID_FROM_EMAIL, or GOOGLE_SMTP_USER.',
+    )
   }
 
   if (!config.smtpPassword) {
@@ -292,7 +297,7 @@ export const verifyEmailTransport = async () => {
         host: candidate.host,
         port: candidate.port,
         secure: candidate.secure,
-        from: config.emailFrom,
+        from: config.senderFrom,
       })
       await transporter.verify()
       console.log('[Email] Transporter verified', {
@@ -423,9 +428,9 @@ const sendEmail = async (
   }
 
   const mailOptions: any = {
-    from: `"ChoiceMee Logistics" <${config.emailFrom}>`,
-    sender: config.emailFrom,
-    replyTo: config.emailFrom,
+    from: `"ChoiceMee Logistics" <${config.senderFrom}>`,
+    sender: config.senderFrom,
+    replyTo: config.senderFrom,
     to,
     subject,
     text,
@@ -694,7 +699,7 @@ export const sendShipmentStatusEmail = async (opts: {
 
 export const sendSmtpTestEmail = async (to?: string) => {
   const config = readEmailConfig()
-  const recipient = to || config.emailFrom
+  const recipient = to || config.senderFrom
 
   await sendEmail(
     recipient,

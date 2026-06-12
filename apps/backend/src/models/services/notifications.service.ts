@@ -4,6 +4,7 @@ import { sendNotification } from '../../config/socketServer'
 import { db } from '../client'
 import { notifications } from '../schema/notifications'
 import { users } from '../schema/users'
+import { getTransactionalFromAddress } from '../../utils/emailSender'
 
 const sendGridApiKey = process.env.TWILLIO_SENDGRID_API_KEY
 
@@ -105,9 +106,11 @@ async function sendEmailNotification(to: string, subject: string, message: strin
     return
   }
 
+  const from = getTransactionalFromAddress()
+
   const msg = {
     to,
-    from: process.env.EMAIL_FROM!,
+    from,
     subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 8px;">
