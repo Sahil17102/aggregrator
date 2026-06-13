@@ -26,6 +26,14 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
     return 'failed'
   }
 
+  if (
+    normalized.includes('booked') ||
+    normalized.includes('confirmed') ||
+    normalized.includes('order created')
+  ) {
+    return 'booked'
+  }
+
   if (normalized.includes('out for delivery') || normalized.includes('ofd')) {
     return 'out_for_delivery'
   }
@@ -41,7 +49,6 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
 
   if (
     normalized.includes('manifest') ||
-    normalized.includes('booked') ||
     normalized.includes('pickup initiated') ||
     normalized.includes('pickup_initiated') ||
     normalized.includes('pickup scheduled') ||

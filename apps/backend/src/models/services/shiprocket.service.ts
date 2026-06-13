@@ -5267,6 +5267,26 @@ export const createB2CShipmentService = async (
       return { order: newOrder, shipment: shipmentData }
     })
 
+    try {
+      await sendShipmentStatusEmailIfChanged({
+        userId,
+        awbNumber: shipmentMeta.awb_number || '',
+        orderNumber: params.order_number,
+        orderDetails: {
+          orderNumber: params.order_number,
+          order_items: params.order_items,
+        },
+        previousStatus: 'pending',
+        nextStatus: 'booked',
+      })
+    } catch (emailError) {
+      console.warn('[Booking] Shipment booking email notification failed', {
+        order_number: params.order_number,
+        awb_number: shipmentMeta.awb_number || null,
+        message: emailError instanceof Error ? emailError.message : String(emailError),
+      })
+    }
+
     if (
       is_external_api &&
       ['delhivery', 'deliveryone'].includes(integrationType) &&

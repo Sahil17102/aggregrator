@@ -503,6 +503,7 @@ const sendEmail = async (
 }
 
 export type ShipmentStatusEmailStage =
+  | 'booked'
   | 'manifested'
   | 'picked_up'
   | 'out_for_delivery'
@@ -622,6 +623,15 @@ export const sendShipmentStatusEmail = async (opts: {
     ShipmentStatusEmailStage,
     { subject: string; body: string; htmlBody: string }
   > = {
+    booked: {
+      subject: `ChoiceMee Shipment Booked${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Seller,\n\nYour order${safeAwb ? ` with AWB ${awbNumber}` : ''} has been booked successfully on ChoiceMee.\nWe will share the next update as soon as it is available.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Seller,</p>
+        <p style="margin:0 0 14px;">Your order${safeAwb ? ` with AWB <strong>${safeAwb}</strong>` : ''} has been booked successfully on ChoiceMee.</p>
+        <p style="margin:0 0 14px;">We will share the next update as soon as it is available.</p>
+      `,
+    },
     manifested: {
       subject: `ChoiceMee Shipment Manifested${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
       body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee has been manifested.\nYou will receive the next update shortly.\n\nRegards\nChoiceMee Logistic`,
