@@ -506,6 +506,7 @@ export type ShipmentStatusEmailStage =
   | 'booked'
   | 'manifested'
   | 'picked_up'
+  | 'in_transit'
   | 'out_for_delivery'
   | 'delivered'
   | 'failed'
@@ -655,6 +656,15 @@ export const sendShipmentStatusEmail = async (opts: {
         <p style="margin:0 0 14px;">Dear Sellers,</p>
         <p style="margin:0 0 14px;">Your order AWB <strong>${safeAwb}</strong> from ChoiceMee has been picked up.</p>
         <p style="margin:0 0 14px;">You will receive the next update shortly.</p>
+      `,
+    },
+    in_transit: {
+      subject: `ChoiceMee In Transit${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
+      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee is now in transit.\nWe will share the next milestone as soon as it arrives.\n\nRegards\nChoiceMee Logistic`,
+      htmlBody: `
+        <p style="margin:0 0 14px;">Dear Seller,</p>
+        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee is now <strong>in transit</strong>.</p>
+        <p style="margin:0 0 14px;">We will share the next milestone as soon as it arrives.</p>
       `,
     },
     out_for_delivery: {

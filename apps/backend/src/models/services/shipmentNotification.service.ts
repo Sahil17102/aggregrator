@@ -49,11 +49,18 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
 
   if (
     normalized.includes('picked up') ||
+    normalized.includes('pickup complete') ||
+    normalized.includes('pickup completed')
+  ) {
+    return 'picked_up'
+  }
+
+  if (
     normalized.includes('in transit') ||
     normalized.includes('transit') ||
     normalized.includes('dispatched')
   ) {
-    return 'picked_up'
+    return 'in_transit'
   }
 
   if (
