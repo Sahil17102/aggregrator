@@ -1,5 +1,6 @@
 import { Box, Button, IconButton, Stack, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { useEffect, useRef } from 'react'
 import { FiArrowUpRight } from 'react-icons/fi'
 import {
   TbLayoutSidebarLeftCollapseFilled,
@@ -41,12 +42,43 @@ export default function Navbar({ handleDrawerToggle, pinned }: NavbarProps) {
   const theme = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
+  const topBarRef = useRef<HTMLDivElement | null>(null)
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const activeSection = getSectionLabel(location.pathname)
 
+  useEffect(() => {
+    const root = document.documentElement
+    const setTopBarOffset = () => {
+      const height = Math.ceil(topBarRef.current?.getBoundingClientRect().height ?? 0)
+      if (height > 0) {
+        root.style.setProperty('--client-navbar-offset', `${height}px`)
+      }
+    }
+
+    setTopBarOffset()
+
+    if (typeof ResizeObserver === 'undefined' || !topBarRef.current) {
+      return () => {
+        root.style.removeProperty('--client-navbar-offset')
+      }
+    }
+
+    const observer = new ResizeObserver(() => {
+      setTopBarOffset()
+    })
+
+    observer.observe(topBarRef.current)
+
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--client-navbar-offset')
+    }
+  }, [])
+
   return (
     <BrandTopBar
+      ref={topBarRef}
       component="header"
       sx={{
         zIndex: (muiTheme) => muiTheme.zIndex.drawer + 2,

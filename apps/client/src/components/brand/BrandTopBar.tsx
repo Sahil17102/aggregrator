@@ -1,18 +1,18 @@
 import { Box, type BoxProps } from '@mui/material'
+import { forwardRef } from 'react'
 import BrandSurface from './BrandSurface'
 
 interface BrandTopBarProps extends BoxProps {
   innerSx?: BoxProps['sx']
 }
 
-export default function BrandTopBar({
-  children,
-  sx,
-  innerSx,
-  ...rest
-}: BrandTopBarProps) {
+const BrandTopBar = forwardRef<HTMLDivElement, BrandTopBarProps>(function BrandTopBar(
+  { children, sx, innerSx, ...rest },
+  ref,
+) {
   return (
     <Box
+      ref={ref}
       sx={{
         position: 'sticky',
         top: 0,
@@ -38,4 +38,6 @@ export default function BrandTopBar({
       </BrandSurface>
     </Box>
   )
-}
+})
+
+export default BrandTopBar

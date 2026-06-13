@@ -61,10 +61,13 @@ export default function Layout() {
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,
               maxWidth: '86vw',
-              height: '100dvh',
+              top: 'var(--client-navbar-offset, 88px)',
+              height: 'calc(100dvh - var(--client-navbar-offset, 88px))',
               bgcolor: '#ffffff',
               color: '#10324A',
               borderRight: '1px solid rgba(16, 50, 74, 0.08)',
+              borderTopLeftRadius: 0,
+              borderTopRightRadius: 0,
               overflow: 'hidden',
             },
           }}
