@@ -11,6 +11,15 @@ import {
 
 const normalizeStatus = (value?: string | null) => String(value || '').trim().toLowerCase()
 
+const firstNonEmpty = (...values: Array<string | null | undefined>) => {
+  for (const value of values) {
+    const trimmed = String(value || '').trim()
+    if (trimmed) return trimmed
+  }
+
+  return ''
+}
+
 const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailStage | null => {
   const normalized = normalizeStatus(status)
   if (!normalized) return null
@@ -85,6 +94,18 @@ async function resolveSellerEmail(userId: string) {
   return resolvedEmail || null
 }
 
+function resolveOrderFallbackEmail(orderDetails?: ShipmentOrderLike | null) {
+  return firstNonEmpty(
+    orderDetails?.buyer_email,
+    orderDetails?.buyerEmail,
+    orderDetails?.consignee_email,
+    orderDetails?.consigneeEmail,
+    orderDetails?.customer_email,
+    orderDetails?.customerEmail,
+    orderDetails?.email,
+  )
+}
+
 export async function sendShipmentStatusEmailIfChanged(params: {
   userId: string
   awbNumber: string
@@ -105,19 +126,29 @@ export async function sendShipmentStatusEmailIfChanged(params: {
   }
 
   const to = await resolveSellerEmail(userId)
-  if (!to) {
+  const fallbackTo = resolveOrderFallbackEmail(orderDetails)
+  const recipient = to || fallbackTo
+  if (!recipient) {
     return { sent: false, reason: 'missing_recipient' as const }
+  }
+
+  if (!to && fallbackTo) {
+    console.warn('[ShipmentEmail] Falling back to order email because seller email is missing', {
+      userId,
+      orderNumber,
+      recipient: fallbackTo,
+    })
   }
 
   const orderLabel = resolveShipmentOrderLabel(orderDetails) || orderNumber || null
 
   await sendShipmentStatusEmail({
-    to,
+    to: recipient,
     awbNumber,
     orderNumber,
     orderLabel,
     stage: nextStage,
   })
 
-  return { sent: true, stage: nextStage, to }
+  return { sent: true, stage: nextStage, to: recipient }
 }

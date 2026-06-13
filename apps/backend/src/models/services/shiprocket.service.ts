@@ -5274,6 +5274,7 @@ export const createB2CShipmentService = async (
         orderNumber: params.order_number,
         orderDetails: {
           orderNumber: params.order_number,
+          buyer_email: params.consignee?.email || null,
           order_items: params.order_items,
         },
         previousStatus: 'pending',

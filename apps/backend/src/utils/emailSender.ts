@@ -517,6 +517,13 @@ export type ShipmentOrderLike = {
   order_name?: string | null
   name?: string | null
   title?: string | null
+  email?: string | null
+  buyer_email?: string | null
+  buyerEmail?: string | null
+  consignee_email?: string | null
+  consigneeEmail?: string | null
+  customer_email?: string | null
+  customerEmail?: string | null
   products?: unknown
   order_items?: unknown
   packages?: unknown
