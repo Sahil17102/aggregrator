@@ -26,8 +26,8 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  overscroll-behavior: none;
+  overflow-x: auto;
+  overscroll-behavior: auto;
 }
 
 a {

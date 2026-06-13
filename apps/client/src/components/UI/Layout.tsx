@@ -128,8 +128,7 @@ export default function Layout() {
             ref={mainScrollRef}
             sx={{
               flexGrow: 1,
-              overflowY: 'auto',
-              overflowX: 'hidden',
+              overflow: 'auto',
               bgcolor: 'transparent',
               position: 'relative',
               zIndex: 0,
@@ -137,7 +136,7 @@ export default function Layout() {
               pb: { xs: 1.5, md: 2.5 },
               height: '100%',
               minHeight: 0,
-              overscrollBehavior: 'contain',
+              overscrollBehavior: 'auto',
               scrollbarGutter: 'stable',
               WebkitOverflowScrolling: 'touch',
             }}
@@ -148,7 +147,7 @@ export default function Layout() {
                 bgcolor: 'transparent',
                 pt: 0.4,
                 px: { xs: 0.5, md: 1.5 },
-                overflowX: 'hidden',
+                overflowX: 'visible',
               }}
             >
               <Suspense fallback={<FullScreenLoader />}>

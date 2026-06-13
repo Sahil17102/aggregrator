@@ -321,6 +321,8 @@ export default function Dashboard() {
         maxWidth="xl"
         sx={{
           pt: 1.2,
+          overflowX: 'visible',
+          overflowY: 'visible',
           '& .MuiCard-root': {
             ...dashboardCardSx,
           },
