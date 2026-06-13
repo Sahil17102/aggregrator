@@ -153,7 +153,7 @@ export default function HomePage() {
         overflowX: "hidden",
       }}
     >
-      <Container maxWidth="xl" sx={{ px: { xs: 1.8, sm: 3 }, maxWidth: "100vw" }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 1.8, sm: 3 }, width: "100%", maxWidth: "100%" }}>
         <Stack spacing={{ xs: 4.2, md: 7 }}>
           <Box component={motion.section} {...fadeUp} sx={{ pt: { xs: 1.1, md: 3 } }}>
             <Box
