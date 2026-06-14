@@ -38,7 +38,8 @@ const BILLABLE_ORDER_STATUSES = [
   'rto_in_transit',
   'rto_delivered',
 ] as const
-const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_COURIER_BRAND_NAME = 'ChoiceMee Couriers'
+const PLATFORM_LOGISTICS_BRAND_NAME = 'ChoiceMee Logistics'
 const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
 const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
 
@@ -240,7 +241,7 @@ export const generateInvoiceForUser = async (
     .where(eq(userProfiles.userId, userId))
     .limit(1)
 
-  const issuerName = PLATFORM_BRAND_NAME
+  const issuerName = PLATFORM_COURIER_BRAND_NAME
   const issuerAddress = adminPrefs?.sellerAddress || 'N/A'
   const issuerStateCode = adminPrefs?.stateCode || 'N/A'
   const issuerGST = adminPrefs?.gstNumber || 'N/A'
@@ -589,7 +590,7 @@ export const generateInvoiceForUser = async (
             : null,
 
           {
-            text: `Powered by ${PLATFORM_BRAND_NAME}`,
+            text: `Powered by ${PLATFORM_LOGISTICS_BRAND_NAME}`,
             alignment: 'center',
             italics: true,
             fontSize: fontSize - 1,
@@ -867,7 +868,7 @@ export const generateInvoiceForUser = async (
 
           // FOOTER
           {
-            text: `Thank you for trusting and doing business with ${PLATFORM_BRAND_NAME}.`,
+            text: `Thank you for trusting and doing business with ${PLATFORM_COURIER_BRAND_NAME}.`,
             style: 'footer',
           },
           // Show admin signature only if includeSignature is true
@@ -895,7 +896,7 @@ export const generateInvoiceForUser = async (
               }
             : null,
           {
-            text: `Powered by ${PLATFORM_BRAND_NAME}`,
+            text: `Powered by ${PLATFORM_LOGISTICS_BRAND_NAME}`,
             alignment: 'center',
             italics: true,
             margin: [0, 6, 0, 0],

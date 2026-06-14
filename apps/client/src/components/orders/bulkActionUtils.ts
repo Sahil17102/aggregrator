@@ -49,6 +49,28 @@ type ApiLikeError = {
 
 export const isHttpUrl = (value?: string | null) => typeof value === 'string' && /^https?:\/\//i.test(value)
 
+const trimStoredValue = (value?: string | null) => String(value || '').trim()
+
+const pickStoredKey = (...values: Array<string | null | undefined>) => {
+  for (const value of values) {
+    const trimmed = trimStoredValue(value)
+    if (trimmed && !isHttpUrl(trimmed)) {
+      return trimmed
+    }
+  }
+  return null
+}
+
+const pickStoredUrl = (...values: Array<string | null | undefined>) => {
+  for (const value of values) {
+    const trimmed = trimStoredValue(value)
+    if (isHttpUrl(trimmed)) {
+      return trimmed
+    }
+  }
+  return null
+}
+
 const sanitizeFileNameSegment = (value: string) =>
   value
     .trim()
@@ -101,48 +123,21 @@ export const downloadFile = async (url: string, fileName: string) => {
 export const getDocumentReference = (order: BulkOrderDocumentShape, type: DocumentType) => {
   if (type === 'label') {
     return {
-      key:
-        typeof order.label_key === 'string'
-          ? order.label_key
-          : typeof order.label === 'string' && !isHttpUrl(order.label)
-            ? order.label
-            : null,
-      url: isHttpUrl(order.label_url)
-        ? order.label_url
-        : isHttpUrl(order.label)
-          ? order.label
-          : null,
+      key: pickStoredKey(order.label_key, order.label),
+      url: pickStoredUrl(order.label_url, order.label_key, order.label),
     }
   }
 
   if (type === 'manifest') {
     return {
-      key:
-        typeof order.manifest_key === 'string'
-          ? order.manifest_key
-          : typeof order.manifest === 'string' && !isHttpUrl(order.manifest)
-            ? order.manifest
-            : null,
-      url: isHttpUrl(order.manifest_url)
-        ? order.manifest_url
-        : isHttpUrl(order.manifest)
-          ? order.manifest
-          : null,
+      key: pickStoredKey(order.manifest_key, order.manifest),
+      url: pickStoredUrl(order.manifest_url, order.manifest_key, order.manifest),
     }
   }
 
   return {
-    key:
-      typeof order.invoice_key === 'string'
-        ? order.invoice_key
-        : typeof order.invoice_link === 'string' && !isHttpUrl(order.invoice_link)
-          ? order.invoice_link
-          : null,
-    url: isHttpUrl(order.invoice_url)
-      ? order.invoice_url
-      : isHttpUrl(order.invoice_link)
-        ? order.invoice_link
-        : null,
+    key: pickStoredKey(order.invoice_key, order.invoice_link),
+    url: pickStoredUrl(order.invoice_url, order.invoice_key, order.invoice_link),
   }
 }
 

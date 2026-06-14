@@ -215,25 +215,28 @@ export const downloadAndUploadToR2 = async ({
  */
 const extractKeyFromUrl = (url: string, bucket: string): string | null => {
   try {
-    // Check if it's an R2 URL that contains our bucket
-    if (url.includes(bucket)) {
-      const urlObj = new URL(url)
-      const pathParts = urlObj.pathname.split('/').filter(Boolean)
-      // Find bucket index and return everything after it
-      const bucketIndex = pathParts.indexOf(bucket)
-      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
-        return pathParts.slice(bucketIndex + 1).join('/')
-      }
+    const urlObj = new URL(url)
+    const pathParts = urlObj.pathname.split('/').filter(Boolean).map((segment) => decodeURIComponent(segment))
+
+    if (!pathParts.length) return null
+
+    // Handle the most common R2 layouts:
+    // - /bucket/key
+    // - /key
+    // - signed URLs that still include the bucket in the path
+    const bucketIndex = pathParts.indexOf(bucket)
+    if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+      return pathParts.slice(bucketIndex + 1).join('/')
     }
-    // If it's an R2 endpoint URL format, try to extract key
-    if (process.env.R2_ENDPOINT && url.startsWith(process.env.R2_ENDPOINT)) {
-      const urlObj = new URL(url)
-      const pathParts = urlObj.pathname.split('/').filter(Boolean)
-      // Skip bucket name (first part) and get the rest as key
-      if (pathParts.length > 1) {
-        return pathParts.slice(1).join('/')
-      }
+
+    if (pathParts.length > 1 && (urlObj.hostname.includes('cloudflarestorage.com') || /(^|\.)r2(\.|$)/i.test(urlObj.hostname))) {
+      return pathParts.slice(1).join('/')
     }
+
+    if (pathParts.length === 1 && (urlObj.hostname.includes('cloudflarestorage.com') || /(^|\.)r2(\.|$)/i.test(urlObj.hostname))) {
+      return pathParts[0]
+    }
+
     return null
   } catch (error) {
     console.error('Error extracting key from URL:', url, error)

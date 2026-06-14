@@ -15,10 +15,27 @@ const WEBHOOK_EVENTS = [
   'order.cancelled',
   'order.return_created',
   'order.ndr',
+  'order.weight_discrepancy',
   'shipment.label_generated',
   'shipment.manifest_generated',
   'tracking.updated',
 ]
+
+const WEBHOOK_EVENT_LABELS: Record<string, string> = {
+  'order.created': 'Order created',
+  'order.updated': 'Order updated',
+  'order.shipped': 'Order shipped',
+  'order.delivered': 'Order delivered',
+  'order.failed': 'Order failed',
+  'order.rto': 'Order RTO',
+  'order.cancelled': 'Order cancelled',
+  'order.return_created': 'Return created',
+  'order.ndr': 'Order NDR',
+  'order.weight_discrepancy': 'Weight discrepancy',
+  'shipment.label_generated': 'Label generated',
+  'shipment.manifest_generated': 'Manifest generated',
+  'tracking.updated': 'Tracking updated',
+}
 
 interface WebhookFormData {
   url: string
@@ -186,7 +203,7 @@ export const WebhookFormModal = ({
                               size="small"
                             />
                           }
-                          label={event}
+                          label={WEBHOOK_EVENT_LABELS[event] || event}
                         />
                       ))}
                     </Stack>

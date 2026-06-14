@@ -14,6 +14,7 @@ import { usePresignedDownloadMutation } from '../../hooks/Uploads/usePresignedDo
 import { useRegenerateOrderDocuments } from '../../hooks/Orders/useOrders'
 import { getCourierDisplayName } from '../../utils/courierDisplay'
 import { toast } from '../UI/Toast'
+import { getDocumentReference } from './bulkActionUtils'
 
 interface OrderExpandedRowProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,13 +32,14 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
   const { mutateAsync: regenerateDocuments, isPending: isRegeneratingDocuments } =
     useRegenerateOrderDocuments()
 
-  const hasLabelDocument = Boolean(String(row?.label_url || row?.label_key || row?.label || '').trim())
-  const hasInvoiceDocument = Boolean(
-    String(row?.invoice_url || row?.invoice_key || row?.invoice_link || '').trim(),
-  )
+  const labelRef = getDocumentReference(row, 'label')
+  const manifestRef = getDocumentReference(row, 'manifest')
+  const invoiceRef = getDocumentReference(row, 'invoice')
+  const hasLabelDocument = Boolean(labelRef.key || labelRef.url)
+  const hasInvoiceDocument = Boolean(invoiceRef.key || invoiceRef.url)
   const normalizedStatus = String(row?.order_status || '').trim().toLowerCase()
   const isManifestedOrOperational =
-    Boolean(String(row?.manifest_key || row?.manifest || row?.awb_number || '').trim()) ||
+    Boolean(manifestRef.key || manifestRef.url || String(row?.awb_number || '').trim()) ||
     [
       'booked',
       'shipment_created',
@@ -393,23 +395,22 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
           <Stack spacing={1}>
             {renderDocAction({
               title: 'Label',
-              keyValue: row.label_key || row.label,
-              urlValue: row.label_url && /^https?:\/\//i.test(row.label_url) ? row.label_url : undefined,
+              keyValue: labelRef.key ?? undefined,
+              urlValue: labelRef.url ?? undefined,
               type: 'label',
             })}
 
             {renderDocAction({
               title: 'Manifest',
-              keyValue: row.manifest_key || row.manifest,
-              urlValue:
-                row.manifest_url && /^https?:\/\//i.test(row.manifest_url) ? row.manifest_url : undefined,
+              keyValue: manifestRef.key ?? undefined,
+              urlValue: manifestRef.url ?? undefined,
               type: 'manifest',
             })}
 
             {renderDocAction({
               title: 'Invoice',
-              keyValue: row.invoice_key || row.invoice_link,
-              urlValue: row.invoice_url && /^https?:\/\//i.test(row.invoice_url) ? row.invoice_url : undefined,
+              keyValue: invoiceRef.key ?? undefined,
+              urlValue: invoiceRef.url ?? undefined,
               type: 'invoice',
             })}
           </Stack>

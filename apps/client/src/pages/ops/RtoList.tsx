@@ -1,4 +1,4 @@
-import { Paper, Stack, Typography } from '@mui/material'
+import { Chip, Paper, Stack, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchMyRto } from '../../api/rto'
 import { FilterBar, type FilterField } from '../../components/FilterBar'
@@ -46,10 +46,27 @@ export default function RtoList() {
     () => [
       { id: 'awb_number', label: 'AWB' },
       { id: 'order_id', label: 'Order ID' },
-      { id: 'status', label: 'Status' },
+      {
+        id: 'status',
+        label: 'Status',
+        render: (value) => {
+          const status = String(value || '').toLowerCase()
+          const color =
+            status.includes('delivered') ? 'success' : status.includes('transit') ? 'warning' : 'error'
+          return <Chip label={value || 'Unknown'} color={color} size="small" variant="outlined" />
+        },
+      },
       { id: 'reason', label: 'Reason' },
       { id: 'remarks', label: 'Remarks' },
-      { id: 'rto_charges', label: 'RTO Charges' },
+      {
+        id: 'rto_charges',
+        label: 'RTO Charges',
+        render: (value) => (
+          <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+            {value ? `₹${Number(value).toFixed(2)}` : '—'}
+          </Typography>
+        ),
+      },
     ],
     [],
   )

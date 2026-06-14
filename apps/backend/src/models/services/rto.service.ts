@@ -4,6 +4,7 @@ import { rto_events } from '../schema/rto'
 import { b2c_orders } from '../schema/b2cOrders'
 import { sendWebhookEvent } from '../../services/webhookDelivery.service'
 import { buildCsv } from '../../utils/csv'
+import { statusLabelFromState } from '../../utils/webhookEventLabels'
 
 export async function recordRtoEvent(params: {
   orderId: string
@@ -18,6 +19,16 @@ export async function recordRtoEvent(params: {
 }) {
   const { orderId, userId, awbNumber, status, reason, remarks, rtoCharges, payload, tx } = params
   const runner = tx ?? db
+
+  const [order] = await db
+    .select({
+      order_number: b2c_orders.order_number,
+      courier_partner: b2c_orders.courier_partner,
+      integration_type: b2c_orders.integration_type,
+    })
+    .from(b2c_orders)
+    .where(eq(b2c_orders.id, orderId))
+    .limit(1)
 
   const [inserted] = await runner
     .insert(rto_events)
@@ -35,12 +46,20 @@ export async function recordRtoEvent(params: {
 
   // 🔔 Send webhook event for RTO
   sendWebhookEvent(userId, 'order.rto', {
+    rto_event_id: inserted.id,
     order_id: orderId,
+    order_number: order?.order_number || undefined,
     awb_number: awbNumber,
     status,
+    status_label: statusLabelFromState(status),
     reason,
     remarks,
     rto_charges: rtoCharges,
+    courier_partner: order?.courier_partner || undefined,
+    integration_type: order?.integration_type || undefined,
+    event_type: 'rto',
+    source: 'courier_webhook',
+    event_created_at: inserted.created_at?.toISOString() || new Date().toISOString(),
     created_at: inserted.created_at?.toISOString() || new Date().toISOString(),
   }).catch((err) => {
     console.error('Failed to send RTO webhook event:', err)

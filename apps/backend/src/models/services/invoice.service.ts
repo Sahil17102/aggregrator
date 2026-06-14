@@ -13,7 +13,8 @@ const summarizeFetchError = (err: any) => {
   return status ? `${message} (status ${status})` : message
 }
 
-const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_COURIER_BRAND_NAME = 'ChoiceMee Couriers'
+const PLATFORM_LOGISTICS_BRAND_NAME = 'ChoiceMee Logistics'
 const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
 const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
 
@@ -448,7 +449,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   }
 
   const toSafeString = (value?: string | null) => (value ? value.trim() : '')
-  const sellerDisplayName = PLATFORM_BRAND_NAME
+  const sellerDisplayName = PLATFORM_COURIER_BRAND_NAME
   const sellerAddressLines = (invoice.sellerAddress || '')
     .split('\n')
     .map((line) => line.trim())
@@ -915,7 +916,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
         },
         {
           width: '*',
-          text: PLATFORM_BRAND_NAME,
+          text: PLATFORM_COURIER_BRAND_NAME,
           fontSize: 8,
           color: '#111111',
           alignment: 'center',
@@ -1164,7 +1165,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   // Thermal Layout
   // -------------------
   const contentThermal: any[] = [
-    { text: PLATFORM_BRAND_NAME, alignment: 'center', bold: true },
+    { text: PLATFORM_COURIER_BRAND_NAME, alignment: 'center', bold: true },
     { text: 'TAX INVOICE', alignment: 'center', bold: true, margin: [0, 2, 0, 2] },
     {
       text: 'ORIGINAL FOR RECIPIENT',
@@ -1268,7 +1269,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
       ? { image: 'platformLogo', width: 40, alignment: 'center', margin: [0, 4, 0, 0] }
       : null,
     {
-      text: `Powered by ${PLATFORM_BRAND_NAME}`,
+      text: `Powered by ${PLATFORM_LOGISTICS_BRAND_NAME}`,
       alignment: 'center',
       italics: true,
       margin: [0, 4, 0, 0],

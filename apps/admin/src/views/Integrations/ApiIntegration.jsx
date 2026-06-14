@@ -28,6 +28,8 @@ import {
   useDisclosure,
   useToast,
   VStack,
+  Wrap,
+  WrapItem,
 } from '@chakra-ui/react'
 import { CopyIcon, DeleteIcon, EditIcon, AddIcon } from '@chakra-ui/icons'
 import { useState } from 'react'
@@ -54,10 +56,27 @@ const WEBHOOK_EVENTS = [
   'order.cancelled',
   'order.return_created',
   'order.ndr',
+  'order.weight_discrepancy',
   'shipment.label_generated',
   'shipment.manifest_generated',
   'tracking.updated',
 ]
+
+const WEBHOOK_EVENT_LABELS = {
+  'order.created': 'Order created',
+  'order.updated': 'Order updated',
+  'order.shipped': 'Order shipped',
+  'order.delivered': 'Order delivered',
+  'order.failed': 'Order failed',
+  'order.rto': 'Order RTO',
+  'order.cancelled': 'Order cancelled',
+  'order.return_created': 'Return created',
+  'order.ndr': 'Order NDR',
+  'order.weight_discrepancy': 'Weight discrepancy',
+  'shipment.label_generated': 'Label generated',
+  'shipment.manifest_generated': 'Manifest generated',
+  'tracking.updated': 'Tracking updated',
+}
 
 const ApiIntegration = () => {
   const [activeTab, setActiveTab] = useState('apiKeys')
@@ -339,7 +358,27 @@ const ApiIntegration = () => {
                           </Text>
                         </Td>
                         <Td>
-                          <Text fontSize="sm">{webhook.events?.length || 0} events</Text>
+                          <VStack align="start" spacing={1}>
+                            <Text fontSize="sm" fontWeight="600">
+                              {webhook.events?.length || 0} events
+                            </Text>
+                            <Wrap spacing={1}>
+                              {(webhook.events || []).slice(0, 3).map((event) => (
+                                <WrapItem key={event}>
+                                  <Badge colorScheme="blue" variant="subtle">
+                                    {WEBHOOK_EVENT_LABELS[event] || event}
+                                  </Badge>
+                                </WrapItem>
+                              ))}
+                              {(webhook.events || []).length > 3 && (
+                                <WrapItem>
+                                  <Badge colorScheme="gray" variant="subtle">
+                                    +{(webhook.events || []).length - 3} more
+                                  </Badge>
+                                </WrapItem>
+                              )}
+                            </Wrap>
+                          </VStack>
                         </Td>
                         <Td>
                           <Badge colorScheme={webhook.is_active ? 'green' : 'red'}>
@@ -516,7 +555,7 @@ const ApiIntegration = () => {
                           onChange={() => toggleEvent(event)}
                           style={{ marginRight: '8px' }}
                         />
-                        <Text fontSize="sm">{event}</Text>
+                        <Text fontSize="sm">{WEBHOOK_EVENT_LABELS[event] || event}</Text>
                       </Flex>
                     ))}
                   </VStack>

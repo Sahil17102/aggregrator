@@ -15,6 +15,7 @@ import { sendWeightDiscrepancyEmail } from './weightReconciliationEmail.service'
 import { sendWebhookEvent } from '../../services/webhookDelivery.service'
 import { calculateFreight } from './pricing/chargeableFreight'
 import { computeB2CFreightForOrder } from './shiprocket.service'
+import { statusLabelFromState, toWebhookLabel } from '../../utils/webhookEventLabels'
 
 const toChargeableGrams = (weightKg: number) =>
   Math.max(0, Math.round(Number(weightKg || 0) * 1000))
@@ -30,6 +31,7 @@ const emitWeightDiscrepancyWebhook = async (params: {
 
   await sendWebhookEvent(userId, 'order.weight_discrepancy', {
     action,
+    action_label: toWebhookLabel(action),
     discrepancy_id: discrepancy.id,
     dispute_id: disputeId || discrepancy.dispute_id || undefined,
     order_id: discrepancy.b2c_order_id || discrepancy.b2b_order_id || undefined,
@@ -61,6 +63,10 @@ const emitWeightDiscrepancyWebhook = async (params: {
         ? Number(discrepancy.revised_shipping_charge)
         : undefined,
     notes: notes || discrepancy.resolution_notes || undefined,
+    status_label: statusLabelFromState(discrepancy.status),
+    resolution_state: discrepancy.status,
+    event_type: 'weight_discrepancy',
+    source: 'weight_reconciliation',
     detected_at: discrepancy.detected_at?.toISOString?.() || discrepancy.detected_at || undefined,
     updated_at: discrepancy.updated_at?.toISOString?.() || discrepancy.updated_at || undefined,
   }).catch((err) => {

@@ -5,6 +5,7 @@ import { userProfiles } from '../schema/userProfile'
 import { ndr_events } from '../schema/ndr'
 import { tracking_events } from '../schema/trackingEvents'
 import { sendWebhookEvent } from '../../services/webhookDelivery.service'
+import { statusLabelFromState } from '../../utils/webhookEventLabels'
 
 export async function recordNdrEvent(params: {
   orderId: string
@@ -70,11 +71,14 @@ export async function recordNdrEvent(params: {
       order_number: order?.order_number || undefined,
       awb_number: awbNumber,
       status,
+      status_label: statusLabelFromState(status),
       reason,
       remarks,
       attempt_no: attemptNo,
       courier_partner: order?.courier_partner || undefined,
       integration_type: order?.integration_type || undefined,
+      event_type: 'ndr',
+      source: 'courier_webhook',
       event_created_at: inserted.created_at?.toISOString() || new Date().toISOString(),
       created_at: inserted.created_at?.toISOString() || new Date().toISOString(),
     }).catch((err) => {

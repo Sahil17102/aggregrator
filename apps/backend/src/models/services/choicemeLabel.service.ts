@@ -367,17 +367,18 @@ const buildFallbackLabelPdf = async (params: {
       creator: 'ChoiceMee Label Generator',
     },
     pageSize: { width: 288, height: 432 },
-    pageMargins: [12, 12, 12, 12],
+    pageMargins: [14, 14, 14, 14],
     defaultStyle: {
       font: 'Helvetica',
-      fontSize: 7,
+      fontSize: 6.6,
+      lineHeight: 1.08,
       color: '#111111',
     },
     footer: () => ({
-      margin: [12, 0, 12, 6],
+      margin: [14, 0, 14, 6],
       columns: [
-        { text: footerUrl, fontSize: 6.1, color: '#4b5563' },
-        { text: 'ChoiceMee', fontSize: 6.1, color: '#4b5563', alignment: 'right' },
+        { text: footerUrl, fontSize: 5.8, color: '#4b5563' },
+        { text: 'ChoiceMee', fontSize: 5.8, color: '#4b5563', alignment: 'right' },
       ],
     }),
     content: [
@@ -385,16 +386,16 @@ const buildFallbackLabelPdf = async (params: {
         columns: [
           {
             stack: [
-              { text: 'ChoiceMee', fontSize: 14, bold: true, color: '#111111' },
-              { text: providerLabel, fontSize: 7, color: '#4b5563' },
+              { text: 'ChoiceMee', fontSize: 13.2, bold: true, color: '#111111' },
+              { text: providerLabel, fontSize: 6.1, color: '#4b5563', margin: [0, 1, 0, 0] },
             ],
           },
           {
             stack: [
-              { text: 'SHIPMENT LABEL', fontSize: 8, bold: true, alignment: 'right' },
-              { text: `Order: ${invoiceNo}`, fontSize: 6.8, alignment: 'right', color: '#4b5563' },
-              { text: `AWB: ${awb}`, fontSize: 6.8, alignment: 'right', color: '#4b5563' },
-              { text: `Date: ${orderDate || '-'}`, fontSize: 6.8, alignment: 'right', color: '#4b5563' },
+              { text: 'SHIPMENT LABEL', fontSize: 7.2, bold: true, alignment: 'right', letterSpacing: 0.3 },
+              { text: `Order: ${invoiceNo}`, fontSize: 6.2, alignment: 'right', color: '#4b5563' },
+              { text: `AWB: ${awb}`, fontSize: 6.2, alignment: 'right', color: '#4b5563' },
+              { text: `Date: ${orderDate || '-'}`, fontSize: 6.2, alignment: 'right', color: '#4b5563' },
             ],
           },
         ],
@@ -408,19 +409,19 @@ const buildFallbackLabelPdf = async (params: {
             [
               {
                 stack: [
-                  { text: 'FROM', fontSize: 7, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
-                  { text: sellerName, fontSize: 8, bold: true, color: '#111111' },
-                  ...sellerAddressLines.map((line) => ({ text: line, fontSize: 6.6, color: '#4b5563' })),
-                  { text: `Phone: ${sellerContact || '-'}`, fontSize: 6.6, color: '#4b5563' },
+                  { text: 'FROM', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
+                  { text: sellerName, fontSize: 7.4, bold: true, color: '#111111' },
+                  ...sellerAddressLines.map((line) => ({ text: line, fontSize: 6.1, color: '#4b5563' })),
+                  { text: `Phone: ${sellerContact || '-'}`, fontSize: 6.1, color: '#4b5563' },
                 ],
                 margin: [5, 5, 5, 5],
               },
               {
                 stack: [
-                  { text: 'TO', fontSize: 7, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
-                  { text: customerName, fontSize: 8, bold: true, color: '#111111' },
-                  ...customerAddressLines.map((line) => ({ text: line, fontSize: 6.6, color: '#4b5563' })),
-                  { text: `Phone: ${customerPhone || '-'}`, fontSize: 6.6, color: '#4b5563' },
+                  { text: 'TO', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
+                  { text: customerName, fontSize: 7.4, bold: true, color: '#111111' },
+                  ...customerAddressLines.map((line) => ({ text: line, fontSize: 6.1, color: '#4b5563' })),
+                  { text: `Phone: ${customerPhone || '-'}`, fontSize: 6.1, color: '#4b5563' },
                 ],
                 margin: [5, 5, 5, 5],
               },
@@ -444,12 +445,12 @@ const buildFallbackLabelPdf = async (params: {
           widths: ['*', '*'],
           body: [
             [
-              { text: 'Payment', fontSize: 6.8, bold: true, color: '#374151' },
-              { text: paymentMethod, fontSize: 6.8, bold: true, alignment: 'right', color: paymentColor },
+              { text: 'Payment', fontSize: 6.4, bold: true, color: '#374151' },
+              { text: paymentMethod, fontSize: 6.4, bold: true, alignment: 'right', color: paymentColor },
             ],
             [
-              { text: 'Order Date', fontSize: 6.8, bold: true, color: '#374151' },
-              { text: orderDate || '-', fontSize: 6.8, alignment: 'right', color: '#111111' },
+              { text: 'Order Date', fontSize: 6.4, bold: true, color: '#374151' },
+              { text: orderDate || '-', fontSize: 6.4, alignment: 'right', color: '#111111' },
             ],
           ],
         },
@@ -471,11 +472,11 @@ const buildFallbackLabelPdf = async (params: {
           widths: [48, '*', 34, 24, 34],
           body: [
             [
-              { text: 'SKU', bold: true, fontSize: 6.4, color: '#374151' },
-              { text: 'Item', bold: true, fontSize: 6.4, color: '#374151' },
-              { text: 'Rate', bold: true, fontSize: 6.4, color: '#374151', alignment: 'right' },
-              { text: 'Qty', bold: true, fontSize: 6.4, color: '#374151', alignment: 'right' },
-              { text: 'Total', bold: true, fontSize: 6.4, color: '#374151', alignment: 'right' },
+              { text: 'SKU', bold: true, fontSize: 6.1, color: '#374151' },
+              { text: 'Item', bold: true, fontSize: 6.1, color: '#374151' },
+              { text: 'Rate', bold: true, fontSize: 6.1, color: '#374151', alignment: 'right' },
+              { text: 'Qty', bold: true, fontSize: 6.1, color: '#374151', alignment: 'right' },
+              { text: 'Total', bold: true, fontSize: 6.1, color: '#374151', alignment: 'right' },
             ],
             ...rows,
           ],
@@ -497,8 +498,8 @@ const buildFallbackLabelPdf = async (params: {
           {
             width: '*',
             stack: [
-              { text: 'NOTES', fontSize: 7, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
-              { text: 'Courier label template restored from the order snapshot.', fontSize: 6.4, color: '#4b5563' },
+              { text: 'NOTES', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
+              { text: 'Courier label template restored from the order snapshot.', fontSize: 6.1, color: '#4b5563' },
             ],
           },
           {
@@ -507,8 +508,8 @@ const buildFallbackLabelPdf = async (params: {
               widths: ['*', 'auto'],
               body: [
                 [
-                  { text: 'Total', fontSize: 7, bold: true, color: '#111111' },
-                  { text: formatMoney(totalAmount), fontSize: 7, bold: true, alignment: 'right', color: '#111111' },
+                  { text: 'Total', fontSize: 6.6, bold: true, color: '#111111' },
+                  { text: formatMoney(totalAmount), fontSize: 6.6, bold: true, alignment: 'right', color: '#111111' },
                 ],
               ],
             },

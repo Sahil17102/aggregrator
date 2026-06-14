@@ -1,6 +1,8 @@
 import { presignDownload } from '../models/services/upload.service'
 import { normalizeServiceProviderKey } from './courierProviders'
 
+const isHttpUrl = (value?: string | null) => /^https?:\/\//i.test(String(value || '').trim())
+
 /**
  * Generates an accessible download URL for stored asset keys.
  * Falls back gracefully if the file cannot be presigned.
@@ -71,10 +73,19 @@ export const sanitizeOrderForCustomer = async (order: any): Promise<any> => {
     provider === 'deliveryone' &&
     manifestRetriesRemaining > 0
 
-  // Always expose stored document keys so clients can reliably use the same regenerated keys
-  if (order.label) sanitized.label_key = order.label
-  if (order.manifest) sanitized.manifest_key = order.manifest
-  if (order.invoice_link) sanitized.invoice_key = order.invoice_link
+  // Always expose stored document keys/URLs in the correct field so clients can choose the right path
+  if (order.label) {
+    if (isHttpUrl(order.label)) sanitized.label_url = order.label
+    else sanitized.label_key = order.label
+  }
+  if (order.manifest) {
+    if (isHttpUrl(order.manifest)) sanitized.manifest_url = order.manifest
+    else sanitized.manifest_key = order.manifest
+  }
+  if (order.invoice_link) {
+    if (isHttpUrl(order.invoice_link)) sanitized.invoice_url = order.invoice_link
+    else sanitized.invoice_key = order.invoice_link
+  }
 
   try {
     const [labelUrl, manifestUrl, invoiceUrl] = await Promise.all([

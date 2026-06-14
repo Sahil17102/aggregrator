@@ -127,6 +127,8 @@ export async function sendWebhookEvent(
       const eventId =
         eventData.ndr_event_id ||
         eventData.rto_event_id ||
+        eventData.discrepancy_id ||
+        eventData.weight_discrepancy_id ||
         eventData.return_id ||
         eventData.order_id ||
         eventData.awb_number ||

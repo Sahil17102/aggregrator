@@ -5,6 +5,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Chip,
   Paper,
   Stack,
   Typography,
@@ -24,6 +25,7 @@ import CustomInput from '../../components/UI/inputs/CustomInput'
 import DataTable, { type Column } from '../../components/UI/table/DataTable'
 import FileUploader, { type UploadedFileInfo } from '../../components/UI/uploader/FileUploader'
 import { toast } from '../../components/UI/Toast'
+import { getCourierDisplayName } from '../../utils/courierDisplay'
 
 type NdrRow = {
   id?: string
@@ -105,9 +107,37 @@ export default function NdrList() {
 
   const columns: Column<TableRow>[] = useMemo(
     () => [
-      { id: 'awb_number', label: 'AWB' },
+      {
+        id: 'awb_number',
+        label: 'AWB',
+        render: (value, row) => (
+          <Stack spacing={0.25}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+              {value || '—'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#6B7280' }}>
+              {getCourierDisplayName(
+                {
+                  name: row.courier_partner,
+                  integration_type: row.integration_type,
+                },
+                'Unknown courier',
+              )}
+            </Typography>
+          </Stack>
+        ),
+      },
       { id: 'order_id', label: 'Order ID' },
-      { id: 'status', label: 'Status' },
+      {
+        id: 'status',
+        label: 'Status',
+        render: (value) => {
+          const status = String(value || '').toLowerCase()
+          const color =
+            status.includes('rto') ? 'error' : status.includes('ndr') ? 'warning' : 'default'
+          return <Chip label={value || 'Unknown'} color={color} size="small" variant="outlined" />
+        },
+      },
       { id: 'reason', label: 'Reason' },
       { id: 'remarks', label: 'Remarks' },
       {
