@@ -18,6 +18,7 @@ import type { UserInfoData } from '../../types/user.types'
 import { hasValidationErrors, validateOnboardingFields } from '../../utils/functions'
 import { brand, brandGradients } from '../../theme/brand'
 import { initialFormData } from '../../utils/utility'
+import { isOnboardingComplete } from '../../utils/authRedirect'
 
 const DE_BLUE = brand.ink
 const DE_AMBER = brand.accent
@@ -53,7 +54,7 @@ export default function UserOnboarding() {
   useEffect(() => {
     if (!userData) return
 
-    if (userData.onboardingComplete) {
+    if (isOnboardingComplete(userData)) {
       navigate('/dashboard')
       return
     }

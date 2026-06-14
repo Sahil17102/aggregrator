@@ -137,10 +137,20 @@ export const findUserById = async (id: string) => {
 
   if (!result[0]) return null
 
+  const profile = result[0].profile
+  const onboardingComplete = Boolean(
+    profile?.onboardingComplete ||
+      profile?.profileComplete ||
+      profile?.approved ||
+      Number(profile?.onboardingStep ?? 0) < 0,
+  )
+
   // Merge `users`, `userProfile`, and current plan
   return {
     ...result[0].user,
-    ...result[0].profile,
+    ...profile,
+    onboardingComplete,
+    profileComplete: Boolean(profile?.profileComplete || onboardingComplete),
     currentPlanId: result[0].userPlan?.plan_id || null, // current assigned plan
   }
 }

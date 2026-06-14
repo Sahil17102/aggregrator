@@ -70,6 +70,14 @@ const allowInlineOtp = parseBooleanEnv(process.env.ALLOW_INLINE_OTP, false)
 const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false) || allowInlineOtp
 const shouldExposeAuthCodes = () => exposeAuthCodes
 
+const isOnboardingComplete = (user: any) =>
+  Boolean(
+    user?.onboardingComplete ||
+      user?.profileComplete ||
+      user?.approved ||
+      Number(user?.onboardingStep ?? 0) < 0,
+  )
+
 const getRequestBody = (req: Request) => {
   const body = req.body
   return body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
@@ -91,8 +99,9 @@ const buildAuthUserPayload = async (userId: string, fallback?: any) => {
     emailVerified: Boolean(user.emailVerified),
     profilePicture: user.profilePicture ?? null,
     role: user.role ?? fallback?.role ?? 'customer',
-    onboardingComplete: Boolean(user.onboardingComplete),
+    onboardingComplete: isOnboardingComplete(user),
     onboardingStep: Number(user.onboardingStep ?? 0),
+    profileComplete: Boolean(user.profileComplete || isOnboardingComplete(user)),
   }
 }
 

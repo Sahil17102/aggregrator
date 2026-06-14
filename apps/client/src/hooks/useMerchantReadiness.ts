@@ -3,6 +3,7 @@ import { usePickupAddresses } from './Pickup/usePickupAddresses'
 import { useWalletBalance } from './useWalletBalance'
 import { usePaymentOptions } from './usePaymentOptions'
 import { useAuth } from '../context/auth/AuthContext'
+import { isOnboardingComplete } from '../utils/authRedirect'
 
 type CompanyInfoLike = {
   businessName?: string
@@ -57,7 +58,7 @@ export const useMerchantReadiness = () => {
         key: 'onboarding',
         title: 'Panel Setup Completed',
         description: 'Finish the onboarding flow so your seller panel is ready for booking.',
-        done: Boolean(user?.onboardingComplete),
+        done: isOnboardingComplete(user),
         path: '/onboarding-questions',
         actionLabel: 'Complete Panel Setup',
       },
