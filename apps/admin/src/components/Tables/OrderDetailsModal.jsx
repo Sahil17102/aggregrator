@@ -29,6 +29,7 @@ import {
 } from '@chakra-ui/react'
 import { usePresignedDownloadUrls } from 'hooks/usePresignedUrls'
 import { useUpdateOrderStatusMutation } from 'hooks/useOrders'
+import { openDocumentInNewTab } from 'services/upload.service'
 import { useEffect, useState } from 'react'
 import { getCourierDisplayName } from 'utils/courierDisplay'
 import {
@@ -268,7 +269,22 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
                     size="xs"
                     colorScheme="blue"
                     rightIcon={<FiExternalLink />}
-                    onClick={() => resolvedLabelUrl && window.open(resolvedLabelUrl, '_blank')}
+                    onClick={() =>
+                      resolvedLabelUrl &&
+                      void openDocumentInNewTab(resolvedLabelUrl, {
+                        downloadName: `label-${order.order_number || order.id}.pdf`,
+                        contentType: 'application/pdf',
+                      }).catch((error) => {
+                        console.error('Failed to open label document', error)
+                        toast({
+                          title: 'Label unavailable',
+                          description: 'We could not open the shipping label right now.',
+                          status: 'error',
+                          duration: 4000,
+                          isClosable: true,
+                        })
+                      })
+                    }
                     isDisabled={!resolvedLabelUrl}
                   >
                     View
@@ -284,7 +300,22 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
                     size="xs"
                     colorScheme="purple"
                     rightIcon={<FiExternalLink />}
-                    onClick={() => resolvedInvoiceUrl && window.open(resolvedInvoiceUrl, '_blank')}
+                    onClick={() =>
+                      resolvedInvoiceUrl &&
+                      void openDocumentInNewTab(resolvedInvoiceUrl, {
+                        downloadName: `invoice-${order.order_number || order.id}.pdf`,
+                        contentType: 'application/pdf',
+                      }).catch((error) => {
+                        console.error('Failed to open invoice document', error)
+                        toast({
+                          title: 'Invoice unavailable',
+                          description: 'We could not open the invoice right now.',
+                          status: 'error',
+                          duration: 4000,
+                          isClosable: true,
+                        })
+                      })
+                    }
                     isDisabled={!resolvedInvoiceUrl}
                   >
                     View

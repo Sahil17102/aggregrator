@@ -17,6 +17,31 @@ export const getPresignedDownloadUrls = async (keys: string | string[]) => {
   }
 };
 
+export const downloadDocumentThroughProxy = async (
+  source: string,
+  options?: {
+    downloadName?: string;
+    disposition?: 'inline' | 'attachment';
+    contentType?: string;
+  },
+) => {
+  const response = await axiosInstance.post(
+    '/uploads/proxy-download',
+    {
+      source,
+      downloadName: options?.downloadName,
+      disposition: options?.disposition || 'attachment',
+      contentType: options?.contentType,
+    },
+    {
+      responseType: 'blob',
+      timeout: 120000,
+    },
+  )
+
+  return response.data as Blob
+};
+
 export const uploadFileToStorage = async ({
   file,
   folderKey,

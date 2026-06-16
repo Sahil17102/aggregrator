@@ -14,7 +14,7 @@ import { usePresignedDownloadMutation } from '../../hooks/Uploads/usePresignedDo
 import { useRegenerateOrderDocuments } from '../../hooks/Orders/useOrders'
 import { getCourierDisplayName } from '../../utils/courierDisplay'
 import { toast } from '../UI/Toast'
-import { getDocumentReference } from './bulkActionUtils'
+import { downloadFile, getDocumentReference } from './bulkActionUtils'
 
 interface OrderExpandedRowProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,12 +73,7 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
         return
       }
 
-      const link = document.createElement('a')
-      link.href = url
-      link.download = key.split('/').pop() ?? ''
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      await downloadFile(url, key.split('/').pop() ?? '')
     } catch (err: unknown) {
       console.error('Download failed', err)
       const error = err as { response?: { data?: { message?: string } }; message?: string }
@@ -103,8 +98,7 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
     fileType: 'label' | 'invoice' | 'manifest' = 'label',
   ) => {
     try {
-      // Validate URL before attempting download
-      if (!url || !url.startsWith('http')) {
+      if (!url) {
         toast.open({
           message: `Invalid ${fileType} URL`,
           severity: 'error',
@@ -112,13 +106,14 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
         return
       }
 
-      const link = document.createElement('a')
-      link.href = url
-      link.target = '_blank'
-      link.download = url.split('/').pop() ?? ''
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const fileName = url.split('/').pop() ?? `${fileType}.pdf`
+      void downloadFile(url, fileName).catch((error) => {
+        console.error('Direct download failed', error)
+        toast.open({
+          message: `Failed to download ${fileType}`,
+          severity: 'error',
+        })
+      })
     } catch (err) {
       console.error('Direct download failed', err)
       toast.open({

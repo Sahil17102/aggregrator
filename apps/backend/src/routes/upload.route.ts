@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createPresignedUrl,
   getPresignedDownloadUrl,
+  proxyDocumentDownload,
   uploadFile,
 } from "../controllers/upload.controller";
 import { uploadSingleFile } from "../middlewares/upload";
@@ -12,5 +13,6 @@ const router = Router();
 router.post("/presign", requireAuth, createPresignedUrl);
 router.post("/file", requireAuth, uploadSingleFile("file"), uploadFile);
 router.post("/presign-download-url", requireAuth, getPresignedDownloadUrl);
+router.post("/proxy-download", requireAuth, proxyDocumentDownload);
 
 export default router;

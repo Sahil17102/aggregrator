@@ -1,4 +1,5 @@
 import { saveAs } from 'file-saver'
+import { downloadDocumentThroughProxy } from '../../api/upload.api'
 
 export type DocumentType = 'label' | 'invoice' | 'manifest'
 
@@ -107,16 +108,44 @@ const triggerBrowserDownload = (url: string, fileName: string) => {
 
 export const downloadFile = async (url: string, fileName: string) => {
   try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`Download failed with status ${response.status}`)
-    }
-
-    const blob = await response.blob()
+    const blob = await downloadDocumentThroughProxy(url, {
+      downloadName: fileName,
+      disposition: 'attachment',
+    })
     saveAs(blob, fileName)
   } catch (error) {
     console.warn('Falling back to browser download for bulk file:', error)
     triggerBrowserDownload(url, fileName)
+  }
+}
+
+export const openFileInNewTab = async (url: string, fileName: string) => {
+  const tab = window.open('', '_blank', 'noopener,noreferrer')
+  try {
+    const blob = await downloadDocumentThroughProxy(url, {
+      downloadName: fileName,
+      disposition: 'inline',
+    })
+
+    const objectUrl = URL.createObjectURL(blob)
+
+    if (tab) {
+      tab.location.href = objectUrl
+    } else {
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+  } catch (error) {
+    if (tab) {
+      tab.close()
+    }
+    throw error
   }
 }
 
