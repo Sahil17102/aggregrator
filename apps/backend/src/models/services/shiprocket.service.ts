@@ -44,7 +44,7 @@ import {
   normalizePickupDetails,
 } from './invoiceHelpers'
 import { generateInvoicePDF, Product } from './invoice.service'
-import { presignDownload, presignUpload } from './upload.service'
+import { downloadAndUploadToR2, presignDownload, presignUpload } from './upload.service'
 import { createWalletTransaction } from './wallet.service'
 import { walletOfUser } from './walletTopupService'
 import { resolveInvoiceNumber } from './invoiceNumber.service'
@@ -116,6 +116,31 @@ const compactStorageToken = (...values: Array<string | number | null | undefined
     .slice(-12)
 
   return cleaned || Date.now().toString(36)
+}
+
+const resolveStoredLabelKey = async ({
+  label,
+  userId,
+  orderNumber,
+}: {
+  label?: string | null
+  userId: string
+  orderNumber: string
+}) => {
+  const rawLabel = typeof label === 'string' ? label.trim() : ''
+  if (!rawLabel) return null
+
+  if (/^https?:\/\//i.test(rawLabel)) {
+    return downloadAndUploadToR2({
+      url: rawLabel,
+      userId,
+      filename: `l-${compactStorageToken(orderNumber, userId)}.pdf`,
+      folderKey: 'labels',
+      contentType: 'application/pdf',
+    })
+  }
+
+  return rawLabel
 }
 
 const truncateColumnValue = (value: string, maxLength = 255) => {
@@ -3222,6 +3247,14 @@ export async function createB2COrder({
   const rtoDetails = normalizeJsonValue(params.rto)
   const isCodOrder = params.payment_type === 'cod'
   const storedCodCharges = isCodOrder ? Number(codCharges ?? params?.cod_charges ?? 0) : 0
+  const rawShipmentLabel = typeof shipmentData?.label === 'string' ? shipmentData.label.trim() : ''
+  const storedShipmentLabel = rawShipmentLabel
+    ? await resolveStoredLabelKey({
+        label: rawShipmentLabel,
+        userId,
+        orderNumber: normalizedOrderNumber,
+      })
+    : null
 
   try {
     const [newOrder] = await tx
@@ -3281,8 +3314,8 @@ export async function createB2COrder({
         selected_max_slab_weight: selectedMaxSlabWeight ?? null,
         shipment_id: shipmentData?.shipment_id?.toString() ?? null,
         awb_number: shipmentData?.awb_number ?? null,
-        // Store courier-provided label key/identifier if available
-        label: typeof shipmentData?.label === 'string' ? shipmentData.label : null,
+        // Store a durable label key when the courier returns an external URL
+        label: storedShipmentLabel,
         manifest:
           typeof shipmentData?.manifest === 'string' && shipmentData?.manifest.length <= 100
             ? shipmentData.manifest
@@ -3308,6 +3341,22 @@ export async function createB2COrder({
         updated_at: new Date(),
       })
       .returning({ id: b2c_orders.id })
+
+    if (!storedShipmentLabel && /^https?:\/\//i.test(rawShipmentLabel)) {
+      const [freshOrder] = await tx.select().from(b2c_orders).where(eq(b2c_orders.id, newOrder.id))
+      if (freshOrder) {
+        const generatedLabelKey = await generateLabelForOrder(freshOrder, userId, tx)
+        if (generatedLabelKey) {
+          await tx
+            .update(b2c_orders)
+            .set({
+              label: generatedLabelKey,
+              updated_at: new Date(),
+            })
+            .where(eq(b2c_orders.id, newOrder.id))
+        }
+      }
+    }
 
     return newOrder
   } catch (err: any) {
@@ -4966,6 +5015,15 @@ export const createB2CShipmentService = async (
         params.order_date instanceof Date
           ? params.order_date.toISOString().slice(0, 10)
           : String(params.order_date ?? new Date().toISOString().slice(0, 10))
+      const rawShipmentMetaLabel =
+        typeof shipmentMeta?.label === 'string' ? shipmentMeta.label.trim() : ''
+      const storedShipmentMetaLabel = rawShipmentMetaLabel
+        ? await resolveStoredLabelKey({
+            label: rawShipmentMetaLabel,
+            userId,
+            orderNumber: params.order_number,
+          })
+        : null
 
       const newOrder = options.existingOrderId
         ? await (async () => {
@@ -5019,7 +5077,7 @@ export const createB2CShipmentService = async (
                   finalSlabbedFreight.max_slab_weight ?? selectedMaxSlabWeight,
                 shipment_id: shipmentMeta?.shipment_id?.toString() ?? null,
                 awb_number: shipmentMeta?.awb_number ?? null,
-                label: typeof shipmentMeta?.label === 'string' ? shipmentMeta.label : null,
+                label: storedShipmentMetaLabel,
                 manifest:
                   typeof shipmentMeta?.manifest === 'string' && shipmentMeta.manifest.length <= 100
                     ? shipmentMeta.manifest
@@ -5043,6 +5101,32 @@ export const createB2CShipmentService = async (
 
             if (!updatedOrder) {
               throw new HttpError(404, 'Order not found.')
+            }
+
+            if (!storedShipmentMetaLabel && /^https?:\/\//i.test(rawShipmentMetaLabel)) {
+              const [freshUpdatedOrder] = await tx
+                .select()
+                .from(b2c_orders)
+                .where(eq(b2c_orders.id, updatedOrder.id))
+                .limit(1)
+
+              if (freshUpdatedOrder) {
+                const generatedLabelKey = await generateLabelForOrder(
+                  freshUpdatedOrder,
+                  userId,
+                  tx,
+                )
+
+                if (generatedLabelKey) {
+                  await tx
+                    .update(b2c_orders)
+                    .set({
+                      label: generatedLabelKey,
+                      updated_at: new Date(),
+                    })
+                    .where(eq(b2c_orders.id, updatedOrder.id))
+                }
+              }
             }
 
             return updatedOrder

@@ -35,6 +35,7 @@ import { syncShopifyStatusForLocalOrder } from './shopify.service'
 import { computeB2CFreightForOrder } from './shiprocket.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
 import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
+import { downloadAndUploadToR2 } from './upload.service'
 
 const WEBHOOK_INVOICE_UPLOAD_TIMEOUT_MS = 60000
 
@@ -1764,7 +1765,22 @@ export async function processXpressbeesWebhook(payload: any, tx = db) {
     updateData.volumetric_weight = Number(event.volumetric_weight)
   }
   if (event?.actual_weight !== undefined) updateData.actual_weight = Number(event.actual_weight)
-  if (event?.label) updateData.label = String(event.label)
+  if (event?.label) {
+    const rawLabel = String(event.label).trim()
+    if (/^https?:\/\//i.test(rawLabel)) {
+      const storedLabelKey = await downloadAndUploadToR2({
+        url: rawLabel,
+        userId: order.user_id,
+        filename: `l-${String(order.order_number || order.id).replace(/[^a-zA-Z0-9_-]/g, '').slice(-12) || order.id}.pdf`,
+        folderKey: 'labels',
+        contentType: 'application/pdf',
+      })
+
+      updateData.label = storedLabelKey ?? null
+    } else if (rawLabel) {
+      updateData.label = rawLabel
+    }
+  }
   if (event?.manifest) updateData.manifest = String(event.manifest)
 
   await tx.transaction(async (innerTx) => {
