@@ -175,12 +175,12 @@ export const OrderExpandedRow = ({ row, type = 'b2c' }: OrderExpandedRowProps) =
             variant="outlined"
             sx={{ minWidth: 0, px: 1.25, py: 0.25, textTransform: 'none' }}
             onClick={() => {
-              if (urlValue && /^https?:\/\//i.test(urlValue)) {
-                handleDirectDownload(urlValue, type)
-                return
-              }
               if (keyValue) {
                 handleDownload(keyValue, type)
+                return
+              }
+              if (urlValue && /^https?:\/\//i.test(urlValue)) {
+                handleDirectDownload(urlValue, type)
                 return
               }
               toast.open({

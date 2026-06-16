@@ -71,12 +71,17 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
   const { mutateAsync: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatusMutation()
 
   const isHttpUrl = (value) => typeof value === 'string' && /^https?:\/\//i.test(value)
-  const labelSource = safeOrder.label_url || safeOrder.label || safeOrder.label_key || null
-  const invoiceSource =
-    safeOrder.invoice_url || safeOrder.invoice_link || safeOrder.invoice_key || null
+  const labelKey = safeOrder.label_key || (safeOrder.label && !isHttpUrl(safeOrder.label) ? safeOrder.label : null)
+  const invoiceKey =
+    safeOrder.invoice_key ||
+    (safeOrder.invoice_link && !isHttpUrl(safeOrder.invoice_link) ? safeOrder.invoice_link : null)
+  const labelUrl = safeOrder.label_url || (safeOrder.label && isHttpUrl(safeOrder.label) ? safeOrder.label : null)
+  const invoiceUrl =
+    safeOrder.invoice_url ||
+    (safeOrder.invoice_link && isHttpUrl(safeOrder.invoice_link) ? safeOrder.invoice_link : null)
   const presignKeys = [
-    ...(labelSource && !isHttpUrl(labelSource) ? [labelSource] : []),
-    ...(invoiceSource && !isHttpUrl(invoiceSource) ? [invoiceSource] : []),
+    ...(labelKey ? [labelKey] : []),
+    ...(invoiceKey ? [invoiceKey] : []),
   ]
   const { data: presignedUrls = [] } = usePresignedDownloadUrls({
     keys: presignKeys,
@@ -88,16 +93,12 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
     return acc
   }, {})
 
-  const resolvedLabelUrl = labelSource
-    ? isHttpUrl(labelSource)
-      ? labelSource
-      : presignedMap[labelSource]
-    : null
-  const resolvedInvoiceUrl = invoiceSource
-    ? isHttpUrl(invoiceSource)
-      ? invoiceSource
-      : presignedMap[invoiceSource]
-    : null
+  const resolvedLabelUrl = labelKey
+    ? presignedMap[labelKey]
+    : labelUrl
+  const resolvedInvoiceUrl = invoiceKey
+    ? presignedMap[invoiceKey]
+    : invoiceUrl
 
   useEffect(() => {
     setSelectedStatus(order?.order_status || '')
@@ -258,7 +259,7 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
                 })}
               />
               <InfoRow label="Shipment ID" value={order.shipment_id} />
-              {labelSource && (
+              {(labelKey || labelUrl) && (
                 <Flex justify="space-between" align="center" py={2}>
                   <Text fontSize="sm" color={labelColor} fontWeight="medium">
                     Shipping Label
@@ -274,7 +275,7 @@ const OrderDetailsModal = ({ isOpen, onClose, order, onOrderUpdated }) => {
                   </Button>
                 </Flex>
               )}
-              {invoiceSource && (
+              {(invoiceKey || invoiceUrl) && (
                 <Flex justify="space-between" align="center" py={2}>
                   <Text fontSize="sm" color={labelColor} fontWeight="medium">
                     Invoice

@@ -38,7 +38,7 @@ const BILLABLE_ORDER_STATUSES = [
   'rto_in_transit',
   'rto_delivered',
 ] as const
-const PLATFORM_COURIER_BRAND_NAME = 'ChoiceMee Couriers'
+const PLATFORM_COURIER_BRAND_NAME = 'ChoiceMee Logistics'
 const PLATFORM_LOGISTICS_BRAND_NAME = 'ChoiceMee Logistics'
 const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
 const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
