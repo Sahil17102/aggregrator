@@ -3,6 +3,7 @@ import { Response } from 'express'
 import { db } from '../../models/client'
 import { DelhiveryService } from '../../models/services/couriers/delhivery.service'
 import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
+import { generateLabelForOrder } from '../../models/services/generateCustomLabelService'
 import { sendShipmentStatusEmailIfChanged } from '../../models/services/shipmentNotification.service'
 import {
   createPickupAddressService,
@@ -541,6 +542,35 @@ export const requestPickupController = async (req: any, res: Response) => {
       await Promise.all(
         orders.map(async (order) => {
           try {
+            const [freshOrder] = await db
+              .select()
+              .from(b2c_orders)
+              .where(eq(b2c_orders.id, order.id))
+              .limit(1)
+
+            if (freshOrder) {
+              const existingLabel = typeof freshOrder.label === 'string' ? freshOrder.label.trim() : ''
+              if (!existingLabel || /^https?:\/\//i.test(existingLabel)) {
+                try {
+                  const labelKey = await generateLabelForOrder(freshOrder, freshOrder.user_id, db)
+                  if (labelKey && labelKey.trim()) {
+                    await db
+                      .update(b2c_orders)
+                      .set({
+                        label: labelKey.trim(),
+                        updated_at: new Date(),
+                      })
+                      .where(eq(b2c_orders.id, freshOrder.id))
+                  }
+                } catch (labelError) {
+                  console.warn('[Pickup API] Label generation failed', {
+                    order_number: freshOrder.order_number,
+                    message: labelError instanceof Error ? labelError.message : String(labelError),
+                  })
+                }
+              }
+            }
+
             await sendShipmentStatusEmailIfChanged({
               userId: order.user_id,
               awbNumber: order.awb_number || '',
