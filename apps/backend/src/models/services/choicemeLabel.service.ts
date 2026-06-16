@@ -1,14 +1,15 @@
 import axios from 'axios'
 import { and, eq } from 'drizzle-orm'
 import PdfPrinter from 'pdfmake'
+import path from 'node:path'
+import { createRequire } from 'node:module'
+import sharp from 'sharp'
 import { db } from '../client'
 import { b2b_orders } from '../schema/b2bOrders'
 import { b2c_orders } from '../schema/b2cOrders'
 import { userProfiles } from '../schema/userProfile'
 import { users } from '../schema/users'
-import { getDelhiveryCredentials } from './delhiveryCredentials.service'
-import { getEffectiveCourierConfig, type DeliveryOneConfig } from './courierCredentials.service'
-import { presignUpload } from './upload.service'
+import { presignDownload, presignUpload } from './upload.service'
 
 type LabelSnapshot = {
   order: any
@@ -21,6 +22,17 @@ type FontFiles = {
   italics: string
   bolditalics: string
 }
+
+const moduleRequire = createRequire(__filename)
+const PDFJS_STANDARD_FONTS_DIR = path.join(
+  path.dirname(moduleRequire.resolve('pdfjs-dist/package.json')),
+  'standard_fonts',
+)
+
+const IMAGE_DOWNLOAD_TIMEOUT = 20000
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const LOGO_MAX_WIDTH = 104
+const LOGO_MAX_HEIGHT = 34
 
 const normalizeText = (value: unknown, fallback = '-') => {
   const text = String(value ?? '').trim()
@@ -58,6 +70,76 @@ const splitTextLines = (value: unknown) =>
 
 const buildAddressLines = (...parts: Array<unknown>) =>
   parts.flatMap((part) => splitTextLines(part)).filter(Boolean)
+
+const downloadImageBuffer = async (source: string): Promise<Buffer | null> => {
+  const reference = source.trim()
+  if (!reference) return null
+
+  try {
+    if (/^data:image\//i.test(reference)) {
+      const base64Part = reference.split(',')[1] || ''
+      return Buffer.from(base64Part, 'base64')
+    }
+
+    const signed = /^https?:\/\//i.test(reference) ? reference : await presignDownload(reference)
+    const finalUrl = Array.isArray(signed) ? signed[0] : signed
+
+    if (!finalUrl) return null
+
+    const response = await axios.get(finalUrl, {
+      responseType: 'arraybuffer',
+      timeout: IMAGE_DOWNLOAD_TIMEOUT,
+      maxContentLength: MAX_IMAGE_BYTES,
+      maxBodyLength: MAX_IMAGE_BYTES,
+    })
+
+    const buffer = Buffer.from(response.data)
+    return buffer.length > 0 ? buffer : null
+  } catch (err) {
+    console.warn('ChoiceMee label image download failed:', err)
+    return null
+  }
+}
+
+const normalizeImageToDataUrl = async (buffer: Buffer): Promise<string | null> => {
+  try {
+    const png = await sharp(buffer)
+      .resize({
+        width: LOGO_MAX_WIDTH,
+        height: LOGO_MAX_HEIGHT,
+        fit: 'contain',
+        withoutEnlargement: true,
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+      })
+      .png()
+      .toBuffer()
+    if (!png.length) return null
+    return `data:image/png;base64,${png.toString('base64')}`
+  } catch (err) {
+    console.warn('ChoiceMee label image normalization failed:', err)
+    return null
+  }
+}
+
+const resolveSellerLogoDataUrl = async (companyInfo: Record<string, any>, order: any) => {
+  const logoReference = [
+    companyInfo?.companyLogoUrl,
+    companyInfo?.profilePicture,
+    order?.companyLogoUrl,
+    order?.merchant_logo,
+    order?.merchantLogo,
+  ]
+    .find((value) => typeof value === 'string' && value.trim().length > 0)
+    ?.trim()
+    || ''
+
+  if (!logoReference) return null
+
+  const logoBuffer = await downloadImageBuffer(logoReference)
+  if (!logoBuffer) return null
+
+  return normalizeImageToDataUrl(logoBuffer)
+}
 
 const compactPlaceLine = (city?: unknown, state?: unknown, pincode?: unknown) => {
   const place = [city, state]
@@ -237,103 +319,21 @@ const resolveProviderKey = (order: any) => {
   return 'delhivery'
 }
 
-const extractFirstUrl = (value: any): string | null => {
-  if (!value) return null
-  if (typeof value === 'string') {
-    const match = value.match(/https?:\/\/[^\s"'<>]+/i)
-    return match?.[0] ?? null
-  }
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      const url = extractFirstUrl(entry)
-      if (url) return url
-    }
-    return null
-  }
-  if (typeof value === 'object') {
-    for (const key of ['label', 'label_url', 'labelUrl', 'pdf_url', 'pdfUrl', 'download_url', 'url']) {
-      const url = extractFirstUrl((value as Record<string, any>)[key])
-      if (url) return url
-    }
-    for (const nested of Object.values(value)) {
-      const url = extractFirstUrl(nested)
-      if (url) return url
-    }
-  }
-  return null
-}
-
-const fetchProviderLabelPdf = async (order: any): Promise<Buffer | null> => {
-  const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '')
-  if (!awb) return null
-
-  try {
-    const providerKey = resolveProviderKey(order)
-    if (providerKey === 'delhivery') {
-      const credentials = await getDelhiveryCredentials()
-      const apiKey = normalizeText(credentials.apiKey, '')
-      if (!apiKey) return null
-
-      const response = await axios.get(`${credentials.apiBase}/api/p/packing_slip`, {
-        headers: {
-          Authorization: `Token ${apiKey}`,
-          Accept: 'application/json',
-        },
-        params: { wbns: awb, pdf: true },
-        responseType: 'arraybuffer',
-        timeout: 30000,
-      })
-
-      return Buffer.from(response.data)
-    }
-
-    const config = (await getEffectiveCourierConfig<DeliveryOneConfig>('deliveryone', 'b2c')) || null
-    const apiBase = normalizeText(
-      config?.apiBase || process.env.DELIVERY_ONE_API_BASE || process.env.DELIVERYONE_API_BASE,
-      'https://track.delhivery.com',
-    ).replace(/\/+$/, '')
-    const apiKey = normalizeText(
-      config?.apiKey || process.env.DELIVERY_ONE_API_KEY || process.env.DELIVERYONE_API_KEY,
-      '',
-    )
-    if (!apiKey) return null
-
-    const response = await axios.get(`${apiBase}/api/p/packing_slip`, {
-      headers: {
-        Authorization: `Token ${apiKey}`,
-        Accept: 'application/json',
-      },
-      params: { wbns: awb, pdf: true, pdf_size: '4R' },
-      timeout: 30000,
-    })
-
-    const labelUrl = extractFirstUrl(response.data)
-    if (!labelUrl) return null
-    const pdfResp = await axios.get(labelUrl, { responseType: 'arraybuffer', timeout: 30000 })
-    return Buffer.from(pdfResp.data)
-  } catch (err) {
-    console.warn('ChoiceMee provider label fetch failed, using local label template:', err)
-    return null
-  }
-}
-
-const isPdfBuffer = (buffer: Buffer | null | undefined) =>
-  !!buffer && buffer.length >= 4 && buffer.slice(0, 4).toString('utf8') === '%PDF'
-
 const loadFonts = () => ({
-  Helvetica: {
-    normal: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique',
+  LiberationSans: {
+    normal: path.join(PDFJS_STANDARD_FONTS_DIR, 'LiberationSans-Regular.ttf'),
+    bold: path.join(PDFJS_STANDARD_FONTS_DIR, 'LiberationSans-Bold.ttf'),
+    italics: path.join(PDFJS_STANDARD_FONTS_DIR, 'LiberationSans-Italic.ttf'),
+    bolditalics: path.join(PDFJS_STANDARD_FONTS_DIR, 'LiberationSans-BoldItalic.ttf'),
   },
 })
 
 const printer = new PdfPrinter(loadFonts() as any)
 
-const buildFallbackLabelPdf = async (params: {
+type ShipmentLabelPdfParams = {
   order: any
   sellerName: string
+  sellerLogoDataUrl?: string | null
   sellerAddressLines: string[]
   sellerContact: string
   customerName: string
@@ -345,22 +345,61 @@ const buildFallbackLabelPdf = async (params: {
   paymentColor: string
   normalizedItems: Array<ReturnType<typeof normalizeLineItem>>
   footerUrl: string
-}) => {
-  const { order, sellerName, sellerAddressLines, sellerContact, customerName, customerPhone, customerAddressLines, orderDate, invoiceNo, paymentMethod, paymentColor, normalizedItems, footerUrl } = params
+}
+
+const buildBarcodeDataUrl = async (awb: string) => {
+  try {
+    const bwipjs = await import('bwip-js')
+    const barcodeBuffer = await bwipjs.toBuffer({
+      bcid: 'code128',
+      text: awb,
+      scale: 2,
+      height: 10,
+      includetext: false,
+      backgroundcolor: 'FFFFFF',
+    })
+    return barcodeBuffer.length > 0 ? `data:image/png;base64,${barcodeBuffer.toString('base64')}` : null
+  } catch (err) {
+    console.warn('ChoiceMee label barcode generation failed:', err)
+    return null
+  }
+}
+
+export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams) => {
+  const {
+    order,
+    sellerName,
+    sellerLogoDataUrl,
+    sellerAddressLines,
+    sellerContact,
+    customerName,
+    customerPhone,
+    customerAddressLines,
+    orderDate,
+    invoiceNo,
+    paymentMethod,
+    paymentColor,
+    normalizedItems,
+    footerUrl,
+  } = params
+
   const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '-')
   const providerLabel = resolveProviderKey(order) === 'delhivery' ? 'DELHIVERY' : 'DELIVERYONE'
   const totalAmount = normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0)
   const rows: any[] = normalizedItems.slice(0, 4).map((item) => [
-    { text: item.productId || '-', fontSize: 6.8, color: '#374151' },
-    { text: item.productName || '-', fontSize: 6.8, color: '#111111' },
-    { text: formatMoney(item.unitPrice), fontSize: 6.8, alignment: 'right', color: '#111111' },
-    { text: String(item.quantity), fontSize: 6.8, alignment: 'right', color: '#111111' },
-    { text: formatMoney(item.lineTotal), fontSize: 6.8, alignment: 'right', color: '#111111' },
+    { text: item.productId || '-', fontSize: 6.3, color: '#4b5563' },
+    { text: item.productName || '-', fontSize: 6.3, color: '#111111' },
+    { text: formatMoney(item.unitPrice), fontSize: 6.3, alignment: 'right', color: '#111111' },
+    { text: String(item.quantity), fontSize: 6.3, alignment: 'right', color: '#111111' },
+    { text: formatMoney(item.lineTotal), fontSize: 6.3, alignment: 'right', color: '#111111' },
   ])
 
   if (!rows.length) {
-    rows.push([{ text: '-', colSpan: 5, fontSize: 6.8, color: '#374151' }, {}, {}, {}, {}])
+    rows.push([{ text: '-', colSpan: 5, fontSize: 6.3, color: '#6b7280' }, {}, {}, {}, {}])
   }
+
+  const barcodeDataUrl = await buildBarcodeDataUrl(awb)
+  const qrPayload = `${invoiceNo} | ${awb}`
 
   const docDefinition: any = {
     info: {
@@ -370,35 +409,37 @@ const buildFallbackLabelPdf = async (params: {
       creator: 'ChoiceMee Label Generator',
     },
     pageSize: { width: 288, height: 432 },
-    pageMargins: [14, 14, 14, 14],
+    pageMargins: [13, 13, 13, 13],
     defaultStyle: {
-      font: 'Helvetica',
-      fontSize: 6.6,
+      font: 'LiberationSans',
+      fontSize: 6.5,
       lineHeight: 1.08,
       color: '#111111',
     },
     footer: () => ({
-      margin: [14, 0, 14, 6],
+      margin: [13, 0, 13, 6],
       columns: [
-        { text: footerUrl, fontSize: 5.8, color: '#4b5563' },
-        { text: 'ChoiceMee', fontSize: 5.8, color: '#4b5563', alignment: 'right' },
+        { text: footerUrl, fontSize: 5.5, color: '#6b7280' },
+        { text: 'ChoiceMee', fontSize: 5.5, color: '#6b7280', alignment: 'right' },
       ],
     }),
     content: [
       {
         columns: [
           {
+            width: '*',
             stack: [
-              { text: 'ChoiceMee', fontSize: 13.2, bold: true, color: '#111111' },
-              { text: providerLabel, fontSize: 6.1, color: '#4b5563', margin: [0, 1, 0, 0] },
+              { text: 'ChoiceMee Logistics', fontSize: 10.5, bold: true, color: '#111111' },
+              { text: providerLabel, fontSize: 5.9, color: '#6b7280', margin: [0, 1, 0, 0] },
             ],
           },
           {
+            width: 120,
             stack: [
-              { text: 'SHIPMENT LABEL', fontSize: 7.2, bold: true, alignment: 'right', letterSpacing: 0.3 },
-              { text: `Order: ${invoiceNo}`, fontSize: 6.2, alignment: 'right', color: '#4b5563' },
-              { text: `AWB: ${awb}`, fontSize: 6.2, alignment: 'right', color: '#4b5563' },
-              { text: `Date: ${orderDate || '-'}`, fontSize: 6.2, alignment: 'right', color: '#4b5563' },
+              { text: 'SHIPPING LABEL', fontSize: 10.6, bold: true, alignment: 'right', characterSpacing: 0.8 },
+              { text: `Order # ${invoiceNo}`, fontSize: 6.2, alignment: 'right', color: '#374151', margin: [0, 1, 0, 0] },
+              { text: `AWB # ${awb}`, fontSize: 6.2, alignment: 'right', color: '#374151' },
+              { text: `Generated: ${orderDate || '-'}`, fontSize: 6.2, alignment: 'right', color: '#374151' },
             ],
           },
         ],
@@ -407,92 +448,39 @@ const buildFallbackLabelPdf = async (params: {
       },
       {
         table: {
-          widths: ['*', '*'],
+          widths: [78, '*'],
           body: [
             [
               {
-                stack: [
-                  { text: 'FROM', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
-                  { text: sellerName, fontSize: 7.4, bold: true, color: '#111111' },
-                  ...sellerAddressLines.map((line) => ({ text: line, fontSize: 6.1, color: '#4b5563' })),
-                  { text: `Phone: ${sellerContact || '-'}`, fontSize: 6.1, color: '#4b5563' },
-                ],
-                margin: [5, 5, 5, 5],
+                text: paymentMethod,
+                bold: true,
+                fontSize: 11,
+                alignment: 'center',
+                color: paymentColor,
+                margin: [0, 4, 0, 4],
               },
               {
-                stack: [
-                  { text: 'TO', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
-                  { text: customerName, fontSize: 7.4, bold: true, color: '#111111' },
-                  ...customerAddressLines.map((line) => ({ text: line, fontSize: 6.1, color: '#4b5563' })),
-                  { text: `Phone: ${customerPhone || '-'}`, fontSize: 6.1, color: '#4b5563' },
-                ],
-                margin: [5, 5, 5, 5],
+                text:
+                  paymentMethod === 'COD'
+                    ? `Collect ${formatMoney(normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0))}`
+                    : 'No amount to be collected',
+                bold: true,
+                fontSize: 10,
+                alignment: 'center',
+                margin: [0, 4, 0, 4],
               },
             ],
           ],
         },
         layout: {
-          hLineColor: () => '#d1d5db',
-          vLineColor: () => '#d1d5db',
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          paddingLeft: () => 0,
-          paddingRight: () => 0,
-          paddingTop: () => 0,
-          paddingBottom: () => 0,
-        },
-        margin: [0, 0, 0, 8],
-      },
-      {
-        table: {
-          widths: ['*', '*'],
-          body: [
-            [
-              { text: 'Payment', fontSize: 6.4, bold: true, color: '#374151' },
-              { text: paymentMethod, fontSize: 6.4, bold: true, alignment: 'right', color: paymentColor },
-            ],
-            [
-              { text: 'Order Date', fontSize: 6.4, bold: true, color: '#374151' },
-              { text: orderDate || '-', fontSize: 6.4, alignment: 'right', color: '#111111' },
-            ],
-          ],
-        },
-        layout: {
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#ffffff',
-          hLineWidth: () => 0.4,
-          vLineWidth: () => 0,
-          paddingLeft: () => 0,
-          paddingRight: () => 0,
-          paddingTop: () => 2,
-          paddingBottom: () => 2,
-        },
-        margin: [0, 0, 0, 8],
-      },
-      {
-        table: {
-          headerRows: 1,
-          widths: [48, '*', 34, 24, 34],
-          body: [
-            [
-              { text: 'SKU', bold: true, fontSize: 6.1, color: '#374151' },
-              { text: 'Item', bold: true, fontSize: 6.1, color: '#374151' },
-              { text: 'Rate', bold: true, fontSize: 6.1, color: '#374151', alignment: 'right' },
-              { text: 'Qty', bold: true, fontSize: 6.1, color: '#374151', alignment: 'right' },
-              { text: 'Total', bold: true, fontSize: 6.1, color: '#374151', alignment: 'right' },
-            ],
-            ...rows,
-          ],
-        },
-        layout: {
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#ffffff',
-          hLineWidth: (i: number) => (i === 0 ? 0.75 : 0.4),
-          vLineWidth: () => 0,
-          paddingLeft: () => 0,
-          paddingRight: () => 0,
-          paddingTop: () => 2,
-          paddingBottom: () => 2,
+          hLineColor: () => '#111111',
+          vLineColor: () => '#111111',
+          hLineWidth: () => 1,
+          vLineWidth: () => 1,
+          paddingLeft: () => 1,
+          paddingRight: () => 1,
+          paddingTop: () => 1,
+          paddingBottom: () => 1,
         },
         margin: [0, 0, 0, 8],
       },
@@ -501,8 +489,114 @@ const buildFallbackLabelPdf = async (params: {
           {
             width: '*',
             stack: [
-              { text: 'NOTES', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 3] },
-              { text: 'Courier label template restored from the order snapshot.', fontSize: 6.1, color: '#4b5563' },
+              { text: `Courier: ${providerLabel}`, fontSize: 9.2, bold: true, color: '#111111' },
+              {
+                text: `Order Value: ${formatMoney(totalAmount)}`,
+                fontSize: 9.2,
+                bold: true,
+                color: '#111111',
+                margin: [0, 1, 0, 0],
+              },
+              { text: `Reference Order # : ${invoiceNo}`, fontSize: 6.2, color: '#374151', margin: [0, 2, 0, 0] },
+              { text: `AWB # : ${awb}`, fontSize: 6.2, color: '#374151' },
+              { text: `Date : ${orderDate || '-'}`, fontSize: 6.2, color: '#374151' },
+            ],
+          },
+          {
+            width: 102,
+            stack: [
+              barcodeDataUrl
+                ? { image: barcodeDataUrl, width: 98, alignment: 'center', margin: [0, 0, 0, 1] }
+                : { text: awb, alignment: 'center', fontSize: 12, bold: true, margin: [0, 10, 0, 10] },
+              { text: awb, alignment: 'center', fontSize: 8.4, color: '#111111', margin: [0, -2, 0, 0] },
+            ],
+          },
+        ],
+        columnGap: 8,
+        margin: [0, 0, 0, 8],
+      },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'To:', fontSize: 9.2, bold: true, color: '#111111' },
+              { text: customerName, fontSize: 11.5, bold: true, color: '#111111', margin: [0, 1, 0, 0] },
+              ...customerAddressLines.map((line) => ({ text: line, fontSize: 8.2, color: '#111111' })),
+              { text: `Contact: ${customerPhone || '-'}`, fontSize: 8.2, color: '#374151', margin: [0, 1, 0, 0] },
+            ],
+          },
+          {
+            width: 50,
+            qr: qrPayload,
+            fit: 48,
+            alignment: 'right',
+            margin: [0, 2, 0, 0],
+          },
+        ],
+        columnGap: 8,
+        margin: [0, 0, 0, 4],
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0,
+            y1: 0,
+            x2: 262,
+            y2: 0,
+            lineWidth: 1.1,
+            dash: { length: 4, space: 2 },
+          },
+        ],
+        margin: [0, 3, 0, 5],
+      },
+      {
+        stack: [
+          sellerLogoDataUrl
+            ? { image: sellerLogoDataUrl, fit: [88, 26], alignment: 'left', margin: [0, 0, 0, 4] }
+            : { text: sellerName, fontSize: 8.8, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
+          { text: 'FROM', fontSize: 6.8, bold: true, color: '#111111', margin: [0, 0, 0, 2] },
+          { text: sellerName, fontSize: 10.2, bold: true, color: '#111111' },
+          ...sellerAddressLines.map((line) => ({ text: line, fontSize: 8.0, color: '#111111' })),
+          { text: `Contact: ${sellerContact || '-'}`, fontSize: 8.0, color: '#374151' },
+        ],
+        margin: [0, 0, 0, 6],
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: [44, 98, 40, 28, 52],
+          body: [
+            [
+              { text: 'SKU', bold: true, fontSize: 6.2, color: '#374151' },
+              { text: 'Product Name', bold: true, fontSize: 6.2, color: '#374151' },
+              { text: 'Rate', bold: true, fontSize: 6.2, color: '#374151', alignment: 'right' },
+              { text: 'Qty', bold: true, fontSize: 6.2, color: '#374151', alignment: 'right' },
+              { text: 'Amount', bold: true, fontSize: 6.2, color: '#374151', alignment: 'right' },
+            ],
+            ...rows,
+          ],
+        },
+        layout: {
+          hLineColor: () => '#d1d5db',
+          vLineColor: () => '#ffffff',
+          hLineWidth: (i: number) => (i === 0 ? 0.8 : 0.45),
+          vLineWidth: () => 0,
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 2,
+          paddingBottom: () => 2,
+        },
+        margin: [0, 0, 0, 6],
+      },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'NOTE', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 2] },
+              { text: 'Local ChoiceMee label template generated from order and seller details.', fontSize: 6.0, color: '#6b7280' },
             ],
           },
           {
@@ -593,6 +687,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   const sellerContact = normalizeText(
     companyInfo?.companyContactNumber || companyInfo?.contactNumber || userRow?.phone || pickupDetails?.phone || '-',
   )
+  const sellerLogoDataUrl = await resolveSellerLogoDataUrl(companyInfo, resolvedOrder)
 
   const customerName = normalizeText(
     resolvedOrder?.buyer_name ||
@@ -623,12 +718,10 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   const paymentColor = paymentMethod === 'COD' ? '#d97706' : '#059669'
   const footerUrl = `https://choicemee.in/tax-invoice/${encodeURIComponent(invoiceNo || String(resolvedOrder?.id ?? 'label'))}`
 
-  const providerPdf = await fetchProviderLabelPdf(resolvedOrder)
-  const pdfBuffer = isPdfBuffer(providerPdf)
-    ? providerPdf
-    : await buildFallbackLabelPdf({
+  const pdfBuffer = await buildShipmentLabelPdfBuffer({
     order: resolvedOrder,
     sellerName,
+    sellerLogoDataUrl,
     sellerAddressLines,
     sellerContact,
     customerName,
@@ -641,12 +734,6 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     normalizedItems,
     footerUrl,
   })
-
-  if (providerPdf && !isPdfBuffer(providerPdf)) {
-    console.warn(
-      `ChoiceMee provider label response was not a PDF for ${resolvedOrder?.order_number || resolvedOrder?.id}; using fallback template.`,
-    )
-  }
 
   if (!pdfBuffer || pdfBuffer.length === 0) {
     throw new Error('PDF buffer is empty or invalid')
