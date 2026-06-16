@@ -317,6 +317,9 @@ const fetchProviderLabelPdf = async (order: any): Promise<Buffer | null> => {
   }
 }
 
+const isPdfBuffer = (buffer: Buffer | null | undefined) =>
+  !!buffer && buffer.length >= 4 && buffer.slice(0, 4).toString('utf8') === '%PDF'
+
 const loadFonts = () => ({
   Helvetica: {
     normal: 'Helvetica',
@@ -621,7 +624,9 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   const footerUrl = `https://choicemee.in/tax-invoice/${encodeURIComponent(invoiceNo || String(resolvedOrder?.id ?? 'label'))}`
 
   const providerPdf = await fetchProviderLabelPdf(resolvedOrder)
-  const pdfBuffer = providerPdf || (await buildFallbackLabelPdf({
+  const pdfBuffer = isPdfBuffer(providerPdf)
+    ? providerPdf
+    : await buildFallbackLabelPdf({
     order: resolvedOrder,
     sellerName,
     sellerAddressLines,
@@ -635,7 +640,13 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     paymentColor,
     normalizedItems,
     footerUrl,
-  }))
+  })
+
+  if (providerPdf && !isPdfBuffer(providerPdf)) {
+    console.warn(
+      `ChoiceMee provider label response was not a PDF for ${resolvedOrder?.order_number || resolvedOrder?.id}; using fallback template.`,
+    )
+  }
 
   if (!pdfBuffer || pdfBuffer.length === 0) {
     throw new Error('PDF buffer is empty or invalid')
