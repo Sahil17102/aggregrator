@@ -96,7 +96,7 @@ const getHeaderValue = (headers: Request['headers'], names: string[]) => {
   return ''
 }
 
-const normalizeWebhookSecretCandidate = (value: string) => {
+export const normalizeWebhookSecretCandidate = (value: string) => {
   const trimmed = String(value || '').trim().replace(/^['"]|['"]$/g, '')
   if (!trimmed) return ''
 
@@ -116,6 +116,18 @@ const normalizeWebhookSecretCandidate = (value: string) => {
   }
 
   return trimmed
+}
+
+export const resolveDelhiveryScanPushAck = (result: { success?: boolean; reason?: string }) => {
+  if (result?.success) {
+    return { status: 200, body: { success: true } }
+  }
+
+  if (result?.reason === 'order_not_found') {
+    return { status: 200, body: { success: true, queued: true } }
+  }
+
+  return { status: 200, body: { success: true, partial: true } }
 }
 
 const verifyDelhiveryWebhookSecret = async (req: Request) => {
@@ -222,20 +234,23 @@ export const delhiveryScanPushHandler = async (req: Request, res: Response) => {
       } else {
         console.warn(`⚠️ Duplicate pending webhook skipped for AWB ${awb} (within dedupe window).`)
       }
-      return res.status(202).json({ success: true, queued: true })
+      const ack = resolveDelhiveryScanPushAck(result)
+      return res.status(ack.status).json(ack.body)
     }
 
     // Respond OK for successful handling
     if (result.success) {
       console.log(`✅ Delhivery scan push webhook processed successfully for AWB: ${awb}`)
-      return res.status(200).json({ success: true })
+      const ack = resolveDelhiveryScanPushAck(result)
+      return res.status(ack.status).json(ack.body)
     }
 
     // Handle known soft errors (e.g. invalid status)
     console.warn(
       `⚠️ Delhivery scan push webhook partially processed for AWB: ${awb}, reason: ${result.reason}`,
     )
-    return res.status(202).json({ success: false })
+    const ack = resolveDelhiveryScanPushAck(result)
+    return res.status(ack.status).json(ack.body)
   } catch (err: any) {
     console.error('='.repeat(80))
     console.error(
@@ -407,20 +422,23 @@ export const delhiveryWebhookHandler = async (req: Request, res: Response) => {
       } else {
         console.warn(`⚠️ Duplicate pending webhook skipped for AWB ${awb} (within dedupe window).`)
       }
-      return res.status(202).json({ success: true, queued: true })
+      const ack = resolveDelhiveryScanPushAck(result)
+      return res.status(ack.status).json(ack.body)
     }
 
     // Respond OK for successful handling
     if (result.success) {
       console.log(`✅ Delhivery webhook processed successfully for AWB: ${awb}`)
-      return res.status(200).json({ success: true })
+      const ack = resolveDelhiveryScanPushAck(result)
+      return res.status(ack.status).json(ack.body)
     }
 
     // Handle known soft errors (e.g. invalid status)
     console.warn(
       `⚠️ Delhivery webhook partially processed for AWB: ${awb}, reason: ${result.reason}`,
     )
-    return res.status(202).json({ success: false })
+    const ack = resolveDelhiveryScanPushAck(result)
+    return res.status(ack.status).json(ack.body)
   } catch (err: any) {
     console.error('='.repeat(80))
     console.error(`❌ [${timestamp}] Delhivery webhook error for AWB: ${awb || 'unknown'}`)
