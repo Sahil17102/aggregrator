@@ -90,7 +90,12 @@ const AddPickupAddressForm = ({
   const required = (field: string) => ({ required: `${field} is required` })
 
   return (
-    <Stack component="form" onSubmit={handleSubmit(onSubmit)} sx={{ color: '#fff', p: 2 }} gap={2}>
+    <Stack
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      sx={{ color: '#fff', p: { xs: 1.25, sm: 2 }, width: '100%', minWidth: 0 }}
+      gap={2}
+    >
       {serverError && (
         <Box mb={1}>
           <Alert
@@ -112,7 +117,7 @@ const AddPickupAddressForm = ({
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          {/* PASS setValue DIRECTLY — do NOT prefix here */}
+          {/* Pass setValue directly; do not prefix here */}
           <PickupAddressSection
             setValue={setValue}
             control={control}
@@ -124,7 +129,7 @@ const AddPickupAddressForm = ({
       </Accordion>
 
       {/* RTO toggle + section */}
-      <Box mt={2} sx={glassStyles} p={2}>
+      <Box mt={2} sx={{ ...glassStyles, width: '100%', minWidth: 0 }} p={2}>
         <FormControlLabel
           control={
             <Controller
@@ -161,8 +166,8 @@ const AddPickupAddressForm = ({
         )}
       </Box>
 
-      <Box display={'flex'} justifyContent={'flex-end'} mt={2}>
-        <Stack alignItems="flex-end" spacing={1} width="100%">
+      <Box display="flex" justifyContent="flex-end" mt={2} sx={{ width: '100%' }}>
+        <Stack alignItems="flex-end" spacing={1} width="100%" sx={{ width: '100%' }}>
           {serverError && (
             <Alert severity="error" sx={{ width: '100%' }}>
               {serverError}

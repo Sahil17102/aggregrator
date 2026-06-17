@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // PickupAddressSection.tsx
 import { Box, Button, CircularProgress, Grid, IconButton, Typography } from '@mui/material'
 import axios from 'axios'
@@ -222,7 +222,7 @@ const PickupAddressSection = ({
     }
   }
 
-  // ðŸ”¹ Autocomplete using Geoapify (fallback to Nominatim)
+  // Autocomplete using Geoapify, with a Nominatim fallback
   useDebouncedEffect(
     () => {
       if (inputValue.length < 3) {
@@ -246,7 +246,7 @@ const PickupAddressSection = ({
     setValue(`${prefix}.pincode` as Path<PickupFormValues>, getSafe(props.postcode))
   }
 
-  // ðŸ”¹ Handle selection from autocomplete
+  // Handle selection from autocomplete
   const handlePlaceSelect = (key: string) => {
     const selected = suggestions.find((s) => s.key === key)
     if (!selected) return
@@ -259,7 +259,7 @@ const PickupAddressSection = ({
     applyGeoPropsToForm(selected.address, lat, lng)
   }
 
-  // ðŸ”¹ Reverse geocode confirm from map
+  // Reverse geocode confirm from map
   const handleMapConfirm = async () => {
     const updatedLat = +coords.lat.toFixed(6)
     const updatedLng = +coords.lng.toFixed(6)
@@ -291,7 +291,7 @@ const PickupAddressSection = ({
     setStep(2)
   }
 
-  // ðŸ”¹ Spot Me (browser geolocation + reverse geocode)
+  // Use current location and reverse geocode it
   const handleSpotMe = async () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported')
@@ -334,9 +334,9 @@ const PickupAddressSection = ({
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', minWidth: 0 }}>
       {step === 1 && !isEdit && (
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{ width: '100%', marginLeft: 0 }}>
           <Grid size={12}>
             <AutocompleteDropdown
               label={`Search ${prefix === 'pickup' ? 'Pickup' : 'RTO'} location`}
@@ -366,22 +366,29 @@ const PickupAddressSection = ({
             </Typography>
           </Grid>
 
-          <Grid size={12} display="flex" justifyContent="space-between">
+          <Grid
+            size={12}
+            display="flex"
+            justifyContent="space-between"
+            sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 1.25 }}
+          >
             <Button
               variant="outlined"
               onClick={handleSpotMe}
               disabled={loadingLocation}
               startIcon={loadingLocation ? <CircularProgress size={18} /> : undefined}
+              fullWidth
+              sx={{ flex: 1 }}
             >
-              {loadingLocation ? 'Locating...' : 'ðŸ“ Spot Me'}
+              {loadingLocation ? 'Locating...' : 'Spot Me'}
             </Button>
             <Button
               variant="text"
               size="small"
               onClick={() => setMapOpen(true)}
-              sx={{ textTransform: 'none', fontStyle: 'italic' }}
+              sx={{ textTransform: 'none', fontStyle: 'italic', alignSelf: { xs: 'flex-end', sm: 'center' } }}
             >
-              ðŸ“ Didn't find? Set on the map
+              Didn&apos;t find it? Set it on the map
             </Button>
           </Grid>
 
@@ -408,16 +415,14 @@ const PickupAddressSection = ({
               variant="outlined"
               color="secondary"
               onClick={() => {
-                // Set default coordinates if not set
                 if (!coords.lat || !coords.lng) {
                   setCoords({ lat: 28.6139, lng: 77.209 })
                 }
-                // Set default country to India
                 setValue(`${prefix}.country` as Path<PickupFormValues>, 'India')
                 setStep(2)
               }}
             >
-              âœï¸ Enter Manually
+              Enter address manually
             </Button>
             <Button
               variant="contained"
@@ -444,7 +449,7 @@ const PickupAddressSection = ({
       )}
 
       {step === 2 && (
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{ width: '100%', marginLeft: 0 }}>
           <Grid size={12}>
             <Box display="flex" alignItems="center" mb={1}>
               {!isEdit && (
@@ -458,9 +463,9 @@ const PickupAddressSection = ({
             </Box>
           </Grid>
 
-          <Grid size={{ md: 8, xs: 12 }}>
-            <Grid container spacing={2}>
-              <Grid size={6}>
+          <Grid size={{ md: 8, xs: 12 }} sx={{ minWidth: 0 }}>
+            <Grid container spacing={2} sx={{ width: '100%', marginLeft: 0 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`${prefix}.addressNickname` as Path<PickupFormValues>}
                   control={control}
@@ -479,7 +484,7 @@ const PickupAddressSection = ({
                 />
               </Grid>
 
-              <Grid size={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`${prefix}.contactName` as Path<PickupFormValues>}
                   control={control}
@@ -498,7 +503,7 @@ const PickupAddressSection = ({
                 />
               </Grid>
 
-              <Grid size={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`${prefix}.contactPhone` as Path<PickupFormValues>}
                   control={control}
@@ -523,7 +528,7 @@ const PickupAddressSection = ({
                 />
               </Grid>
 
-              <Grid size={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`${prefix}.contactEmail` as Path<PickupFormValues>}
                   control={control}
@@ -540,7 +545,7 @@ const PickupAddressSection = ({
                 />
               </Grid>
 
-              <Grid size={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`${prefix}.contactPersonRole` as Path<PickupFormValues>}
                   control={control}
@@ -571,7 +576,7 @@ const PickupAddressSection = ({
                 { name: 'pincode', label: 'Pincode', required: true },
                 { name: 'gstNumber', label: 'GST Number' },
               ].map(({ name, label, required: isReq }) => (
-                <Grid size={6} key={name}>
+                <Grid size={{ xs: 12, sm: 6 }} key={name}>
                   <Controller
                     name={`${prefix}.${name}` as Path<PickupFormValues>}
                     control={control}
@@ -594,8 +599,8 @@ const PickupAddressSection = ({
             </Grid>
           </Grid>
 
-          <Grid size={{ md: 4, xs: 12 }}>
-            <Box sx={{ height: 400, borderRadius: 2, overflow: 'hidden', boxShadow: 3 }}>
+          <Grid size={{ md: 4, xs: 12 }} sx={{ minWidth: 0 }}>
+            <Box sx={{ height: { xs: 260, md: 400 }, width: '100%', borderRadius: 2, overflow: 'hidden', boxShadow: 3 }}>
               <MapContainer
                 center={[coords.lat, coords.lng]}
                 zoom={16}

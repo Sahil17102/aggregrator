@@ -32,7 +32,7 @@ import {
 } from '../../hooks/Pickup/usePickupAddresses'
 import type { HydratedPickup } from '../../types/generic.types'
 
-// ✅ Filter fields with sortBy
+// Filter fields with sort order support
 const filterFields: FilterField[] = [
   {
     name: 'sortBy',
@@ -211,8 +211,14 @@ const PickupAddresses = () => {
     )
 
   return (
-    <Stack spacing={3}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
+    <Stack spacing={3} sx={{ width: '100%', minWidth: 0 }}>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        justifyContent="space-between"
+        gap={2}
+        sx={{ width: '100%', minWidth: 0 }}
+      >
         <FilterBar<Partial<HydratedPickup>>
           fields={filterFields}
           defaultValues={initialFilterValues as unknown as Partial<HydratedPickup>}
@@ -224,7 +230,13 @@ const PickupAddresses = () => {
           loading={isLoading}
         />
         {/* Right side: Actions */}
-        <Stack ml={!isMobile ? '50px' : 0} direction="row" spacing={1} alignItems="center">
+        <Stack
+          ml={!isMobile ? '50px' : 0}
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', md: 'center' } }}
+        >
           {/* Mobile menu icon */}
           {isMobile ? (
             <>

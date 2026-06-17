@@ -5,7 +5,7 @@ import React, { useRef, useState } from 'react'
 import { MdMyLocation } from 'react-icons/md'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 
-// ⬇️ CSS for radar pulse and icon
+// CSS for radar pulse and icon
 const radarCSS = `
 .radar-marker-wrapper {
   position: relative;

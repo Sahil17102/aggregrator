@@ -87,7 +87,7 @@ const PickupAddressesList = ({
             )}
           </Box>
           <Typography variant="body2" color="text.secondary">
-            {row.pickup?.contactName} • {row.pickup?.contactPhone}
+            {row.pickup?.contactName} - {row.pickup?.contactPhone}
           </Typography>
         </Box>
       ),
@@ -102,7 +102,7 @@ const PickupAddressesList = ({
           {row.pickup?.addressLine2 ? `, ${row.pickup?.addressLine2}` : ''}
           {row.pickup?.landmark ? `, ${row.pickup?.landmark}` : ''}
           <br />
-          {row.pickup?.city}, {row.pickup?.state} – {row.pickup?.pincode}
+          {row.pickup?.city}, {row.pickup?.state} - {row.pickup?.pincode}
           <br />
           {row?.pickup?.gstNumber && (
             <Typography variant="caption">{row?.pickup?.gstNumber}</Typography>
