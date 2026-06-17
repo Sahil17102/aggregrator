@@ -366,7 +366,13 @@ const PickupAddresses = () => {
       <CustomDrawer
         open={drawerOpen}
         onClose={handleCloseDrawer}
-        width={isMobile ? '100%' : drawerType === 'add' ? 1100 : 400}
+        width={
+          isMobile
+            ? '100%'
+            : drawerType === 'add'
+              ? 'clamp(360px, 92vw, 1100px)'
+              : 'clamp(320px, 42vw, 400px)'
+        }
         anchor={drawerType === 'filter' && isMobile ? 'left' : 'right'}
         title={drawerType === 'add' ? 'Add New Pickup Address' : 'Filter Pickup Addresses'}
       >
