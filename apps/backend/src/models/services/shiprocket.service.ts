@@ -9443,7 +9443,7 @@ const toB2COrderSummary = (order: any): OrderSummary => ({
 const persistB2CTrackingStatus = async (
   order: OrderSummary,
   providerData: ProviderNormalizedTracking,
-  options: { emitEvents?: boolean } = {},
+  options: { emitEvents?: boolean } = { emitEvents: true },
 ) => {
   const nextStatus = mapTrackingToOrderStatus(providerData, order.order_status)
   if (!nextStatus) return null
