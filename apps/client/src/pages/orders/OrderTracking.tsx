@@ -29,6 +29,11 @@ const stages = [
 ]
 
 const statusLabels: Record<string, string> = {
+  pending: 'Pending',
+  booked: 'Booked',
+  manifest_generated: 'Manifest Generated',
+  shipment_created: 'Shipment Created',
+  pickup_initiated: 'Pickup Initiated',
   PP: 'Pending Pickup',
   IT: 'In Transit',
   OFD: 'Out for Delivery',
@@ -38,6 +43,57 @@ const statusLabels: Record<string, string> = {
   'RT-IT': 'RTO In Transit',
   'RT-DL': 'RTO Delivered',
   EX: 'Exception',
+  ndr: 'NDR',
+  rto_initiated: 'RTO Initiated',
+  rto_in_transit: 'RTO In Transit',
+  rto_delivered: 'RTO Delivered',
+}
+
+const normalizeTrackingStatus = (status?: string | null) =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+
+const formatTrackingStatus = (status?: string | null) => {
+  const normalized = normalizeTrackingStatus(status)
+  return statusLabels[normalized] || statusLabels[normalized.toUpperCase()] || status || 'Unknown'
+}
+
+const formatTrackingDate = (value?: string | null) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+const formatTrackingTime = (value?: string | null) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+const getTrackingTone = (status?: string | null) => {
+  const normalized = normalizeTrackingStatus(status)
+  if (normalized.includes('deliver')) return { bg: '#DCFCE7', fg: '#166534' }
+  if (normalized.includes('transit')) return { bg: '#E0F2FE', fg: '#075985' }
+  if (normalized.includes('cancel') || normalized.includes('failed'))
+    return { bg: '#FEE2E2', fg: '#991B1B' }
+  if (normalized.includes('rto') || normalized.includes('ndr'))
+    return { bg: '#FEF3C7', fg: '#92400E' }
+
+  return { bg: '#E7E5E4', fg: '#44403C' }
 }
 
 const TrackingConnector = styled(StepConnector)(() => ({
@@ -71,9 +127,13 @@ export default function TrackingPage() {
   const displayOrderNumber = trackingData?.order_number || order || 'N/A'
 
   const currentStage =
-    trackingData?.history?.findIndex(
-      (h) => statusLabels[h.status_code]?.toLowerCase() === trackingData.status?.toLowerCase(),
-    ) ?? 0
+    Math.max(
+      0,
+      trackingData?.history?.findIndex((h) => {
+      const timelineStatus = formatTrackingStatus(h.status_code)
+      return normalizeTrackingStatus(timelineStatus) === normalizeTrackingStatus(trackingData.status)
+      }) ?? 0,
+    )
 
   if (isLoading) {
     return (
@@ -162,7 +222,7 @@ export default function TrackingPage() {
                   Shipment status
                 </Typography>
                 <Typography sx={{ mt: 1, color: brand.ink, fontWeight: 900, fontSize: { xs: '2.2rem', md: '3.4rem' }, lineHeight: 0.98, letterSpacing: '-0.05em' }}>
-                  {trackingData.status || 'Order Placed'}
+                  {formatTrackingStatus(trackingData.status)}
                 </Typography>
                 <Typography sx={{ mt: 1.1, color: brand.inkSoft, lineHeight: 1.8 }}>
                   Track every parcel with a clearer public timeline while reusing the current tracking API and history data.
@@ -249,45 +309,104 @@ export default function TrackingPage() {
                   </BrandSurface>
                 )}
 
-                <Stack spacing={2.2}>
-                  {trackingData.history?.map((event, index) => (
-                    <Stack key={`${event.event_time}-${index}`} direction="row" spacing={2}>
-                      <Box sx={{ minWidth: 100, pt: 0.25 }}>
-                        <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '0.92rem' }}>
-                          {event.event_time ? new Date(event.event_time).toLocaleDateString('en-GB') : 'N/A'}
-                        </Typography>
-                        <Typography sx={{ color: brand.inkSoft, fontSize: '0.78rem' }}>
-                          {event.event_time
-                            ? new Date(event.event_time).toLocaleTimeString('en-IN', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : 'N/A'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ position: 'relative', pt: 0.55 }}>
-                        <Box sx={{ width: 12, height: 12, borderRadius: 999, bgcolor: index === 0 ? brand.accent : alpha(brand.ink, 0.16) }} />
-                        {index < (trackingData.history?.length ?? 0) - 1 ? (
+                <Stack spacing={1.8}>
+                  {trackingData.history?.map((event, index) => {
+                    const exactStatus = formatTrackingStatus(event.status_code)
+                    const tone = getTrackingTone(event.status_code)
+                    const isLatest = index === 0
+
+                    return (
+                      <Box
+                        key={`${event.event_time}-${index}`}
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: '1fr', sm: '150px 24px 1fr' },
+                          gap: { xs: 1.2, sm: 1.6 },
+                          p: { xs: 1.8, md: 2.2 },
+                          borderRadius: '24px',
+                          border: `1px solid ${alpha(brand.ink, 0.08)}`,
+                          bgcolor: isLatest ? alpha(brand.accent, 0.04) : '#FFFFFF',
+                          boxShadow: '0 10px 22px rgba(68, 92, 138, 0.06)',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            minWidth: 0,
+                            display: 'flex',
+                            flexDirection: { xs: 'row', sm: 'column' },
+                            alignItems: { xs: 'center', sm: 'flex-end' },
+                            justifyContent: { xs: 'space-between', sm: 'center' },
+                            gap: 0.6,
+                          }}
+                        >
+                          <Typography sx={{ color: brand.ink, fontWeight: 900, fontSize: '0.95rem', textAlign: { xs: 'left', sm: 'right' } }}>
+                            {formatTrackingDate(event.event_time)}
+                          </Typography>
+                          <Typography sx={{ color: brand.inkSoft, fontSize: '0.82rem', fontWeight: 700, textAlign: { xs: 'right', sm: 'right' } }}>
+                            {formatTrackingTime(event.event_time)}
+                          </Typography>
+                        </Box>
+
+                        <Box
+                          sx={{
+                            display: { xs: 'none', sm: 'flex' },
+                            justifyContent: 'center',
+                            pt: 0.8,
+                          }}
+                        >
                           <Box
                             sx={{
-                              position: 'absolute',
-                              left: 5,
-                              top: 18,
-                              bottom: -28,
-                              width: 2,
-                              bgcolor: alpha(brand.ink, 0.08),
+                              width: 12,
+                              height: 12,
+                              borderRadius: 999,
+                              bgcolor: isLatest ? brand.accent : alpha(brand.ink, 0.2),
+                              boxShadow: isLatest ? '0 0 0 6px rgba(255,122,21,0.12)' : 'none',
+                              position: 'relative',
                             }}
-                          />
-                        ) : null}
+                          >
+                            {index < (trackingData.history?.length ?? 0) - 1 ? (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  left: 5,
+                                  top: 12,
+                                  bottom: -28,
+                                  width: 2,
+                                  bgcolor: alpha(brand.ink, 0.08),
+                                }}
+                              />
+                            ) : null}
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ pb: 0.5 }}>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            <Chip
+                              label={exactStatus}
+                              size="small"
+                              sx={{
+                                bgcolor: tone.bg,
+                                color: tone.fg,
+                                fontWeight: 800,
+                                '& .MuiChip-label': { px: 1 },
+                              }}
+                            />
+                            <Typography sx={{ color: brand.inkSoft, fontSize: '0.78rem', fontWeight: 700 }}>
+                              Exact Status
+                            </Typography>
+                          </Stack>
+
+                          <Typography sx={{ color: brand.ink, fontWeight: 800, mt: 0.8, lineHeight: 1.6 }}>
+                            {event.message || exactStatus}
+                          </Typography>
+
+                          <Typography sx={{ color: brand.inkSoft, mt: 0.8, lineHeight: 1.6 }}>
+                            <strong style={{ color: brand.ink }}>Location:</strong> {event.location || 'N/A'}
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Box sx={{ pb: 2.5 }}>
-                        <Typography sx={{ color: brand.ink, fontWeight: 800 }}>{event.message}</Typography>
-                        <Typography sx={{ color: brand.inkSoft, mt: 0.4 }}>
-                          Location: {event.location}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  ))}
+                    )
+                  })}
                 </Stack>
               </BrandSurface>
             </Grid>

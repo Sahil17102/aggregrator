@@ -509,15 +509,38 @@ export type ShipmentStatusEmailStage =
   | 'in_transit'
   | 'out_for_delivery'
   | 'delivered'
+  | 'ndr'
   | 'failed'
 
 export type ShipmentOrderLike = {
   orderNumber?: string | null
   order_number?: string | null
+  orderDate?: string | Date | null
+  order_date?: string | Date | null
+  created_at?: string | Date | null
+  updated_at?: string | Date | null
   orderName?: string | null
   order_name?: string | null
   name?: string | null
   title?: string | null
+  buyer_name?: string | null
+  buyer_phone?: string | null
+  address?: string | null
+  addressLine1?: string | null
+  delivery_address?: string | null
+  buyer_address?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  pincode?: string | null
+  courier_partner?: string | null
+  courier_name?: string | null
+  order_status?: string | null
+  order_amount?: number | string | null
+  shipping_charges?: number | string | null
+  prepaid_amount?: number | string | null
+  cod_charges?: number | string | null
+  delivery_message?: string | null
   email?: string | null
   buyer_email?: string | null
   buyerEmail?: string | null
@@ -528,6 +551,9 @@ export type ShipmentOrderLike = {
   products?: unknown
   order_items?: unknown
   packages?: unknown
+  shipping_mode?: string | null
+  companyLogoUrl?: string | null
+  profilePicture?: string | null
 }
 
 const firstString = (...values: Array<string | null | undefined>) => {
@@ -577,6 +603,203 @@ export const resolveShipmentOrderLabel = (order?: ShipmentOrderLike | null) => {
   )
 }
 
+const normalizeShipmentStatusText = (value?: string | null) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+
+const formatDisplayDateTime = (value?: string | Date | null) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).trim()
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+const formatDisplayDate = (value?: string | Date | null) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).trim()
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+const formatCurrency = (value?: unknown) => {
+  if (value === undefined || value === null || value === '') return ''
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return String(value).trim()
+
+  return `Rs. ${numeric.toLocaleString('en-IN', {
+    minimumFractionDigits: Number.isInteger(numeric) ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
+const firstText = (...values: Array<unknown>) => {
+  for (const value of values) {
+    const text = String(value ?? '').trim()
+    if (text) return text
+  }
+
+  return ''
+}
+
+const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
+  switch (stage) {
+    case 'booked':
+      return {
+        badge: 'Order Booked',
+        badgeBg: '#E7F7EC',
+        badgeFg: '#166534',
+        headline: 'Your order has been booked successfully!',
+        openingLine: 'We have recorded the order and the shipment is ready for the next step.',
+      }
+    case 'manifested':
+      return {
+        badge: 'Manifest Generated',
+        badgeBg: '#EAF1FF',
+        badgeFg: '#1D4ED8',
+        headline: 'Your shipment manifest has been generated.',
+        openingLine: 'The courier manifest is ready and the shipment is moving into processing.',
+      }
+    case 'picked_up':
+      return {
+        badge: 'Pickup Done',
+        badgeBg: '#FFF3D6',
+        badgeFg: '#B45309',
+        headline: 'Your shipment has been picked up.',
+        openingLine: 'The courier has collected the parcel and it is now on the move.',
+      }
+    case 'in_transit':
+      return {
+        badge: 'In Transit',
+        badgeBg: '#E8F3FF',
+        badgeFg: '#1E40AF',
+        headline: 'Your shipment is now in transit.',
+        openingLine: 'The parcel is moving through the courier network and the next scan will be shared soon.',
+      }
+    case 'out_for_delivery':
+      return {
+        badge: 'Out for Delivery',
+        badgeBg: '#FFF0E0',
+        badgeFg: '#C2410C',
+        headline: 'Your shipment is out for delivery!',
+        openingLine: 'The parcel is with the last-mile delivery partner and should reach the customer today.',
+      }
+    case 'delivered':
+      return {
+        badge: 'Delivered',
+        badgeBg: '#DCFCE7',
+        badgeFg: '#166534',
+        headline: 'Your shipment has been delivered!',
+        openingLine: 'The parcel reached the consignee successfully and the shipment is complete.',
+      }
+    case 'ndr':
+      return {
+        badge: 'NDR',
+        badgeBg: '#FEE2E2',
+        badgeFg: '#991B1B',
+        headline: 'Delivery needs attention.',
+        openingLine:
+          'The courier reported a non-delivery event. Please review the issue and take the next action.',
+      }
+    case 'failed':
+    default:
+      return {
+        badge: 'Status Update',
+        badgeBg: '#F3F4F6',
+        badgeFg: '#374151',
+        headline: 'Your shipment status has changed.',
+        openingLine: 'We have a new update on the shipment and the latest details are below.',
+      }
+  }
+}
+
+const buildShipmentProductRows = (order?: ShipmentOrderLike | null) => {
+  const rawItems = Array.isArray(order?.products)
+    ? order?.products
+    : Array.isArray(order?.order_items)
+      ? order?.order_items
+      : Array.isArray(order?.packages)
+        ? order?.packages
+        : []
+
+  return rawItems
+    .slice(0, 3)
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+
+      const row = item as Record<string, unknown>
+      return {
+        name: firstText(
+          row.productName,
+          row.order_name,
+          row.orderName,
+          row.name,
+          row.title,
+          row.label,
+          row.itemName,
+          row.boxName,
+        ),
+        qty: firstText(row.quantity, row.qty, row.count) || '1',
+        amount: firstText(row.price, row.amount, row.total, row.rate, row.subtotal),
+      }
+    })
+    .filter((row): row is { name: string; qty: string; amount: string } => Boolean(row?.name))
+}
+
+const buildShipmentAddressLines = (order?: ShipmentOrderLike | null) => {
+  if (!order) return []
+
+  const address = firstText(
+    order.address,
+    (order as Record<string, unknown>).addressLine1,
+    (order as Record<string, unknown>).delivery_address,
+    (order as Record<string, unknown>).buyer_address,
+  )
+  const cityState = [order.city, order.state, order.country, order.pincode]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(', ')
+
+  return [firstText(order.buyer_name, order.name), address, cityState, firstText(order.buyer_phone)]
+    .filter(Boolean)
+    .map((value) => String(value))
+}
+
+const buildShipmentAmountLines = (order?: ShipmentOrderLike | null) => {
+  if (!order) return []
+
+  return [
+    { label: 'Order Total', value: formatCurrency((order as Record<string, unknown>).order_amount) },
+    {
+      label: 'COD Charges',
+      value: formatCurrency((order as Record<string, unknown>).cod_charges),
+    },
+    {
+      label: 'Prepaid Amount',
+      value: formatCurrency((order as Record<string, unknown>).prepaid_amount),
+    },
+    {
+      label: 'Shipping Charges',
+      value: formatCurrency((order as Record<string, unknown>).shipping_charges),
+    },
+  ].filter((row) => Boolean(row.value))
+}
+
 const formatShipmentDetailRows = (rows: Array<{ label: string; value?: string | null }>) => {
   const visibleRows = rows
     .map((row) => ({
@@ -613,117 +836,280 @@ export const sendShipmentStatusEmail = async (opts: {
   orderNumber?: string | null
   orderLabel?: string | null
   stage: ShipmentStatusEmailStage
+  sellerName?: string | null
+  sellerLogoUrl?: string | null
+  orderDetails?: ShipmentOrderLike | null
 }) => {
-  const { to, awbNumber, orderNumber, orderLabel, stage } = opts
+  const { to, awbNumber, orderNumber, orderLabel, stage, sellerName, sellerLogoUrl, orderDetails } = opts
   const safeAwb = escapeHtml(String(awbNumber || '').trim())
   const safeOrderNumber = escapeHtml(String(orderNumber || '').trim())
   const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
-  const detailRows = formatShipmentDetailRows([
+  const sellerDisplayName = firstText(sellerName, 'ChoiceMee Seller')
+  const stageMeta = getShipmentStatusPresentation(stage)
+  const rawStatusLabel = normalizeShipmentStatusText((orderDetails as Record<string, unknown> | undefined)?.order_status as string | undefined)
+  const orderPlacedOn = formatDisplayDateTime(
+    (orderDetails as Record<string, unknown> | undefined)?.created_at as string | Date | null | undefined,
+  )
+  const orderPlacedOnFallback = formatDisplayDate(
+    (orderDetails as Record<string, unknown> | undefined)?.order_date as string | Date | null | undefined,
+  )
+  const orderPlacedValue = firstText(orderPlacedOn, orderPlacedOnFallback)
+  const courierName = firstText(
+    (orderDetails as Record<string, unknown> | undefined)?.courier_partner,
+    (orderDetails as Record<string, unknown> | undefined)?.courier_name,
+    (orderDetails as Record<string, unknown> | undefined)?.integration_type,
+    'Courier',
+  )
+  const orderStatusLabel = firstText(rawStatusLabel, stageMeta.badge)
+  const orderStatusHeadline = `Order ${safeOrderNumber} is now ${orderStatusLabel || stageMeta.badge}!`
+  const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
+    String(awbNumber || '').trim(),
+  )}`
+  const safeTrackingLink = escapeHtml(trackingLink)
+  const productRows = buildShipmentProductRows(orderDetails)
+  const addressLines = buildShipmentAddressLines(orderDetails)
+  const amountLines = buildShipmentAmountLines(orderDetails)
+  const shippingInfo = [
+    { label: 'Courier Name', value: courierName },
     { label: 'AWB Number', value: safeAwb },
     { label: 'Order Number', value: safeOrderNumber },
     {
       label: 'Order Name',
       value: safeOrderLabel && safeOrderLabel !== safeOrderNumber ? safeOrderLabel : null,
     },
-  ])
+  ].filter((row) => Boolean(row.value))
 
-  const templates: Record<
-    ShipmentStatusEmailStage,
-    { subject: string; body: string; htmlBody: string }
-  > = {
-    booked: {
-      subject: `ChoiceMee Shipment Booked${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Seller,\n\nYour order${safeAwb ? ` with AWB ${awbNumber}` : ''} has been booked successfully on ChoiceMee.\nWe will share the next update as soon as it is available.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Seller,</p>
-        <p style="margin:0 0 14px;">Your order${safeAwb ? ` with AWB <strong>${safeAwb}</strong>` : ''} has been booked successfully on ChoiceMee.</p>
-        <p style="margin:0 0 14px;">We will share the next update as soon as it is available.</p>
-      `,
-    },
-    manifested: {
-      subject: `ChoiceMee Shipment Manifested${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee has been manifested.\nYou will receive the next update shortly.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Seller,</p>
-        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee has been manifested.</p>
-        <p style="margin:0 0 14px;">You will receive the next update shortly.</p>
-      `,
-    },
-    picked_up: {
-      subject: `ChoiceMee Shipment Picked Up${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Sellers,\n\nYour order AWB ${awbNumber} from ChoiceMee has been picked up.\nYou will receive the next update shortly.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Sellers,</p>
-        <p style="margin:0 0 14px;">Your order AWB <strong>${safeAwb}</strong> from ChoiceMee has been picked up.</p>
-        <p style="margin:0 0 14px;">You will receive the next update shortly.</p>
-      `,
-    },
-    in_transit: {
-      subject: `ChoiceMee In Transit${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee is now in transit.\nWe will share the next milestone as soon as it arrives.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Seller,</p>
-        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee is now <strong>in transit</strong>.</p>
-        <p style="margin:0 0 14px;">We will share the next milestone as soon as it arrives.</p>
-      `,
-    },
-    out_for_delivery: {
-      subject: `ChoiceMee Out for Delivery${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Sellers,\n\nYour order under AWB ${awbNumber} from ChoiceMee is now OUT FOR DELIVERY and will be delivered by EOD.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Sellers,</p>
-        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee is now <strong>OUT FOR DELIVERY</strong> and will be delivered by EOD.</p>
-      `,
-    },
-    delivered: {
-      subject: `ChoiceMee Delivered${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} is now successfully delivered.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Seller,</p>
-        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> is now successfully delivered.</p>
-      `,
-    },
-    failed: {
-      subject: `ChoiceMee Delivery Failed${safeAwb ? ` - AWB ${safeAwb}` : ''}`,
-      body: `Dear Seller,\n\nYour order under AWB ${awbNumber} from ChoiceMee delivery failed. Kindly contact the consignee.\n\nRegards\nChoiceMee Logistic`,
-      htmlBody: `
-        <p style="margin:0 0 14px;">Dear Seller,</p>
-        <p style="margin:0 0 14px;">Your order under AWB <strong>${safeAwb}</strong> from ChoiceMee delivery failed. Kindly contact the consignee.</p>
-      `,
-    },
-  }
+  const sellerLogo =
+    sellerLogoUrl && /^(https?:\/\/|data:)/i.test(sellerLogoUrl.trim())
+      ? `<img src="${escapeHtml(sellerLogoUrl.trim())}" alt="${escapeHtml(sellerDisplayName)} logo" style="width:54px;height:54px;object-fit:contain;border-radius:14px;border:1px solid #e5e7eb;background:#fff;padding:6px;" />`
+      : `<div style="width:54px;height:54px;border-radius:14px;border:1px solid #e5e7eb;background:#fff;display:flex;align-items:center;justify-content:center;color:${stageMeta.badgeFg};font-weight:900;font-size:18px;box-shadow:0 10px 20px rgba(15,23,42,0.08);">${escapeHtml(
+          sellerDisplayName.slice(0, 1).toUpperCase(),
+        )}</div>`
 
-  const template = templates[stage]
+  const lineItemTable =
+    productRows.length > 0
+      ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:14px 16px;background:#faf7ef;border-bottom:1px solid #e7e0d4;">
+              <div style="font-size:16px;font-weight:800;color:#111827;">Product Summary</div>
+            </td>
+          </tr>
+          ${productRows
+            .map(
+              (row) => `
+              <tr>
+                <td style="padding:12px 16px;border-bottom:1px solid #f0eadf;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="font-size:15px;line-height:1.5;color:#111827;font-weight:700;">${escapeHtml(
+                        row.name,
+                      )}</td>
+                      <td align="right" style="font-size:14px;line-height:1.5;color:#111827;font-weight:700;white-space:nowrap;">Qty: ${escapeHtml(
+                        row.qty,
+                      )}${row.amount ? ` <span style="margin-left:12px;">Price: ${escapeHtml(row.amount)}</span>` : ''}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            `,
+            )
+            .join('')}
+        </table>
+      `
+      : ''
+
+  const amountTable =
+    amountLines.length > 0
+      ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:14px 16px;background:#faf7ef;border-bottom:1px solid #e7e0d4;">
+              <div style="font-size:16px;font-weight:800;color:#111827;">Amount Details</div>
+            </td>
+          </tr>
+          ${amountLines
+            .map(
+              (row) => `
+              <tr>
+                <td style="padding:12px 16px;border-bottom:1px solid #f0eadf;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="font-size:14px;line-height:1.5;color:#374151;font-weight:700;">${escapeHtml(
+                        row.label,
+                      )}</td>
+                      <td align="right" style="font-size:14px;line-height:1.5;color:#111827;font-weight:700;white-space:nowrap;">${escapeHtml(
+                        row.value || '',
+                      )}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            `,
+            )
+            .join('')}
+        </table>
+      `
+      : ''
+
+  const addressTable =
+    addressLines.length > 0
+      ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #d8e6da;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:14px 16px;background:#f7fbf8;border-bottom:1px solid #d8e6da;">
+              <div style="font-size:16px;font-weight:800;color:#111827;">Delivery Address</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px;background:#ffffff;">
+              ${addressLines
+                .map(
+                  (line, index) => `
+                    <div style="font-size:${index === 0 ? '16px' : '14px'};line-height:1.65;color:#111827;font-weight:${index === 0 ? 800 : 600};margin-bottom:${index < addressLines.length - 1 ? '2px' : '0'};">${escapeHtml(
+                      line,
+                    )}</div>
+                  `,
+                )
+                .join('')}
+            </td>
+          </tr>
+        </table>
+      `
+      : ''
+
+  const shippingTable = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+      <tr>
+        <td style="padding:14px 16px;background:#fafafa;border-bottom:1px solid #e5e7eb;">
+          <div style="font-size:16px;font-weight:800;color:#111827;">Shipping Details</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px;background:#fff;">
+          ${shippingInfo
+            .map(
+              (row) => `
+                <div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px dashed #f1f5f9;">
+                  <div style="font-size:14px;line-height:1.6;color:#374151;font-weight:700;">${escapeHtml(row.label)}</div>
+                  <div style="font-size:14px;line-height:1.6;color:#059669;font-weight:800;text-align:right;">${escapeHtml(
+                    row.value || '',
+                  )}</div>
+                </div>
+              `,
+            )
+            .join('')}
+        </td>
+      </tr>
+    </table>
+  `
+
+  const detailTable = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;">
+      <tr>
+        <td style="padding:14px 16px;background:#faf7ef;border-bottom:1px solid #e7e0d4;">
+          <div style="font-size:16px;font-weight:800;color:#111827;">Order Snapshot</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px;background:#fff;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:4px 0;font-size:14px;color:#374151;font-weight:700;">Status</td>
+              <td align="right" style="padding:4px 0;font-size:14px;color:#111827;font-weight:800;">${escapeHtml(
+                stageMeta.badge,
+              )}</td>
+            </tr>
+            ${orderPlacedValue ? `
+            <tr>
+              <td style="padding:4px 0;font-size:14px;color:#374151;font-weight:700;">Order placed on</td>
+              <td align="right" style="padding:4px 0;font-size:14px;color:#111827;font-weight:800;">${escapeHtml(
+                orderPlacedValue,
+              )}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding:4px 0;font-size:14px;color:#374151;font-weight:700;">Tracking ID</td>
+              <td align="right" style="padding:4px 0;font-size:14px;color:#111827;font-weight:800;">${safeAwb}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `
+
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; color: #111827;">
-      <div style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
-        <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280;">
-          ChoiceMee Logistic
+    <div style="font-family: Arial, Helvetica, sans-serif; background:#f4f2e9; padding:24px; color:#111827;">
+      <div style="max-width:720px; margin:0 auto; background:#fffdf5; border:1px solid #eadfc8; border-radius:28px; overflow:hidden; box-shadow:0 18px 40px rgba(15,23,42,0.08);">
+        <div style="padding:24px 26px 18px; border-bottom:1px solid #eee3cc; background:#fffdf5;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td valign="top" style="width:70%;">
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td valign="middle" style="padding-right:12px;">${sellerLogo}</td>
+                    <td valign="middle">
+                      <div style="font-size:13px; letter-spacing:0.16em; text-transform:uppercase; font-weight:800; color:#6b7280; line-height:1.2;">
+                        ${escapeHtml(sellerDisplayName)}
+                      </div>
+                      <div style="margin-top:6px; font-size:13px; color:#8b7355; line-height:1.4;">Shipment status update from ChoiceMee</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td valign="middle" align="right">
+                <div style="display:inline-block; padding:12px 18px; border-radius:999px; background:${stageMeta.badgeBg}; color:${stageMeta.badgeFg}; font-size:14px; font-weight:800; white-space:nowrap;">
+                  ${escapeHtml(stageMeta.badge)}
+                </div>
+              </td>
+            </tr>
+          </table>
         </div>
-        <h2 style="margin: 10px 0 0; font-size: 22px; line-height: 1.3; color: #0f172a;">
-          ${escapeHtml(template.subject)}
-        </h2>
-      </div>
 
-      <div style="font-size: 16px; line-height: 1.8; color: #1f2937;">
-        ${template.htmlBody}
-        ${detailRows.html}
-      </div>
+        <div style="padding:28px 26px 30px;">
+          <div style="font-size:30px; line-height:1.2; font-weight:900; color:#111827; margin:0 0 10px;">
+            ${escapeHtml(orderStatusHeadline)}
+          </div>
+          <div style="font-size:16px; line-height:1.8; color:#374151; margin:0 0 18px;">
+            <div style="font-weight:800; color:#111827; margin-bottom:4px;">Hello ${escapeHtml(sellerDisplayName)},</div>
+            <div>${escapeHtml(stageMeta.openingLine)}</div>
+          </div>
 
-      <div style="margin-top: 24px; font-size: 15px; line-height: 1.8; color: #111827;">
-        <p style="margin:0 0 14px;">Regards</p>
-        <p style="margin:0;">ChoiceMee Logistic</p>
+          ${detailTable}
+          ${addressTable}
+          ${lineItemTable}
+          ${amountTable}
+          ${shippingTable}
+
+          <div style="margin-top:24px; text-align:left;">
+            <a href="${safeTrackingLink}" style="display:inline-block; text-decoration:none; background:#2563eb; color:#fff; font-size:15px; font-weight:800; padding:14px 22px; border-radius:14px;">Manage Your Order</a>
+          </div>
+
+          <div style="margin-top:28px; font-size:15px; line-height:1.8; color:#111827;">
+            <div>Regards,</div>
+            <div style="font-weight:800; margin-top:2px;">Team ChoiceMee</div>
+          </div>
+        </div>
       </div>
     </div>
   `
 
-  await sendEmail(
-    to,
-    template.subject,
-    html,
-    undefined,
-    `${template.body}${detailRows.text ? `\n\n${detailRows.text}` : ''}`,
-  )
+  const plainTextParts = [
+    `${stageMeta.badge}: ${orderStatusHeadline}`,
+    `Hello ${sellerDisplayName},`,
+    stageMeta.openingLine,
+    `AWB Number: ${awbNumber}`,
+    orderNumber ? `Order Number: ${orderNumber}` : '',
+    orderPlacedValue ? `Order placed on: ${orderPlacedValue}` : '',
+    ...buildShipmentAddressLines(orderDetails).map((line) => `Address: ${line}`),
+    ...buildShipmentProductRows(orderDetails).map(
+      (row) => `Product: ${row.name} | Qty: ${row.qty}${row.amount ? ` | Price: ${row.amount}` : ''}`,
+    ),
+    ...buildShipmentAmountLines(orderDetails).map((row) => `${row.label}: ${row.value}`),
+    `Tracking Link: ${trackingLink}`,
+    'Regards, Team ChoiceMee',
+  ].filter(Boolean)
+
+  await sendEmail(to, `Order ${orderNumber || safeAwb} is now ${stageMeta.badge.toLowerCase()}!`, html, undefined, plainTextParts.join('\n'))
 }
 
 export const sendSmtpTestEmail = async (to?: string) => {

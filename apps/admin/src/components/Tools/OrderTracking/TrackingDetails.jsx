@@ -32,6 +32,11 @@ const stages = [
 ]
 
 const statusLabels = {
+  pending: 'Pending',
+  booked: 'Booked',
+  manifest_generated: 'Manifest Generated',
+  shipment_created: 'Shipment Created',
+  pickup_initiated: 'Pickup Initiated',
   PP: 'Pending Pickup',
   IT: 'In Transit',
   OFD: 'Out for Delivery',
@@ -41,6 +46,57 @@ const statusLabels = {
   'RT-IT': 'RTO In Transit',
   'RT-DL': 'RTO Delivered',
   EX: 'Exception',
+  ndr: 'NDR',
+  rto_initiated: 'RTO Initiated',
+  rto_in_transit: 'RTO In Transit',
+  rto_delivered: 'RTO Delivered',
+}
+
+const normalizeTrackingStatus = (status) =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+
+const formatTrackingStatus = (status) => {
+  const normalized = normalizeTrackingStatus(status)
+  return statusLabels[normalized] || statusLabels[normalized?.toUpperCase?.()] || status || 'Unknown'
+}
+
+const formatTrackingDate = (value) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+const formatTrackingTime = (value) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+const getTrackingTone = (status) => {
+  const normalized = normalizeTrackingStatus(status)
+  if (normalized.includes('deliver')) return { bg: 'green.100', fg: 'green.700' }
+  if (normalized.includes('transit')) return { bg: 'blue.100', fg: 'blue.700' }
+  if (normalized.includes('cancel') || normalized.includes('failed'))
+    return { bg: 'red.100', fg: 'red.700' }
+  if (normalized.includes('rto') || normalized.includes('ndr'))
+    return { bg: 'orange.100', fg: 'orange.700' }
+
+  return { bg: 'gray.100', fg: 'gray.700' }
 }
 
 export default function TrackingDetails({ data, isLoading, error }) {
@@ -74,9 +130,14 @@ export default function TrackingDetails({ data, isLoading, error }) {
   }
 
   const currentStage =
-    data?.history?.findIndex(
-      (h) => statusLabels[h.status_code]?.toLowerCase() === data.status?.toLowerCase(),
-    ) ?? 0
+    Math.max(
+      0,
+      data?.history?.findIndex(
+        (h) =>
+          normalizeTrackingStatus(formatTrackingStatus(h.status_code)) ===
+          normalizeTrackingStatus(data.status),
+      ) ?? 0,
+    )
 
   return (
     <Container maxW="6xl" py={8}>
@@ -149,44 +210,74 @@ export default function TrackingDetails({ data, isLoading, error }) {
               Tracking History
             </Text>
             <VStack spacing={4} align="stretch">
-              {data.history.map((h, idx) => (
-                <Box
-                  key={idx}
-                  p={4}
-                  border="1px"
-                  borderColor={historyBorderColor}
-                  rounded="md"
-                >
-                  <Badge
-                    colorScheme={
-                      h.status_code === 'CAN' ? 'red' : h.status_code === 'DL' ? 'green' : 'blue'
-                    }
-                    mb={2}
+              {data.history.map((h, idx) => {
+                const exactStatus = formatTrackingStatus(h.status_code)
+                const tone = getTrackingTone(h.status_code)
+                const isLatest = idx === 0
+
+                return (
+                  <Box
+                    key={idx}
+                    p={4}
+                    border="1px"
+                    borderColor={historyBorderColor}
+                    rounded="xl"
+                    bg={isLatest ? 'orange.50' : cardBg}
                   >
-                    {statusLabels[h.status_code] || h.status_code}
-                  </Badge>
-                  {h.location && (
-                    <Text fontSize="sm">
-                      <strong>Location:</strong> {h.location}
-                    </Text>
-                  )}
-                  <Text fontSize="sm">
-                    <strong>Time:</strong>{' '}
-                    {new Date(h.event_time).toLocaleString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                  {h.message && (
-                    <Text fontSize="sm" mt={1}>
-                      {h.message}
-                    </Text>
-                  )}
-                </Box>
-              ))}
+                    <Grid templateColumns={{ base: '1fr', md: '160px 20px 1fr' }} gap={4} alignItems="start">
+                      <Box>
+                        <Text fontSize="sm" fontWeight="bold" color="gray.700">
+                          {formatTrackingDate(h.event_time)}
+                        </Text>
+                        <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                          {formatTrackingTime(h.event_time)}
+                        </Text>
+                      </Box>
+
+                      <Box display={{ base: 'none', md: 'block' }} pt={1}>
+                        <Box
+                          w="12px"
+                          h="12px"
+                          borderRadius="full"
+                          bg={isLatest ? 'orange.400' : 'gray.300'}
+                          boxShadow={isLatest ? '0 0 0 6px rgba(249, 115, 22, 0.12)' : 'none'}
+                          position="relative"
+                        >
+                          {idx < data.history.length - 1 && (
+                            <Box
+                              position="absolute"
+                              left="5px"
+                              top="12px"
+                              bottom="-28px"
+                              w="2px"
+                              bg="gray.200"
+                            />
+                          )}
+                        </Box>
+                      </Box>
+
+                      <Box>
+                        <HStack spacing={2} align="center" flexWrap="wrap">
+                          <Badge bg={tone.bg} color={tone.fg} px={2} py={1} borderRadius="full">
+                            {exactStatus}
+                          </Badge>
+                          <Text fontSize="xs" color="gray.500" fontWeight="bold" textTransform="uppercase">
+                            Exact Status
+                          </Text>
+                        </HStack>
+
+                        <Text fontSize="sm" mt={2} fontWeight="semibold" color="gray.700">
+                          {h.message || exactStatus}
+                        </Text>
+
+                        <Text fontSize="sm" mt={1} color="gray.600">
+                          <strong>Location:</strong> {h.location || 'N/A'}
+                        </Text>
+                      </Box>
+                    </Grid>
+                  </Box>
+                )
+              })}
             </VStack>
           </Box>
         </VStack>

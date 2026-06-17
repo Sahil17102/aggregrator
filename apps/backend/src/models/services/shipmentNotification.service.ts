@@ -9,7 +9,12 @@ import {
   resolveShipmentOrderLabel,
 } from '../../utils/emailSender'
 
-const normalizeStatus = (value?: string | null) => String(value || '').trim().toLowerCase()
+const normalizeStatus = (value?: string | null) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
 
 const firstNonEmpty = (...values: Array<string | null | undefined>) => {
   for (const value of values) {
@@ -25,14 +30,23 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
   if (!normalized) return null
 
   if (
-    normalized.includes('failed') ||
     normalized.includes('cancelled') ||
     normalized.includes('canceled') ||
     normalized.includes('rto') ||
-    normalized.includes('undelivered') ||
-    normalized.includes('ndr')
+    normalized.includes('lost')
   ) {
     return 'failed'
+  }
+
+  if (
+    normalized.includes('undelivered') ||
+    normalized.includes('ndr') ||
+    normalized.includes('delivery attempted') ||
+    normalized.includes('attempt failed') ||
+    normalized.includes('exception') ||
+    normalized.includes('not delivered')
+  ) {
+    return 'ndr'
   }
 
   if (
@@ -49,8 +63,10 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
 
   if (
     normalized.includes('picked up') ||
+    normalized.includes('pickup done') ||
     normalized.includes('pickup complete') ||
-    normalized.includes('pickup completed')
+    normalized.includes('pickup completed') ||
+    normalized.includes('pickup successful')
   ) {
     return 'picked_up'
   }
@@ -65,12 +81,14 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
 
   if (
     normalized.includes('manifest') ||
+    normalized.includes('booked') ||
     normalized.includes('pickup initiated') ||
     normalized.includes('pickup_initiated') ||
     normalized.includes('pickup scheduled') ||
     normalized.includes('pickup_scheduled') ||
     normalized.includes('shipment created') ||
-    normalized.includes('created')
+    normalized.includes('created') ||
+    normalized.includes('manifest generated')
   ) {
     return 'manifested'
   }
@@ -82,13 +100,23 @@ const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailSt
   return null
 }
 
-async function resolveSellerEmail(userId: string) {
+async function resolveSellerBrandDetails(userId: string) {
   const [row] = await db
     .select({
       loginEmail: users.email,
       profileEmail: sql<string>`coalesce(
         (${userProfiles.companyInfo} ->> 'contactEmail'),
         (${userProfiles.companyInfo} ->> 'companyEmail'),
+        ''
+      )`,
+      brandName: sql<string>`coalesce(
+        (${userProfiles.companyInfo} ->> 'brandName'),
+        (${userProfiles.companyInfo} ->> 'businessName'),
+        ''
+      )`,
+      logoUrl: sql<string>`coalesce(
+        (${userProfiles.companyInfo} ->> 'companyLogoUrl'),
+        (${userProfiles.companyInfo} ->> 'profilePicture'),
         ''
       )`,
     })
@@ -98,7 +126,11 @@ async function resolveSellerEmail(userId: string) {
     .limit(1)
 
   const resolvedEmail = String(row?.profileEmail || row?.loginEmail || '').trim()
-  return resolvedEmail || null
+  return {
+    email: resolvedEmail || null,
+    brandName: String(row?.brandName || '').trim() || null,
+    logoUrl: String(row?.logoUrl || '').trim() || null,
+  }
 }
 
 function resolveOrderFallbackEmail(orderDetails?: ShipmentOrderLike | null) {
@@ -132,7 +164,8 @@ export async function sendShipmentStatusEmailIfChanged(params: {
     return { sent: false, reason: 'duplicate_stage' as const }
   }
 
-  const to = await resolveSellerEmail(userId)
+  const sellerDetails = await resolveSellerBrandDetails(userId)
+  const to = sellerDetails.email
   const fallbackTo = resolveOrderFallbackEmail(orderDetails)
   const recipient = to || fallbackTo
   if (!recipient) {
@@ -155,6 +188,9 @@ export async function sendShipmentStatusEmailIfChanged(params: {
     orderNumber,
     orderLabel,
     stage: nextStage,
+    sellerName: sellerDetails.brandName || null,
+    sellerLogoUrl: sellerDetails.logoUrl,
+    orderDetails,
   })
 
   return { sent: true, stage: nextStage, to: recipient }

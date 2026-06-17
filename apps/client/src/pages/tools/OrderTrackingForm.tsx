@@ -8,18 +8,13 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Divider,
   FormControl,
   FormHelperText,
   Grid,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Stack,
   Typography,
 } from '@mui/material'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
 import { useSearchParams } from 'react-router-dom'
@@ -31,7 +26,6 @@ import {
   FaReceipt,
   FaSearch,
 } from 'react-icons/fa'
-import { MdLocationOn, MdSchedule } from 'react-icons/md'
 import type { TrackingHistory } from '../../api/tracking.service'
 import CustomInput from '../../components/UI/inputs/CustomInput'
 import { useTracking } from '../../hooks/Orders/useTracking'
@@ -60,6 +54,7 @@ const trackingStatusLabelMap: Record<string, string> = {
   rto_in_transit: 'RTO In Transit',
   rto_delivered: 'RTO Delivered',
   cancellation_requested: 'Cancellation Requested',
+  rto_initiated: 'RTO Initiated',
 }
 
 const normalizeTrackingStatus = (status?: string | null) =>
@@ -71,6 +66,42 @@ const normalizeTrackingStatus = (status?: string | null) =>
 const formatTrackingStatus = (status?: string | null) => {
   const normalized = normalizeTrackingStatus(status)
   return trackingStatusLabelMap[normalized] || status || 'Unknown'
+}
+
+const formatTrackingDate = (value?: string | null) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+const formatTrackingTime = (value?: string | null) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+const getTrackingTone = (status?: string | null) => {
+  const normalized = normalizeTrackingStatus(status)
+  if (normalized.includes('deliver')) return { bg: alpha('#16a34a', 0.12), fg: '#166534' }
+  if (normalized.includes('transit')) return { bg: alpha('#0284c7', 0.12), fg: '#075985' }
+  if (normalized.includes('cancel') || normalized.includes('failed'))
+    return { bg: alpha('#dc2626', 0.12), fg: '#991B1B' }
+  if (normalized.includes('rto') || normalized.includes('ndr'))
+    return { bg: alpha('#d97706', 0.12), fg: '#92400E' }
+
+  return { bg: alpha(brand.ink, 0.08), fg: brand.ink }
 }
 
 const trackingHeroSx = {
@@ -575,56 +606,101 @@ export default function OrderTrackingForm() {
               {sortedHistory.length === 0 ? (
                 <Typography color="text.secondary">No tracking events available yet.</Typography>
               ) : (
-                <List>
-                  {sortedHistory.map((event, idx) => (
-                    <Fragment key={`${event.event_time}-${idx}`}>
-                      <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          {idx === 0 ? (
-                            <FaBoxOpen color="#333369" size={20} />
-                          ) : (
-                            <MdLocationOn color="#6B7280" size={20} />
-                          )}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Typography fontWeight={600}>
-                                {event.message || event.status_code}
-                              </Typography>
-                              <Chip
-                                size="small"
-                                label={event.status_code}
-                                color={idx === 0 ? 'primary' : 'default'}
+                <Stack spacing={1.4}>
+                  {sortedHistory.map((event, idx) => {
+                    const exactStatus = formatTrackingStatus(event.status_code)
+                    const tone = getTrackingTone(event.status_code)
+                    const isLatest = idx === 0
+
+                    return (
+                      <Box
+                        key={`${event.event_time}-${idx}`}
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: '1fr', sm: '150px 24px 1fr' },
+                          gap: { xs: 1.1, sm: 1.4 },
+                          p: { xs: 1.6, md: 2 },
+                          borderRadius: '18px',
+                          border: `1px solid ${alpha(brand.ink, 0.08)}`,
+                          bgcolor: isLatest ? alpha(brand.accent, 0.04) : '#FFFFFF',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            minWidth: 0,
+                            display: 'flex',
+                            flexDirection: { xs: 'row', sm: 'column' },
+                            alignItems: { xs: 'center', sm: 'flex-end' },
+                            justifyContent: { xs: 'space-between', sm: 'center' },
+                            gap: 0.5,
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 800, color: brand.ink, fontSize: '0.92rem' }}>
+                            {formatTrackingDate(event.event_time)}
+                          </Typography>
+                          <Typography sx={{ fontWeight: 700, color: brand.inkSoft, fontSize: '0.78rem' }}>
+                            {formatTrackingTime(event.event_time)}
+                          </Typography>
+                        </Box>
+
+                        <Box
+                          sx={{
+                            display: { xs: 'none', sm: 'flex' },
+                            justifyContent: 'center',
+                            pt: 0.75,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: 999,
+                              bgcolor: isLatest ? brand.accent : alpha(brand.ink, 0.18),
+                              boxShadow: isLatest ? '0 0 0 6px rgba(255,122,21,0.12)' : 'none',
+                              position: 'relative',
+                            }}
+                          >
+                            {idx !== sortedHistory.length - 1 && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  left: 5,
+                                  top: 12,
+                                  bottom: -28,
+                                  width: 2,
+                                  bgcolor: alpha(brand.ink, 0.08),
+                                }}
                               />
-                            </Stack>
-                          }
-                          secondary={
-                            <Stack
-                              direction={{ xs: 'column', sm: 'row' }}
-                              spacing={1}
-                              mt={0.5}
-                              alignItems={{ sm: 'center' }}
-                            >
-                              <Stack direction="row" spacing={0.5} alignItems="center">
-                                <MdSchedule size={16} />
-                                <Typography variant="caption">
-                                  {new Date(event.event_time).toLocaleString()}
-                                </Typography>
-                              </Stack>
-                              {event.location && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {event.location}
-                                </Typography>
-                              )}
-                            </Stack>
-                          }
-                        />
-                      </ListItem>
-                      {idx !== sortedHistory.length - 1 && <Divider component="li" />}
-                    </Fragment>
-                  ))}
-                </List>
+                            )}
+                          </Box>
+                        </Box>
+
+                        <Box>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            <Chip
+                              size="small"
+                              label={exactStatus}
+                              sx={{
+                                bgcolor: tone.bg,
+                                color: tone.fg,
+                                fontWeight: 800,
+                              }}
+                            />
+                            <Typography fontSize="0.78rem" color="text.secondary" fontWeight={700}>
+                              Exact Status
+                            </Typography>
+                          </Stack>
+                          <Typography fontWeight={700} sx={{ mt: 0.8, color: brand.ink }}>
+                            {event.message || exactStatus}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.7 }}>
+                            <strong>Location:</strong> {event.location || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )
+                  })}
+                </Stack>
               )}
             </CardContent>
           </Card>
