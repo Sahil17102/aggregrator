@@ -40,6 +40,11 @@ const CustomDrawer: React.FC<GlassDrawerProps> = ({
         paper: {
           sx: {
             width: isMobile ? '100%' : width,
+            maxWidth: '100vw',
+            height: '100dvh',
+            maxHeight: '100dvh',
+            display: 'flex',
+            flexDirection: 'column',
             color: theme.palette.text.primary,
             overflow: 'hidden',
             background: `
@@ -60,6 +65,7 @@ const CustomDrawer: React.FC<GlassDrawerProps> = ({
           px: { xs: 2.5, sm: 3.5 },
           py: { xs: 2.25, sm: 2.8 },
           overflow: 'hidden',
+          flexShrink: 0,
         }}
       >
         <Box
@@ -125,11 +131,16 @@ const CustomDrawer: React.FC<GlassDrawerProps> = ({
       <Box
         p={{ xs: 2.5, sm: 3.5 }}
         sx={{
+          flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
-          height: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
           backgroundColor: alpha('#ffffff', 0.42),
           '&::-webkit-scrollbar': {
             width: '8px',
+            height: '8px',
           },
           '&::-webkit-scrollbar-track': {
             background: alpha(theme.palette.primary.main, 0.05),
