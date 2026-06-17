@@ -31,6 +31,7 @@ async function main() {
       order_number: '275596',
       awb_number: '25338212001554',
       payment_type: 'prepaid',
+      shipping_mode: 'surface',
     },
     sellerName: 'Khoobsurat textile',
     sellerLogoDataUrl: await makeLogoDataUrl('Khoobsurat'),

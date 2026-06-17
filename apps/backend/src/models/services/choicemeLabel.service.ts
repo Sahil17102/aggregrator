@@ -319,6 +319,31 @@ const resolveProviderKey = (order: any) => {
   return 'delhivery'
 }
 
+const resolveShippingModeLabel = (order: any) => {
+  const rawMode =
+    String(
+      order?.shipping_mode ??
+        order?.service_mode ??
+        order?.mode ??
+        order?.shippingMode ??
+        order?.delivery_mode ??
+        '',
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+
+  if (!rawMode) return ''
+  if (rawMode.includes('express') || rawMode.includes('air')) return 'Express'
+  if (rawMode.includes('surface') || rawMode.includes('ground')) return 'Surface'
+
+  return rawMode
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 const loadFonts = () => ({
   LiberationSans: {
     normal: path.join(PDFJS_STANDARD_FONTS_DIR, 'LiberationSans-Regular.ttf'),
@@ -380,7 +405,6 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
     paymentMethod,
     paymentColor,
     normalizedItems,
-    footerUrl,
   } = params
 
   const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '-')
@@ -416,22 +440,29 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
       lineHeight: 1.08,
       color: '#111111',
     },
-    footer: () => ({
-      margin: [13, 0, 13, 6],
-      columns: [
-        { text: footerUrl, fontSize: 5.5, color: '#6b7280' },
-        { text: 'ChoiceMee', fontSize: 5.5, color: '#6b7280', alignment: 'right' },
-      ],
-    }),
     content: [
       {
         columns: [
           {
             width: '*',
-            stack: [
-              { text: 'ChoiceMee Logistics', fontSize: 10.5, bold: true, color: '#111111' },
-              { text: providerLabel, fontSize: 5.9, color: '#6b7280', margin: [0, 1, 0, 0] },
+            columns: [
+              sellerLogoDataUrl
+                ? {
+                    width: 36,
+                    image: sellerLogoDataUrl,
+                    fit: [32, 32],
+                    margin: [0, 1, 6, 0],
+                  }
+                : { width: 0, text: '' },
+              {
+                width: '*',
+                stack: [
+                  { text: sellerName, fontSize: 10.6, bold: true, color: '#111111', margin: [0, 0, 0, 1] },
+                ],
+                margin: [0, 0, 0, 0],
+              },
             ],
+            columnGap: 0,
           },
           {
             width: 120,
@@ -490,6 +521,13 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
             width: '*',
             stack: [
               { text: `Courier: ${providerLabel}`, fontSize: 9.2, bold: true, color: '#111111' },
+              {
+                text: `Mode: ${resolveShippingModeLabel(order) || '-'}`,
+                fontSize: 9.2,
+                bold: true,
+                color: '#111111',
+                margin: [0, 1, 0, 0],
+              },
               {
                 text: `Order Value: ${formatMoney(totalAmount)}`,
                 fontSize: 9.2,
@@ -553,9 +591,6 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
       },
       {
         stack: [
-          sellerLogoDataUrl
-            ? { image: sellerLogoDataUrl, fit: [88, 26], alignment: 'left', margin: [0, 0, 0, 4] }
-            : { text: sellerName, fontSize: 8.8, bold: true, color: '#111111', margin: [0, 0, 0, 4] },
           { text: 'FROM', fontSize: 6.8, bold: true, color: '#111111', margin: [0, 0, 0, 2] },
           { text: sellerName, fontSize: 10.2, bold: true, color: '#111111' },
           ...sellerAddressLines.map((line) => ({ text: line, fontSize: 8.0, color: '#111111' })),
