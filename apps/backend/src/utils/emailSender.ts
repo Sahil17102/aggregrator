@@ -648,6 +648,14 @@ const formatCurrency = (value?: unknown) => {
   })}`
 }
 
+const formatEmailCurrency = (value?: unknown) => {
+  if (value === undefined || value === null || value === '') return ''
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return String(value).trim()
+
+  return `₹ ${numeric.toFixed(2)}`
+}
+
 const firstText = (...values: Array<unknown>) => {
   for (const value of values) {
     const text = String(value ?? '').trim()
@@ -661,71 +669,141 @@ const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
   switch (stage) {
     case 'booked':
       return {
-        badge: 'Order Booked',
-        badgeBg: '#E7F7EC',
-        badgeFg: '#166534',
-        headline: 'Your order has been booked successfully!',
-        openingLine: 'We have recorded the order and the shipment is ready for the next step.',
+        badge: 'Manifest',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Manifest successfully',
+        progressIndex: 0,
       }
     case 'manifested':
       return {
-        badge: 'Manifest Generated',
-        badgeBg: '#EAF1FF',
-        badgeFg: '#1D4ED8',
-        headline: 'Your shipment manifest has been generated.',
-        openingLine: 'The courier manifest is ready and the shipment is moving into processing.',
+        badge: 'Manifest',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Manifest successfully',
+        progressIndex: 0,
       }
     case 'picked_up':
       return {
-        badge: 'Pickup Done',
-        badgeBg: '#FFF3D6',
-        badgeFg: '#B45309',
-        headline: 'Your shipment has been picked up.',
-        openingLine: 'The courier has collected the parcel and it is now on the move.',
+        badge: 'Pickup Successfully',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Pickup Successfully',
+        progressIndex: 1,
       }
     case 'in_transit':
       return {
         badge: 'In Transit',
-        badgeBg: '#E8F3FF',
-        badgeFg: '#1E40AF',
-        headline: 'Your shipment is now in transit.',
-        openingLine: 'The parcel is moving through the courier network and the next scan will be shared soon.',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'In Transit',
+        progressIndex: 2,
       }
     case 'out_for_delivery':
       return {
-        badge: 'Out for Delivery',
-        badgeBg: '#FFF0E0',
-        badgeFg: '#C2410C',
-        headline: 'Your shipment is out for delivery!',
-        openingLine: 'The parcel is with the last-mile delivery partner and should reach the customer today.',
+        badge: 'Out for delivery',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Out for delivery successfully',
+        progressIndex: 2,
       }
     case 'delivered':
       return {
-        badge: 'Delivered',
-        badgeBg: '#DCFCE7',
-        badgeFg: '#166534',
-        headline: 'Your shipment has been delivered!',
-        openingLine: 'The parcel reached the consignee successfully and the shipment is complete.',
+        badge: 'Delivered successfully',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Delivered successfully',
+        progressIndex: 3,
       }
     case 'ndr':
       return {
-        badge: 'NDR',
-        badgeBg: '#FEE2E2',
-        badgeFg: '#991B1B',
-        headline: 'Delivery needs attention.',
-        openingLine:
-          'The courier reported a non-delivery event. Please review the issue and take the next action.',
+        badge: 'Delivery Failed (NDR)',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Delivery Failed (NDR)',
+        progressIndex: 3,
       }
     case 'failed':
     default:
       return {
-        badge: 'Status Update',
-        badgeBg: '#F3F4F6',
-        badgeFg: '#374151',
-        headline: 'Your shipment status has changed.',
-        openingLine: 'We have a new update on the shipment and the latest details are below.',
+        badge: 'Delivery Failed (NDR)',
+        badgeBg: '#F97316',
+        badgeFg: '#FFFFFF',
+        actionText: 'Delivery Failed (NDR)',
+        progressIndex: 3,
       }
   }
+}
+
+const getChoiceMeeLogoUrl = () => {
+  const frontendBaseUrl = getFrontendBaseUrl().replace(/\/$/, '')
+  return `${frontendBaseUrl}/brand/choiceme-logo.png`
+}
+
+const buildShipmentProgressMarkup = () => {
+  const iconColor = '#FFFFFF'
+  const stepFill = '#4EA3F1'
+  const connectorColor = '#4EA3F1'
+
+  const icon = (svg: string, transform: string) => `
+    <g transform="${transform}" fill="none" stroke="${iconColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      ${svg}
+    </g>
+  `
+
+  return `
+    <svg width="272" height="72" viewBox="0 0 272 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Shipment progress">
+      <line x1="42" y1="36" x2="230" y2="36" stroke="${connectorColor}" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="42" cy="36" r="17" fill="${stepFill}"/>
+      <circle cx="104" cy="36" r="17" fill="${stepFill}"/>
+      <circle cx="166" cy="36" r="17" fill="${stepFill}"/>
+      <circle cx="228" cy="36" r="17" fill="${stepFill}"/>
+      ${icon(`
+        <rect x="13" y="10" width="12" height="14" rx="1.5"/>
+        <path d="M16 14h6"/>
+        <path d="M16 18h6"/>
+        <path d="M16 22h4"/>
+      `, 'translate(29 22)')}
+      ${icon(`
+        <path d="M11 11l7-4 7 4-7 4-7-4z"/>
+        <path d="M11 11v7l7 4 7-4v-7"/>
+        <path d="M18 15v7"/>
+      `, 'translate(91 21)')}
+      ${icon(`
+        <path d="M8 19h16"/>
+        <path d="M10 19v-6l4-4h6l4 4v6"/>
+        <path d="M14 19v-5h4v5"/>
+        <path d="M7 15h3"/>
+        <path d="M21 15h-3"/>
+        <path d="M10 13h1"/>
+        <path d="M18 13h1"/>
+      `, 'translate(153 20)')}
+      ${icon(`
+        <path d="M8 14l10-7 10 7"/>
+        <path d="M10 13v9h16v-9"/>
+        <path d="M14 22v-6h4v6"/>
+      `, 'translate(216 20)')}
+    </svg>
+  `
+}
+
+const buildShipmentFooterIcons = () => {
+  const icons = [
+    { label: 'f', title: 'Facebook' },
+    { label: 'in', title: 'LinkedIn' },
+    { label: 'ig', title: 'Instagram' },
+    { label: 't', title: 'Twitter' },
+  ]
+
+  return icons
+    .map(
+      (icon) => `
+        <span title="${escapeHtml(icon.title)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:#4a4a4a;color:#c9c9c9;font-size:10px;font-weight:700;line-height:1;text-transform:lowercase;margin:0 3px;">${escapeHtml(
+          icon.label,
+        )}</span>
+      `,
+    )
+    .join('')
 }
 
 const buildShipmentProductRows = (order?: ShipmentOrderLike | null) => {
@@ -846,7 +924,9 @@ export const sendShipmentStatusEmail = async (opts: {
   const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
   const sellerDisplayName = firstText(sellerName, 'ChoiceMee Seller')
   const stageMeta = getShipmentStatusPresentation(stage)
-  const rawStatusLabel = normalizeShipmentStatusText((orderDetails as Record<string, unknown> | undefined)?.order_status as string | undefined)
+  const rawStatusLabel = normalizeShipmentStatusText(
+    (orderDetails as Record<string, unknown> | undefined)?.order_status as string | undefined,
+  )
   const orderPlacedOn = formatDisplayDateTime(
     (orderDetails as Record<string, unknown> | undefined)?.created_at as string | Date | null | undefined,
   )
@@ -861,7 +941,7 @@ export const sendShipmentStatusEmail = async (opts: {
     'Courier',
   )
   const orderStatusLabel = firstText(rawStatusLabel, stageMeta.badge)
-  const orderStatusHeadline = `Order ${safeOrderNumber} is now ${orderStatusLabel || stageMeta.badge}!`
+  const orderStatusHeadline = `Order ${safeOrderNumber || safeAwb} is now ${orderStatusLabel || stageMeta.badge}!`
   const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
     String(awbNumber || '').trim(),
   )}`
@@ -869,225 +949,182 @@ export const sendShipmentStatusEmail = async (opts: {
   const productRows = buildShipmentProductRows(orderDetails)
   const addressLines = buildShipmentAddressLines(orderDetails)
   const amountLines = buildShipmentAmountLines(orderDetails)
-  const shippingInfo = [
-    { label: 'Courier Name', value: courierName },
-    { label: 'AWB Number', value: safeAwb },
-    { label: 'Order Number', value: safeOrderNumber },
-    {
-      label: 'Order Name',
-      value: safeOrderLabel && safeOrderLabel !== safeOrderNumber ? safeOrderLabel : null,
-    },
-  ].filter((row) => Boolean(row.value))
+  const primaryProduct = productRows[0]
+  const productName = firstText(primaryProduct?.name, safeOrderLabel, 'Product')
+  const productQty = firstText(primaryProduct?.qty, '1')
+  const productPrice = firstText(primaryProduct?.amount, formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.order_amount))
+  const orderTotalValue = firstText(
+    formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.order_amount),
+    productPrice,
+  )
+  const amountPaidValue = firstText(
+    formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.prepaid_amount),
+    orderTotalValue,
+  )
+  const addressDisplayLines = [
+    firstText(
+      (orderDetails as Record<string, unknown> | undefined)?.buyer_name as string | null | undefined,
+      (orderDetails as Record<string, unknown> | undefined)?.name as string | null | undefined,
+    ),
+    firstText(
+      (orderDetails as Record<string, unknown> | undefined)?.address as string | null | undefined,
+      (orderDetails as Record<string, unknown> | undefined)?.addressLine1 as string | null | undefined,
+      (orderDetails as Record<string, unknown> | undefined)?.delivery_address as string | null | undefined,
+      (orderDetails as Record<string, unknown> | undefined)?.buyer_address as string | null | undefined,
+    ),
+    firstText((orderDetails as Record<string, unknown> | undefined)?.city as string | null | undefined),
+    [orderDetails?.state, orderDetails?.country].map((value) => String(value || '').trim()).filter(Boolean).join(', '),
+    firstText((orderDetails as Record<string, unknown> | undefined)?.pincode as string | null | undefined),
+  ].filter(Boolean)
+  const recipientName = firstText(
+    (orderDetails as Record<string, unknown> | undefined)?.buyer_name as string | null | undefined,
+    (orderDetails as Record<string, unknown> | undefined)?.name as string | null | undefined,
+    safeOrderLabel,
+    sellerDisplayName,
+    'the customer',
+  )
+  const contactNumber = firstText((orderDetails as Record<string, unknown> | undefined)?.buyer_phone as string | null | undefined)
+  const orderIdDisplay = firstText(safeOrderNumber, safeAwb)
+  const amountLineDiscount = '₹ 0.0'
+  const orderIntro = `Your order ${orderIdDisplay} has been ${stageMeta.actionText} to ${recipientName}. Thank you for using Shift as your logistics partner for this delivery.`
+  const orderPlacedCaption = firstText(
+    formatDisplayDate((orderDetails as Record<string, unknown> | undefined)?.created_at as string | Date | null | undefined),
+    orderPlacedOnFallback,
+  )
 
-  const sellerLogo =
-    sellerLogoUrl && /^(https?:\/\/|data:)/i.test(sellerLogoUrl.trim())
-      ? `<img src="${escapeHtml(sellerLogoUrl.trim())}" alt="${escapeHtml(sellerDisplayName)} logo" style="width:54px;height:54px;object-fit:contain;border-radius:14px;border:1px solid #e5e7eb;background:#fff;padding:6px;" />`
-      : `<div style="width:54px;height:54px;border-radius:14px;border:1px solid #e5e7eb;background:#fff;display:flex;align-items:center;justify-content:center;color:${stageMeta.badgeFg};font-weight:900;font-size:18px;box-shadow:0 10px 20px rgba(15,23,42,0.08);">${escapeHtml(
-          sellerDisplayName.slice(0, 1).toUpperCase(),
-        )}</div>`
-
-  const lineItemTable =
-    productRows.length > 0
+  const productRowsHtml =
+    primaryProduct || productName
       ? `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           <tr>
-            <td style="padding:14px 16px;background:#faf7ef;border-bottom:1px solid #e7e0d4;">
-              <div style="font-size:16px;font-weight:800;color:#111827;">Product Summary</div>
+            <td valign="top" style="padding:0 0 4px 0;width:55%;">
+              <div style="font-size:14px;line-height:1.5;color:#1f1f1f;">
+                <strong style="font-size:14px;">Product Name:</strong>
+                <span style="color:#3c8a3e;font-weight:700;padding-left:6px;">${escapeHtml(productName)}</span>
+              </div>
+            </td>
+            <td valign="top" align="right" style="padding:0 0 4px 0;width:45%;">
+              <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Qty: ${escapeHtml(productQty)}&nbsp;&nbsp; Price:&nbsp; ${escapeHtml(productPrice)}</div>
+              <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Discount:&nbsp; ${escapeHtml(amountLineDiscount)}</div>
+              <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Subtotal:&nbsp; ${escapeHtml(orderTotalValue)}</div>
             </td>
           </tr>
-          ${productRows
-            .map(
-              (row) => `
-              <tr>
-                <td style="padding:12px 16px;border-bottom:1px solid #f0eadf;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="font-size:15px;line-height:1.5;color:#111827;font-weight:700;">${escapeHtml(
-                        row.name,
-                      )}</td>
-                      <td align="right" style="font-size:14px;line-height:1.5;color:#111827;font-weight:700;white-space:nowrap;">Qty: ${escapeHtml(
-                        row.qty,
-                      )}${row.amount ? ` <span style="margin-left:12px;">Price: ${escapeHtml(row.amount)}</span>` : ''}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            `,
-            )
-            .join('')}
         </table>
       `
       : ''
 
-  const amountTable =
-    amountLines.length > 0
-      ? `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;">
-          <tr>
-            <td style="padding:14px 16px;background:#faf7ef;border-bottom:1px solid #e7e0d4;">
-              <div style="font-size:16px;font-weight:800;color:#111827;">Amount Details</div>
-            </td>
-          </tr>
-          ${amountLines
-            .map(
-              (row) => `
-              <tr>
-                <td style="padding:12px 16px;border-bottom:1px solid #f0eadf;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="font-size:14px;line-height:1.5;color:#374151;font-weight:700;">${escapeHtml(
-                        row.label,
-                      )}</td>
-                      <td align="right" style="font-size:14px;line-height:1.5;color:#111827;font-weight:700;white-space:nowrap;">${escapeHtml(
-                        row.value || '',
-                      )}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            `,
-            )
-            .join('')}
-        </table>
-      `
-      : ''
-
-  const addressTable =
-    addressLines.length > 0
-      ? `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #d8e6da;border-radius:14px;overflow:hidden;">
-          <tr>
-            <td style="padding:14px 16px;background:#f7fbf8;border-bottom:1px solid #d8e6da;">
-              <div style="font-size:16px;font-weight:800;color:#111827;">Delivery Address</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:16px;background:#ffffff;">
-              ${addressLines
-                .map(
-                  (line, index) => `
-                    <div style="font-size:${index === 0 ? '16px' : '14px'};line-height:1.65;color:#111827;font-weight:${index === 0 ? 800 : 600};margin-bottom:${index < addressLines.length - 1 ? '2px' : '0'};">${escapeHtml(
+  const addressBoxHtml = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dfe3ea;border-radius:2px;">
+      <tr>
+        <td style="padding:16px 18px;vertical-align:top;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <tr>
+              <td valign="top" style="width:50%;padding-right:16px;">
+                <div style="font-size:17px;font-weight:800;line-height:1.2;color:#111827;margin:0 0 10px;">Delivery Address</div>
+                ${addressDisplayLines
+                  .map((line, index) => {
+                    const fontWeight = index === 0 ? 700 : 600
+                    const fontSize = index === 0 ? '15px' : '14px'
+                    return `<div style="font-size:${fontSize};line-height:1.4;color:#222222;font-weight:${fontWeight};margin:0 0 2px;">${escapeHtml(
                       line,
-                    )}</div>
-                  `,
-                )
-                .join('')}
-            </td>
-          </tr>
-        </table>
-      `
-      : ''
-
-  const shippingTable = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
-      <tr>
-        <td style="padding:14px 16px;background:#fafafa;border-bottom:1px solid #e5e7eb;">
-          <div style="font-size:16px;font-weight:800;color:#111827;">Shipping Details</div>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:16px;background:#fff;">
-          ${shippingInfo
-            .map(
-              (row) => `
-                <div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px dashed #f1f5f9;">
-                  <div style="font-size:14px;line-height:1.6;color:#374151;font-weight:700;">${escapeHtml(row.label)}</div>
-                  <div style="font-size:14px;line-height:1.6;color:#059669;font-weight:800;text-align:right;">${escapeHtml(
-                    row.value || '',
-                  )}</div>
+                    )}</div>`
+                  })
+                  .join('')}
+                ${
+                  contactNumber
+                    ? `<div style="margin-top:18px;font-size:14px;line-height:1.5;color:#222222;font-weight:700;">Contact Number <span style="font-weight:800;">${escapeHtml(contactNumber)}</span></div>`
+                    : ''
+                }
+              </td>
+              <td valign="top" align="center" style="width:50%;padding-left:10px;">
+                <div style="display:inline-block;text-align:center;">
+                  <div style="margin:0 auto 16px;">${buildShipmentProgressMarkup()}</div>
+                  <a href="${safeTrackingLink}" style="display:inline-block;background:#2d5ab5;color:#ffffff;text-decoration:none;font-size:15px;line-height:1;font-weight:800;padding:13px 22px;border-radius:2px;box-shadow:0 4px 10px rgba(45,90,181,0.24);">Manage Your Order</a>
                 </div>
-              `,
-            )
-            .join('')}
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
   `
 
-  const detailTable = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;">
+  const shippingDetailsHtml = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #ececec;">
       <tr>
-        <td style="padding:14px 16px;background:#faf7ef;border-bottom:1px solid #e7e0d4;">
-          <div style="font-size:16px;font-weight:800;color:#111827;">Order Snapshot</div>
+        <td style="padding-top:14px;vertical-align:top;">
+          <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:10px;">Shipping Details</div>
+          <div style="font-size:14px;line-height:1.45;color:#1f1f1f;">
+            <strong>Courier Name:</strong> <span style="color:#3c8a3e;font-weight:700;">${escapeHtml(courierName)}</span><br/>
+            <strong>AWB number:</strong> <span style="color:#3c8a3e;font-weight:700;">${escapeHtml(safeAwb)}</span>
+          </div>
         </td>
-      </tr>
-      <tr>
-        <td style="padding:16px;background:#fff;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:4px 0;font-size:14px;color:#374151;font-weight:700;">Status</td>
-              <td align="right" style="padding:4px 0;font-size:14px;color:#111827;font-weight:800;">${escapeHtml(
-                stageMeta.badge,
-              )}</td>
-            </tr>
-            ${orderPlacedValue ? `
-            <tr>
-              <td style="padding:4px 0;font-size:14px;color:#374151;font-weight:700;">Order placed on</td>
-              <td align="right" style="padding:4px 0;font-size:14px;color:#111827;font-weight:800;">${escapeHtml(
-                orderPlacedValue,
-              )}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding:4px 0;font-size:14px;color:#374151;font-weight:700;">Tracking ID</td>
-              <td align="right" style="padding:4px 0;font-size:14px;color:#111827;font-weight:800;">${safeAwb}</td>
-            </tr>
-          </table>
+        <td align="right" style="padding-top:14px;vertical-align:top;">
+          <div style="font-size:14px;line-height:1.75;color:#1f1f1f;font-weight:700;">Item(s) total : ${escapeHtml(orderTotalValue)}</div>
+          <div style="font-size:14px;line-height:1.75;color:#1f1f1f;font-weight:700;">Amount paid : ${escapeHtml(amountPaidValue)}</div>
         </td>
       </tr>
     </table>
   `
 
   const html = `
-    <div style="font-family: Arial, Helvetica, sans-serif; background:#f4f2e9; padding:24px; color:#111827;">
-      <div style="max-width:720px; margin:0 auto; background:#fffdf5; border:1px solid #eadfc8; border-radius:28px; overflow:hidden; box-shadow:0 18px 40px rgba(15,23,42,0.08);">
-        <div style="padding:24px 26px 18px; border-bottom:1px solid #eee3cc; background:#fffdf5;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <div style="margin:0;padding:16px;background:#f3f1e7;">
+      <div style="max-width:630px;margin:0 auto;background:#ffffff;border:1px solid #e8e4d9;box-shadow:0 2px 10px rgba(0,0,0,0.04);font-family:Arial,Helvetica,sans-serif;color:#111827;">
+        <div style="padding:16px 14px 14px;background:linear-gradient(180deg,#f7f4e9 0%,#f4f1e6 100%);border-bottom:1px solid #ece5d2;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="top" style="width:70%;">
-                <table role="presentation" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td valign="middle" style="padding-right:12px;">${sellerLogo}</td>
-                    <td valign="middle">
-                      <div style="font-size:13px; letter-spacing:0.16em; text-transform:uppercase; font-weight:800; color:#6b7280; line-height:1.2;">
-                        ${escapeHtml(sellerDisplayName)}
-                      </div>
-                      <div style="margin-top:6px; font-size:13px; color:#8b7355; line-height:1.4;">Shipment status update from ChoiceMee</div>
-                    </td>
-                  </tr>
-                </table>
+              <td valign="middle" style="width:70%;">
+                <img src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:182px;max-width:182px;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
-              <td valign="middle" align="right">
-                <div style="display:inline-block; padding:12px 18px; border-radius:999px; background:${stageMeta.badgeBg}; color:${stageMeta.badgeFg}; font-size:14px; font-weight:800; white-space:nowrap;">
-                  ${escapeHtml(stageMeta.badge)}
-                </div>
+              <td valign="middle" align="right" style="width:30%;">
+                <span style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:11px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
+                  stageMeta.badge,
+                )}</span>
               </td>
             </tr>
           </table>
         </div>
 
-        <div style="padding:28px 26px 30px;">
-          <div style="font-size:30px; line-height:1.2; font-weight:900; color:#111827; margin:0 0 10px;">
-            ${escapeHtml(orderStatusHeadline)}
-          </div>
-          <div style="font-size:16px; line-height:1.8; color:#374151; margin:0 0 18px;">
-            <div style="font-weight:800; color:#111827; margin-bottom:4px;">Hello ${escapeHtml(sellerDisplayName)},</div>
-            <div>${escapeHtml(stageMeta.openingLine)}</div>
-          </div>
+        <div style="padding:14px 14px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <tr>
+              <td valign="top" style="width:58%;padding-right:12px;">
+                <div style="font-size:14px;font-weight:800;line-height:1.3;color:#1c1c1c;margin-bottom:4px;">Hello ${escapeHtml(
+                  sellerDisplayName,
+                )},</div>
+                <div style="font-size:14px;line-height:1.38;color:#1f1f1f;font-weight:700;">${escapeHtml(orderIntro)}</div>
+              </td>
+              <td valign="top" align="right" style="width:42%;">
+                <div style="font-size:13px;line-height:1.45;color:#53616f;text-align:right;font-weight:700;">Order placed on ${escapeHtml(
+                  orderPlacedCaption || '',
+                )}</div>
+                <div style="font-size:13px;line-height:1.45;color:#53616f;text-align:right;font-weight:700;">Order ID&nbsp; ${escapeHtml(
+                  orderIdDisplay,
+                )}</div>
+              </td>
+            </tr>
+          </table>
+        </div>
 
-          ${detailTable}
-          ${addressTable}
-          ${lineItemTable}
-          ${amountTable}
-          ${shippingTable}
+        <div style="padding:14px;">
+          ${addressBoxHtml}
+        </div>
 
-          <div style="margin-top:24px; text-align:left;">
-            <a href="${safeTrackingLink}" style="display:inline-block; text-decoration:none; background:#2563eb; color:#fff; font-size:15px; font-weight:800; padding:14px 22px; border-radius:14px;">Manage Your Order</a>
-          </div>
+        <div style="padding:0 14px 0;">
+          ${productRowsHtml}
+        </div>
 
-          <div style="margin-top:28px; font-size:15px; line-height:1.8; color:#111827;">
-            <div>Regards,</div>
-            <div style="font-weight:800; margin-top:2px;">Team ChoiceMee</div>
-          </div>
+        <div style="padding:10px 14px 0;">
+          ${shippingDetailsHtml}
+        </div>
+
+        <div style="padding:18px 14px 10px;">
+          <div style="font-size:14px;line-height:1.7;color:#1f1f1f;">Regards,</div>
+          <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Team Shift!</div>
+        </div>
+
+        <div style="background:#2b2b2b;padding:10px 0 12px;text-align:center;">
+          ${buildShipmentFooterIcons()}
         </div>
       </div>
     </div>
@@ -1096,20 +1133,25 @@ export const sendShipmentStatusEmail = async (opts: {
   const plainTextParts = [
     `${stageMeta.badge}: ${orderStatusHeadline}`,
     `Hello ${sellerDisplayName},`,
-    stageMeta.openingLine,
-    `AWB Number: ${awbNumber}`,
-    orderNumber ? `Order Number: ${orderNumber}` : '',
+    orderIntro,
     orderPlacedValue ? `Order placed on: ${orderPlacedValue}` : '',
-    ...buildShipmentAddressLines(orderDetails).map((line) => `Address: ${line}`),
-    ...buildShipmentProductRows(orderDetails).map(
-      (row) => `Product: ${row.name} | Qty: ${row.qty}${row.amount ? ` | Price: ${row.amount}` : ''}`,
-    ),
-    ...buildShipmentAmountLines(orderDetails).map((row) => `${row.label}: ${row.value}`),
+    `Order ID: ${orderIdDisplay}`,
+    `AWB Number: ${awbNumber}`,
+    ...addressLines.map((line) => `Address: ${line}`),
+    ...productRows.map((row) => `Product: ${row.name} | Qty: ${row.qty}${row.amount ? ` | Price: ${row.amount}` : ''}`),
+    ...amountLines.map((row) => `${row.label}: ${row.value}`),
+    `Courier Name: ${courierName}`,
     `Tracking Link: ${trackingLink}`,
-    'Regards, Team ChoiceMee',
+    'Regards, Team Shift!',
   ].filter(Boolean)
 
-  await sendEmail(to, `Order ${orderNumber || safeAwb} is now ${stageMeta.badge.toLowerCase()}!`, html, undefined, plainTextParts.join('\n'))
+  await sendEmail(
+    to,
+    `Order ${orderIdDisplay} is now ${stageMeta.badge.toLowerCase()}!`,
+    html,
+    undefined,
+    plainTextParts.join('\n'),
+  )
 }
 
 export const sendSmtpTestEmail = async (to?: string) => {
