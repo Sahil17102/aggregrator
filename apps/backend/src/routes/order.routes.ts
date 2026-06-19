@@ -3,6 +3,7 @@ import {
   checkOrderNumberAvailabilityController,
   createB2BShipmentController,
   createB2CShipmentController,
+  deleteB2COrderController,
   generateManifestController,
   getAllOrdersController,
   getB2BOrdersController,
@@ -11,6 +12,7 @@ import {
   requestB2CPickupController,
   retryFailedManifestController,
   selectB2CCourierController,
+  updateB2COrderController,
   syncB2CTrackingController,
   trackOrderController,
 } from '../controllers/order.controller'
@@ -25,6 +27,8 @@ router.get('/check-order-number', requireAuth, checkOrderNumberAvailabilityContr
 router.get('/b2c/list', requireAuth, getB2COrdersController)
 router.get('/b2b/list', requireAuth, getB2BOrdersController)
 router.post('/b2c/:orderId/select-courier', requireAuth, selectB2CCourierController)
+router.patch('/b2c/:orderId', requireAuth, updateB2COrderController)
+router.delete('/b2c/:orderId', requireAuth, deleteB2COrderController)
 router.post('/b2c/manifest', requireAuth, generateManifestController)
 router.post('/b2c/:orderId/retry-manifest', requireAuth, retryFailedManifestController)
 router.post('/b2c/:orderId/request-pickup', requireAuth, requestB2CPickupController)

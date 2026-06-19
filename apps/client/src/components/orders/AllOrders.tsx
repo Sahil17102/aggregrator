@@ -23,6 +23,7 @@ import {
   MdAssignment,
   MdDelete,
   MdFileDownload,
+  MdEdit,
   MdLocalOffer,
   MdMoreHoriz,
   MdReceipt,
@@ -38,6 +39,7 @@ import {
   useB2BOrdersByUser,
   useB2COrdersByUser,
   useCancelShipment,
+  useDeleteB2COrder,
   useRegenerateOrderDocuments,
   useSyncB2CTracking,
 } from '../../hooks/Orders/useOrders'
@@ -45,9 +47,11 @@ import { usePresignedDownloadMutation } from '../../hooks/Uploads/usePresignedDo
 import { downloadClientOrdersCsv } from '../../utils/orderCsvExport'
 import { FilterBar, type FilterField } from '../FilterBar'
 import { toast } from '../UI/Toast'
+import CustomDrawer from '../UI/drawer/CustomDrawer'
 import DataTable, { type Column } from '../UI/table/DataTable'
 import TableSkeleton from '../UI/table/TableSkeleton'
 import { statusColorMap } from './b2c/B2COrdersList'
+import B2COrderFormSteps, { type B2CFormData } from './b2c/B2COrderForm'
 import {
   BULK_MANIFEST_LIMIT,
   downloadFile,
@@ -68,7 +72,8 @@ import ManifestScheduleDialog, {
 } from './ManifestScheduleDialog'
 import OrderDetailsDialog from './OrderDetailsDialog'
 import B2CSelectCourierDialog from './b2c/B2CSelectCourierDialog'
-import { isB2CCancelEligible } from './b2c/orderActionRules'
+import { isB2CCancelEligible, isB2CPreShipmentDraft } from './b2c/orderActionRules'
+import { getB2COrderFormDefaults } from './b2c/orderFormDefaults'
 
 interface Order {
   id: string | number
@@ -180,6 +185,9 @@ const AllOrders = () => {
   const [manifestScheduleOpen, setManifestScheduleOpen] = useState(false)
   const [selectCourierOrder, setSelectCourierOrder] = useState<Order | null>(null)
   const [orderDetailsOrder, setOrderDetailsOrder] = useState<Order | null>(null)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [orderFormDefaults, setOrderFormDefaults] = useState<Partial<B2CFormData> | null>(null)
+  const [orderFormKey, setOrderFormKey] = useState(0)
   const [actionMenuAnchor, setActionMenuAnchor] = useState<HTMLElement | null>(null)
   const [activeActionOrderId, setActiveActionOrderId] = useState<Order['id'] | null>(null)
   const [documentGenerationRef, setDocumentGenerationRef] = useState<string | null>(null)
@@ -196,6 +204,7 @@ const AllOrders = () => {
   const { mutateAsync: regenerateDocuments, isPending: regeneratingDocuments } =
     useRegenerateOrderDocuments()
   const { mutate: cancelShipment, isPending: cancellingShipment } = useCancelShipment()
+  const { mutateAsync: deleteB2COrder, isPending: deletingB2COrder } = useDeleteB2COrder()
   const { mutate: syncB2CTracking, isPending: syncingTracking } = useSyncB2CTracking()
   const isB2CView = location.pathname.startsWith('/orders/b2c')
   const isB2BView = location.pathname.startsWith('/orders/b2b')
@@ -234,6 +243,8 @@ const AllOrders = () => {
     setBulkFeedback(null)
     setSelectCourierOrder(null)
     setOrderDetailsOrder(null)
+    setEditingOrder(null)
+    setOrderFormDefaults(null)
     setActionMenuAnchor(null)
     setActiveActionOrderId(null)
     setDocumentGenerationRef(null)
@@ -691,15 +702,7 @@ const AllOrders = () => {
   }
 
   const isCourierSelectionPending = (order: Order) => {
-    const status = String(order.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
-    return (
-      order.type === 'b2c' &&
-      status === 'pending' &&
-      !order.awb_number &&
-      !order.shipment_id &&
-      !order.courier_id &&
-      !order.courier_partner
-    )
+    return order.type === 'b2c' && isB2CPreShipmentDraft(order)
   }
 
   const normalizeKgValue = (value?: number | string | null) => {
@@ -830,9 +833,44 @@ const AllOrders = () => {
     setSyncingTrackingOrderId(order.id)
     syncB2CTracking(orderId, {
       onSettled: () => {
-        setSyncingTrackingOrderId((current) => (current === order.id ? null : current))
+      setSyncingTrackingOrderId((current) => (current === order.id ? null : current))
       },
     })
+  }
+
+  const handleEditB2COrder = (order: Order) => {
+    if (order.type !== 'b2c' || !isB2CPreShipmentDraft(order)) {
+      toast.open({
+        message: 'Only draft B2C orders that have not been shipped yet can be edited.',
+        severity: 'warning',
+      })
+      return
+    }
+
+    setEditingOrder(order)
+    setOrderFormDefaults(getB2COrderFormDefaults(order as any))
+    setOrderFormKey((current) => current + 1)
+  }
+
+  const handleDeleteB2COrder = async (order: Order) => {
+    if (order.type !== 'b2c' || !isB2CPreShipmentDraft(order)) {
+      toast.open({
+        message: 'Only draft B2C orders that have not been shipped yet can be deleted.',
+        severity: 'warning',
+      })
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Delete draft order ${order.order_number || order.id}? This cannot be undone.`,
+    )
+    if (!confirmed) return
+
+    try {
+      await deleteB2COrder(String(order.id))
+    } catch (error) {
+      console.error('Draft order delete failed:', error)
+    }
   }
 
   const columns: Column<Order>[] = [
@@ -1039,6 +1077,7 @@ const AllOrders = () => {
         const canDownloadManifest = hasDocument(row, 'manifest')
         const isMenuOpen = activeActionOrderId === row.id && Boolean(actionMenuAnchor)
         const canSelectCourier = isCourierSelectionPending(row)
+        const canEditDraft = row.type === 'b2c' && isB2CPreShipmentDraft(row)
         const hasAwb = Boolean(String(row.awb_number || '').trim())
         const isSyncingThisOrder = syncingTracking && syncingTrackingOrderId === row.id
 
@@ -1150,6 +1189,22 @@ const AllOrders = () => {
                 label: 'View Details',
                 onClick: () => setOrderDetailsOrder(row),
               })}
+              {canEditDraft &&
+                renderActionItem({
+                  key: 'edit-order',
+                  icon: <MdEdit />,
+                  label: 'Edit Order',
+                  onClick: () => handleEditB2COrder(row),
+                })}
+              {canEditDraft &&
+                renderActionItem({
+                  key: 'delete-order',
+                  icon: <MdDelete />,
+                  label: deletingB2COrder ? 'Deleting Order' : 'Delete Order',
+                  onClick: () => handleDeleteB2COrder(row),
+                  loading: deletingB2COrder,
+                  danger: true,
+                })}
               {renderActionItem({
                 key: 'generate-manifest',
                 icon: <MdAssignment />,
@@ -1528,6 +1583,31 @@ const AllOrders = () => {
         order={orderDetailsOrder}
         onClose={() => setOrderDetailsOrder(null)}
       />
+
+      <CustomDrawer
+        width={1200}
+        open={Boolean(editingOrder)}
+        onClose={() => {
+          setEditingOrder(null)
+          setOrderFormDefaults(null)
+          setOrderFormKey((current) => current + 1)
+        }}
+        title={editingOrder?.order_number ? `Edit Order ${editingOrder.order_number}` : 'Edit Order'}
+      >
+        {editingOrder && (
+          <B2COrderFormSteps
+            key={orderFormKey}
+            initialValues={orderFormDefaults || undefined}
+            mode="edit"
+            existingOrderId={String(editingOrder.id)}
+            onClose={() => {
+              setEditingOrder(null)
+              setOrderFormDefaults(null)
+              setOrderFormKey((current) => current + 1)
+            }}
+          />
+        )}
+      </CustomDrawer>
     </Stack>
   )
 }

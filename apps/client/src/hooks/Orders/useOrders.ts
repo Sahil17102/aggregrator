@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  deleteB2COrder,
   bookB2CCourier,
   createB2BShipment,
   createShipment,
@@ -10,6 +11,7 @@ import {
   regenerateOrderDocumentsService,
   requestB2CPickupService,
   retryFailedManifestService,
+  updateB2COrder,
   syncB2COrderTrackingService,
   type CreateB2BShipmentParams,
   type CreateShipmentParams,
@@ -58,6 +60,42 @@ export const useCreateShipment = (onClose?: () => void) => {
       console.log('Order created successfully:', data)
       queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
       if (onClose) onClose() // ✅ Close modal/drawer after success
+    },
+  })
+}
+
+export const useUpdateB2COrder = (onClose?: () => void) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orderId, data }: { orderId: string; data: CreateShipmentParams }) =>
+      updateB2COrder(orderId, data),
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to update order. Please try again.')
+      toast.open({ message, severity: 'error' })
+      console.error('Failed to update order:', getApiErrorDetails(error))
+    },
+    onSuccess: () => {
+      toast.open({ message: 'Order updated successfully', severity: 'success' })
+      queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      if (onClose) onClose()
+    },
+  })
+}
+
+export const useDeleteB2COrder = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (orderId: string) => deleteB2COrder(orderId),
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, 'Failed to delete order. Please try again.')
+      toast.open({ message, severity: 'error' })
+      console.error('Failed to delete order:', getApiErrorDetails(error))
+    },
+    onSuccess: () => {
+      toast.open({ message: 'Draft order deleted successfully', severity: 'success' })
+      queryClient.invalidateQueries({ queryKey: ['b2cOrdersByUser'] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
   })
 }

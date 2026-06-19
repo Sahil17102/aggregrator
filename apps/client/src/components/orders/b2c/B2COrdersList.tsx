@@ -25,6 +25,7 @@ import {
   MdAssignment,
   MdDelete,
   MdDownload,
+  MdEdit,
   MdFileDownload,
   MdLocalOffer,
   MdMoreHoriz,
@@ -39,6 +40,7 @@ import {
   useB2COrdersByUser,
   useCancelShipment,
   useCreateReverseShipment,
+  useDeleteB2COrder,
   useRegenerateOrderDocuments,
   useRequestB2CPickup,
   useSyncB2CTracking,
@@ -81,7 +83,8 @@ import ManifestScheduleDialog, {
 import ReverseModal from '../reverse/ReverseModal'
 import B2COrderFormSteps, { type B2CFormData } from './B2COrderForm'
 import B2CSelectCourierDialog from './B2CSelectCourierDialog'
-import { isB2CCancelEligible } from './orderActionRules'
+import { isB2CCancelEligible, isB2CPreShipmentDraft } from './orderActionRules'
+import { getB2COrderFormDefaults } from './orderFormDefaults'
 
 /* ───────────── Types ───────────── */
 interface OrderFilters {
@@ -259,6 +262,7 @@ const B2COrdersList = () => {
   const [activeActionOrderId, setActiveActionOrderId] = useState<B2COrder['id'] | null>(null)
   const [detailsOrder, setDetailsOrder] = useState<B2COrder | null>(null)
   const [orderDetailsOrder, setOrderDetailsOrder] = useState<B2COrder | null>(null)
+  const [editingOrder, setEditingOrder] = useState<B2COrder | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<BulkFeedback | null>(null)
   const [documentGenerationRef, setDocumentGenerationRef] = useState<string | null>(null)
   const [syncingTrackingOrderId, setSyncingTrackingOrderId] = useState<B2COrder['id'] | null>(null)
@@ -287,6 +291,7 @@ const B2COrdersList = () => {
   const { data: warehouses } = usePickupAddresses()
   const { mutate: cancelShipment, isPending: cancellingShipment } = useCancelShipment()
   const { mutate: createReverse } = useCreateReverseShipment()
+  const { mutateAsync: deleteB2COrder, isPending: deletingB2COrder } = useDeleteB2COrder()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reverseOrder, setReverseOrder] = useState<any | null>(null)
   const [pickupScheduleOrder, setPickupScheduleOrder] = useState<B2COrder | null>(null)
@@ -302,6 +307,7 @@ const B2COrdersList = () => {
     setPickupScheduleOrder(null)
     setSelectCourierOrder(null)
     setDetailsOrder(null)
+    setEditingOrder(null)
     setOrderDetailsOrder(null)
     setSyncingTrackingOrderId(null)
     setActionMenuAnchor(null)
@@ -566,9 +572,47 @@ const B2COrdersList = () => {
     checkKycBeforeAction(() => {
       setOrderDrawerTitle('Create New B2C Order')
       setOrderFormDefaults(null)
+      setEditingOrder(null)
       setOrderFormKey((current) => current + 1)
       setDrawerOpen(true)
     })
+  }
+
+  const handleEditB2COrder = (order: B2COrder) => {
+    if (!isB2CPreShipmentDraft(order)) {
+      toast.open({
+        message: 'Only draft orders that have not been shipped yet can be edited.',
+        severity: 'warning',
+      })
+      return
+    }
+
+    setOrderDrawerTitle(`Edit Order ${order.order_number || ''}`.trim())
+    setOrderFormDefaults(getB2COrderFormDefaults(order))
+    setEditingOrder(order)
+    setOrderFormKey((current) => current + 1)
+    setDrawerOpen(true)
+  }
+
+  const handleDeleteB2COrder = async (order: B2COrder) => {
+    if (!isB2CPreShipmentDraft(order)) {
+      toast.open({
+        message: 'Only draft orders that have not been shipped yet can be deleted.',
+        severity: 'warning',
+      })
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Delete draft order ${order.order_number || order.id}? This cannot be undone.`,
+    )
+    if (!confirmed) return
+
+    try {
+      await deleteB2COrder(String(order.id))
+    } catch (error) {
+      console.error('Draft order delete failed:', error)
+    }
   }
 
   const handleTabChange = (newValue: OrderStatusFilterValue) => {
@@ -1056,14 +1100,7 @@ const B2COrdersList = () => {
     ['deliveryone', 'delhivery'].includes(getB2CManifestProvider(row))
 
   const isCourierSelectionPending = (row: B2COrder) => {
-    const status = String(row.order_status || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
-    return (
-      status === 'pending' &&
-      !row.awb_number &&
-      !row.shipment_id &&
-      !row.courier_id &&
-      !row.courier_partner
-    )
+    return isB2CPreShipmentDraft(row)
   }
 
   const shouldShowManifestShipmentCount =
@@ -1297,6 +1334,7 @@ const B2COrdersList = () => {
         const canDownloadManifest = hasDocument(row, 'manifest')
         const isMenuOpen = activeActionOrderId === row.id && Boolean(actionMenuAnchor)
         const canSelectCourier = isCourierSelectionPending(row)
+        const canEditDraft = isB2CPreShipmentDraft(row)
         const hasAwb = Boolean(String(row.awb_number || '').trim())
         const isSyncingThisOrder = syncingTracking && syncingTrackingOrderId === row.id
 
@@ -1408,6 +1446,22 @@ const B2COrdersList = () => {
                 label: 'View Details',
                 onClick: () => setOrderDetailsOrder(row),
               })}
+              {canEditDraft &&
+                renderActionItem({
+                  key: 'edit-order',
+                  icon: <MdEdit />,
+                  label: 'Edit Order',
+                  onClick: () => handleEditB2COrder(row),
+                })}
+              {canEditDraft &&
+                renderActionItem({
+                  key: 'delete-order',
+                  icon: <MdDelete />,
+                  label: deletingB2COrder ? 'Deleting Order' : 'Delete Order',
+                  onClick: () => handleDeleteB2COrder(row),
+                  loading: deletingB2COrder,
+                  danger: true,
+                })}
               {renderActionItem({
                 key: 'generate-manifest',
                 icon: <MdAssignment />,
@@ -1763,6 +1817,7 @@ const B2COrdersList = () => {
         onClose={() => {
           setDrawerOpen(false)
           setOrderFormDefaults(null)
+          setEditingOrder(null)
           setOrderDrawerTitle('Create New B2C Order')
         }}
         title={orderDrawerTitle}
@@ -1770,9 +1825,12 @@ const B2COrdersList = () => {
         <B2COrderFormSteps
           key={orderFormKey}
           initialValues={orderFormDefaults || undefined}
+          mode={editingOrder ? 'edit' : 'create'}
+          existingOrderId={editingOrder?.id ? String(editingOrder.id) : null}
           onClose={() => {
             setDrawerOpen(false)
             setOrderFormDefaults(null)
+            setEditingOrder(null)
             setOrderDrawerTitle('Create New B2C Order')
           }}
         />

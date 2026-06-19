@@ -2,6 +2,7 @@ export type B2COrderActionShape = {
   id?: string | number
   order_number?: string | null
   awb_number?: string | null
+  shipment_id?: string | null
   order_status?: string | null
   pickup_status?: string | null
   integration_type?: string | null
@@ -70,6 +71,18 @@ export const getB2CManifestProvider = (order: B2COrderActionShape) => {
 
 export const isB2CCancelledStatus = (status: unknown) => {
   return B2C_CANCELLED_STATUSES.has(normalizeB2CActionValue(status))
+}
+
+export const isB2CPreShipmentDraft = (order: B2COrderActionShape) => {
+  const status = normalizeB2CActionValue(order.order_status)
+
+  return (
+    status === 'pending' &&
+    !normalizeB2CActionValue(order.awb_number) &&
+    !normalizeB2CActionValue(order.shipment_id) &&
+    !normalizeB2CActionValue(order.courier_partner) &&
+    !(order.courier_id !== undefined && order.courier_id !== null && String(order.courier_id).trim())
+  )
 }
 
 export const isB2CManifestEligible = (order: B2COrderActionShape) => {

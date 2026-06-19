@@ -6,7 +6,7 @@ import { FaBox, FaUser } from 'react-icons/fa'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchLocations } from '../../../api/locations'
 import type { CreateShipmentParams } from '../../../api/order.service'
-import { useCreateShipment } from '../../../hooks/Orders/useOrders'
+import { useCreateShipment, useUpdateB2COrder } from '../../../hooks/Orders/useOrders'
 import { usePaymentOptions } from '../../../hooks/usePaymentOptions'
 import { normalizeParcelWeightInputToGrams } from '../../../utils/weight'
 import FormSectionAccordion from '../../UI/accordion/FormSectionAccordion'
@@ -99,15 +99,24 @@ export type B2CFormData = {
 type B2COrderFormStepsProps = {
   onClose?: () => void
   initialValues?: Partial<B2CFormData>
+  mode?: 'create' | 'edit'
+  existingOrderId?: string | null
 }
 
-export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFormStepsProps) {
+export default function B2COrderFormSteps({
+  onClose,
+  initialValues,
+  mode = 'create',
+  existingOrderId,
+}: B2COrderFormStepsProps) {
   const createShipmentMutation = useCreateShipment(onClose)
+  const updateOrderMutation = useUpdateB2COrder(onClose)
   const navigate = useNavigate()
   const location = useLocation()
   const [currentStep, setCurrentStep] = useState(0)
   const steps = ['Order & Delivery', 'Pickup Location']
   const { data: paymentOptions } = usePaymentOptions()
+  const isEditMode = mode === 'edit'
 
   const defaultPickupDate = getLocalDateInputValue()
 
@@ -282,6 +291,15 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
             }
           : {}),
       }
+      if (isEditMode) {
+        if (!existingOrderId) {
+          throw new Error('Missing order ID for update')
+        }
+
+        updateOrderMutation.mutate({ orderId: existingOrderId, data: payload })
+        return
+      }
+
       createShipmentMutation.mutate(payload, {
         onSuccess: () => {
           if (location.pathname === '/orders/create') {
@@ -393,7 +411,7 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
               gap={1}
             >
               <Typography variant="h6" fontWeight={800} sx={{ color: TEXT_PRIMARY }}>
-                B2C Order Creation
+                {isEditMode ? 'Edit B2C Order' : 'B2C Order Creation'}
               </Typography>
               <Chip
                 label={`Step ${currentStep + 1} of ${stepLabels.length}`}
@@ -407,7 +425,9 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
               />
             </Stack>
             <Typography variant="body2" sx={{ color: TEXT_MUTED }}>
-              Build shipments faster with a guided flow. Only the active step is editable.
+              {isEditMode
+                ? 'Update the draft order details and save your changes before shipping.'
+                : 'Build shipments faster with a guided flow. Only the active step is editable.'}
             </Typography>
             <Box
               sx={{
@@ -581,7 +601,7 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
               {currentStep > 0 && (
                 <Button
                   type="button" // ✅ no accidental submit
-                  loading={createShipmentMutation?.isPending}
+                  loading={isEditMode ? updateOrderMutation?.isPending : createShipmentMutation?.isPending}
                   variant="outlined"
                   onClick={prevStep}
                   fullWidth={false}
@@ -614,14 +634,14 @@ export default function B2COrderFormSteps({ onClose, initialValues }: B2COrderFo
                   variant="contained"
                   color="primary"
                   onClick={handleSubmit(onSubmit)} // ✅ react-hook-form submit
-                  loading={createShipmentMutation?.isPending}
+                  loading={isEditMode ? updateOrderMutation?.isPending : createShipmentMutation?.isPending}
                   sx={{
                     minWidth: { xs: '100%', sm: 210 },
                     fontWeight: 800,
                     background: ACCENT,
                   }}
                 >
-                  Create Order
+                  {isEditMode ? 'Update Order' : 'Create Order'}
                 </Button>
               )}
             </Stack>

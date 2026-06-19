@@ -1,4 +1,5 @@
 // controllers/shipmentController.ts
+import { and, eq, sql } from 'drizzle-orm'
 import { Request, Response } from 'express'
 import {
   checkMerchantOrderNumberAvailability,
@@ -18,6 +19,127 @@ import {
   trackByOrderService,
 } from '../models/services/shiprocket.service'
 import { regenerateOrderDocumentsServiceAdmin } from '../models/services/adminOrders.service'
+import { db } from '../models/client'
+import { b2c_orders } from '../models/schema/b2cOrders'
+
+const normalizeOrderStatus = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+
+const isEditableDraftOrder = (order: {
+  order_status?: string | null
+  awb_number?: string | null
+  shipment_id?: string | null
+  courier_partner?: string | null
+  courier_id?: string | number | null
+}) =>
+  normalizeOrderStatus(order.order_status) === 'pending' &&
+  !String(order.awb_number || '').trim() &&
+  !String(order.shipment_id || '').trim() &&
+  !String(order.courier_partner || '').trim() &&
+  !(order.courier_id !== undefined && order.courier_id !== null && String(order.courier_id).trim())
+
+const normalizeJsonValue = (value: unknown) => {
+  if (!value) return null
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    try {
+      return JSON.parse(trimmed)
+    } catch (error) {
+      console.warn('⚠️ Unable to parse JSON string in order update:', trimmed)
+      return null
+    }
+  }
+
+  if (typeof value === 'object') {
+    const keys = Object.keys(value as Record<string, unknown>).filter((key) => {
+      const entry = (value as Record<string, unknown>)[key]
+      if (entry === undefined || entry === null) return false
+      if (typeof entry === 'string') return entry.trim().length > 0
+      return true
+    })
+
+    return keys.length ? value : null
+  }
+
+  return null
+}
+
+const buildDraftB2COrderUpdatePayload = (params: ShipmentParams) => {
+  const pickupDetails = normalizeJsonValue(params.pickup) ?? {}
+  const rtoDetails = normalizeJsonValue(params.rto)
+  const isCodOrder = params.payment_type === 'cod'
+  const orderDate =
+    params.order_date instanceof Date
+      ? params.order_date.toISOString().slice(0, 10)
+      : String(params.order_date ?? new Date().toISOString().slice(0, 10))
+
+  return {
+    order_number: String(params.order_number || '').trim(),
+    order_date: orderDate,
+    order_amount: Number(params.order_amount ?? 0),
+    cod_charges: isCodOrder ? Number(params.cod_charges ?? 0) : 0,
+    integration_type: params.integration_type ?? null,
+    buyer_name: params.consignee?.name ?? '',
+    buyer_phone: params.consignee?.phone ?? '',
+    buyer_email: params.consignee?.email || null,
+    address: params.consignee?.address ?? '',
+    city: params.consignee?.city ?? '',
+    state: params.consignee?.state ?? '',
+    country: 'India',
+    pincode: params.consignee?.pincode ?? '',
+    products: Array.isArray(params.order_items) ? params.order_items : [],
+    weight: Number(params.package_weight ?? 0),
+    length: Number(params.package_length ?? 0),
+    breadth: Number(params.package_breadth ?? 0),
+    height: Number(params.package_height ?? 0),
+    order_type: params.payment_type,
+    prepaid_amount: Number(params.prepaid_amount ?? 0),
+    shipping_charges: Number(params.shipping_charges ?? 0),
+    other_charges: Number(params.other_charges ?? 0),
+    freight_charges: Number(params.freight_charges ?? 0),
+    courier_cost: params.courier_cost ?? null,
+    transaction_fee: Number(params.transaction_fee ?? 0),
+    gift_wrap: Number(params.gift_wrap ?? 0),
+    discount: Number(params.discount ?? 0),
+    is_rto_different: params.is_rto_different === 'yes',
+    pickup_location_id: params.pickup_location_id ?? null,
+    pickup_details: pickupDetails,
+    rto_details: rtoDetails,
+    updated_at: new Date(),
+    order_status: 'pending',
+    pickup_status: 'pending',
+    pickup_error: null,
+    order_id: null,
+    awb_number: null,
+    shipment_id: null,
+    courier_partner: null,
+    courier_id: null,
+    shipping_mode: null,
+    selected_max_slab_weight: null,
+    delivery_location: null,
+    delivery_message: null,
+    invoice_number: null,
+    invoice_date: null,
+    invoice_amount: null,
+    label: null,
+    manifest: null,
+    manifest_error: null,
+    manifest_retry_count: 0,
+    manifest_last_retry_at: null,
+    invoice_link: null,
+    actual_weight: null,
+    volumetric_weight: null,
+    charged_weight: null,
+    charged_slabs: null,
+    weight_discrepancy: false,
+    is_insurance: false,
+  }
+}
 
 export const createB2CShipmentController = async (req: any, res: Response) => {
   try {
@@ -167,6 +289,147 @@ export const checkOrderNumberAvailabilityController = async (req: any, res: Resp
     return res.status(statusCode).json({
       success: false,
       message: error?.message || 'Failed to check order ID availability.',
+    })
+  }
+}
+
+export const updateB2COrderController = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.sub
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const orderId = String(req.params.orderId || '').trim()
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' })
+    }
+
+    const [existingOrder] = await db
+      .select()
+      .from(b2c_orders)
+      .where(and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId)))
+      .limit(1)
+
+    if (!existingOrder) {
+      return res.status(404).json({ success: false, message: 'Order not found' })
+    }
+
+    if (!isEditableDraftOrder(existingOrder)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only draft orders that have not been shipped yet can be edited.',
+      })
+    }
+
+    const params: ShipmentParams = req.body
+    if (!params.order_number || !params.consignee || !params.order_items?.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'order_number, consignee, and order_items are required',
+      })
+    }
+
+    const normalizedOrderNumber = String(params.order_number || '').trim()
+    if (!normalizedOrderNumber) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' })
+    }
+
+    const [duplicateOrder] = await db
+      .select({ id: b2c_orders.id })
+      .from(b2c_orders)
+      .where(
+        and(
+          eq(b2c_orders.user_id, userId),
+          sql`lower(trim(${b2c_orders.order_number})) = ${normalizedOrderNumber.toLowerCase()}`,
+          sql`${b2c_orders.id} <> ${orderId}`,
+        ),
+      )
+      .limit(1)
+
+    if (duplicateOrder) {
+      return res.status(409).json({
+        success: false,
+        message: `Order ID "${normalizedOrderNumber}" already exists for this merchant. Please use a unique Order ID.`,
+      })
+    }
+
+    const updates = buildDraftB2COrderUpdatePayload({
+      ...params,
+      order_number: normalizedOrderNumber,
+    })
+
+    await db
+      .update(b2c_orders)
+      .set(updates)
+      .where(and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId)))
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order updated successfully',
+      data: {
+        order_id: orderId,
+        order_number: normalizedOrderNumber,
+        status: 'pending',
+      },
+    })
+  } catch (error: any) {
+    console.error('Error updating B2C order:', error)
+    const statusCode = typeof error?.statusCode === 'number' ? error.statusCode : 500
+    return res.status(statusCode).json({
+      success: false,
+      message: error?.message || 'Failed to update order',
+    })
+  }
+}
+
+export const deleteB2COrderController = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.sub
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const orderId = String(req.params.orderId || '').trim()
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' })
+    }
+
+    const [existingOrder] = await db
+      .select()
+      .from(b2c_orders)
+      .where(and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId)))
+      .limit(1)
+
+    if (!existingOrder) {
+      return res.status(404).json({ success: false, message: 'Order not found' })
+    }
+
+    if (!isEditableDraftOrder(existingOrder)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only draft orders that have not been shipped yet can be deleted.',
+      })
+    }
+
+    await db
+      .delete(b2c_orders)
+      .where(and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId)))
+
+    return res.status(200).json({
+      success: true,
+      message: 'Draft order deleted successfully',
+      data: {
+        order_id: orderId,
+        order_number: existingOrder.order_number,
+      },
+    })
+  } catch (error: any) {
+    console.error('Error deleting B2C order:', error)
+    const statusCode = typeof error?.statusCode === 'number' ? error.statusCode : 500
+    return res.status(statusCode).json({
+      success: false,
+      message: error?.message || 'Failed to delete order',
     })
   }
 }

@@ -80,6 +80,8 @@ export interface CreateShipmentParams {
   courier_option_key?: string
 }
 
+export type UpdateB2COrderParams = CreateShipmentParams
+
 export const createShipment = async (data: CreateShipmentParams) => {
   try {
     // Set longer timeout (3.5 minutes) for B2C order creation as external courier API calls can take time
@@ -90,6 +92,28 @@ export const createShipment = async (data: CreateShipmentParams) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error creating shipment:', error.response?.data || error.message)
+    throw error
+  }
+}
+
+export const updateB2COrder = async (orderId: string, data: UpdateB2COrderParams) => {
+  try {
+    const res = await axiosInstance.patch(`/orders/b2c/${orderId}`, data, {
+      timeout: 210000,
+    })
+    return res.data
+  } catch (error: any) {
+    console.error('Error updating B2C order:', error.response?.data || error.message)
+    throw error
+  }
+}
+
+export const deleteB2COrder = async (orderId: string) => {
+  try {
+    const res = await axiosInstance.delete(`/orders/b2c/${orderId}`)
+    return res.data
+  } catch (error: any) {
+    console.error('Error deleting B2C order:', error.response?.data || error.message)
     throw error
   }
 }
