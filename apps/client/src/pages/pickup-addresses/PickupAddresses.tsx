@@ -217,8 +217,9 @@ const PickupAddresses = () => {
         width: '100%',
         minWidth: 0,
         minHeight: '100%',
-        overflowX: 'auto',
-        overflowY: 'auto',
+        overflow: 'visible',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'auto',
         pb: 2,
       }}
     >

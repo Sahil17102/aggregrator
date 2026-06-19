@@ -47,6 +47,8 @@ const CustomDrawer: React.FC<GlassDrawerProps> = ({
             flexDirection: 'column',
             color: theme.palette.text.primary,
             overflow: 'hidden',
+            touchAction: 'auto',
+            WebkitOverflowScrolling: 'touch',
             background: `
               radial-gradient(circle at top left, ${alpha(theme.palette.primary.light, 0.2)} 0%, transparent 28%),
               radial-gradient(circle at top right, ${alpha(theme.palette.secondary.main, 0.16)} 0%, transparent 24%),
@@ -134,9 +136,11 @@ const CustomDrawer: React.FC<GlassDrawerProps> = ({
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
-          overflowX: 'auto',
+          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
+          touchAction: 'auto',
+          scrollbarGutter: 'stable',
           backgroundColor: alpha('#ffffff', 0.42),
           '&::-webkit-scrollbar': {
             width: '8px',

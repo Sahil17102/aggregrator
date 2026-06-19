@@ -93,7 +93,15 @@ const AddPickupAddressForm = ({
     <Stack
       component="form"
       onSubmit={handleSubmit(onSubmit)}
-      sx={{ color: '#fff', p: { xs: 1.25, sm: 2 }, width: '100%', minWidth: 0 }}
+      sx={{
+        color: '#fff',
+        p: { xs: 1.25, sm: 2 },
+        width: '100%',
+        minWidth: 0,
+        overflow: 'visible',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'auto',
+      }}
       gap={2}
     >
       {serverError && (
