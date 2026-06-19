@@ -630,11 +630,11 @@ const formatDisplayDate = (value?: string | Date | null) => {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return String(value).trim()
 
-  return new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date)
+  const day = new Intl.DateTimeFormat('en-GB', { day: '2-digit' }).format(date)
+  const month = new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(date)
+  const year = new Intl.DateTimeFormat('en-GB', { year: 'numeric' }).format(date)
+
+  return `${day}-${month}-${year}`
 }
 
 const formatCurrency = (value?: unknown) => {
