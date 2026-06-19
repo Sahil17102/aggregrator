@@ -211,7 +211,17 @@ const PickupAddresses = () => {
     )
 
   return (
-    <Stack spacing={3} sx={{ width: '100%', minWidth: 0 }}>
+    <Stack
+      spacing={3}
+      sx={{
+        width: '100%',
+        minWidth: 0,
+        minHeight: '100%',
+        overflowX: 'auto',
+        overflowY: 'auto',
+        pb: 2,
+      }}
+    >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         alignItems={{ xs: 'stretch', md: 'center' }}

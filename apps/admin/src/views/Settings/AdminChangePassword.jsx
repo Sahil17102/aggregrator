@@ -111,8 +111,10 @@ export default function AdminChangePassword() {
     <Box
       pt={{ base: '120px', md: '75px' }}
       position="relative"
-      overflow="hidden"
+      overflowX="hidden"
+      overflowY="auto"
       minH="calc(100vh - 120px)"
+      pb={10}
       bgGradient="linear(to-br, #f7f4ef 0%, #fbfaf7 42%, #f3efe9 100%)"
     >
       <Box
