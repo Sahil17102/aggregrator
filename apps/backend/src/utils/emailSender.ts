@@ -737,7 +737,7 @@ const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
 
 const getChoiceMeeLogoUrl = () => {
   const frontendBaseUrl = getFrontendBaseUrl().replace(/\/$/, '')
-  return `${frontendBaseUrl}/brand/choiceme-logo.png`
+  return `${frontendBaseUrl}/brand/shipment-email-logo.png`
 }
 
 const buildShipmentProgressMarkup = () => {
@@ -920,7 +920,7 @@ const formatShipmentDetailRows = (rows: Array<{ label: string; value?: string | 
   }
 }
 
-export const sendShipmentStatusEmail = async (opts: {
+export const buildShipmentStatusEmailContent = (opts: {
   to: string
   awbNumber: string
   orderNumber?: string | null
@@ -930,7 +930,7 @@ export const sendShipmentStatusEmail = async (opts: {
   sellerLogoUrl?: string | null
   orderDetails?: ShipmentOrderLike | null
 }) => {
-  const { to, awbNumber, orderNumber, orderLabel, stage, sellerName, sellerLogoUrl, orderDetails } = opts
+  const { awbNumber, orderNumber, orderLabel, stage, sellerName, orderDetails } = opts
   const safeAwb = escapeHtml(String(awbNumber || '').trim())
   const safeOrderNumber = escapeHtml(String(orderNumber || '').trim())
   const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
@@ -1083,31 +1083,31 @@ export const sendShipmentStatusEmail = async (opts: {
     <style>
       @media only screen and (max-width: 640px) {
         .cm-shell { width: 100% !important; min-width: 0 !important; }
-        .cm-header { padding: 10px 10px 8px !important; }
-        .cm-logo { width: 128px !important; max-width: 128px !important; }
+        .cm-header { padding: 12px 12px 10px !important; }
+        .cm-logo { width: 150px !important; max-width: 150px !important; }
         .cm-badge { font-size: 11px !important; padding: 8px 12px !important; }
-        .cm-intro { padding: 10px 10px 0 !important; }
+        .cm-intro { padding: 12px 12px 0 !important; }
         .cm-intro-left, .cm-intro-right { display: block !important; width: 100% !important; padding: 0 !important; text-align: left !important; }
         .cm-intro-right { margin-top: 8px !important; }
         .cm-intro-text { max-width: none !important; font-size: 13px !important; line-height: 1.34 !important; }
-        .cm-address-wrap { padding: 12px 10px 8px !important; }
+        .cm-address-wrap { padding: 12px 12px 8px !important; }
         .cm-address-left, .cm-address-right { display: block !important; width: 100% !important; padding: 0 !important; }
         .cm-address-right { margin-top: 12px !important; text-align: center !important; }
         .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.88); transform-origin: center top; }
         .cm-btn { font-size: 13px !important; padding: 11px 16px !important; }
         .cm-product, .cm-shipping { padding-left: 0 !important; padding-right: 0 !important; }
-        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { display: block !important; width: 100% !important; text-align: left !important; }
-        .cm-product-right, .cm-shipping-right { margin-top: 4px !important; }
+        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { font-size: 13px !important; line-height: 1.55 !important; }
+        .cm-product-right, .cm-shipping-right { white-space: nowrap !important; }
         .cm-footer { padding: 9px 0 !important; }
       }
     </style>
     <div style="margin:0;padding:0;background:#f7f5ed;">
-      <div class="cm-shell" style="width:100%;max-width:630px;min-width:0;margin:0 auto;background:#ffffff;border:1px solid #e2dfd5;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+      <div class="cm-shell" style="width:100%;max-width:630px;min-width:0;margin:0 auto;background:#ffffff;border:1px solid #e2dfd5;border-radius:20px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111827;">
         <div class="cm-header" style="padding:12px 12px 10px;background:#f5f2e7;border-bottom:1px solid #ece5d2;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td valign="middle" style="width:68%;">
-                <img class="cm-logo" src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:175px;max-width:175px;height:auto;border:0;outline:none;text-decoration:none;" />
+                <img class="cm-logo" src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:190px;max-width:190px;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
               <td valign="middle" align="right" style="width:32%;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:10px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
@@ -1178,13 +1178,25 @@ export const sendShipmentStatusEmail = async (opts: {
     'Regards, Team Shift!',
   ].filter(Boolean)
 
-  await sendEmail(
-    to,
-    `Order ${orderIdDisplay} is now ${stageMeta.badge.toLowerCase()}!`,
+  return {
     html,
-    undefined,
-    plainTextParts.join('\n'),
-  )
+    text: plainTextParts.join('\n'),
+    subject: `Order ${orderIdDisplay} is now ${stageMeta.badge.toLowerCase()}!`,
+  }
+}
+
+export const sendShipmentStatusEmail = async (opts: {
+  to: string
+  awbNumber: string
+  orderNumber?: string | null
+  orderLabel?: string | null
+  stage: ShipmentStatusEmailStage
+  sellerName?: string | null
+  sellerLogoUrl?: string | null
+  orderDetails?: ShipmentOrderLike | null
+}) => {
+  const content = buildShipmentStatusEmailContent(opts)
+  await sendEmail(opts.to, content.subject, content.html, undefined, content.text)
 }
 
 export const sendSmtpTestEmail = async (to?: string) => {
