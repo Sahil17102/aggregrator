@@ -1009,13 +1009,13 @@ export const sendShipmentStatusEmail = async (opts: {
       ? `
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           <tr>
-            <td valign="top" style="padding:0 0 4px 0;width:55%;">
+            <td class="cm-product-left" valign="top" style="padding:0 0 4px 0;width:55%;">
               <div style="font-size:14px;line-height:1.5;color:#1f1f1f;">
                 <strong style="font-size:14px;">Product Name:</strong>
                 <span style="color:#3c8a3e;font-weight:700;padding-left:6px;">${escapeHtml(productName)}</span>
               </div>
             </td>
-            <td valign="top" align="right" style="padding:0 0 4px 0;width:45%;">
+            <td class="cm-product-right" valign="top" align="right" style="padding:0 0 4px 0;width:45%;">
               <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Qty: ${escapeHtml(productQty)}&nbsp;&nbsp; Price:&nbsp; ${escapeHtml(productPrice)}</div>
               <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Discount:&nbsp; ${escapeHtml(amountLineDiscount)}</div>
               <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Subtotal:&nbsp; ${escapeHtml(orderTotalValue)}</div>
@@ -1031,7 +1031,7 @@ export const sendShipmentStatusEmail = async (opts: {
         <td style="padding:16px 18px;vertical-align:top;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="top" style="width:50%;padding-right:16px;">
+              <td class="cm-address-left" valign="top" style="width:50%;padding-right:16px;">
                 <div style="font-size:17px;font-weight:800;line-height:1.2;color:#111827;margin:0 0 10px;">Delivery Address</div>
                 ${addressDisplayLines
                   .map((line, index) => {
@@ -1048,10 +1048,10 @@ export const sendShipmentStatusEmail = async (opts: {
                     : ''
                 }
               </td>
-              <td valign="top" align="center" style="width:50%;padding-left:10px;">
+              <td class="cm-address-right" valign="top" align="center" style="width:50%;padding-left:10px;">
                 <div style="display:inline-block;text-align:center;">
-                  <div style="margin:0 auto 16px;">${buildShipmentProgressMarkup()}</div>
-                  <a href="${safeTrackingLink}" style="display:inline-block;background:#2d5ab5;color:#ffffff;text-decoration:none;font-size:15px;line-height:1;font-weight:800;padding:13px 22px;border-radius:2px;box-shadow:0 4px 10px rgba(45,90,181,0.24);">Manage Your Order</a>
+                  <div class="cm-timeline" style="margin:0 auto 16px;">${buildShipmentProgressMarkup()}</div>
+                  <a class="cm-btn" href="${safeTrackingLink}" style="display:inline-block;background:#2d5ab5;color:#ffffff;text-decoration:none;font-size:15px;line-height:1;font-weight:800;padding:13px 22px;border-radius:2px;box-shadow:0 4px 10px rgba(45,90,181,0.24);">Manage Your Order</a>
                 </div>
               </td>
             </tr>
@@ -1064,14 +1064,14 @@ export const sendShipmentStatusEmail = async (opts: {
   const shippingDetailsHtml = `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #ececec;">
       <tr>
-        <td style="padding-top:14px;vertical-align:top;">
+        <td class="cm-shipping-left" style="padding-top:14px;vertical-align:top;">
           <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:10px;">Shipping Details</div>
           <div style="font-size:14px;line-height:1.45;color:#1f1f1f;">
             <strong>Courier Name:</strong> <span style="color:#3c8a3e;font-weight:700;">${escapeHtml(courierName)}</span><br/>
             <strong>AWB number:</strong> <span style="color:#3c8a3e;font-weight:700;">${escapeHtml(safeAwb)}</span>
           </div>
         </td>
-        <td align="right" style="padding-top:14px;vertical-align:top;">
+        <td class="cm-shipping-right" align="right" style="padding-top:14px;vertical-align:top;">
           <div style="font-size:14px;line-height:1.75;color:#1f1f1f;font-weight:700;">Item(s) total : ${escapeHtml(orderTotalValue)}</div>
           <div style="font-size:14px;line-height:1.75;color:#1f1f1f;font-weight:700;">Amount paid : ${escapeHtml(amountPaidValue)}</div>
         </td>
@@ -1080,16 +1080,37 @@ export const sendShipmentStatusEmail = async (opts: {
   `
 
   const html = `
-    <div style="margin:0;padding:0;background:#f7f5ed;overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <div style="width:630px;min-width:630px;margin:0 auto;background:#ffffff;border:1px solid #e2dfd5;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-        <div style="padding:12px 12px 10px;background:#f5f2e7;border-bottom:1px solid #ece5d2;">
+    <style>
+      @media only screen and (max-width: 640px) {
+        .cm-shell { width: 100% !important; min-width: 0 !important; }
+        .cm-header { padding: 10px 10px 8px !important; }
+        .cm-logo { width: 128px !important; max-width: 128px !important; }
+        .cm-badge { font-size: 11px !important; padding: 8px 12px !important; }
+        .cm-intro { padding: 10px 10px 0 !important; }
+        .cm-intro-left, .cm-intro-right { display: block !important; width: 100% !important; padding: 0 !important; text-align: left !important; }
+        .cm-intro-right { margin-top: 8px !important; }
+        .cm-intro-text { max-width: none !important; font-size: 13px !important; line-height: 1.34 !important; }
+        .cm-address-wrap { padding: 12px 10px 8px !important; }
+        .cm-address-left, .cm-address-right { display: block !important; width: 100% !important; padding: 0 !important; }
+        .cm-address-right { margin-top: 12px !important; text-align: center !important; }
+        .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.88); transform-origin: center top; }
+        .cm-btn { font-size: 13px !important; padding: 11px 16px !important; }
+        .cm-product, .cm-shipping { padding-left: 0 !important; padding-right: 0 !important; }
+        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { display: block !important; width: 100% !important; text-align: left !important; }
+        .cm-product-right, .cm-shipping-right { margin-top: 4px !important; }
+        .cm-footer { padding: 9px 0 !important; }
+      }
+    </style>
+    <div style="margin:0;padding:0;background:#f7f5ed;">
+      <div class="cm-shell" style="width:100%;max-width:630px;min-width:0;margin:0 auto;background:#ffffff;border:1px solid #e2dfd5;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+        <div class="cm-header" style="padding:12px 12px 10px;background:#f5f2e7;border-bottom:1px solid #ece5d2;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td valign="middle" style="width:68%;">
-                <img src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:175px;max-width:175px;height:auto;border:0;outline:none;text-decoration:none;" />
+                <img class="cm-logo" src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:175px;max-width:175px;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
               <td valign="middle" align="right" style="width:32%;">
-                <span style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:10px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
+                <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:10px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
                   stageMeta.badge,
                 )}</span>
               </td>
@@ -1097,16 +1118,16 @@ export const sendShipmentStatusEmail = async (opts: {
           </table>
         </div>
 
-        <div style="padding:12px 12px 0;">
+        <div class="cm-intro" style="padding:12px 12px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="top" style="width:60%;padding-right:10px;">
+              <td class="cm-intro-left" valign="top" style="width:60%;padding-right:10px;">
                 <div style="max-width:350px;font-size:14px;font-weight:700;line-height:1.3;color:#1c1c1c;margin:0 0 4px;">Hello ${escapeHtml(
                   sellerDisplayName,
                 )} ,</div>
-                <div style="max-width:350px;font-size:14px;line-height:1.32;color:#1f1f1f;font-weight:700;">${escapeHtml(orderIntro)}</div>
+                <div class="cm-intro-text" style="max-width:350px;font-size:14px;line-height:1.32;color:#1f1f1f;font-weight:700;">${escapeHtml(orderIntro)}</div>
               </td>
-              <td valign="top" align="right" style="width:40%;">
+              <td class="cm-intro-right" valign="top" align="right" style="width:40%;">
                 <div style="font-size:13px;line-height:1.35;color:#5f6a73;text-align:right;font-weight:700;">Order placed on ${escapeHtml(
                   orderPlacedCaption || '',
                 )}</div>
@@ -1118,15 +1139,15 @@ export const sendShipmentStatusEmail = async (opts: {
           </table>
         </div>
 
-        <div style="padding:16px 12px 10px;">
+        <div class="cm-address-wrap" style="padding:16px 12px 10px;">
           ${addressBoxHtml}
         </div>
 
-        <div style="padding:0 12px 0;">
+        <div class="cm-product" style="padding:0 12px 0;">
           ${productRowsHtml}
         </div>
 
-        <div style="padding:14px 12px 0;">
+        <div class="cm-shipping" style="padding:14px 12px 0;">
           ${shippingDetailsHtml}
         </div>
 
@@ -1135,7 +1156,7 @@ export const sendShipmentStatusEmail = async (opts: {
           <div style="font-size:14px;line-height:1.55;color:#1f1f1f;font-weight:700;">Team Shift!</div>
         </div>
 
-        <div style="background:#2b2b2b;padding:11px 0 11px;text-align:center;">
+        <div class="cm-footer" style="background:#2b2b2b;padding:11px 0 11px;text-align:center;">
           ${buildShipmentFooterIcons()}
         </div>
       </div>
