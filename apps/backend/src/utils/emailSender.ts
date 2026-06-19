@@ -789,18 +789,30 @@ const buildShipmentProgressMarkup = () => {
 
 const buildShipmentFooterIcons = () => {
   const icons = [
-    { label: 'f', title: 'Facebook' },
-    { label: 'in', title: 'LinkedIn' },
-    { label: 'ig', title: 'Instagram' },
-    { label: 't', title: 'Twitter' },
+    {
+      title: 'Facebook',
+      svg: `<path d="M11 3.5h2.4c.3 0 .6.3.6.6v2.2h-1.5c-.6 0-.9.3-.9.9v1.7H14l-.3 2.1h-1.5V18h-2.5v-7.1H8v-2.1h1.7V7c0-1.7 1-3.5 3.3-3.5Z"/>`,
+    },
+    {
+      title: 'LinkedIn',
+      svg: `<path d="M4.5 6.8h2.4V18H4.5V6.8Zm1.2-5.1A1.4 1.4 0 1 1 4.3 3.1a1.4 1.4 0 0 1 1.4-1.4ZM9.1 6.8h2.3v1.5h.1c.3-.7 1.2-1.8 2.7-1.8 2.9 0 3.4 1.9 3.4 4.4V18h-2.4v-5.4c0-1.3 0-3-1.8-3-1.8 0-2.1 1.4-2.1 2.9V18H9.1V6.8Z"/>`,
+    },
+    {
+      title: 'Instagram',
+      svg: `<path d="M8 3.4h8c2.5 0 4.6 2.1 4.6 4.6v8c0 2.5-2.1 4.6-4.6 4.6H8c-2.5 0-4.6-2.1-4.6-4.6V8c0-2.5 2.1-4.6 4.6-4.6Zm0 1.8A2.8 2.8 0 0 0 5.2 8v8A2.8 2.8 0 0 0 8 18.8h8a2.8 2.8 0 0 0 2.8-2.8V8A2.8 2.8 0 0 0 16 5.2H8Zm4 2.1A4.7 4.7 0 1 1 7.3 12a4.7 4.7 0 0 1 4.7-4.7Zm0 1.8A2.9 2.9 0 1 0 14.9 12 2.9 2.9 0 0 0 12 9.1Zm5.1-3.2a1.1 1.1 0 1 1-1.1 1.1 1.1 1.1 0 0 1 1.1-1.1Z"/>`,
+    },
+    {
+      title: 'Twitter',
+      svg: `<path d="M18.5 7.1c.9-.6 1.4-1.3 1.7-2.3-.8.5-1.6.8-2.5 1 .1-.2.1-.5.1-.8 0-1.6-1.3-3-3-3-1.7 0-3 1.3-3 3 0 .2 0 .5.1.7-2.5-.1-4.8-1.3-6.3-3.3-.3.5-.5 1.1-.5 1.8 0 1.2.6 2.3 1.6 2.9-.6 0-1.1-.2-1.7-.4 0 1.8 1.2 3.3 2.9 3.7-.3.1-.6.1-1 .1-.2 0-.4 0-.6-.1.4 1.5 1.7 2.6 3.4 2.7A6.1 6.1 0 0 1 3 16.1 8.5 8.5 0 0 0 7.8 17.5c5.7 0 8.8-4.7 8.8-8.8v-.4c.6-.4 1.2-.9 1.7-1.5-.6.2-1.2.4-1.8.3Z"/>`,
+    },
   ]
 
   return icons
     .map(
       (icon) => `
-        <span title="${escapeHtml(icon.title)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:#4a4a4a;color:#c9c9c9;font-size:10px;font-weight:700;line-height:1;text-transform:lowercase;margin:0 3px;">${escapeHtml(
-          icon.label,
-        )}</span>
+        <span title="${escapeHtml(icon.title)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:#4a4a4a;color:#c9c9c9;margin:0 3px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#c9c9c9" aria-hidden="true">${icon.svg}</svg>
+        </span>
       `,
     )
     .join('')
@@ -1068,16 +1080,16 @@ export const sendShipmentStatusEmail = async (opts: {
   `
 
   const html = `
-    <div style="margin:0;padding:16px;background:#f3f1e7;">
-      <div style="max-width:630px;margin:0 auto;background:#ffffff;border:1px solid #e8e4d9;box-shadow:0 2px 10px rgba(0,0,0,0.04);font-family:Arial,Helvetica,sans-serif;color:#111827;">
-        <div style="padding:16px 14px 14px;background:linear-gradient(180deg,#f7f4e9 0%,#f4f1e6 100%);border-bottom:1px solid #ece5d2;">
+    <div style="margin:0;padding:0;background:#f7f5ed;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <div style="width:630px;min-width:630px;margin:0 auto;background:#ffffff;border:1px solid #e2dfd5;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+        <div style="padding:12px 12px 10px;background:#f5f2e7;border-bottom:1px solid #ece5d2;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="middle" style="width:70%;">
-                <img src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:182px;max-width:182px;height:auto;border:0;outline:none;text-decoration:none;" />
+              <td valign="middle" style="width:68%;">
+                <img src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:175px;max-width:175px;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
-              <td valign="middle" align="right" style="width:30%;">
-                <span style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:11px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
+              <td valign="middle" align="right" style="width:32%;">
+                <span style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:10px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
                   stageMeta.badge,
                 )}</span>
               </td>
@@ -1085,20 +1097,20 @@ export const sendShipmentStatusEmail = async (opts: {
           </table>
         </div>
 
-        <div style="padding:14px 14px 0;">
+        <div style="padding:12px 12px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="top" style="width:58%;padding-right:12px;">
-                <div style="font-size:14px;font-weight:800;line-height:1.3;color:#1c1c1c;margin-bottom:4px;">Hello ${escapeHtml(
+              <td valign="top" style="width:60%;padding-right:10px;">
+                <div style="max-width:350px;font-size:14px;font-weight:700;line-height:1.3;color:#1c1c1c;margin:0 0 4px;">Hello ${escapeHtml(
                   sellerDisplayName,
-                )},</div>
-                <div style="font-size:14px;line-height:1.38;color:#1f1f1f;font-weight:700;">${escapeHtml(orderIntro)}</div>
+                )} ,</div>
+                <div style="max-width:350px;font-size:14px;line-height:1.32;color:#1f1f1f;font-weight:700;">${escapeHtml(orderIntro)}</div>
               </td>
-              <td valign="top" align="right" style="width:42%;">
-                <div style="font-size:13px;line-height:1.45;color:#53616f;text-align:right;font-weight:700;">Order placed on ${escapeHtml(
+              <td valign="top" align="right" style="width:40%;">
+                <div style="font-size:13px;line-height:1.35;color:#5f6a73;text-align:right;font-weight:700;">Order placed on ${escapeHtml(
                   orderPlacedCaption || '',
                 )}</div>
-                <div style="font-size:13px;line-height:1.45;color:#53616f;text-align:right;font-weight:700;">Order ID&nbsp; ${escapeHtml(
+                <div style="font-size:13px;line-height:1.35;color:#5f6a73;text-align:right;font-weight:700;">Order ID&nbsp; ${escapeHtml(
                   orderIdDisplay,
                 )}</div>
               </td>
@@ -1106,24 +1118,24 @@ export const sendShipmentStatusEmail = async (opts: {
           </table>
         </div>
 
-        <div style="padding:14px;">
+        <div style="padding:16px 12px 10px;">
           ${addressBoxHtml}
         </div>
 
-        <div style="padding:0 14px 0;">
+        <div style="padding:0 12px 0;">
           ${productRowsHtml}
         </div>
 
-        <div style="padding:10px 14px 0;">
+        <div style="padding:14px 12px 0;">
           ${shippingDetailsHtml}
         </div>
 
-        <div style="padding:18px 14px 10px;">
-          <div style="font-size:14px;line-height:1.7;color:#1f1f1f;">Regards,</div>
-          <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Team Shift!</div>
+        <div style="padding:18px 12px 12px;">
+          <div style="font-size:14px;line-height:1.55;color:#1f1f1f;margin:0 0 2px;">Regards,</div>
+          <div style="font-size:14px;line-height:1.55;color:#1f1f1f;font-weight:700;">Team Shift!</div>
         </div>
 
-        <div style="background:#2b2b2b;padding:10px 0 12px;text-align:center;">
+        <div style="background:#2b2b2b;padding:11px 0 11px;text-align:center;">
           ${buildShipmentFooterIcons()}
         </div>
       </div>
