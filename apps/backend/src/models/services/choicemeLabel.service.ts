@@ -31,8 +31,8 @@ const PDFJS_STANDARD_FONTS_DIR = path.join(
 
 const IMAGE_DOWNLOAD_TIMEOUT = 20000
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const LOGO_MAX_WIDTH = 104
-const LOGO_MAX_HEIGHT = 34
+const LOGO_MAX_WIDTH = 180
+const LOGO_MAX_HEIGHT = 72
 
 const normalizeText = (value: unknown, fallback = '-') => {
   const text = String(value ?? '').trim()
@@ -448,10 +448,10 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
             columns: [
               sellerLogoDataUrl
                 ? {
-                    width: 36,
+                    width: 54,
                     image: sellerLogoDataUrl,
-                    fit: [32, 32],
-                    margin: [0, 1, 6, 0],
+                    fit: [48, 48],
+                    margin: [0, 0, 8, 0],
                   }
                 : { width: 0, text: '' },
               {
