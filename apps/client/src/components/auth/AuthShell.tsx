@@ -44,19 +44,24 @@ export default function AuthShell({
     <Box
       aria-label={eyebrow}
       sx={{
-        height: 'auto',
+        position: 'relative',
+        height: '100dvh',
         minHeight: '100dvh',
+        maxHeight: '100dvh',
         width: '100%',
         boxSizing: 'border-box',
         bgcolor: '#FFFFFF',
         color: authPalette.text,
         fontFamily: authDisplayFont,
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: { xs: 'flex-start', lg: 'center' },
+        justifyContent: { xs: 'flex-start', lg: 'center' },
         overflowX: 'hidden',
         overflowY: 'auto',
         overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'auto',
+        scrollbarGutter: 'stable',
         p: { xs: 0.9, sm: 1.1, md: 1.25, lg: 0.7 },
       }}
     >
@@ -73,6 +78,7 @@ export default function AuthShell({
           overflow: 'visible',
           bgcolor: 'transparent',
           boxShadow: 'none',
+          flexShrink: 0,
         }}
       >
         <Box
@@ -101,8 +107,9 @@ export default function AuthShell({
             height: 'auto',
             boxSizing: 'border-box',
             alignItems: { xs: 'flex-start', lg: 'center' },
+            alignContent: 'flex-start',
             px: { xs: 1.4, sm: 2, md: 2.6, lg: 2.2 },
-            py: { xs: 2, sm: 2.4, md: 2.8, lg: 2 },
+            py: { xs: 2.1, sm: 2.4, md: 2.8, lg: 2 },
           }}
         >
           {!isCompact && (
