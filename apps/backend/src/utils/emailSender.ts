@@ -851,25 +851,6 @@ const buildShipmentProductRows = (order?: ShipmentOrderLike | null) => {
     .filter((row): row is { name: string; qty: string; amount: string } => Boolean(row?.name))
 }
 
-const buildShipmentAddressLines = (order?: ShipmentOrderLike | null) => {
-  if (!order) return []
-
-  const address = firstText(
-    order.address,
-    (order as Record<string, unknown>).addressLine1,
-    (order as Record<string, unknown>).delivery_address,
-    (order as Record<string, unknown>).buyer_address,
-  )
-  const cityState = [order.city, order.state, order.country, order.pincode]
-    .map((value) => String(value || '').trim())
-    .filter(Boolean)
-    .join(', ')
-
-  return [firstText(order.buyer_name, order.name), address, cityState, firstText(order.buyer_phone)]
-    .filter(Boolean)
-    .map((value) => String(value))
-}
-
 const buildShipmentAmountLines = (order?: ShipmentOrderLike | null) => {
   if (!order) return []
 
@@ -959,7 +940,6 @@ export const buildShipmentStatusEmailContent = (opts: {
   )}`
   const safeTrackingLink = escapeHtml(trackingLink)
   const productRows = buildShipmentProductRows(orderDetails)
-  const addressLines = buildShipmentAddressLines(orderDetails)
   const amountLines = buildShipmentAmountLines(orderDetails)
   const primaryProduct = productRows[0]
   const productName = firstText(primaryProduct?.name, safeOrderLabel, 'Product')
@@ -973,11 +953,14 @@ export const buildShipmentStatusEmailContent = (opts: {
     formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.prepaid_amount),
     orderTotalValue,
   )
-  const addressDisplayLines = [
-    firstText(
-      (orderDetails as Record<string, unknown> | undefined)?.buyer_name as string | null | undefined,
-      (orderDetails as Record<string, unknown> | undefined)?.name as string | null | undefined,
-    ),
+  const consigneeName = firstText(
+    (orderDetails as Record<string, unknown> | undefined)?.buyer_name as string | null | undefined,
+    (orderDetails as Record<string, unknown> | undefined)?.name as string | null | undefined,
+    safeOrderLabel,
+    sellerDisplayName,
+    'the customer',
+  )
+  const consigneeAddressLines = [
     firstText(
       (orderDetails as Record<string, unknown> | undefined)?.address as string | null | undefined,
       (orderDetails as Record<string, unknown> | undefined)?.addressLine1 as string | null | undefined,
@@ -988,17 +971,11 @@ export const buildShipmentStatusEmailContent = (opts: {
     [orderDetails?.state, orderDetails?.country].map((value) => String(value || '').trim()).filter(Boolean).join(', '),
     firstText((orderDetails as Record<string, unknown> | undefined)?.pincode as string | null | undefined),
   ].filter(Boolean)
-  const recipientName = firstText(
-    (orderDetails as Record<string, unknown> | undefined)?.buyer_name as string | null | undefined,
-    (orderDetails as Record<string, unknown> | undefined)?.name as string | null | undefined,
-    safeOrderLabel,
-    sellerDisplayName,
-    'the customer',
-  )
+  const recipientName = consigneeName
   const contactNumber = firstText((orderDetails as Record<string, unknown> | undefined)?.buyer_phone as string | null | undefined)
   const orderIdDisplay = firstText(safeOrderNumber, safeAwb)
   const amountLineDiscount = '₹ 0.0'
-  const orderIntro = `Your order ${orderIdDisplay} has been ${stageMeta.actionText} to ${recipientName}. Thank you for using Shift as your logistics partner for this delivery.`
+  const orderIntro = `Your order ${orderIdDisplay} has been ${stageMeta.actionText} to ${recipientName}.`
   const orderPlacedCaption = firstText(
     formatDisplayDate((orderDetails as Record<string, unknown> | undefined)?.created_at as string | Date | null | undefined),
     orderPlacedOnFallback,
@@ -1032,19 +1009,20 @@ export const buildShipmentStatusEmailContent = (opts: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td class="cm-address-left" valign="top" style="width:50%;padding-right:16px;">
-                <div style="font-size:17px;font-weight:800;line-height:1.2;color:#111827;margin:0 0 10px;">Delivery Address</div>
-                ${addressDisplayLines
-                  .map((line, index) => {
-                    const fontWeight = index === 0 ? 700 : 600
-                    const fontSize = index === 0 ? '15px' : '14px'
-                    return `<div style="font-size:${fontSize};line-height:1.4;color:#222222;font-weight:${fontWeight};margin:0 0 2px;">${escapeHtml(
+                <div style="font-size:17px;font-weight:800;line-height:1.2;color:#111827;margin:0 0 10px;">Consignee Details</div>
+                <div style="font-size:15px;line-height:1.4;color:#222222;font-weight:700;margin:0 0 2px;"><strong>Name:</strong> ${escapeHtml(
+                  consigneeName,
+                )}</div>
+                ${consigneeAddressLines
+                  .map((line) => {
+                    return `<div style="font-size:14px;line-height:1.4;color:#222222;font-weight:600;margin:0 0 2px;">${escapeHtml(
                       line,
                     )}</div>`
                   })
                   .join('')}
                 ${
                   contactNumber
-                    ? `<div style="margin-top:18px;font-size:14px;line-height:1.5;color:#222222;font-weight:700;">Contact Number <span style="font-weight:800;">${escapeHtml(contactNumber)}</span></div>`
+                    ? `<div style="margin-top:18px;font-size:14px;line-height:1.5;color:#222222;font-weight:700;">Contact Number: <span style="font-weight:800;">${escapeHtml(contactNumber)}</span></div>`
                     : ''
                 }
               </td>
@@ -1153,7 +1131,7 @@ export const buildShipmentStatusEmailContent = (opts: {
 
         <div style="padding:18px 12px 12px;">
           <div style="font-size:14px;line-height:1.55;color:#1f1f1f;margin:0 0 2px;">Regards,</div>
-          <div style="font-size:14px;line-height:1.55;color:#1f1f1f;font-weight:700;">Team Shift!</div>
+          <div style="font-size:14px;line-height:1.55;color:#1f1f1f;font-weight:700;">Team ChoiceMee Logistic!</div>
         </div>
 
         <div class="cm-footer" style="background:#2b2b2b;padding:11px 0 11px;text-align:center;">
@@ -1170,12 +1148,15 @@ export const buildShipmentStatusEmailContent = (opts: {
     orderPlacedValue ? `Order placed on: ${orderPlacedValue}` : '',
     `Order ID: ${orderIdDisplay}`,
     `AWB Number: ${awbNumber}`,
-    ...addressLines.map((line) => `Address: ${line}`),
+    'Consignee Details:',
+    `Name: ${consigneeName}`,
+    ...consigneeAddressLines.map((line) => `Address: ${line}`),
+    contactNumber ? `Contact Number: ${contactNumber}` : '',
     ...productRows.map((row) => `Product: ${row.name} | Qty: ${row.qty}${row.amount ? ` | Price: ${row.amount}` : ''}`),
     ...amountLines.map((row) => `${row.label}: ${row.value}`),
     `Courier Name: ${courierName}`,
     `Tracking Link: ${trackingLink}`,
-    'Regards, Team Shift!',
+    'Regards, Team ChoiceMee Logistic!',
   ].filter(Boolean)
 
   return {
