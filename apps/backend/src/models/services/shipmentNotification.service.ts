@@ -25,6 +25,27 @@ const firstNonEmpty = (...values: Array<string | null | undefined>) => {
   return ''
 }
 
+const normalizeEmailCandidate = (value?: string | null) => {
+  const trimmed = String(value || '').trim().toLowerCase()
+  if (!trimmed) return ''
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return ''
+  return trimmed
+}
+
+const collectUniqueEmails = (...values: Array<string | null | undefined>) => {
+  const seen = new Set<string>()
+  const emails: string[] = []
+
+  for (const value of values) {
+    const normalized = normalizeEmailCandidate(value)
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    emails.push(normalized)
+  }
+
+  return emails
+}
+
 const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailStage | null => {
   const normalized = normalizeStatus(status)
   if (!normalized) return null
@@ -104,11 +125,12 @@ async function resolveSellerBrandDetails(userId: string) {
   const [row] = await db
     .select({
       loginEmail: users.email,
-      profileEmail: sql<string>`coalesce(
-        (${userProfiles.companyInfo} ->> 'contactEmail'),
-        (${userProfiles.companyInfo} ->> 'companyEmail'),
-        ''
-      )`,
+      pendingEmail: users.pendingEmail,
+      contactEmail: sql<string>`coalesce((${userProfiles.companyInfo} ->> 'contactEmail'), '')`,
+      companyEmail: sql<string>`coalesce((${userProfiles.companyInfo} ->> 'companyEmail'), '')`,
+      alternateEmail: sql<string>`coalesce((${userProfiles.companyInfo} ->> 'email'), '')`,
+      supportEmail: sql<string>`coalesce((${userProfiles.companyInfo} ->> 'supportEmail'), '')`,
+      notificationEmail: sql<string>`coalesce((${userProfiles.companyInfo} ->> 'notificationEmail'), '')`,
       brandName: sql<string>`coalesce(
         (${userProfiles.companyInfo} ->> 'brandName'),
         (${userProfiles.companyInfo} ->> 'businessName'),
@@ -125,9 +147,18 @@ async function resolveSellerBrandDetails(userId: string) {
     .where(eq(users.id, userId))
     .limit(1)
 
-  const resolvedEmail = String(row?.profileEmail || row?.loginEmail || '').trim()
+  const recipientEmails = collectUniqueEmails(
+    row?.contactEmail,
+    row?.companyEmail,
+    row?.alternateEmail,
+    row?.supportEmail,
+    row?.notificationEmail,
+    row?.loginEmail,
+    row?.pendingEmail,
+  )
+
   return {
-    email: resolvedEmail || null,
+    recipientEmails,
     brandName: String(row?.brandName || '').trim() || null,
     logoUrl: String(row?.logoUrl || '').trim() || null,
   }
@@ -165,14 +196,14 @@ export async function sendShipmentStatusEmailIfChanged(params: {
   }
 
   const sellerDetails = await resolveSellerBrandDetails(userId)
-  const to = sellerDetails.email
+  const to = sellerDetails.recipientEmails
   const fallbackTo = resolveOrderFallbackEmail(orderDetails)
-  const recipient = to || fallbackTo
-  if (!recipient) {
+  const recipients = to.length > 0 ? to : fallbackTo ? [fallbackTo] : []
+  if (!recipients.length) {
     return { sent: false, reason: 'missing_recipient' as const }
   }
 
-  if (!to && fallbackTo) {
+  if (!to.length && fallbackTo) {
     console.warn('[ShipmentEmail] Falling back to order email because seller email is missing', {
       userId,
       orderNumber,
@@ -181,17 +212,34 @@ export async function sendShipmentStatusEmailIfChanged(params: {
   }
 
   const orderLabel = resolveShipmentOrderLabel(orderDetails) || orderNumber || null
+  let sentCount = 0
 
-  await sendShipmentStatusEmail({
-    to: recipient,
-    awbNumber,
-    orderNumber,
-    orderLabel,
-    stage: nextStage,
-    sellerName: sellerDetails.brandName || null,
-    sellerLogoUrl: sellerDetails.logoUrl,
-    orderDetails,
-  })
+  for (const recipient of recipients) {
+    try {
+      await sendShipmentStatusEmail({
+        to: recipient,
+        awbNumber,
+        orderNumber,
+        orderLabel,
+        stage: nextStage,
+        sellerName: sellerDetails.brandName || null,
+        sellerLogoUrl: sellerDetails.logoUrl,
+        orderDetails,
+      })
+    } catch (error) {
+      console.error('[ShipmentEmail] Failed to send seller shipment email', {
+        userId,
+        orderNumber,
+        awbNumber,
+        recipient,
+        stage: nextStage,
+        error,
+      })
+      continue
+    }
 
-  return { sent: true, stage: nextStage, to: recipient }
+    sentCount += 1
+  }
+
+  return { sent: sentCount > 0, stage: nextStage, to: recipients, sentCount }
 }
