@@ -912,29 +912,25 @@ export const buildShipmentStatusEmailContent = (opts: {
   orderDetails?: ShipmentOrderLike | null
 }) => {
   const { awbNumber, orderNumber, orderLabel, stage, sellerName, orderDetails } = opts
+  const orderRecord = (orderDetails || {}) as Record<string, any>
   const safeAwb = escapeHtml(String(awbNumber || '').trim())
-  const safeOrderNumber = escapeHtml(String(orderNumber || '').trim())
+  const normalizedOrderNumber = String(orderNumber || '').trim()
+  const orderNumberDisplay = normalizedOrderNumber ? `#${normalizedOrderNumber.replace(/^#/, '')}` : safeAwb
+  const safeOrderNumber = escapeHtml(normalizedOrderNumber)
   const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
-  const sellerDisplayName = firstText(sellerName, 'ChoiceMee Seller')
+  const sellerDisplayName = firstText(sellerName, 'ChoiceMee')
   const stageMeta = getShipmentStatusPresentation(stage)
-  const rawStatusLabel = normalizeShipmentStatusText(
-    (orderDetails as Record<string, unknown> | undefined)?.order_status as string | undefined,
-  )
-  const orderPlacedOn = formatDisplayDateTime(
-    (orderDetails as Record<string, unknown> | undefined)?.created_at as string | Date | null | undefined,
-  )
-  const orderPlacedOnFallback = formatDisplayDate(
-    (orderDetails as Record<string, unknown> | undefined)?.order_date as string | Date | null | undefined,
-  )
+  const rawStatusLabel = normalizeShipmentStatusText(orderRecord.order_status as string | undefined)
+  const orderPlacedOn = formatDisplayDateTime(orderRecord.created_at as string | Date | null | undefined)
+  const orderPlacedOnFallback = formatDisplayDate(orderRecord.order_date as string | Date | null | undefined)
   const orderPlacedValue = firstText(orderPlacedOn, orderPlacedOnFallback)
   const courierName = firstText(
-    (orderDetails as Record<string, unknown> | undefined)?.courier_partner,
-    (orderDetails as Record<string, unknown> | undefined)?.courier_name,
-    (orderDetails as Record<string, unknown> | undefined)?.integration_type,
+    orderRecord.courier_partner,
+    orderRecord.courier_name,
+    orderRecord.integration_type,
     'Courier',
   )
-  const orderStatusLabel = firstText(rawStatusLabel, stageMeta.badge)
-  const orderStatusHeadline = `Order ${safeOrderNumber || safeAwb} is now ${orderStatusLabel || stageMeta.badge}!`
+  const visibleStatus = firstText(rawStatusLabel, stageMeta.badge)
   const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
     String(awbNumber || '').trim(),
   )}`
@@ -944,150 +940,150 @@ export const buildShipmentStatusEmailContent = (opts: {
   const primaryProduct = productRows[0]
   const productName = firstText(primaryProduct?.name, safeOrderLabel, 'Product')
   const productQty = firstText(primaryProduct?.qty, '1')
-  const productPrice = firstText(primaryProduct?.amount, formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.order_amount))
-  const orderTotalValue = firstText(
-    formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.order_amount),
-    productPrice,
-  )
-  const amountPaidValue = firstText(
-    formatEmailCurrency((orderDetails as Record<string, unknown> | undefined)?.prepaid_amount),
-    orderTotalValue,
-  )
-  const consigneeName = firstText(
-    (orderDetails as Record<string, unknown> | undefined)?.buyer_name as string | null | undefined,
-    (orderDetails as Record<string, unknown> | undefined)?.name as string | null | undefined,
+  const productPrice = firstText(primaryProduct?.amount, formatEmailCurrency(orderRecord.order_amount))
+  const orderTotalValue = firstText(formatEmailCurrency(orderRecord.order_amount), productPrice)
+  const amountPaidValue = firstText(formatEmailCurrency(orderRecord.prepaid_amount), orderTotalValue)
+  const customerName = firstText(
+    orderRecord.buyer_name,
+    orderRecord.consignee_name,
+    orderRecord.customer_name,
+    orderRecord.name,
     safeOrderLabel,
     sellerDisplayName,
     'the customer',
   )
-  const consigneeAddressLines = [
+  const customerAddressLines = [
     firstText(
-      (orderDetails as Record<string, unknown> | undefined)?.address as string | null | undefined,
-      (orderDetails as Record<string, unknown> | undefined)?.addressLine1 as string | null | undefined,
-      (orderDetails as Record<string, unknown> | undefined)?.delivery_address as string | null | undefined,
-      (orderDetails as Record<string, unknown> | undefined)?.buyer_address as string | null | undefined,
+      orderRecord.address,
+      orderRecord.addressLine1,
+      orderRecord.delivery_address,
+      orderRecord.buyer_address,
     ),
-    firstText((orderDetails as Record<string, unknown> | undefined)?.city as string | null | undefined),
-    [orderDetails?.state, orderDetails?.country].map((value) => String(value || '').trim()).filter(Boolean).join(', '),
-    firstText((orderDetails as Record<string, unknown> | undefined)?.pincode as string | null | undefined),
+    firstText(orderRecord.addressLine2, orderRecord.address_line_2),
+    firstText(orderRecord.city),
+    [orderRecord.state, orderRecord.country].map((value) => String(value || '').trim()).filter(Boolean).join(', '),
+    firstText(orderRecord.pincode),
   ].filter(Boolean)
-  const recipientName = consigneeName
-  const contactNumber = firstText((orderDetails as Record<string, unknown> | undefined)?.buyer_phone as string | null | undefined)
-  const orderIdDisplay = firstText(safeOrderNumber, safeAwb)
-  const amountLineDiscount = '₹ 0.0'
-  const orderIntro = `Your order ${orderIdDisplay} has been ${stageMeta.actionText} to ${recipientName}.`
+  const contactNumber = firstText(
+    orderRecord.buyer_phone,
+    orderRecord.consignee_phone,
+    orderRecord.customer_phone,
+    orderRecord.phone,
+  )
+  const customerDetailsHtml = `
+    <div style="font-size:15px;line-height:1.25;color:#111111;font-weight:800;margin:0 0 8px;">Delivery Address</div>
+    <div style="font-size:14px;line-height:1.25;color:#111111;font-weight:800;margin:0 0 2px;">${escapeHtml(
+      customerName,
+    )}</div>
+    ${customerAddressLines
+      .map(
+        (line) => `<div style="font-size:14px;line-height:1.25;color:#111111;font-weight:700;margin:0 0 2px;">${escapeHtml(
+          line,
+        )}</div>`,
+      )
+      .join('')}
+    ${
+      contactNumber
+        ? `<div style="margin-top:18px;font-size:14px;line-height:1.25;color:#111111;font-weight:800;">Contact Number&nbsp;&nbsp;<span style="font-weight:800;">${escapeHtml(
+            contactNumber,
+          )}</span></div>`
+        : ''
+    }
+  `
+  const introSentence = `Your order ${orderNumberDisplay || safeOrderNumber || safeAwb} has been ${
+    stageMeta.badge
+  } to ${customerName}. Thank you for using ${courierName} as your logistics partner for this delivery.`
   const orderPlacedCaption = firstText(
-    formatDisplayDate((orderDetails as Record<string, unknown> | undefined)?.created_at as string | Date | null | undefined),
+    formatDisplayDate(orderRecord.created_at as string | Date | null | undefined),
     orderPlacedOnFallback,
   )
-
+  const amountLineDiscount = '₹ 0.0'
+  const headline = `Order ${orderNumberDisplay || safeOrderNumber || safeAwb} is now ${stageMeta.badge}!`
   const productRowsHtml =
     primaryProduct || productName
       ? `
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           <tr>
-            <td class="cm-product-left" valign="top" style="padding:0 0 4px 0;width:55%;">
-              <div style="font-size:14px;line-height:1.5;color:#1f1f1f;">
+            <td class="cm-copy" valign="top" style="padding:0 0 4px 0;width:55%;">
+              <div style="font-size:14px;line-height:1.5;color:#111111;">
                 <strong style="font-size:14px;">Product Name:</strong>
-                <span style="color:#3c8a3e;font-weight:700;padding-left:6px;">${escapeHtml(productName)}</span>
+                <span class="cm-green" style="color:#1f8a34;font-weight:700;padding-left:6px;">${escapeHtml(
+                  productName,
+                )}</span>
               </div>
             </td>
-            <td class="cm-product-right" valign="top" align="right" style="padding:0 0 4px 0;width:45%;">
-              <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Qty: ${escapeHtml(productQty)}&nbsp;&nbsp; Price:&nbsp; ${escapeHtml(productPrice)}</div>
-              <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Discount:&nbsp; ${escapeHtml(amountLineDiscount)}</div>
-              <div style="font-size:14px;line-height:1.7;color:#1f1f1f;font-weight:700;">Subtotal:&nbsp; ${escapeHtml(orderTotalValue)}</div>
+            <td class="cm-copy" valign="top" align="right" style="padding:0 0 4px 0;width:45%;">
+              <div style="font-size:14px;line-height:1.65;color:#111111;font-weight:700;">Qty: ${escapeHtml(
+                productQty,
+              )}&nbsp;&nbsp; Price:&nbsp; ${escapeHtml(productPrice)}</div>
+              <div style="font-size:14px;line-height:1.65;color:#111111;font-weight:700;">Discount:&nbsp; ${escapeHtml(
+                amountLineDiscount,
+              )}</div>
+              <div style="font-size:14px;line-height:1.65;color:#111111;font-weight:700;">Subtotal:&nbsp; ${escapeHtml(
+                orderTotalValue,
+              )}</div>
             </td>
           </tr>
         </table>
       `
       : ''
-
-  const addressBoxHtml = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dfe3ea;border-radius:2px;">
-      <tr>
-        <td style="padding:16px 18px;vertical-align:top;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-            <tr>
-              <td class="cm-address-left" valign="top" style="width:50%;padding-right:16px;">
-                <div style="font-size:17px;font-weight:800;line-height:1.2;color:#111827;margin:0 0 10px;">Consignee Details</div>
-                <div style="font-size:15px;line-height:1.4;color:#222222;font-weight:700;margin:0 0 2px;"><strong>Name:</strong> ${escapeHtml(
-                  consigneeName,
-                )}</div>
-                ${consigneeAddressLines
-                  .map((line) => {
-                    return `<div style="font-size:14px;line-height:1.4;color:#222222;font-weight:600;margin:0 0 2px;">${escapeHtml(
-                      line,
-                    )}</div>`
-                  })
-                  .join('')}
-                ${
-                  contactNumber
-                    ? `<div style="margin-top:18px;font-size:14px;line-height:1.5;color:#222222;font-weight:700;">Contact Number: <span style="font-weight:800;">${escapeHtml(contactNumber)}</span></div>`
-                    : ''
-                }
-              </td>
-              <td class="cm-address-right" valign="top" align="center" style="width:50%;padding-left:10px;">
-                <div style="display:inline-block;text-align:center;">
-                  <div class="cm-timeline" style="margin:0 auto 16px;">${buildShipmentProgressMarkup()}</div>
-                  <a class="cm-btn" href="${safeTrackingLink}" style="display:inline-block;background:#2d5ab5;color:#ffffff;text-decoration:none;font-size:15px;line-height:1;font-weight:800;padding:13px 22px;border-radius:2px;box-shadow:0 4px 10px rgba(45,90,181,0.24);">Manage Your Order</a>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  `
-
-  const shippingDetailsHtml = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #ececec;">
-      <tr>
-        <td class="cm-shipping-left" style="padding-top:14px;vertical-align:top;">
-          <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:10px;">Shipping Details</div>
-          <div style="font-size:14px;line-height:1.45;color:#1f1f1f;">
-            <strong>Courier Name:</strong> <span style="color:#3c8a3e;font-weight:700;">${escapeHtml(courierName)}</span><br/>
-            <strong>AWB number:</strong> <span style="color:#3c8a3e;font-weight:700;">${escapeHtml(safeAwb)}</span>
-          </div>
-        </td>
-        <td class="cm-shipping-right" align="right" style="padding-top:14px;vertical-align:top;">
-          <div style="font-size:14px;line-height:1.75;color:#1f1f1f;font-weight:700;">Item(s) total : ${escapeHtml(orderTotalValue)}</div>
-          <div style="font-size:14px;line-height:1.75;color:#1f1f1f;font-weight:700;">Amount paid : ${escapeHtml(amountPaidValue)}</div>
-        </td>
-      </tr>
-    </table>
-  `
-
-  const html = `
+  const darkModeStyles = `
     <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
       @media only screen and (max-width: 640px) {
-        .cm-shell { width: 100% !important; min-width: 0 !important; }
+        .cm-shell { width: 100% !important; min-width: 0 !important; border-radius: 0 !important; }
         .cm-header { padding: 12px 12px 10px !important; }
         .cm-logo { width: 150px !important; max-width: 150px !important; }
-        .cm-badge { font-size: 11px !important; padding: 8px 12px !important; }
+        .cm-badge { font-size: 11px !important; padding: 9px 13px !important; }
         .cm-intro { padding: 12px 12px 0 !important; }
         .cm-intro-left, .cm-intro-right { display: block !important; width: 100% !important; padding: 0 !important; text-align: left !important; }
         .cm-intro-right { margin-top: 8px !important; }
-        .cm-intro-text { max-width: none !important; font-size: 13px !important; line-height: 1.34 !important; }
-        .cm-address-wrap { padding: 12px 12px 8px !important; }
+        .cm-intro-text { max-width: none !important; font-size: 13px !important; line-height: 1.3 !important; }
+        .cm-panel-wrap { padding: 16px 12px 10px !important; }
         .cm-address-left, .cm-address-right { display: block !important; width: 100% !important; padding: 0 !important; }
         .cm-address-right { margin-top: 12px !important; text-align: center !important; }
-        .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.88); transform-origin: center top; }
-        .cm-btn { font-size: 13px !important; padding: 11px 16px !important; }
+        .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.82); transform-origin: center top; }
+        .cm-manage-btn { font-size: 13px !important; padding: 10px 14px !important; min-width: 156px !important; }
         .cm-product, .cm-shipping { padding-left: 0 !important; padding-right: 0 !important; }
-        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { font-size: 13px !important; line-height: 1.55 !important; }
+        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { font-size: 13px !important; line-height: 1.5 !important; }
         .cm-product-right, .cm-shipping-right { white-space: nowrap !important; }
-        .cm-footer { padding: 9px 0 !important; }
+        .cm-footer { padding: 10px 0 !important; }
+        .cm-spacer { height: 10px !important; }
+      }
+      @media (prefers-color-scheme: dark) {
+        body, .cm-page { background:#101318 !important; }
+        .cm-shell { background:#1a1f27 !important; border-color:#313944 !important; box-shadow:0 16px 36px rgba(0,0,0,0.35) !important; }
+        .cm-header { background:#f0ece0 !important; border-color:#e3dbc9 !important; }
+        .cm-copy, .cm-copy * { color:#f4f7fb !important; }
+        .cm-meta, .cm-meta * { color:#cdd6e4 !important; }
+        .cm-panel-wrap, .cm-product, .cm-shipping, .cm-footer-shell { background:#1a1f27 !important; }
+        .cm-panel { background:#212733 !important; border-color:#3c4554 !important; }
+        .cm-panel * { color:#eef3f9 !important; }
+        .cm-green { color:#8ce68e !important; }
+        .cm-manage-btn { background:#2563eb !important; color:#ffffff !important; }
+        .cm-badge { background:#f97316 !important; color:#ffffff !important; }
+        .cm-footer { background:#262b36 !important; }
+        .cm-footer-icon { background:#353c49 !important; border-color:#465161 !important; color:#d5dae4 !important; }
+        .cm-divider { border-color:#323946 !important; }
       }
     </style>
-    <div style="margin:0;padding:0;background:#f7f5ed;">
-      <div class="cm-shell" style="width:100%;max-width:630px;min-width:0;margin:0 auto;background:#ffffff;border:1px solid #e2dfd5;border-radius:20px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-        <div class="cm-header" style="padding:12px 12px 10px;background:#f5f2e7;border-bottom:1px solid #ece5d2;">
+  `
+  const html = `
+    ${darkModeStyles}
+    <div class="cm-page" style="margin:0;padding:0;background:#f5f1e7;">
+      <div class="cm-shell" style="width:100%;max-width:630px;min-width:0;margin:0 auto;background:#ffffff;border:1px solid #e4dfd3;border-radius:18px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
+        <div class="cm-header" style="padding:14px 14px 12px;background:#f2eee3;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="middle" style="width:68%;">
-                <img class="cm-logo" src="${escapeHtml(getChoiceMeeLogoUrl())}" alt="ChoiceMee Logistics" style="display:block;width:190px;max-width:190px;height:auto;border:0;outline:none;text-decoration:none;" />
+              <td valign="middle" style="width:70%;">
+                <img class="cm-logo" src="${escapeHtml(
+                  getChoiceMeeLogoUrl(),
+                )}" alt="ChoiceMee Logistics" style="display:block;width:188px;max-width:188px;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
-              <td valign="middle" align="right" style="width:32%;">
+              <td valign="middle" align="right" style="width:30%;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:13px;line-height:1;padding:10px 16px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
                   stageMeta.badge,
                 )}</span>
@@ -1096,73 +1092,111 @@ export const buildShipmentStatusEmailContent = (opts: {
           </table>
         </div>
 
-        <div class="cm-intro" style="padding:12px 12px 0;">
+        <div class="cm-intro" style="padding:14px 14px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td class="cm-intro-left" valign="top" style="width:60%;padding-right:10px;">
-                <div style="max-width:350px;font-size:14px;font-weight:700;line-height:1.3;color:#1c1c1c;margin:0 0 4px;">Hello ${escapeHtml(
+              <td class="cm-intro-left cm-copy" valign="top" style="width:61%;padding-right:10px;">
+                <div style="max-width:350px;font-size:14px;font-weight:700;line-height:1.25;color:#171717;margin:0 0 4px;">Hello ${escapeHtml(
                   sellerDisplayName,
                 )} ,</div>
-                <div class="cm-intro-text" style="max-width:350px;font-size:14px;line-height:1.32;color:#1f1f1f;font-weight:700;">${escapeHtml(orderIntro)}</div>
-              </td>
-              <td class="cm-intro-right" valign="top" align="right" style="width:40%;">
-                <div style="font-size:13px;line-height:1.35;color:#5f6a73;text-align:right;font-weight:700;">Order placed on ${escapeHtml(
-                  orderPlacedCaption || '',
+                <div class="cm-intro-text" style="max-width:350px;font-size:14px;line-height:1.28;color:#171717;font-weight:700;">${escapeHtml(
+                  introSentence,
                 )}</div>
-                <div style="font-size:13px;line-height:1.35;color:#5f6a73;text-align:right;font-weight:700;">Order ID&nbsp; ${escapeHtml(
-                  orderIdDisplay,
+              </td>
+              <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:39%;">
+                <div style="font-size:13px;line-height:1.35;color:#5f6977;text-align:right;font-weight:700;">Order placed on <span>${escapeHtml(
+                  orderPlacedCaption || '',
+                )}</span></div>
+                <div style="font-size:13px;line-height:1.35;color:#5f6977;text-align:right;font-weight:700;">Order ID&nbsp; ${escapeHtml(
+                  normalizedOrderNumber || safeOrderNumber || safeAwb,
                 )}</div>
               </td>
             </tr>
           </table>
         </div>
 
-        <div class="cm-address-wrap" style="padding:16px 12px 10px;">
-          ${addressBoxHtml}
+        <div class="cm-panel-wrap" style="padding:16px 14px 10px;">
+          <table class="cm-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;">
+            <tr>
+              <td class="cm-address-left cm-copy" valign="top" style="width:50%;padding:14px 16px 16px 16px;">
+                ${customerDetailsHtml}
+              </td>
+              <td class="cm-address-right" valign="top" align="center" style="width:50%;padding:18px 14px 16px 14px;">
+                <div style="display:inline-block;text-align:center;">
+                  <div class="cm-timeline" style="margin:0 auto 16px;">${buildShipmentProgressMarkup()}</div>
+                  <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:15px;line-height:1;font-weight:700;padding:12px 18px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);">Manage Your Order</a>
+                </div>
+              </td>
+            </tr>
+          </table>
         </div>
 
-        <div class="cm-product" style="padding:0 12px 0;">
+        <div class="cm-product" style="padding:0 14px 0;">
           ${productRowsHtml}
         </div>
 
-        <div class="cm-shipping" style="padding:14px 12px 0;">
-          ${shippingDetailsHtml}
+        <div class="cm-shipping cm-divider" style="padding:14px 14px 0;border-top:1px solid #ececec;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <tr>
+              <td class="cm-shipping-left cm-copy" style="padding-top:0;vertical-align:top;width:50%;">
+                <div style="font-size:15px;font-weight:800;color:#111111;margin-bottom:9px;">Shipping Details</div>
+                <div style="font-size:14px;line-height:1.45;color:#111111;">
+                  <strong>Courier Name:</strong> <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
+                    courierName,
+                  )}</span><br/>
+                  <strong>AWB number:</strong> <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
+                    safeAwb,
+                  )}</span>
+                </div>
+              </td>
+              <td class="cm-shipping-right cm-copy" align="right" style="padding-top:0;vertical-align:top;width:50%;">
+                <div style="font-size:14px;line-height:1.7;color:#111111;font-weight:700;">Item(s) total : ${escapeHtml(
+                  orderTotalValue,
+                )}</div>
+                <div style="font-size:14px;line-height:1.7;color:#111111;font-weight:700;">Amount paid : ${escapeHtml(
+                  amountPaidValue,
+                )}</div>
+              </td>
+            </tr>
+          </table>
         </div>
 
-        <div style="padding:18px 12px 12px;">
-          <div style="font-size:14px;line-height:1.55;color:#1f1f1f;margin:0 0 2px;">Regards,</div>
-          <div style="font-size:14px;line-height:1.55;color:#1f1f1f;font-weight:700;">Team ChoiceMee Logistic!</div>
+        <div style="padding:18px 14px 10px;">
+          <div class="cm-copy" style="font-size:14px;line-height:1.55;color:#111111;margin:0 0 2px;">Regards,</div>
+          <div class="cm-copy" style="font-size:14px;line-height:1.55;color:#111111;font-weight:700;">Team ChoiceMee Logistics!</div>
         </div>
 
-        <div class="cm-footer" style="background:#2b2b2b;padding:11px 0 11px;text-align:center;">
-          ${buildShipmentFooterIcons()}
+        <div class="cm-footer-shell">
+          <div class="cm-footer" style="background:#2b2b2b;padding:11px 0 11px;text-align:center;">
+            ${buildShipmentFooterIcons()}
+          </div>
         </div>
       </div>
     </div>
   `
 
   const plainTextParts = [
-    `${stageMeta.badge}: ${orderStatusHeadline}`,
+    headline,
     `Hello ${sellerDisplayName},`,
-    orderIntro,
+    introSentence,
     orderPlacedValue ? `Order placed on: ${orderPlacedValue}` : '',
-    `Order ID: ${orderIdDisplay}`,
+    `Order ID: ${normalizedOrderNumber || safeOrderNumber || safeAwb}`,
     `AWB Number: ${awbNumber}`,
-    'Consignee Details:',
-    `Name: ${consigneeName}`,
-    ...consigneeAddressLines.map((line) => `Address: ${line}`),
+    'Delivery Address:',
+    `Name: ${customerName}`,
+    ...customerAddressLines.map((line) => `Address: ${line}`),
     contactNumber ? `Contact Number: ${contactNumber}` : '',
     ...productRows.map((row) => `Product: ${row.name} | Qty: ${row.qty}${row.amount ? ` | Price: ${row.amount}` : ''}`),
     ...amountLines.map((row) => `${row.label}: ${row.value}`),
     `Courier Name: ${courierName}`,
     `Tracking Link: ${trackingLink}`,
-    'Regards, Team ChoiceMee Logistic!',
+    'Regards, Team ChoiceMee Logistics!',
   ].filter(Boolean)
 
   return {
     html,
     text: plainTextParts.join('\n'),
-    subject: `Order ${orderIdDisplay} is now ${stageMeta.badge.toLowerCase()}!`,
+    subject: headline,
   }
 }
 
