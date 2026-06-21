@@ -535,6 +535,10 @@ export type ShipmentOrderLike = {
   pincode?: string | null
   courier_partner?: string | null
   courier_name?: string | null
+  service_type?: string | null
+  partner_name?: string | null
+  logistics_partner?: string | null
+  partner_display_name?: string | null
   order_status?: string | null
   order_amount?: number | string | null
   shipping_charges?: number | string | null
@@ -930,6 +934,19 @@ export const buildShipmentStatusEmailContent = (opts: {
     orderRecord.integration_type,
     'Courier',
   )
+  const introPartnerName = firstText(
+    orderRecord.service_type,
+    orderRecord.partner_name,
+    orderRecord.logistics_partner,
+    orderRecord.partner_display_name,
+    courierName,
+  )
+  const footerTeamName = firstText(
+    orderRecord.service_type,
+    sellerDisplayName.toLowerCase().includes('logistics')
+      ? sellerDisplayName
+      : `${sellerDisplayName} Logistics`,
+  )
   const visibleStatus = firstText(rawStatusLabel, stageMeta.badge)
   const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
     String(awbNumber || '').trim(),
@@ -995,14 +1012,14 @@ export const buildShipmentStatusEmailContent = (opts: {
   `
   const introSentence = `Your order ${orderNumberDisplay || safeOrderNumber || safeAwb} has been ${
     stageMeta.badge
-  } to ${customerName}. Thank you for using ${courierName} as your logistics partner for this delivery.`
+  } to ${customerName}. Thank you for using ${introPartnerName} as your logistics partner for this delivery.`
   const introHtml = `
     <div style="max-width:385px;font-size:13.5px;line-height:1.32;color:#171717;font-weight:400;">
       Your order <strong>${escapeHtml(normalizedOrderNumber || safeOrderNumber || safeAwb)}</strong> has been <strong>${escapeHtml(
         stageMeta.badge,
       )}</strong><br/>
       to <strong>${escapeHtml(customerName)}</strong>. Thank you for using <strong>${escapeHtml(
-        courierName,
+        introPartnerName,
       )}</strong> as your logistics<br/>
       partner for this delivery.
     </div>
@@ -1013,7 +1030,7 @@ export const buildShipmentStatusEmailContent = (opts: {
         stageMeta.badge,
       )}</strong><br/>
       to <strong>${escapeHtml(customerName)}</strong>. Thank you for choosing <strong>ChoiceMee Logistic</strong><br/>
-      as your Courier partner.
+      as your <strong>${escapeHtml(introPartnerName)}</strong> partner.
     </div>
   `
   const progressAccentColor = stage === 'ndr' || stage === 'failed' ? '#49A64D' : '#4EA3F1'
@@ -1188,7 +1205,9 @@ export const buildShipmentStatusEmailContent = (opts: {
 
         <div style="padding:18px 14px 10px;">
           <div class="cm-copy" style="font-size:14px;line-height:1.55;color:#111111;margin:0 0 2px;">Regards,</div>
-          <div class="cm-copy" style="font-size:14px;line-height:1.55;color:#111111;font-weight:700;">Team ChoiceMee Logistics!</div>
+          <div class="cm-copy" style="font-size:14px;line-height:1.55;color:#111111;font-weight:700;">Team ${escapeHtml(
+            footerTeamName,
+          )}!</div>
         </div>
 
         <div class="cm-footer-shell">
@@ -1215,7 +1234,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     ...amountLines.map((row) => `${row.label}: ${row.value}`),
     `Courier Name: ${courierName}`,
     `Tracking Link: ${trackingLink}`,
-    'Regards, Team ChoiceMee Logistics!',
+    `Regards, Team ${footerTeamName}!`,
   ].filter(Boolean)
 
   return {
