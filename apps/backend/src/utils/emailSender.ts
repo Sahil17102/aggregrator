@@ -1078,12 +1078,12 @@ export const buildShipmentStatusEmailContent = (opts: {
       @media only screen and (max-width: 640px) {
         .cm-shell { width: 100% !important; min-width: 0 !important; border-radius: 0 !important; }
         .cm-header { padding: 12px 12px 10px !important; }
-        .cm-logo { width: 182px !important; max-width: 182px !important; }
-        .cm-badge { font-size: 11px !important; padding: 8px 13px !important; }
+        .cm-logo { width: 176px !important; max-width: 176px !important; }
+        .cm-badge { font-size: 11px !important; padding: 8px 14px !important; }
         .cm-intro { padding: 12px 12px 0 !important; }
-        .cm-intro-left { width: 64% !important; padding-right: 8px !important; vertical-align: top !important; }
-        .cm-intro-right { width: 36% !important; padding-left: 4px !important; vertical-align: top !important; }
-        .cm-intro-text { max-width: none !important; font-size: 12.9px !important; line-height: 1.26 !important; }
+        .cm-intro-left { width: 62% !important; padding-right: 8px !important; vertical-align: top !important; }
+        .cm-intro-right { width: 38% !important; padding-left: 4px !important; vertical-align: top !important; }
+        .cm-intro-text { max-width: none !important; font-size: 12.6px !important; line-height: 1.28 !important; }
         .cm-panel-wrap { padding: 14px 12px 9px !important; }
         .cm-panel { table-layout: fixed !important; }
         .cm-address-left { width: 52% !important; padding: 12px 10px 14px 12px !important; vertical-align: top !important; }
@@ -1112,7 +1112,7 @@ export const buildShipmentStatusEmailContent = (opts: {
         .cm-footer { background:#1e2224 !important; }
         .cm-footer-icon { background:#2f3437 !important; border-color:#42484c !important; color:#d5dae4 !important; }
         .cm-divider { border-color:#2f3537 !important; }
-        .cm-intro-right { color:#7b8795 !important; }
+        .cm-intro-right { color:#6d7481 !important; }
       }
     </style>
   `
@@ -1140,17 +1140,17 @@ export const buildShipmentStatusEmailContent = (opts: {
         <div class="cm-intro" style="padding:14px 14px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td class="cm-intro-left cm-copy" valign="top" style="width:64%;padding-right:10px;">
-                <div style="max-width:360px;font-size:14px;font-weight:700;line-height:1.25;color:#171717;margin:0 0 4px;">Hello ${escapeHtml(
+              <td class="cm-intro-left cm-copy" valign="top" style="width:62%;padding-right:10px;">
+                <div style="max-width:352px;font-size:14px;font-weight:700;line-height:1.25;color:#171717;margin:0 0 4px;">Hello ${escapeHtml(
                   sellerDisplayName,
                 )} ,</div>
                 ${stage === 'ndr' || stage === 'failed' ? introHtmlNdr : introHtml}
               </td>
-              <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:36%;word-break:break-word;">
-                <div style="font-size:12.8px;line-height:1.32;color:#5f6977;text-align:right;font-weight:700;white-space:nowrap;">Order placed on <span>${escapeHtml(
+              <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:38%;word-break:break-word;">
+                <div style="font-size:12.4px;line-height:1.28;color:#6d7481;text-align:right;font-weight:700;white-space:nowrap;">Order placed on <span>${escapeHtml(
                   orderPlacedCaption || '',
                 )}</span></div>
-                <div style="font-size:12.8px;line-height:1.32;color:#5f6977;text-align:right;font-weight:700;white-space:nowrap;">Order ID&nbsp; <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
+                <div style="font-size:12.4px;line-height:1.28;color:#6d7481;text-align:right;font-weight:700;white-space:nowrap;">Order ID&nbsp; <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
                   normalizedOrderNumber || safeOrderNumber || safeAwb,
                 )}</span></div>
               </td>
