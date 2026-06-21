@@ -1030,7 +1030,41 @@ export const computeB2CFreightForOrder = async (params: {
     type: rateType,
   })
 
-  if (!rateCard) {
+  let effectiveRateCard = rateCard
+  let effectivePlanId = userPlan.planId
+
+  if (!effectiveRateCard) {
+    const [basicPlan] = await db
+      .select({ id: plans.id })
+      .from(plans)
+      .where(sql`lower(${plans.name}) = 'basic'`)
+      .limit(1)
+
+    if (basicPlan?.id && basicPlan.id !== userPlan.planId) {
+      const [fallbackRateCard] = await fetchResolvedB2CRateCards({
+        planId: basicPlan.id,
+        zoneId: resolvedZoneRow.id,
+        courierId: Number(params.courierId),
+        serviceProvider: resolvedServiceProvider,
+        mode: params.mode?.trim() || null,
+        type: rateType,
+      })
+
+      if (fallbackRateCard) {
+        effectiveRateCard = fallbackRateCard
+        effectivePlanId = basicPlan.id
+        console.warn('[B2C Freight] Falling back to Basic plan rate card', {
+          courierId: params.courierId,
+          serviceProvider: resolvedServiceProvider,
+          zoneId: resolvedZoneRow.id,
+          requestedPlanId: userPlan.planId,
+          fallbackPlanId: basicPlan.id,
+        })
+      }
+    }
+  }
+
+  if (!effectiveRateCard) {
     throw new HttpError(400, 'No rate card found for selected courier/zone')
   }
   const freightCalc = computeB2CRateCardCharge({
@@ -1038,11 +1072,11 @@ export const computeB2CFreightForOrder = async (params: {
     length_cm: params.lengthCm,
     width_cm: params.breadthCm,
     height_cm: params.heightCm,
-    rateCard,
+    rateCard: effectiveRateCard,
     selected_max_slab_weight: params.selectedMaxSlabWeight ?? null,
   })
 
-  if (rateCard.slabs.length && freightCalc.freight <= 0) {
+  if (effectiveRateCard.slabs.length && freightCalc.freight <= 0) {
     throw new HttpError(400, 'No slab configured for selected courier/zone/weight')
   }
   const codCalc = computeB2CCodCharge({
@@ -1057,7 +1091,7 @@ export const computeB2CFreightForOrder = async (params: {
     slab_weight: freightCalc.slab_weight,
     base_price: freightCalc.base_price,
     zone_id: resolvedZoneRow.id,
-    plan_id: userPlan.planId,
+    plan_id: effectivePlanId,
     selected_slab: freightCalc.selected_slab,
   }
 }
@@ -1705,8 +1739,23 @@ export const fetchAvailableCouriersWithRates = async (
             delhivery.checkServiceability(originPincode),
             delhivery.checkServiceability(destinationPincode),
           ])
-          if (originResult.status === 'rejected') throw originResult.reason
-          if (destinationResult.status === 'rejected') throw destinationResult.reason
+
+          if (originResult.status === 'rejected' || destinationResult.status === 'rejected') {
+            console.warn('[Serviceability] Delhivery pincode check unavailable, skipping provider', {
+              mode: isCalculator ? 'calculator' : 'standard',
+              origin: originPincode,
+              destination: destinationPincode,
+              originError:
+                originResult.status === 'rejected'
+                  ? originResult.reason?.message || String(originResult.reason)
+                  : null,
+              destinationError:
+                destinationResult.status === 'rejected'
+                  ? destinationResult.reason?.message || String(destinationResult.reason)
+                  : null,
+            })
+            return
+          }
 
           const originResp = originResult.value
           const destinationResp = destinationResult.value
@@ -2150,7 +2199,7 @@ export const fetchAvailableCouriersWithRates = async (
         localRates = rateResult.rates
       }
 
-      if (!localRates.length && isCalculator && !planIdOverride) {
+      if (!localRates.length && !planIdOverride) {
         const fallbackPlanId = await resolveServiceabilityPlanId({
           planFallbackName: DEFAULT_SERVICEABILITY_PLAN_FALLBACK,
         })
@@ -3410,6 +3459,43 @@ const normalizeB2COrderItemsForBooking = (products: unknown) => {
   }))
 }
 
+const resolveB2COrderAmount = (params: {
+  order_amount?: number | string | null
+  orderAmount?: number | string | null
+  invoice_amount?: number | string | null
+  invoiceAmount?: number | string | null
+  total_amount?: number | string | null
+  totalAmount?: number | string | null
+  order_items?: unknown
+  products?: unknown
+}) => {
+  const explicitAmount = Number(params.order_amount ?? params.orderAmount ?? 0)
+  if (Number.isFinite(explicitAmount) && explicitAmount > 0) return explicitAmount
+
+  const rawItems = Array.isArray(params.order_items)
+    ? params.order_items
+    : Array.isArray(params.products)
+      ? params.products
+      : []
+
+  const itemTotal = rawItems.reduce((sum: number, item: any) => {
+    const quantity = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1) || 1)
+    const unitPrice = Number(item?.price ?? item?.unit_price ?? item?.unitPrice ?? 0)
+    const discount = Number(item?.discount ?? 0)
+    const lineTotal = Math.max(0, unitPrice * quantity - discount)
+    return sum + lineTotal
+  }, 0)
+
+  if (Number.isFinite(itemTotal) && itemTotal > 0) return itemTotal
+
+  const fallbackAmount = Number(
+    params.invoice_amount ?? params.invoiceAmount ?? params.total_amount ?? params.totalAmount ?? 0,
+  )
+  if (Number.isFinite(fallbackAmount) && fallbackAmount > 0) return fallbackAmount
+
+  return 0
+}
+
 const buildB2CBookingParamsFromOrder = (
   order: B2COrderRow,
   courierParams: Partial<ShipmentParams>,
@@ -3429,7 +3515,12 @@ const buildB2CBookingParamsFromOrder = (
     ...courierParams,
     order_number: String(order.order_number || ''),
     payment_type: String(order.order_type || 'prepaid').toLowerCase() as ShipmentParams['payment_type'],
-    order_amount: Number(order.order_amount ?? 0),
+    order_amount: resolveB2COrderAmount({
+      order_amount: order.order_amount,
+      order_items: order.products,
+      invoice_amount: (order as any).invoice_amount,
+      total_amount: (order as any).total_amount,
+    }),
     order_date: (order.order_date || new Date().toISOString().slice(0, 10)) as any,
     package_weight: Number(order.weight ?? 0),
     package_length: Number(order.length ?? 0),
@@ -3521,9 +3612,11 @@ export const createB2CDraftOrderService = async (
   }
 
   const orderAmount = Number(params.order_amount ?? 0)
-  if (!orderAmount || Number.isNaN(orderAmount)) {
+  const resolvedOrderAmount = resolveB2COrderAmount(params as any)
+  if (!resolvedOrderAmount || Number.isNaN(resolvedOrderAmount)) {
     throw new HttpError(400, 'order_amount is required and must be greater than 0.')
   }
+  params.order_amount = resolvedOrderAmount
 
   if (params.pickup_location_id) {
     const resolvedPickupWarehouse = await fetchPickupWarehouseRecord(userId, params.pickup_location_id)
@@ -4034,14 +4127,15 @@ export const createB2CShipmentService = async (
   }
   params.payment_type = normalizedPaymentType as ShipmentParams['payment_type']
 
-  const orderAmount = Number(params.order_amount ?? 0)
-  const codChargeBasis = Number(params.cod_charge_basis ?? params.codChargeBasis ?? params.order_amount ?? 0)
+  const orderAmount = resolveB2COrderAmount(params as any)
+  const codChargeBasis = Number(params.cod_charge_basis ?? params.codChargeBasis ?? orderAmount ?? 0)
   if (!orderAmount || Number.isNaN(orderAmount)) {
     throw new HttpError(
       400,
       'order_amount is required and must be greater than 0 for Delhivery bookings.',
     )
   }
+  params.order_amount = orderAmount
 
   const invoiceNumber = String(params.invoice_number ?? '').trim()
   // if (!invoiceNumber) {
