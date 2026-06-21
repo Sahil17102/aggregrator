@@ -940,7 +940,10 @@ export const buildShipmentStatusEmailContent = (opts: {
   const primaryProduct = productRows[0]
   const productName = firstText(primaryProduct?.name, safeOrderLabel, 'Product')
   const productQty = firstText(primaryProduct?.qty, '1')
-  const productPrice = firstText(primaryProduct?.amount, formatEmailCurrency(orderRecord.order_amount))
+  const productPrice = firstText(
+    formatEmailCurrency(orderRecord.order_amount),
+    formatEmailCurrency(primaryProduct?.amount),
+  )
   const orderTotalValue = firstText(formatEmailCurrency(orderRecord.order_amount), productPrice)
   const amountPaidValue = firstText(formatEmailCurrency(orderRecord.prepaid_amount), orderTotalValue)
   const customerName = firstText(
@@ -977,7 +980,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     )}</div>
     ${customerAddressLines
       .map(
-        (line) => `<div style="font-size:14px;line-height:1.25;color:#111111;font-weight:700;margin:0 0 2px;">${escapeHtml(
+        (line) => `<div style="font-size:14px;line-height:1.2;color:#111111;font-weight:600;margin:0 0 2px;">${escapeHtml(
           line,
         )}</div>`,
       )
@@ -993,6 +996,17 @@ export const buildShipmentStatusEmailContent = (opts: {
   const introSentence = `Your order ${orderNumberDisplay || safeOrderNumber || safeAwb} has been ${
     stageMeta.badge
   } to ${customerName}. Thank you for using ${courierName} as your logistics partner for this delivery.`
+  const introHtml = `
+    <div style="max-width:385px;font-size:13.5px;line-height:1.3;color:#171717;font-weight:400;">
+      Your order <strong>${escapeHtml(normalizedOrderNumber || safeOrderNumber || safeAwb)}</strong> has been <strong>${escapeHtml(
+        stageMeta.badge,
+      )}</strong><br/>
+      to <strong>${escapeHtml(customerName)}</strong>. Thank you for using <strong>${escapeHtml(
+        courierName,
+      )}</strong> as your logistics<br/>
+      partner for this delivery.
+    </div>
+  `
   const orderPlacedCaption = firstText(
     formatDisplayDate(orderRecord.created_at as string | Date | null | undefined),
     orderPlacedOnFallback,
@@ -1036,19 +1050,19 @@ export const buildShipmentStatusEmailContent = (opts: {
       @media only screen and (max-width: 640px) {
         .cm-shell { width: 100% !important; min-width: 0 !important; border-radius: 0 !important; }
         .cm-header { padding: 12px 12px 10px !important; }
-        .cm-logo { width: 150px !important; max-width: 150px !important; }
+        .cm-logo { width: 156px !important; max-width: 156px !important; }
         .cm-badge { font-size: 11px !important; padding: 9px 13px !important; }
         .cm-intro { padding: 12px 12px 0 !important; }
-        .cm-intro-left, .cm-intro-right { display: block !important; width: 100% !important; padding: 0 !important; text-align: left !important; }
-        .cm-intro-right { margin-top: 8px !important; }
-        .cm-intro-text { max-width: none !important; font-size: 13px !important; line-height: 1.3 !important; }
-        .cm-panel-wrap { padding: 16px 12px 10px !important; }
-        .cm-address-left, .cm-address-right { display: block !important; width: 100% !important; padding: 0 !important; }
-        .cm-address-right { margin-top: 12px !important; text-align: center !important; }
-        .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.82); transform-origin: center top; }
+        .cm-intro-left { width: 60% !important; padding-right: 8px !important; vertical-align: top !important; }
+        .cm-intro-right { width: 40% !important; padding-left: 4px !important; vertical-align: top !important; }
+        .cm-intro-text { max-width: none !important; font-size: 12.5px !important; line-height: 1.28 !important; }
+        .cm-panel-wrap { padding: 14px 12px 9px !important; }
+        .cm-address-left { width: 50% !important; padding: 12px 12px 14px 12px !important; }
+        .cm-address-right { width: 50% !important; padding: 14px 10px 14px 10px !important; text-align: center !important; }
+        .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.78); transform-origin: center top; }
         .cm-manage-btn { font-size: 13px !important; padding: 10px 14px !important; min-width: 156px !important; }
         .cm-product, .cm-shipping { padding-left: 0 !important; padding-right: 0 !important; }
-        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { font-size: 13px !important; line-height: 1.5 !important; }
+        .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { font-size: 13px !important; line-height: 1.45 !important; }
         .cm-product-right, .cm-shipping-right { white-space: nowrap !important; }
         .cm-footer { padding: 10px 0 !important; }
         .cm-spacer { height: 10px !important; }
@@ -1099,9 +1113,7 @@ export const buildShipmentStatusEmailContent = (opts: {
                 <div style="max-width:350px;font-size:14px;font-weight:700;line-height:1.25;color:#171717;margin:0 0 4px;">Hello ${escapeHtml(
                   sellerDisplayName,
                 )} ,</div>
-                <div class="cm-intro-text" style="max-width:350px;font-size:14px;line-height:1.28;color:#171717;font-weight:700;">${escapeHtml(
-                  introSentence,
-                )}</div>
+                ${introHtml}
               </td>
               <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:39%;">
                 <div style="font-size:13px;line-height:1.35;color:#5f6977;text-align:right;font-weight:700;">Order placed on <span>${escapeHtml(
