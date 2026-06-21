@@ -980,14 +980,14 @@ export const buildShipmentStatusEmailContent = (opts: {
     )}</div>
     ${customerAddressLines
       .map(
-        (line) => `<div style="font-size:14px;line-height:1.2;color:#111111;font-weight:600;margin:0 0 2px;">${escapeHtml(
+        (line) => `<div class="cm-address-line" style="font-size:14px;line-height:1.2;color:#111111;font-weight:600;margin:0 0 2px;word-break:break-word;">${escapeHtml(
           line,
         )}</div>`,
       )
       .join('')}
     ${
       contactNumber
-        ? `<div style="margin-top:18px;font-size:14px;line-height:1.25;color:#111111;font-weight:800;">Contact Number&nbsp;&nbsp;<span style="font-weight:800;">${escapeHtml(
+        ? `<div style="margin-top:18px;font-size:14px;line-height:1.25;color:#111111;font-weight:800;word-break:break-word;">Contact Number&nbsp;&nbsp;<span style="font-weight:800;">${escapeHtml(
             contactNumber,
           )}</span></div>`
         : ''
@@ -1061,17 +1061,19 @@ export const buildShipmentStatusEmailContent = (opts: {
       @media only screen and (max-width: 640px) {
         .cm-shell { width: 100% !important; min-width: 0 !important; border-radius: 0 !important; }
         .cm-header { padding: 12px 12px 10px !important; }
-        .cm-logo { width: 156px !important; max-width: 156px !important; }
-        .cm-badge { font-size: 11px !important; padding: 9px 13px !important; }
+        .cm-logo { width: 154px !important; max-width: 154px !important; }
+        .cm-badge { font-size: 11px !important; padding: 8px 12px !important; }
         .cm-intro { padding: 12px 12px 0 !important; }
-        .cm-intro-left { width: 60% !important; padding-right: 8px !important; vertical-align: top !important; }
-        .cm-intro-right { width: 40% !important; padding-left: 4px !important; vertical-align: top !important; }
+        .cm-intro-left { width: 58% !important; padding-right: 8px !important; vertical-align: top !important; }
+        .cm-intro-right { width: 42% !important; padding-left: 4px !important; vertical-align: top !important; }
         .cm-intro-text { max-width: none !important; font-size: 12.5px !important; line-height: 1.28 !important; }
         .cm-panel-wrap { padding: 14px 12px 9px !important; }
-        .cm-address-left { width: 50% !important; padding: 12px 12px 14px 12px !important; }
-        .cm-address-right { width: 50% !important; padding: 14px 10px 14px 10px !important; text-align: center !important; }
-        .cm-timeline { margin: 0 auto 12px !important; transform: scale(0.78); transform-origin: center top; }
-        .cm-manage-btn { font-size: 13px !important; padding: 10px 14px !important; min-width: 156px !important; }
+        .cm-panel { table-layout: fixed !important; }
+        .cm-address-left { width: 52% !important; padding: 12px 10px 14px 12px !important; vertical-align: top !important; }
+        .cm-address-right { width: 48% !important; padding: 14px 10px 14px 6px !important; text-align: center !important; vertical-align: top !important; }
+        .cm-address-line { line-height: 1.24 !important; }
+        .cm-timeline { margin: 0 auto 10px !important; transform: scale(0.68); transform-origin: center top; }
+        .cm-manage-btn { font-size: 12.5px !important; padding: 10px 12px !important; min-width: 146px !important; }
         .cm-product, .cm-shipping { padding-left: 0 !important; padding-right: 0 !important; }
         .cm-product-left, .cm-product-right, .cm-shipping-left, .cm-shipping-right { font-size: 13px !important; line-height: 1.45 !important; }
         .cm-product-right, .cm-shipping-right { white-space: nowrap !important; }
@@ -1126,7 +1128,7 @@ export const buildShipmentStatusEmailContent = (opts: {
                 )} ,</div>
                 ${stage === 'ndr' || stage === 'failed' ? introHtmlNdr : introHtml}
               </td>
-              <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:39%;">
+              <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:39%;word-break:break-word;">
                 <div style="font-size:13px;line-height:1.35;color:#5f6977;text-align:right;font-weight:700;">Order placed on <span>${escapeHtml(
                   orderPlacedCaption || '',
                 )}</span></div>
@@ -1139,12 +1141,12 @@ export const buildShipmentStatusEmailContent = (opts: {
         </div>
 
         <div class="cm-panel-wrap" style="padding:16px 14px 10px;">
-          <table class="cm-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;">
+          <table class="cm-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;table-layout:fixed;">
             <tr>
               <td class="cm-address-left cm-copy" valign="top" style="width:50%;padding:14px 16px 16px 16px;">
                 ${customerDetailsHtml.replace('Delivery Address', detailsHeading)}
               </td>
-              <td class="cm-address-right" valign="top" align="center" style="width:50%;padding:18px 14px 16px 14px;">
+              <td class="cm-address-right" valign="top" align="center" style="width:50%;padding:18px 14px 16px 14px;word-break:break-word;">
                 <div style="display:inline-block;text-align:center;">
                   <div class="cm-timeline" style="margin:0 auto 16px;">${buildShipmentProgressMarkup(progressAccentColor)}</div>
                   <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:15px;line-height:1;font-weight:700;padding:12px 18px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);">Manage Your Order</a>
