@@ -1089,7 +1089,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     ${darkModeStyles}
     <div class="cm-page" style="margin:0;padding:0;background:#ffffff;">
       <div class="cm-shell" style="width:640px;max-width:640px;min-width:640px;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
-        <div class="cm-header" style="padding:11px 24px 17px 30px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
+        <div class="cm-header" style="padding:11px 24px 7px 30px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td valign="top" style="width:68%;padding:0;">
@@ -1108,7 +1108,7 @@ export const buildShipmentStatusEmailContent = (opts: {
           </table>
         </div>
 
-        <div class="cm-intro" style="padding:8px 20px 0;">
+        <div class="cm-intro" style="padding:18px 20px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td class="cm-intro-left cm-copy" valign="top" style="width:66%;padding-right:10px;">
@@ -1132,7 +1132,7 @@ export const buildShipmentStatusEmailContent = (opts: {
         <div class="cm-panel-wrap" style="padding:25px 25px 12px 19px;">
           <table class="cm-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;table-layout:fixed;">
             <tr>
-              <td class="cm-address-left cm-copy" valign="top" style="width:52%;padding:15px 16px 23px 16px;">
+              <td class="cm-address-left cm-copy" valign="top" style="width:52%;padding:15px 16px 23px 14px;">
                 ${customerDetailsHtml.replace('Delivery Address', detailsHeading)}
               </td>
               <td class="cm-address-right" valign="top" align="center" style="width:48%;padding:0 12px 23px 8px;word-break:break-word;">
