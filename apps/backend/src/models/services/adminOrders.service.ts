@@ -23,6 +23,7 @@ import { createNotificationService } from './notifications.service'
 import { sendWebhookEvent } from '../../services/webhookDelivery.service'
 import { recordRtoEvent } from './rto.service'
 import { applyRtoChargeOnce } from './webhookProcessor'
+import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
 
 const ADMIN_EDITABLE_ORDER_STATUSES = new Set([
   'pending',
@@ -538,6 +539,17 @@ export const updateOrderStatusServiceAdmin = async ({
     updated_at: new Date().toISOString(),
   }).catch((err) => {
     console.error('Failed to send admin order.updated webhook:', err)
+  })
+
+  await sendShipmentStatusEmailIfChanged({
+    userId: order.user_id,
+    awbNumber: String(order.awb_number || order.order_number || order.id),
+    orderNumber: order.order_number || null,
+    orderDetails: order,
+    previousStatus,
+    nextStatus: normalizedStatus,
+  }).catch((err) => {
+    console.error('Failed to send admin shipment update email:', err)
   })
 
   return {

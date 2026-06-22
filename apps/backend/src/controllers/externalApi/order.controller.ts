@@ -15,6 +15,7 @@ import {
 } from '../../models/services/shiprocket.service'
 import { presignDownload } from '../../models/services/upload.service'
 import { applyCancellationRefundOnce } from '../../models/services/webhookProcessor'
+import { sendShipmentStatusEmailIfChanged } from '../../models/services/shipmentNotification.service'
 import { b2c_orders } from '../../schema/schema'
 import { sendWebhookEvent } from '../../services/webhookDelivery.service'
 import {
@@ -308,6 +309,8 @@ export const cancelOrderController = async (req: any, res: Response) => {
       })
     }
 
+    const previousStatus = String(order.order_status || '').trim().toLowerCase()
+
     let cancellationResult: any = null
     const provider = normalizeServiceProviderKey(order.integration_type)
     if (!INTEGRATED_SERVICE_PROVIDERS.includes(provider as any)) {
@@ -388,6 +391,17 @@ export const cancelOrderController = async (req: any, res: Response) => {
         .where(eq(b2c_orders.id, order.id))
 
       await applyCancellationRefundOnce(tx, order, 'cancel_api')
+    })
+
+    await sendShipmentStatusEmailIfChanged({
+      userId,
+      awbNumber: String(order.awb_number || order.order_number || order.id),
+      orderNumber: order.order_number || null,
+      orderDetails: order,
+      previousStatus,
+      nextStatus: 'cancelled',
+    }).catch((err) => {
+      console.error('Failed to send external API cancellation shipment email:', err)
     })
 
     // Send webhook event

@@ -6,6 +6,7 @@ import { DeliveryOneService } from './couriers/deliveryone.service'
 import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { applyCancellationRefundOnce } from './webhookProcessor'
+import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
 import {
   INTEGRATED_SERVICE_PROVIDERS,
   normalizeServiceProviderKey,
@@ -65,6 +66,17 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
         .where(eq(b2c_orders.id, orderId))
 
       await applyCancellationRefundOnce(tx, order, 'pickup_cancel_api')
+    })
+
+    await sendShipmentStatusEmailIfChanged({
+      userId: order.user_id,
+      awbNumber: String(order.awb_number || order.order_number || order.id),
+      orderNumber: order.order_number || null,
+      orderDetails: order,
+      previousStatus: currentStatus,
+      nextStatus: 'cancelled',
+    }).catch((err) => {
+      console.error('Failed to send pickup cancellation shipment email:', err)
     })
 
     return {
@@ -161,6 +173,17 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
       .where(eq(b2c_orders.id, orderId))
 
     await applyCancellationRefundOnce(tx, order, 'pickup_cancel_api')
+  })
+
+  await sendShipmentStatusEmailIfChanged({
+    userId: order.user_id,
+    awbNumber: String(order.awb_number || order.order_number || order.id),
+    orderNumber: order.order_number || null,
+    orderDetails: order,
+    previousStatus: currentStatus,
+    nextStatus: finalStatus,
+  }).catch((err) => {
+    console.error('Failed to send pickup cancellation shipment email:', err)
   })
 
   console.log(`✅ Order status updated to ${finalStatus} successfully:`, { orderId, integration })
