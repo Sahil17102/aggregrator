@@ -124,8 +124,10 @@ async function main() {
 
   const userId = await createSmokeUser(planId)
   try {
-    const prepaid = assertDeliveryOneCourier('prepaid', await quoteFor(userId, 'prepaid'))
-    const cod = assertDeliveryOneCourier('cod', await quoteFor(userId, 'cod'))
+    const prepaidResults = await quoteFor(userId, 'prepaid')
+    const codResults = await quoteFor(userId, 'cod')
+    const prepaid = assertDeliveryOneCourier('prepaid', Array.isArray(prepaidResults) ? prepaidResults : [])
+    const cod = assertDeliveryOneCourier('cod', Array.isArray(codResults) ? codResults : [])
 
     console.log(
       JSON.stringify(

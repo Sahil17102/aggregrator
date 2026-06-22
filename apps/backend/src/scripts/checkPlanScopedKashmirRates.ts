@@ -135,7 +135,7 @@ async function assertCalculatorLocalFallback(userId: string) {
   })
 
   try {
-    const results = await fetchAvailableCouriersWithRates(
+    const results = (await fetchAvailableCouriersWithRates(
       {
         origin: 193123,
         destination: 190008,
@@ -150,7 +150,7 @@ async function assertCalculatorLocalFallback(userId: string) {
         isCalculator: true,
       } as any,
       userId,
-    )
+    )) ?? []
 
     const surfaceOption = results.find(
       (row: any) =>
