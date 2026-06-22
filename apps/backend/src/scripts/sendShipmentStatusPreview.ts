@@ -37,6 +37,7 @@ const buildPreviewOrder = (status: ShipmentStatusEmailStage): ShipmentOrderLike 
   pincode: '191111',
   buyer_phone: '9906573655',
   courier_partner: 'Delhivery',
+  service_type: 'Shift',
   order_status: status,
   order_amount: 1080,
   shipping_charges: 0,

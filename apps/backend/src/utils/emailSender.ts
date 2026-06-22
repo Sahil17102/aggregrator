@@ -750,15 +750,11 @@ const getChoiceMeeEmailLogoUrl = () => {
 }
 
 const buildChoiceMeeEmailLogo = () => `
-  <table class="cm-logo-lockup" role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;padding:12px 16px;box-shadow:0 8px 24px rgba(15,23,42,0.06);">
-    <tr>
-      <td valign="middle" style="padding:0;line-height:0;background:#ffffff;">
-        <img class="cm-logo-mark" src="${escapeHtml(
-          getChoiceMeeEmailLogoUrl(),
-        )}" alt="ChoiceMee Logistics" style="display:block;width:180px;max-width:100%;height:auto;object-fit:contain;background:#ffffff;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
-      </td>
-    </tr>
-  </table>
+  <div style="width:229px;height:66px;overflow:hidden;line-height:0;">
+    <img class="cm-logo" src="${escapeHtml(
+      getChoiceMeeEmailLogoUrl(),
+    )}" alt="ChoiceMee Logistics" style="display:block;width:334px;max-width:334px;height:auto;margin:-28px 0 0 -49px;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
+  </div>
 `
 
 const buildShipmentProgressMarkup = (accentColor = '#4EA3F1') => {
@@ -1012,29 +1008,26 @@ export const buildShipmentStatusEmailContent = (opts: {
     orderRecord.phone,
   )
   const consigneeDetailsHtml = `
-    <div style="font-size:20px;line-height:1.2;color:#111111;font-weight:800;margin:0 0 14px;">Consignee Details</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:13px;line-height:1.45;color:#111111;">
-      <tr>
-        <td style="padding:0 0 12px 0;width:36%;font-weight:800;color:#374151;">Consignee Name</td>
-        <td style="padding:0 0 12px 0;font-weight:700;word-break:break-word;">${escapeHtml(customerName)}</td>
-      </tr>
-      <tr>
-        <td style="padding:0 0 12px 0;width:36%;font-weight:800;color:#374151;">Address</td>
-        <td style="padding:0 0 12px 0;font-weight:700;word-break:break-word;">
-          ${customerAddressLines.map((line) => `${escapeHtml(line)}<br/>`).join('')}
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:0 0 12px 0;width:36%;font-weight:800;color:#374151;">Product Name</td>
-        <td style="padding:0 0 12px 0;font-weight:700;word-break:break-word;color:#1f8a34;">${escapeHtml(productName)}</td>
-      </tr>
-      <tr>
-        <td style="padding:0;width:36%;font-weight:800;color:#374151;">Phone Number</td>
-        <td style="padding:0;font-weight:700;word-break:break-word;">${escapeHtml(
-          contactNumber || 'Not available',
-        )}</td>
-      </tr>
-    </table>
+    <div style="font-size:15px;line-height:1.2;color:#111111;font-weight:800;margin:0 0 10px;">Delivery Address</div>
+    <div style="font-size:12.5px;line-height:1.25;color:#111111;font-weight:800;margin:0 0 4px;">${escapeHtml(
+      customerName,
+    )}</div>
+    ${customerAddressLines
+      .map(
+        (line) => `
+          <div class="cm-address-line" style="max-width:220px;font-size:12.5px;line-height:1.23;color:#111111;font-weight:700;margin:0 0 2px;word-break:break-word;">${escapeHtml(
+            line,
+          )}</div>
+        `,
+      )
+      .join('')}
+    ${
+      contactNumber
+        ? `<div style="margin-top:46px;font-size:12.5px;line-height:1.25;color:#111111;font-weight:800;word-break:break-word;">Contact Number&nbsp;&nbsp;<span style="font-weight:800;">${escapeHtml(
+            contactNumber,
+          )}</span></div>`
+        : ''
+    }
   `
   const introSentence = `Your order ${orderNumberDisplay || safeOrderNumber || safeAwb} has been ${
     stageMeta.badge
@@ -1060,7 +1053,7 @@ export const buildShipmentStatusEmailContent = (opts: {
   const progressAccentColor = stage === 'ndr' || stage === 'failed' ? '#49A64D' : '#4EA3F1'
   const progressMarkup = buildShipmentProgressMarkup(progressAccentColor).replace(
     '<svg width="272" height="72"',
-    '<svg width="190" height="50"',
+    '<svg width="242" height="64"',
   )
   const orderPlacedCaption = firstText(
     formatDisplayDate(orderRecord.created_at as string | Date | null | undefined),
@@ -1119,13 +1112,12 @@ export const buildShipmentStatusEmailContent = (opts: {
       .cm-page::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
       .cm-shell { width: 640px !important; max-width: 640px !important; min-width: 640px !important; }
       .cm-logo-wrap { background: #f5f5ed !important; }
-      .cm-logo-lockup { max-width: 100% !important; background: #ffffff !important; }
-      .cm-logo-mark { width: 180px !important; max-width: 100% !important; height: auto !important; background: #ffffff !important; }
+      .cm-logo { width: 334px !important; max-width: 334px !important; height: auto !important; background: #ffffff !important; }
       .cm-panel { table-layout: fixed !important; }
-      .cm-timeline svg { width: 190px !important; height: 50px !important; }
+      .cm-timeline svg { width: 242px !important; height: 64px !important; }
       @media (prefers-color-scheme: dark) {
         .cm-page, .cm-shell { background: #ffffff !important; color: #111111 !important; }
-        .cm-header, .cm-logo-wrap, .cm-logo-lockup, .cm-logo-lockup td, .cm-logo-mark { background: #ffffff !important; }
+        .cm-header, .cm-logo-wrap, .cm-logo { background: #ffffff !important; }
         .cm-header { border-bottom-color: transparent !important; }
         .cm-panel { background: #fbfbfb !important; border-color: #dce1e8 !important; }
         .cm-divider > div { border-top-color: #ececec !important; }
@@ -1137,7 +1129,7 @@ export const buildShipmentStatusEmailContent = (opts: {
         .cm-footer { background: #2b2b2b !important; }
       }
       [data-ogsc] .cm-page, [data-ogsc] .cm-shell, [data-ogsb] .cm-page, [data-ogsb] .cm-shell { background: #ffffff !important; color: #111111 !important; }
-      [data-ogsc] .cm-header, [data-ogsc] .cm-logo-wrap, [data-ogsc] .cm-logo-lockup, [data-ogsc] .cm-logo-lockup td, [data-ogsc] .cm-logo-mark, [data-ogsb] .cm-header, [data-ogsb] .cm-logo-wrap, [data-ogsb] .cm-logo-lockup, [data-ogsb] .cm-logo-lockup td, [data-ogsb] .cm-logo-mark { background: #ffffff !important; }
+      [data-ogsc] .cm-header, [data-ogsc] .cm-logo-wrap, [data-ogsc] .cm-logo, [data-ogsb] .cm-header, [data-ogsb] .cm-logo-wrap, [data-ogsb] .cm-logo { background: #ffffff !important; }
       [data-ogsc] .cm-panel, [data-ogsb] .cm-panel { background: #fbfbfb !important; border-color: #dce1e8 !important; }
       [data-ogsc] .cm-copy, [data-ogsc] .cm-copy *, [data-ogsc] .cm-intro-left, [data-ogsc] .cm-intro-left *, [data-ogsc] .cm-address-line, [data-ogsc] .cm-shipping, [data-ogsc] .cm-shipping *, [data-ogsc] .cm-regards, [data-ogsc] .cm-regards *, [data-ogsb] .cm-copy, [data-ogsb] .cm-copy *, [data-ogsb] .cm-intro-left, [data-ogsb] .cm-intro-left *, [data-ogsb] .cm-address-line, [data-ogsb] .cm-shipping, [data-ogsb] .cm-shipping *, [data-ogsb] .cm-regards, [data-ogsb] .cm-regards * { color: #111111 !important; }
       [data-ogsc] .cm-meta, [data-ogsc] .cm-meta div, [data-ogsb] .cm-meta, [data-ogsb] .cm-meta div { color: #3c4654 !important; }
@@ -1148,13 +1140,13 @@ export const buildShipmentStatusEmailContent = (opts: {
     ${darkModeStyles}
     <div class="cm-page" style="width:100%;max-width:640px;min-width:0;margin:0 auto;padding:0;background:#ffffff;overflow-x:scroll;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-color:#94a3b8 #f5f5ed;scrollbar-width:thin;">
       <div class="cm-shell" style="width:640px;max-width:640px;min-width:640px;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
-        <div class="cm-header" style="padding:16px 20px 10px 20px;background:#f5f5ed;border-bottom:0;">
+        <div class="cm-header" style="padding:11px 24px 17px 30px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td class="cm-logo-wrap" valign="middle" style="width:64%;padding:0;line-height:0;background:#f5f5ed;">
+              <td class="cm-logo-wrap" valign="top" style="width:68%;padding:0;line-height:0;background:#f5f5ed;">
                 ${buildChoiceMeeEmailLogo()}
               </td>
-              <td valign="middle" align="right" style="width:36%;padding:0;">
+              <td valign="top" align="right" style="width:32%;padding-top:15px;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:12px;line-height:1;padding:11px 21px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
                   stageMeta.badge,
                 )}</span>
@@ -1163,7 +1155,7 @@ export const buildShipmentStatusEmailContent = (opts: {
           </table>
         </div>
 
-        <div class="cm-intro" style="padding:18px 20px 0;">
+        <div class="cm-intro" style="padding:8px 20px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td class="cm-intro-left cm-copy" valign="top" style="width:66%;padding-right:10px;">
@@ -1184,15 +1176,15 @@ export const buildShipmentStatusEmailContent = (opts: {
           </table>
         </div>
 
-        <div class="cm-panel-wrap" style="padding:25px 20px 12px 20px;">
+        <div class="cm-panel-wrap" style="padding:25px 25px 12px 19px;">
           <table class="cm-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;table-layout:fixed;">
             <tr>
-              <td class="cm-address-left cm-copy" valign="top" style="width:52%;padding:15px 16px 23px 14px;">
+              <td class="cm-address-left cm-copy" valign="top" style="width:52%;padding:15px 16px 23px 16px;">
                 ${consigneeDetailsHtml}
               </td>
               <td class="cm-address-right" valign="top" align="center" style="width:48%;padding:0 12px 23px 8px;word-break:break-word;">
                 <div style="display:inline-block;text-align:center;">
-                  <div class="cm-timeline" style="width:190px;height:50px;margin:0 auto 10px;">${progressMarkup}</div>
+                  <div class="cm-timeline" style="width:242px;height:64px;margin:0 auto 8px;">${progressMarkup}</div>
                   <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:13px;line-height:1;font-weight:700;padding:11px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);min-width:132px;white-space:nowrap;">Manage Your Order</a>
                 </div>
               </td>
