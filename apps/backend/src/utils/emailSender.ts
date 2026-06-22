@@ -1110,7 +1110,19 @@ export const buildShipmentStatusEmailContent = (opts: {
         color-scheme: light only;
         supported-color-schemes: light;
       }
-      .cm-page { width: 640px !important; min-width: 640px !important; overflow-x: auto !important; }
+      .cm-page {
+        width: 100% !important;
+        max-width: 640px !important;
+        min-width: 0 !important;
+        overflow-x: scroll !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-color: #94a3b8 #f5f5ed;
+        scrollbar-width: thin;
+      }
+      .cm-page::-webkit-scrollbar { height: 8px; }
+      .cm-page::-webkit-scrollbar-track { background: #f5f5ed; }
+      .cm-page::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
       .cm-shell { width: 640px !important; max-width: 640px !important; min-width: 640px !important; }
       .cm-logo-wrap { background: #f5f5ed !important; }
       .cm-logo-lockup { width: 292px !important; min-width: 292px !important; background: #f5f5ed !important; }
@@ -1146,7 +1158,7 @@ export const buildShipmentStatusEmailContent = (opts: {
   `
   const html = `
     ${darkModeStyles}
-    <div class="cm-page" style="width:640px;min-width:640px;margin:0 auto;padding:0;background:#ffffff;overflow-x:auto;">
+    <div class="cm-page" style="width:100%;max-width:640px;min-width:0;margin:0 auto;padding:0;background:#ffffff;overflow-x:scroll;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-color:#94a3b8 #f5f5ed;scrollbar-width:thin;">
       <div class="cm-shell" style="width:640px;max-width:640px;min-width:640px;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
         <div class="cm-header" style="padding:12px 20px 8px 20px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
