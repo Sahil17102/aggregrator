@@ -1040,7 +1040,7 @@ export const buildShipmentStatusEmailContent = (opts: {
   const progressAccentColor = stage === 'ndr' || stage === 'failed' ? '#49A64D' : '#4EA3F1'
   const progressMarkup = buildShipmentProgressMarkup(progressAccentColor).replace(
     '<svg width="272" height="72"',
-    '<svg width="242" height="64"',
+    '<svg width="190" height="50"',
   )
   const detailsHeading = stage === 'ndr' || stage === 'failed' ? 'Consignee Details' : 'Delivery Address'
   const orderPlacedCaption = firstText(
@@ -1083,23 +1083,38 @@ export const buildShipmentStatusEmailContent = (opts: {
         color-scheme: light;
         supported-color-schemes: light;
       }
+      .cm-shell { width: 100% !important; max-width: 640px !important; min-width: 0 !important; }
+      .cm-logo { width: 222px !important; max-width: 100% !important; height: auto !important; }
+      .cm-panel { table-layout: fixed !important; }
+      .cm-timeline svg { width: 190px !important; height: 50px !important; }
+      @media only screen and (max-width: 480px) {
+        .cm-header { padding-left: 18px !important; padding-right: 18px !important; }
+        .cm-logo { width: 200px !important; }
+        .cm-badge { font-size: 12px !important; padding: 10px 15px !important; }
+        .cm-intro { padding-left: 18px !important; padding-right: 18px !important; }
+        .cm-panel-wrap { padding-left: 18px !important; padding-right: 18px !important; }
+        .cm-product, .cm-shipping, .cm-regards { padding-left: 30px !important; padding-right: 30px !important; }
+        .cm-address-left { width: 53% !important; padding-right: 8px !important; }
+        .cm-address-right { width: 47% !important; padding-left: 4px !important; padding-right: 4px !important; }
+        .cm-timeline, .cm-timeline svg { width: 154px !important; height: 41px !important; }
+        .cm-manage-btn { font-size: 12px !important; min-width: 126px !important; padding: 10px 10px !important; }
+        .cm-copy { font-size: 12.25px !important; }
+      }
     </style>
   `
   const html = `
     ${darkModeStyles}
     <div class="cm-page" style="margin:0;padding:0;background:#ffffff;">
-      <div class="cm-shell" style="width:640px;max-width:640px;min-width:640px;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
-        <div class="cm-header" style="padding:11px 24px 7px 30px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
+      <div class="cm-shell" style="width:100%;max-width:640px;min-width:0;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
+        <div class="cm-header" style="padding:12px 20px 8px 20px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td valign="top" style="width:68%;padding:0;">
-                <div style="width:229px;height:66px;overflow:hidden;line-height:0;">
-                  <img class="cm-logo" src="${escapeHtml(
-                    getChoiceMeeLogoUrl(),
-                  )}" alt="ChoiceMee Logistics" style="display:block;width:334px;max-width:334px;height:auto;margin:-28px 0 0 -49px;border:0;outline:none;text-decoration:none;" />
-                </div>
+              <td valign="middle" style="width:64%;padding:0;line-height:0;">
+                <img class="cm-logo" src="${escapeHtml(
+                  getChoiceMeeLogoUrl(),
+                )}" alt="ChoiceMee Logistics" style="display:block;width:222px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
-              <td valign="top" align="right" style="width:32%;padding-top:15px;">
+              <td valign="middle" align="right" style="width:36%;padding:0;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:12px;line-height:1;padding:11px 21px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
                   stageMeta.badge,
                 )}</span>
@@ -1129,7 +1144,7 @@ export const buildShipmentStatusEmailContent = (opts: {
           </table>
         </div>
 
-        <div class="cm-panel-wrap" style="padding:25px 25px 12px 19px;">
+        <div class="cm-panel-wrap" style="padding:25px 20px 12px 20px;">
           <table class="cm-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;table-layout:fixed;">
             <tr>
               <td class="cm-address-left cm-copy" valign="top" style="width:52%;padding:15px 16px 23px 14px;">
@@ -1137,8 +1152,8 @@ export const buildShipmentStatusEmailContent = (opts: {
               </td>
               <td class="cm-address-right" valign="top" align="center" style="width:48%;padding:0 12px 23px 8px;word-break:break-word;">
                 <div style="display:inline-block;text-align:center;">
-                  <div class="cm-timeline" style="width:242px;height:64px;margin:0 auto 8px;">${progressMarkup}</div>
-                  <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:13px;line-height:1;font-weight:700;padding:11px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);min-width:132px;">Manage Your Order</a>
+                  <div class="cm-timeline" style="width:190px;height:50px;margin:0 auto 10px;">${progressMarkup}</div>
+                  <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:13px;line-height:1;font-weight:700;padding:11px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);min-width:132px;white-space:nowrap;">Manage Your Order</a>
                 </div>
               </td>
             </tr>
@@ -1177,7 +1192,7 @@ export const buildShipmentStatusEmailContent = (opts: {
           </div>
         </div>
 
-        <div style="padding:28px 32px 15px;">
+        <div class="cm-regards" style="padding:28px 32px 15px;">
           <div class="cm-copy" style="font-size:12.5px;line-height:1.55;color:#111111;margin:0 0 2px;">Regards,</div>
           <div class="cm-copy" style="font-size:12.5px;line-height:1.55;color:#111111;font-weight:700;">Team ${escapeHtml(
             footerTeamName,
