@@ -739,15 +739,35 @@ const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
   }
 }
 
-const getChoiceMeeLogoUrl = () => {
+const getChoiceMeeLogoMarkUrl = () => {
   const frontendBaseUrl = getFrontendBaseUrl().replace(/\/$/, '')
-  const cacheVersion = process.env.SHIPMENT_EMAIL_LOGO_VERSION?.trim() || '20260622-hd'
+  const cacheVersion = process.env.SHIPMENT_EMAIL_LOGO_VERSION?.trim() || '20260622-hd2'
   const cacheSuffix = frontendBaseUrl.startsWith('file:')
     ? ''
     : `?v=${encodeURIComponent(cacheVersion)}`
 
-  return `${frontendBaseUrl}/brand/shipment-email-logo.png${cacheSuffix}`
+  return `${frontendBaseUrl}/brand/shipment-email-mark.png${cacheSuffix}`
 }
+
+const buildChoiceMeeEmailLogo = () => `
+  <table class="cm-logo-lockup" role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:292px;min-width:292px;background:#f5f5ed;">
+    <tr>
+      <td valign="middle" style="width:76px;padding:0;line-height:0;background:#f5f5ed;">
+        <img class="cm-logo-mark" src="${escapeHtml(
+          getChoiceMeeLogoMarkUrl(),
+        )}" width="70" height="70" alt="" aria-hidden="true" style="display:block;width:70px;height:70px;background:#f5f5ed;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
+      </td>
+      <td valign="middle" style="padding:0;background:#f5f5ed;white-space:nowrap;">
+        <div class="cm-logo-text" style="font-family:Arial,Helvetica,sans-serif;font-size:30px;line-height:30px;font-weight:800;letter-spacing:0;color:#22232b;mso-line-height-rule:exactly;">
+          <span class="cm-logo-choice" style="color:#22232b;">Choice</span><span class="cm-logo-mee" style="color:#16b64f;">Mee</span>
+        </div>
+        <div class="cm-logo-subtitle" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:14px;font-weight:800;letter-spacing:3.2px;text-transform:uppercase;color:#17a94e;mso-line-height-rule:exactly;">
+          Logistics
+        </div>
+      </td>
+    </tr>
+  </table>
+`
 
 const buildShipmentProgressMarkup = (accentColor = '#4EA3F1') => {
   const iconColor = '#FFFFFF'
@@ -1090,56 +1110,49 @@ export const buildShipmentStatusEmailContent = (opts: {
         color-scheme: light only;
         supported-color-schemes: light;
       }
-      .cm-shell { width: 100% !important; max-width: 640px !important; min-width: 0 !important; }
+      .cm-page { width: 640px !important; min-width: 640px !important; overflow-x: auto !important; }
+      .cm-shell { width: 640px !important; max-width: 640px !important; min-width: 640px !important; }
       .cm-logo-wrap { background: #f5f5ed !important; }
-      .cm-logo { width: 240px !important; max-width: 100% !important; height: auto !important; min-height: 70px !important; background: #f5f5ed !important; }
+      .cm-logo-lockup { width: 292px !important; min-width: 292px !important; background: #f5f5ed !important; }
+      .cm-logo-mark { width: 70px !important; height: 70px !important; background: #f5f5ed !important; }
+      .cm-logo-text, .cm-logo-choice { color: #22232b !important; }
+      .cm-logo-mee, .cm-logo-subtitle { color: #16b64f !important; }
       .cm-panel { table-layout: fixed !important; }
       .cm-timeline svg { width: 190px !important; height: 50px !important; }
       @media (prefers-color-scheme: dark) {
         .cm-page, .cm-shell { background: #ffffff !important; color: #111111 !important; }
-        .cm-header, .cm-logo-wrap, .cm-logo { background: #f5f5ed !important; }
+        .cm-header, .cm-logo-wrap, .cm-logo-lockup, .cm-logo-lockup td, .cm-logo-mark { background: #f5f5ed !important; }
         .cm-header { border-bottom-color: #e8e0cf !important; }
         .cm-panel { background: #fbfbfb !important; border-color: #dce1e8 !important; }
         .cm-divider > div { border-top-color: #ececec !important; }
         .cm-copy, .cm-copy *, .cm-intro-left, .cm-intro-left *, .cm-address-line, .cm-shipping, .cm-shipping *, .cm-regards, .cm-regards * { color: #111111 !important; }
         .cm-meta, .cm-meta div { color: #3c4654 !important; }
         .cm-green { color: #087b2d !important; }
+        .cm-logo-text, .cm-logo-choice { color: #22232b !important; }
+        .cm-logo-mee, .cm-logo-subtitle { color: #16b64f !important; }
         .cm-badge { background: #ef6a1d !important; color: #ffffff !important; }
         .cm-manage-btn { background: #1d4fbf !important; color: #ffffff !important; }
         .cm-footer { background: #2b2b2b !important; }
       }
       [data-ogsc] .cm-page, [data-ogsc] .cm-shell, [data-ogsb] .cm-page, [data-ogsb] .cm-shell { background: #ffffff !important; color: #111111 !important; }
-      [data-ogsc] .cm-header, [data-ogsc] .cm-logo-wrap, [data-ogsc] .cm-logo, [data-ogsb] .cm-header, [data-ogsb] .cm-logo-wrap, [data-ogsb] .cm-logo { background: #f5f5ed !important; }
+      [data-ogsc] .cm-header, [data-ogsc] .cm-logo-wrap, [data-ogsc] .cm-logo-lockup, [data-ogsc] .cm-logo-lockup td, [data-ogsc] .cm-logo-mark, [data-ogsb] .cm-header, [data-ogsb] .cm-logo-wrap, [data-ogsb] .cm-logo-lockup, [data-ogsb] .cm-logo-lockup td, [data-ogsb] .cm-logo-mark { background: #f5f5ed !important; }
       [data-ogsc] .cm-panel, [data-ogsb] .cm-panel { background: #fbfbfb !important; border-color: #dce1e8 !important; }
       [data-ogsc] .cm-copy, [data-ogsc] .cm-copy *, [data-ogsc] .cm-intro-left, [data-ogsc] .cm-intro-left *, [data-ogsc] .cm-address-line, [data-ogsc] .cm-shipping, [data-ogsc] .cm-shipping *, [data-ogsc] .cm-regards, [data-ogsc] .cm-regards *, [data-ogsb] .cm-copy, [data-ogsb] .cm-copy *, [data-ogsb] .cm-intro-left, [data-ogsb] .cm-intro-left *, [data-ogsb] .cm-address-line, [data-ogsb] .cm-shipping, [data-ogsb] .cm-shipping *, [data-ogsb] .cm-regards, [data-ogsb] .cm-regards * { color: #111111 !important; }
       [data-ogsc] .cm-meta, [data-ogsc] .cm-meta div, [data-ogsb] .cm-meta, [data-ogsb] .cm-meta div { color: #3c4654 !important; }
       [data-ogsc] .cm-green, [data-ogsb] .cm-green { color: #087b2d !important; }
-      @media only screen and (max-width: 480px) {
-        .cm-header { padding-left: 18px !important; padding-right: 18px !important; }
-        .cm-logo { width: 210px !important; min-height: 62px !important; }
-        .cm-badge { font-size: 12px !important; padding: 10px 15px !important; }
-        .cm-intro { padding-left: 18px !important; padding-right: 18px !important; }
-        .cm-panel-wrap { padding-left: 18px !important; padding-right: 18px !important; }
-        .cm-product, .cm-shipping, .cm-regards { padding-left: 30px !important; padding-right: 30px !important; }
-        .cm-address-left { width: 53% !important; padding-right: 8px !important; }
-        .cm-address-right { width: 47% !important; padding-left: 4px !important; padding-right: 4px !important; }
-        .cm-timeline, .cm-timeline svg { width: 154px !important; height: 41px !important; }
-        .cm-manage-btn { font-size: 12px !important; min-width: 126px !important; padding: 10px 10px !important; }
-        .cm-copy { font-size: 12.25px !important; }
-      }
+      [data-ogsc] .cm-logo-text, [data-ogsc] .cm-logo-choice, [data-ogsb] .cm-logo-text, [data-ogsb] .cm-logo-choice { color: #22232b !important; }
+      [data-ogsc] .cm-logo-mee, [data-ogsc] .cm-logo-subtitle, [data-ogsb] .cm-logo-mee, [data-ogsb] .cm-logo-subtitle { color: #16b64f !important; }
     </style>
   `
   const html = `
     ${darkModeStyles}
-    <div class="cm-page" style="margin:0;padding:0;background:#ffffff;">
-      <div class="cm-shell" style="width:100%;max-width:640px;min-width:0;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
+    <div class="cm-page" style="width:640px;min-width:640px;margin:0 auto;padding:0;background:#ffffff;overflow-x:auto;">
+      <div class="cm-shell" style="width:640px;max-width:640px;min-width:640px;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
         <div class="cm-header" style="padding:12px 20px 8px 20px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td class="cm-logo-wrap" valign="middle" style="width:64%;padding:0;line-height:0;background:#f5f5ed;">
-                <img class="cm-logo" src="${escapeHtml(
-                  getChoiceMeeLogoUrl(),
-                )}" width="240" height="70" alt="ChoiceMee Logistics" style="display:block;width:240px;max-width:100%;height:auto;min-height:70px;background:#f5f5ed;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
+                ${buildChoiceMeeEmailLogo()}
               </td>
               <td valign="middle" align="right" style="width:36%;padding:0;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:12px;line-height:1;padding:11px 21px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
