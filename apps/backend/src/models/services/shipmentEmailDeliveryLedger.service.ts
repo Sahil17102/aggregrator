@@ -1,6 +1,6 @@
 import { pool } from '../client'
 
-const FAILED_RETRY_DELAY_MINUTES = 5
+const FAILED_RETRY_DELAY_MINUTES = 1
 const STALE_SENDING_MINUTES = 15
 
 const trimText = (value?: string | null) => String(value || '').trim()

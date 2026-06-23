@@ -97,7 +97,7 @@ cron.schedule('*/3 * * * *', async () => {
   }
 })
 
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule('*/1 * * * *', async () => {
   if (isRetryingShipmentEmails) {
     console.log('[Cron] Skipping shipment email retry: previous run still active')
     return
