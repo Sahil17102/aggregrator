@@ -4,6 +4,7 @@ import { server } from './app'
 import './crons'
 import { testDatabaseConnection } from './models/client'
 import { ensureInvoicePreferencesColumns } from './models/migrations/ensureInvoicePreferencesColumns'
+import { ensureShipmentEmailDeliveriesTable } from './models/migrations/ensureShipmentEmailDeliveriesTable'
 
 // Determine environment
 const resolveRuntimeEnv = () =>
@@ -32,6 +33,7 @@ async function startServer() {
   }
 
   await ensureInvoicePreferencesColumns()
+  await ensureShipmentEmailDeliveriesTable()
 
   // Set server timeout to 3.5 minutes (210000ms) to allow for slow external API calls
   // Default Node.js server timeout is 2 minutes (120000ms)

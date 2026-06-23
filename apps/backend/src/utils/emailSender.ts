@@ -351,6 +351,7 @@ const sendEmail = async (
   htmlContent: string,
   attachments?: AttachmentInput[],
   textContent?: string,
+  messageId?: string,
 ) => {
   const config = readEmailConfig()
   const maskedRecipient = maskEmailForLog(to)
@@ -397,6 +398,7 @@ const sendEmail = async (
         headers: {
           'X-ChoiceMee-Message-Type': 'transactional',
           'X-ChoiceMee-Mailer': 'choiceme-backend',
+          ...(messageId ? { 'X-ChoiceMee-Delivery-Id': messageId } : {}),
         },
         attachments: resolvedAttachments?.map((attachment) => ({
           filename: attachment.filename,
@@ -444,7 +446,9 @@ const sendEmail = async (
     headers: {
       'X-ChoiceMee-Message-Type': 'transactional',
       'X-ChoiceMee-Mailer': 'choiceme-backend',
+      ...(messageId ? { 'X-ChoiceMee-Delivery-Id': messageId } : {}),
     },
+    ...(messageId ? { messageId } : {}),
   }
 
   if (resolvedAttachments?.length) {
@@ -759,11 +763,9 @@ const getChoiceMeeEmailLogoSrc = () => {
 }
 
 const buildChoiceMeeEmailLogo = (src: string) => `
-  <div style="width:258px;height:76px;overflow:hidden;line-height:0;">
-    <img class="cm-logo" src="${escapeHtml(
-      src,
-    )}" alt="ChoiceMee Logistics" style="display:block;width:344px;max-width:344px;height:auto;margin:-22px 0 0 -40px;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
-  </div>
+  <img class="cm-logo" src="${escapeHtml(
+    src,
+  )}" width="250" alt="ChoiceMee Logistics" style="display:block;width:250px;max-width:250px;height:auto;margin:0;border:0;outline:none;text-decoration:none;background:transparent;-ms-interpolation-mode:bicubic;" />
 `
 
 const buildShipmentProgressMarkup = (accentColor = '#4EA3F1') => {
@@ -1168,8 +1170,8 @@ export const buildShipmentStatusEmailContent = (opts: {
       .cm-page::-webkit-scrollbar-track { background: #f5f5ed; }
       .cm-page::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
       .cm-shell { width: 100% !important; max-width: 640px !important; min-width: 0 !important; }
-      .cm-logo-wrap { background: #f5f5ed !important; }
-      .cm-logo { width: 334px !important; max-width: 334px !important; height: auto !important; background: #ffffff !important; }
+      .cm-logo-wrap { background: transparent !important; }
+      .cm-logo { width: 250px !important; max-width: 250px !important; height: auto !important; margin: 0 !important; background: transparent !important; }
       .cm-panel { table-layout: fixed !important; }
       @media only screen and (max-width: 520px) {
         .cm-page { padding: 6px !important; }
@@ -1241,7 +1243,8 @@ export const buildShipmentStatusEmailContent = (opts: {
       }
       @media (prefers-color-scheme: dark) {
         .cm-page, .cm-shell { background: #ffffff !important; color: #111111 !important; }
-        .cm-header, .cm-logo-wrap, .cm-logo { background: #ffffff !important; }
+        .cm-header { background: #ffffff !important; }
+        .cm-logo-wrap, .cm-logo { background: transparent !important; }
         .cm-header { border-bottom-color: transparent !important; }
         .cm-panel { background: #fbfbfb !important; border-color: #dce1e8 !important; }
         .cm-divider > div { border-top-color: #ececec !important; }
@@ -1252,7 +1255,8 @@ export const buildShipmentStatusEmailContent = (opts: {
         .cm-footer { background: #2b2b2b !important; }
       }
       [data-ogsc] .cm-page, [data-ogsc] .cm-shell, [data-ogsb] .cm-page, [data-ogsb] .cm-shell { background: #ffffff !important; color: #111111 !important; }
-      [data-ogsc] .cm-header, [data-ogsc] .cm-logo-wrap, [data-ogsc] .cm-logo, [data-ogsb] .cm-header, [data-ogsb] .cm-logo-wrap, [data-ogsb] .cm-logo { background: #ffffff !important; }
+      [data-ogsc] .cm-header, [data-ogsb] .cm-header { background: #ffffff !important; }
+      [data-ogsc] .cm-logo-wrap, [data-ogsc] .cm-logo, [data-ogsb] .cm-logo-wrap, [data-ogsb] .cm-logo { background: transparent !important; }
       [data-ogsc] .cm-panel, [data-ogsb] .cm-panel { background: #fbfbfb !important; border-color: #dce1e8 !important; }
       [data-ogsc] .cm-copy, [data-ogsc] .cm-copy *, [data-ogsc] .cm-intro-left, [data-ogsc] .cm-intro-left *, [data-ogsc] .cm-address-line, [data-ogsc] .cm-shipping, [data-ogsc] .cm-shipping *, [data-ogsc] .cm-regards, [data-ogsc] .cm-regards *, [data-ogsb] .cm-copy, [data-ogsb] .cm-copy *, [data-ogsb] .cm-intro-left, [data-ogsb] .cm-intro-left *, [data-ogsb] .cm-address-line, [data-ogsb] .cm-shipping, [data-ogsb] .cm-shipping *, [data-ogsb] .cm-regards, [data-ogsb] .cm-regards * { color: #111111 !important; }
       [data-ogsc] .cm-meta, [data-ogsc] .cm-meta div, [data-ogsb] .cm-meta, [data-ogsb] .cm-meta div { color: #3c4654 !important; }
@@ -1266,7 +1270,7 @@ export const buildShipmentStatusEmailContent = (opts: {
         <div class="cm-header" style="padding:11px 24px 17px 30px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td class="cm-logo-wrap" valign="top" style="width:68%;padding:0;line-height:0;background:#f5f5ed;">
+              <td class="cm-logo-wrap" valign="middle" style="width:68%;padding:0;line-height:0;background:transparent;">
                 ${buildChoiceMeeEmailLogo(logoSrc)}
               </td>
               <td valign="top" align="right" style="width:32%;padding-top:15px;">
@@ -1409,6 +1413,7 @@ export const sendShipmentStatusEmail = async (opts: {
   sellerName?: string | null
   sellerLogoUrl?: string | null
   orderDetails?: ShipmentOrderLike | null
+  messageId?: string
 }) => {
   const content = buildShipmentStatusEmailContent({
     ...opts,
@@ -1427,6 +1432,7 @@ export const sendShipmentStatusEmail = async (opts: {
       },
     ],
     content.text,
+    opts.messageId,
   )
 }
 

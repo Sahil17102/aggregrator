@@ -1,13 +1,23 @@
+import { createHash } from 'crypto'
 import { eq, sql } from 'drizzle-orm'
-import { db } from '../client'
+import { db, pool } from '../client'
 import { userProfiles } from '../schema/userProfile'
 import { users } from '../schema/users'
 import {
+  buildShipmentStatusEmailContent,
   sendShipmentStatusEmail,
   type ShipmentStatusEmailStage,
   type ShipmentOrderLike,
   resolveShipmentOrderLabel,
 } from '../../utils/emailSender'
+import {
+  claimShipmentEmailDelivery,
+  listRetryableShipmentEmailDeliveries,
+  markShipmentEmailDeliveryFailed,
+  markShipmentEmailDeliverySent,
+  normalizeShipmentEmailKey,
+  type ShipmentEmailDeliveryRow,
+} from './shipmentEmailDeliveryLedger.service'
 
 const normalizeStatus = (value?: string | null) =>
   String(value || '')
@@ -46,7 +56,9 @@ const collectUniqueEmails = (...values: Array<string | null | undefined>) => {
   return emails
 }
 
-const deriveShipmentEmailStage = (status?: string | null): ShipmentStatusEmailStage | null => {
+export const deriveShipmentEmailStage = (
+  status?: string | null,
+): ShipmentStatusEmailStage | null => {
   const normalized = normalizeStatus(status)
   if (!normalized) return null
 
@@ -176,6 +188,181 @@ function resolveOrderFallbackEmail(orderDetails?: ShipmentOrderLike | null) {
   )
 }
 
+const shipmentEmailStages = new Set<ShipmentStatusEmailStage>([
+  'booked',
+  'manifested',
+  'picked_up',
+  'in_transit',
+  'out_for_delivery',
+  'delivered',
+  'ndr',
+  'failed',
+])
+
+const isShipmentEmailStage = (value: string): value is ShipmentStatusEmailStage =>
+  shipmentEmailStages.has(value as ShipmentStatusEmailStage)
+
+const buildShipmentDeliveryMessageId = (params: {
+  sellerId: string
+  shipmentKey: string
+  stage: ShipmentStatusEmailStage
+  recipient: string
+}) => {
+  const digest = createHash('sha256')
+    .update(
+      [params.sellerId, params.shipmentKey, params.stage, params.recipient.toLowerCase()].join('|'),
+    )
+    .digest('hex')
+    .slice(0, 40)
+
+  return `<shipment-${digest}@choicemee.in>`
+}
+
+type ShipmentDeliveryContext = {
+  userId: string
+  shipmentKey: string
+  awbNumber: string
+  orderNumber?: string | null
+  orderDetails?: ShipmentOrderLike | null
+  stage: ShipmentStatusEmailStage
+  recipient: string
+  sellerName?: string | null
+  sellerLogoUrl?: string | null
+}
+
+const buildShipmentDeliveryContext = (params: ShipmentDeliveryContext) => {
+  const orderLabel = resolveShipmentOrderLabel(params.orderDetails) || params.orderNumber || null
+  const content = buildShipmentStatusEmailContent({
+    to: params.recipient,
+    awbNumber: params.awbNumber,
+    orderNumber: params.orderNumber,
+    orderLabel,
+    stage: params.stage,
+    sellerName: params.sellerName || null,
+    sellerLogoUrl: params.sellerLogoUrl || null,
+    orderDetails: params.orderDetails,
+  })
+  const messageId = buildShipmentDeliveryMessageId({
+    sellerId: params.userId,
+    shipmentKey: params.shipmentKey,
+    stage: params.stage,
+    recipient: params.recipient,
+  })
+
+  return { orderLabel, subject: content.subject, messageId }
+}
+
+async function sendClaimedShipmentEmail(
+  delivery: ShipmentEmailDeliveryRow,
+  params: ShipmentDeliveryContext,
+  orderLabel: string | null,
+) {
+  try {
+    await sendShipmentStatusEmail({
+      to: params.recipient,
+      awbNumber: params.awbNumber,
+      orderNumber: params.orderNumber,
+      orderLabel,
+      stage: params.stage,
+      sellerName: params.sellerName || null,
+      sellerLogoUrl: params.sellerLogoUrl || null,
+      orderDetails: params.orderDetails,
+      messageId:
+        delivery.messageId ||
+        buildShipmentDeliveryMessageId({
+          sellerId: params.userId,
+          shipmentKey: params.shipmentKey,
+          stage: params.stage,
+          recipient: params.recipient,
+        }),
+    })
+    await markShipmentEmailDeliverySent(delivery.id)
+
+    console.log('[ShipmentEmail] Delivery recorded', {
+      deliveryId: delivery.id,
+      userId: params.userId,
+      orderNumber: params.orderNumber,
+      awbNumber: params.awbNumber,
+      recipient: params.recipient,
+      stage: params.stage,
+      attempts: delivery.attempts,
+    })
+
+    return { sent: true as const, deliveryId: delivery.id }
+  } catch (error) {
+    await markShipmentEmailDeliveryFailed(delivery.id, error)
+    console.error('[ShipmentEmail] Failed to send seller shipment email', {
+      deliveryId: delivery.id,
+      userId: params.userId,
+      orderNumber: params.orderNumber,
+      awbNumber: params.awbNumber,
+      recipient: params.recipient,
+      stage: params.stage,
+      error,
+    })
+
+    return { sent: false as const, deliveryId: delivery.id, error }
+  }
+}
+
+async function deliverShipmentEmail(
+  params: ShipmentDeliveryContext,
+  options: { existingOnly?: boolean } = {},
+) {
+  const { orderLabel, subject, messageId } = buildShipmentDeliveryContext(params)
+  const claim = await claimShipmentEmailDelivery(
+    {
+      sellerId: params.userId,
+      shipmentKey: params.shipmentKey,
+      orderNumber: params.orderNumber,
+      awbNumber: params.awbNumber,
+      stage: params.stage,
+      recipientEmail: params.recipient,
+      subject,
+      messageId,
+    },
+    options,
+  )
+
+  if (!claim.claimed) {
+    console.log('[ShipmentEmail] Delivery skipped', {
+      userId: params.userId,
+      orderNumber: params.orderNumber,
+      awbNumber: params.awbNumber,
+      recipient: params.recipient,
+      stage: params.stage,
+      reason: claim.reason,
+    })
+    return { sent: false as const, skipped: true as const, reason: claim.reason }
+  }
+
+  return sendClaimedShipmentEmail(claim.delivery, params, orderLabel)
+}
+
+async function resolveShipmentOrderForRetry(delivery: ShipmentEmailDeliveryRow) {
+  const result = await pool.query(
+    `
+      select order_details
+      from (
+        select to_jsonb(b2c) as order_details, 1 as priority
+        from b2c_orders b2c
+        where b2c.user_id = $1
+          and (($2 <> '' and b2c.order_number = $2) or ($3 <> '' and b2c.awb_number = $3))
+        union all
+        select to_jsonb(b2b) as order_details, 2 as priority
+        from b2b_orders b2b
+        where b2b.user_id = $1
+          and (($2 <> '' and b2b.order_number = $2) or ($3 <> '' and b2b.awb_number = $3))
+      ) orders
+      order by priority
+      limit 1
+    `,
+    [delivery.sellerId, delivery.orderNumber || '', delivery.awbNumber],
+  )
+
+  return (result.rows[0]?.order_details || null) as ShipmentOrderLike | null
+}
+
 export async function sendShipmentStatusEmailIfChanged(params: {
   userId: string
   awbNumber: string
@@ -188,11 +375,6 @@ export async function sendShipmentStatusEmailIfChanged(params: {
   const nextStage = deriveShipmentEmailStage(nextStatus)
   if (!nextStage) {
     return { sent: false, reason: 'unsupported_status' as const }
-  }
-
-  const previousStage = deriveShipmentEmailStage(previousStatus)
-  if (previousStage === nextStage) {
-    return { sent: false, reason: 'duplicate_stage' as const }
   }
 
   const sellerDetails = await resolveSellerBrandDetails(userId)
@@ -211,35 +393,114 @@ export async function sendShipmentStatusEmailIfChanged(params: {
     })
   }
 
-  const orderLabel = resolveShipmentOrderLabel(orderDetails) || orderNumber || null
+  const shipmentKey = normalizeShipmentEmailKey(orderNumber, awbNumber)
+  if (!shipmentKey) {
+    return { sent: false, reason: 'missing_shipment_key' as const }
+  }
+
   let sentCount = 0
+  let skippedCount = 0
+  let failedCount = 0
 
   for (const recipient of recipients) {
-    try {
-      await sendShipmentStatusEmail({
-        to: recipient,
-        awbNumber,
-        orderNumber,
-        orderLabel,
-        stage: nextStage,
-        sellerName: sellerDetails.brandName || null,
-        sellerLogoUrl: sellerDetails.logoUrl,
-        orderDetails,
-      })
-    } catch (error) {
-      console.error('[ShipmentEmail] Failed to send seller shipment email', {
-        userId,
-        orderNumber,
-        awbNumber,
-        recipient,
-        stage: nextStage,
-        error,
+    const result = await deliverShipmentEmail({
+      userId,
+      shipmentKey,
+      awbNumber,
+      orderNumber,
+      orderDetails,
+      stage: nextStage,
+      recipient,
+      sellerName: sellerDetails.brandName,
+      sellerLogoUrl: sellerDetails.logoUrl,
+    })
+
+    if (result.sent) sentCount += 1
+    else if ('skipped' in result && result.skipped) skippedCount += 1
+    else failedCount += 1
+  }
+
+  return {
+    sent: sentCount > 0,
+    stage: nextStage,
+    previousStage: deriveShipmentEmailStage(previousStatus),
+    to: recipients,
+    sentCount,
+    skippedCount,
+    failedCount,
+  }
+}
+
+export async function retryFailedShipmentStatusEmails(limit = 25) {
+  const retryable = await listRetryableShipmentEmailDeliveries(limit)
+  const stats = { checked: retryable.length, sent: 0, skipped: 0, failed: 0 }
+
+  for (const delivery of retryable) {
+    const stage = delivery.stage
+    if (!isShipmentEmailStage(stage)) {
+      stats.skipped += 1
+      console.warn('[ShipmentEmail] Retry skipped for unsupported stage', {
+        deliveryId: delivery.id,
+        stage: delivery.stage,
       })
       continue
     }
+    const messageId =
+      delivery.messageId ||
+      buildShipmentDeliveryMessageId({
+        sellerId: delivery.sellerId,
+        shipmentKey: delivery.shipmentKey,
+        stage,
+        recipient: delivery.recipientEmail,
+      })
 
-    sentCount += 1
+    const claim = await claimShipmentEmailDelivery(
+      {
+        sellerId: delivery.sellerId,
+        shipmentKey: delivery.shipmentKey,
+        orderNumber: delivery.orderNumber,
+        awbNumber: delivery.awbNumber,
+        stage,
+        recipientEmail: delivery.recipientEmail,
+        subject: delivery.subject,
+        messageId,
+      },
+      { existingOnly: true },
+    )
+
+    if (!claim.claimed) {
+      stats.skipped += 1
+      continue
+    }
+
+    const orderDetails = await resolveShipmentOrderForRetry(claim.delivery)
+    if (!orderDetails) {
+      await markShipmentEmailDeliveryFailed(
+        claim.delivery.id,
+        new Error('Shipment order could not be resolved for email retry'),
+      )
+      stats.failed += 1
+      continue
+    }
+
+    const sellerDetails = await resolveSellerBrandDetails(claim.delivery.sellerId)
+    const params: ShipmentDeliveryContext = {
+      userId: claim.delivery.sellerId,
+      shipmentKey: claim.delivery.shipmentKey,
+      awbNumber: claim.delivery.awbNumber,
+      orderNumber: claim.delivery.orderNumber,
+      orderDetails,
+      stage,
+      recipient: claim.delivery.recipientEmail,
+      sellerName: sellerDetails.brandName,
+      sellerLogoUrl: sellerDetails.logoUrl,
+    }
+    const { orderLabel } = buildShipmentDeliveryContext(params)
+    const result = await sendClaimedShipmentEmail(claim.delivery, params, orderLabel)
+
+    if (result.sent) stats.sent += 1
+    else stats.failed += 1
   }
 
-  return { sent: sentCount > 0, stage: nextStage, to: recipients, sentCount }
+  return stats
 }

@@ -42,5 +42,8 @@ assert(foundBlockedTokens.length === 0, `Shipment email template still contains 
 assert(content.html.includes('Delivery Address'), 'Shipment email template is missing the delivery block')
 assert(content.html.includes('Shipping Details'), 'Shipment email template is missing the shipping block')
 assert(content.html.includes('cm-mobile-card'), 'Shipment email template is missing the mobile card wrapper')
+assert(content.html.includes('background:transparent'), 'Shipment email logo is not transparent')
+assert(!content.html.includes('margin:-22px 0 0 -40px'), 'Shipment email logo still uses the fragile negative-margin crop')
+assert(!content.html.includes('overflow:hidden;line-height:0'), 'Shipment email logo still uses a clipping wrapper')
 
 console.log('[ShipmentEmailTemplate] Verification passed')

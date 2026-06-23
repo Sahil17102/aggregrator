@@ -11,8 +11,10 @@ import {
 } from './weightReconciliationEmails'
 import { pollEkartTracking } from './ekartTracking'
 import { pollDeliveryOneTracking } from './deliveryOneTracking'
+import { retryFailedShipmentStatusEmails } from '../models/services/shipmentNotification.service'
 
 let isReconcilingCodRemittances = false
+let isRetryingShipmentEmails = false
 
 const runCodRemittanceReconciliation = async () => {
   if (isReconcilingCodRemittances) {
@@ -92,6 +94,25 @@ cron.schedule('*/3 * * * *', async () => {
     console.log('[Cron] Delhivery tracking poll finished', stats)
   } catch (err) {
     console.error('[Cron] Delhivery tracking poll failed:', err)
+  }
+})
+
+cron.schedule('*/5 * * * *', async () => {
+  if (isRetryingShipmentEmails) {
+    console.log('[Cron] Skipping shipment email retry: previous run still active')
+    return
+  }
+
+  isRetryingShipmentEmails = true
+  try {
+    const stats = await retryFailedShipmentStatusEmails()
+    if (stats.checked > 0) {
+      console.log('[Cron] Shipment email retry finished', stats)
+    }
+  } catch (err) {
+    console.error('[Cron] Shipment email retry failed:', err)
+  } finally {
+    isRetryingShipmentEmails = false
   }
 })
 
