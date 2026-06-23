@@ -170,6 +170,7 @@ const TRACKING_POLL_STATUSES = new Set([
   'in_transit',
   'out_for_delivery',
   'ndr',
+  'undelivered',
   'rto_initiated',
   'rto',
   'rto_in_transit',

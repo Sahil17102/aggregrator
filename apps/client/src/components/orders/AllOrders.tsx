@@ -155,6 +155,7 @@ const shippingStatusMap: Record<string, string> = {
   in_transit: 'In Transit',
   out_for_delivery: 'Out For Delivery',
   delivered: 'Delivered',
+  undelivered: 'Undelivered',
   ndr: 'NDR',
   rto_initiated: 'RTO Initiated',
   rto: 'RTO Initiated',
