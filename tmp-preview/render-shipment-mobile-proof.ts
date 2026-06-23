@@ -8,25 +8,31 @@ import {
 process.env.FRONTEND_URL = 'file:///C:/Users/Dell/Desktop/ChoiceMe-main/apps/client/public'
 
 const orderDetails: ShipmentOrderLike = {
-  orderNumber: 'ORD-1782102098032',
+  orderNumber: '48010910028534',
   orderDate: '2026-06-22T00:00:00.000Z',
   created_at: '2026-06-22T00:00:00.000Z',
-  orderName: 'jeans',
-  buyer_name: 'jeans',
+  orderName: 'Sample Product',
+  buyer_name: 'Sample Consignee',
   courier_partner: 'Courier',
   order_status: 'manifested',
   order_amount: 10,
   prepaid_amount: 10,
-  products: [{ productName: 'jeans', quantity: 1, price: 10 }],
+  buyer_phone: '9999999999',
+  delivery_address: '123 Sample Street',
+  addressLine1: '123 Sample Street',
+  city: 'Sample City',
+  state: 'Sample State',
+  pincode: '123456',
+  products: [{ productName: 'Sample Product', quantity: 1, price: 10 }],
 }
 
 const content = buildShipmentStatusEmailContent({
   to: 'preview@example.com',
-  awbNumber: '48010910028195',
-  orderNumber: 'ORD-1782102098032',
-  orderLabel: 'jeans',
+  awbNumber: '48010910028534',
+  orderNumber: '48010910028534',
+  orderLabel: 'Sample Product',
   stage: 'manifested',
-  sellerName: 'Google',
+  sellerName: 'ChoiceMee Logistics',
   orderDetails,
 })
 
