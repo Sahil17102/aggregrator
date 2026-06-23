@@ -92,6 +92,12 @@ build_backend() {
   npm run build
 }
 
+verify_shipment_email_template() {
+  log "Verifying shipment email template"
+  cd "$SOURCE_DIR/apps/backend"
+  npm run verify:shipment-status-email
+}
+
 build_landing() {
   log "Building landing page"
   cd "$SOURCE_DIR/apps/landing-page"
@@ -144,8 +150,25 @@ start_backend() {
   export SMTP_SECURE="${SMTP_SECURE:-true}"
 
   cd "$SOURCE_DIR/apps/backend"
-  pm2 delete choicemee-api >/dev/null 2>&1 || true
-  pm2 start dist/index.js --name choicemee-api --cwd "$SOURCE_DIR/apps/backend" --update-env
+  if pm2 describe choicemee-api >/dev/null 2>&1; then
+    pm2 restart choicemee-api --update-env
+  else
+    pm2 start dist/index.js --name choicemee-api --cwd "$SOURCE_DIR/apps/backend" --update-env
+  fi
+
+  local health_url="http://127.0.0.1:$BACKEND_PORT/health"
+  local attempts=0
+  local max_attempts=20
+  until curl -fsS "$health_url" >/dev/null 2>&1; do
+    attempts=$((attempts + 1))
+    if [ "$attempts" -ge "$max_attempts" ]; then
+      log "Backend health check failed after restart: $health_url"
+      pm2 logs choicemee-api --lines 40 --nostream || true
+      exit 1
+    fi
+    sleep 1
+  done
+
   pm2 save
 }
 
@@ -358,6 +381,7 @@ main() {
   ensure_pm2
   ensure_backend_env
   build_backend
+  verify_shipment_email_template
   build_landing
   build_client
   build_admin

@@ -10,7 +10,11 @@ This repo deploys to isolated VPS paths only:
 - Backend process: `choicemee-api` on `127.0.0.1:5012` through the proxy
 - Optional pgAdmin container: `choicemee-pgadmin` on `127.0.0.1:5051`
 
-Production auto deploy is pull-based on the VPS: `choicemee-auto-deploy.timer` checks `origin/main` every 5 minutes and runs `scripts/deploy/vps-deploy.sh` when a new commit is available.
+Production deploy runs in two layers:
+
+- GitHub Actions deploys `main` changes to the VPS over SSH on every push.
+- The VPS still has `choicemee-auto-deploy.timer` as a fallback that checks `origin/main` every 5 minutes and runs `scripts/deploy/vps-deploy.sh` when a new commit is available.
+- The VPS deploy script verifies the shipment email template after build and fails the deploy if the removed CTA or tracking row comes back.
 
 Required GitHub Actions secrets:
 

@@ -37,7 +37,7 @@ const buildPreviewOrder = (status: ShipmentStatusEmailStage): ShipmentOrderLike 
   pincode: '191111',
   buyer_phone: '9906573655',
   courier_partner: 'Delhivery',
-  service_type: 'Shift',
+  service_type: 'ChoiceMee Logistics',
   order_status: status,
   order_amount: 1080,
   shipping_charges: 0,
@@ -66,7 +66,7 @@ async function main() {
       orderNumber: '278635',
       orderLabel: 'Garments',
       stage,
-      sellerName: 'ChoiceMee',
+      sellerName: 'ChoiceMee Logistics',
       orderDetails,
     })
 

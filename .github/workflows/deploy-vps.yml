@@ -17,17 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pull-deploy-status:
-    runs-on: ubuntu-latest
-    steps:
-      - name: VPS pull deploy status
-        run: |
-          echo "ChoiceMee VPS is configured with a pull-based systemd timer."
-          echo "It checks origin/main every 5 minutes and deploys new commits from /opt/choicemee/source."
-          echo "Use workflow_dispatch with run_ssh_deploy=true only if VPS SSH is reachable from GitHub-hosted runners and secrets are configured."
-
   ssh-deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ssh_deploy == true }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_ssh_deploy == true) }}
     runs-on: ubuntu-latest
     env:
       VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -43,6 +34,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate deploy secrets
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ]; then
+            echo "Missing VPS_HOST or VPS_USER secret."
+            exit 1
+          fi
+          if [ -z "$VPS_SSH_KEY" ] && [ -z "$VPS_PASSWORD" ]; then
+            echo "Set either VPS_SSH_KEY or VPS_PASSWORD to deploy ChoiceMee to the VPS."
+            exit 1
+          fi
 
       - name: Install SSH helpers
         run: |
@@ -84,6 +86,7 @@ jobs:
             --exclude '**/node_modules'
             --exclude '**/dist'
             --exclude '**/build'
+            --exclude 'tmp-preview'
             --exclude '**/.env'
             --exclude '**/.env.*'
             --exclude '*.log'
