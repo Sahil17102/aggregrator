@@ -1,0 +1,6 @@
+{
+  "description": "",
+  "dependencies": {
+    "ssh2": "^1.17.0"
+  }
+}
