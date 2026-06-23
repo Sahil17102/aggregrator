@@ -970,7 +970,6 @@ export const buildShipmentStatusEmailContent = (opts: {
   const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
     String(awbNumber || '').trim(),
   )}`
-  const safeTrackingLink = escapeHtml(trackingLink)
   const productRows = buildShipmentProductRows(orderDetails)
   const amountLines = buildShipmentAmountLines(orderDetails)
   const primaryProduct = productRows[0]
@@ -1045,11 +1044,6 @@ export const buildShipmentStatusEmailContent = (opts: {
       )}</strong> to <strong>${escapeHtml(customerName)}</strong>.
     </div>
   `
-  const progressAccentColor = stage === 'ndr' || stage === 'failed' ? '#49A64D' : '#4EA3F1'
-  const progressMarkup = buildShipmentProgressMarkup(progressAccentColor).replace(
-    '<svg width="272" height="72"',
-    '<svg width="242" height="64"',
-  )
   const orderPlacedCaption = firstText(
     formatDisplayDate(orderRecord.created_at as string | Date | null | undefined),
     orderPlacedOnFallback,
@@ -1134,6 +1128,24 @@ export const buildShipmentStatusEmailContent = (opts: {
       )}!</div>
     </div>
   `
+  const mobileHeaderHtml = `
+    <div style="padding:0 0 10px;">
+      <div style="line-height:0;margin:0 0 10px;">${buildChoiceMeeEmailLogo(logoSrc)}</div>
+      <div style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:10px;line-height:1;padding:8px 12px;border-radius:999px;font-weight:700;white-space:nowrap;margin:0 0 10px;">${escapeHtml(
+        stageMeta.badge,
+      )}</div>
+      <div style="font-size:12.5px;line-height:1.33;color:#171717;font-weight:600;margin:0 0 6px;">Hello ${escapeHtml(
+        sellerDisplayName,
+      )},</div>
+      ${introHtml}
+      <div style="font-size:11.5px;line-height:1.35;color:#5f6977;font-weight:700;margin-top:10px;white-space:nowrap;">Order placed on <span>${escapeHtml(
+        orderPlacedCaption || '',
+      )}</span></div>
+      <div style="font-size:11.5px;line-height:1.35;color:#5f6977;font-weight:700;white-space:nowrap;">Order ID&nbsp; <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
+        normalizedOrderNumber || safeOrderNumber || safeAwb,
+      )}</span></div>
+    </div>
+  `
   const darkModeStyles = `
     <meta name="color-scheme" content="light only">
     <meta name="supported-color-schemes" content="light">
@@ -1159,16 +1171,25 @@ export const buildShipmentStatusEmailContent = (opts: {
       .cm-logo-wrap { background: #f5f5ed !important; }
       .cm-logo { width: 334px !important; max-width: 334px !important; height: auto !important; background: #ffffff !important; }
       .cm-panel { table-layout: fixed !important; }
-      .cm-timeline svg { width: 242px !important; height: 64px !important; }
       @media only screen and (max-width: 520px) {
-        .cm-page { padding: 8px !important; }
+        .cm-page { padding: 6px !important; }
+        .cm-page, .cm-page *, .cm-shell, .cm-shell *, .cm-mobile-stack, .cm-mobile-stack * {
+          box-sizing: border-box !important;
+        }
         .cm-shell {
           width: 100% !important;
           max-width: 100% !important;
           min-width: 0 !important;
           border-radius: 16px !important;
-          border: 1px solid #d6dbe2 !important;
+          border: 2px solid #c8d1dd !important;
           box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+        }
+        .cm-header, .cm-intro, .cm-panel-wrap, .cm-product, .cm-shipping, .cm-regards {
+          display: none !important;
+        }
+        .cm-mobile-stack {
+          display: block !important;
+          padding: 0 0 10px !important;
         }
         .cm-header { padding: 10px 12px 12px 12px !important; }
         .cm-header table, .cm-panel table, .cm-product table, .cm-shipping table {
@@ -1200,21 +1221,17 @@ export const buildShipmentStatusEmailContent = (opts: {
           word-break: break-word !important;
           white-space: normal !important;
         }
-        .cm-panel-wrap, .cm-product, .cm-shipping, .cm-regards {
-          display: none !important;
-        }
-        .cm-mobile-stack {
-          display: block !important;
+        .cm-mobile-card {
+          border: 2px solid #c8d1dd !important;
+          border-radius: 8px !important;
+          background: #fbfbfb !important;
+          overflow: hidden !important;
         }
         .cm-intro-right { padding-top: 10px !important; }
         .cm-panel-wrap { padding: 12px !important; }
         .cm-panel { width: 100% !important; table-layout: auto !important; }
         .cm-address-left { padding: 12px 12px 10px 12px !important; border-bottom: 1px solid #edf0f4 !important; }
-        .cm-address-right { padding: 12px 12px 16px 12px !important; text-align: center !important; }
         .cm-address-line { max-width: 100% !important; }
-        .cm-timeline { width: 100% !important; max-width: 190px !important; height: auto !important; margin: 6px auto 10px !important; }
-        .cm-timeline svg { width: 100% !important; max-width: 190px !important; height: auto !important; }
-        .cm-manage-btn { display: block !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; }
         .cm-product { padding: 0 12px !important; }
         .cm-product td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; font-size: 11px !important; line-height: 1.45 !important; white-space: normal !important; }
         .cm-shipping { padding: 0 12px !important; }
@@ -1232,7 +1249,6 @@ export const buildShipmentStatusEmailContent = (opts: {
         .cm-meta, .cm-meta div { color: #3c4654 !important; }
         .cm-green { color: #087b2d !important; }
         .cm-badge { background: #ef6a1d !important; color: #ffffff !important; }
-        .cm-manage-btn { background: #1d4fbf !important; color: #ffffff !important; }
         .cm-footer { background: #2b2b2b !important; }
       }
       [data-ogsc] .cm-page, [data-ogsc] .cm-shell, [data-ogsb] .cm-page, [data-ogsb] .cm-shell { background: #ffffff !important; color: #111111 !important; }
@@ -1289,33 +1305,25 @@ export const buildShipmentStatusEmailContent = (opts: {
               <td class="cm-address-left cm-copy" valign="top" style="width:52%;padding:15px 16px 23px 16px;">
                 ${consigneeDetailsHtml}
               </td>
-              <td class="cm-address-right" valign="top" align="center" style="width:48%;padding:0 12px 23px 8px;word-break:break-word;">
-                <div style="display:inline-block;text-align:center;">
-                  <div class="cm-timeline" style="width:242px;height:64px;margin:0 auto 8px;">${progressMarkup}</div>
-                  <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:13px;line-height:1;font-weight:700;padding:11px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);min-width:132px;white-space:nowrap;">Manage Your Order</a>
-                </div>
-              </td>
             </tr>
           </table>
         </div>
 
         <div class="cm-mobile-stack" style="display:none;">
           <div style="padding:0 12px 0;">
-            <div style="border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;overflow:hidden;">
-              <div style="padding:12px 12px 0;">
+            <div class="cm-mobile-card" style="border:2px solid #c8d1dd;border-radius:8px;background:#fbfbfb;overflow:hidden;">
+              <div style="padding:12px 12px 10px;">
+                ${mobileHeaderHtml}
+              </div>
+              <div style="border-top:1px solid #edf0f4;padding:12px 12px 0;">
                 ${consigneeDetailsHtml}
               </div>
-              <div style="padding:12px 12px 16px;text-align:center;">
-                <div class="cm-timeline" style="width:190px;height:50px;margin:2px auto 10px;">${progressMarkup}</div>
-                <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:13px;line-height:1;font-weight:700;padding:11px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);min-width:132px;white-space:nowrap;">Manage Your Order</a>
+              <div style="border-top:1px solid #edf0f4;padding:12px 12px 0;">
+                ${mobileProductRowsHtml}
+                ${mobileShippingHtml}
+                ${mobileRegardsHtml}
               </div>
             </div>
-          </div>
-
-          <div style="padding:14px 12px 0;">
-            ${mobileProductRowsHtml}
-            ${mobileShippingHtml}
-            ${mobileRegardsHtml}
           </div>
         </div>
 
