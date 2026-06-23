@@ -135,6 +135,7 @@ type AttachmentInput = {
   buffer?: Buffer
   filename: string
   mimeType?: string
+  cid?: string
 }
 
 export const isEmailDeliveryConfigured = () => {
@@ -366,6 +367,8 @@ const sendEmail = async (
             filename: a.filename,
             content: buffer,
             contentType: a.mimeType,
+            cid: a.cid,
+            contentDisposition: a.cid ? 'inline' : undefined,
           }
         }),
       )
@@ -399,7 +402,8 @@ const sendEmail = async (
           filename: attachment.filename,
           content: attachment.content.toString('base64'),
           type: attachment.contentType,
-          disposition: 'attachment',
+          disposition: attachment.cid ? 'inline' : 'attachment',
+          contentId: attachment.cid,
         })),
       } as any)
 
@@ -739,7 +743,12 @@ const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
   }
 }
 
-const getChoiceMeeEmailLogoUrl = () => {
+const getChoiceMeeEmailLogoPath = () =>
+  path.resolve(backendRoot, '../client/public/brand/shipment-email-logo.png')
+
+const getChoiceMeeEmailLogoCid = () => 'choiceme-shipment-logo'
+
+const getChoiceMeeEmailLogoSrc = () => {
   const frontendBaseUrl = getFrontendBaseUrl().replace(/\/$/, '')
   const cacheVersion = process.env.SHIPMENT_EMAIL_LOGO_VERSION?.trim() || '20260622-hd2'
   const cacheSuffix = frontendBaseUrl.startsWith('file:')
@@ -749,11 +758,11 @@ const getChoiceMeeEmailLogoUrl = () => {
   return `${frontendBaseUrl}/brand/shipment-email-logo.png${cacheSuffix}`
 }
 
-const buildChoiceMeeEmailLogo = () => `
-  <div style="width:229px;height:66px;overflow:hidden;line-height:0;">
+const buildChoiceMeeEmailLogo = (src: string) => `
+  <div style="width:258px;height:76px;overflow:hidden;line-height:0;">
     <img class="cm-logo" src="${escapeHtml(
-      getChoiceMeeEmailLogoUrl(),
-    )}" alt="ChoiceMee Logistics" style="display:block;width:334px;max-width:334px;height:auto;margin:-28px 0 0 -49px;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
+      src,
+    )}" alt="ChoiceMee Logistics" style="display:block;width:344px;max-width:344px;height:auto;margin:-22px 0 0 -40px;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
   </div>
 `
 
@@ -926,6 +935,7 @@ export const buildShipmentStatusEmailContent = (opts: {
   stage: ShipmentStatusEmailStage
   sellerName?: string | null
   sellerLogoUrl?: string | null
+  brandLogoSrc?: string | null
   orderDetails?: ShipmentOrderLike | null
 }) => {
   const { awbNumber, orderNumber, orderLabel, stage, sellerName, orderDetails } = opts
@@ -936,6 +946,7 @@ export const buildShipmentStatusEmailContent = (opts: {
   const safeOrderNumber = escapeHtml(normalizedOrderNumber)
   const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
   const sellerDisplayName = firstText(sellerName, 'ChoiceMee')
+  const logoSrc = firstText(opts.brandLogoSrc, getChoiceMeeEmailLogoSrc())
   const stageMeta = getShipmentStatusPresentation(stage)
   const rawStatusLabel = normalizeShipmentStatusText(orderRecord.order_status as string | undefined)
   const orderPlacedOn = formatDisplayDateTime(orderRecord.created_at as string | Date | null | undefined)
@@ -954,12 +965,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     orderRecord.partner_display_name,
     courierName,
   )
-  const footerTeamName = firstText(
-    orderRecord.service_type,
-    sellerDisplayName.toLowerCase().includes('logistics')
-      ? sellerDisplayName
-      : `${sellerDisplayName} Logistics`,
-  )
+  const footerTeamName = 'ChoiceMee Logistics'
   const visibleStatus = firstText(rawStatusLabel, stageMeta.badge)
   const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
     String(awbNumber || '').trim(),
@@ -1029,25 +1035,14 @@ export const buildShipmentStatusEmailContent = (opts: {
         : ''
     }
   `
-  const introSentence = `Your order ${orderNumberDisplay || safeOrderNumber || safeAwb} has been ${
-    stageMeta.badge
-  } to ${customerName}. Thank you for using ${introPartnerName} as your logistics partner for this delivery.`
+  const introSentence = `Hello ${sellerDisplayName}, Your order ${
+    orderNumberDisplay || safeOrderNumber || safeAwb
+  } has been ${stageMeta.actionText} to ${customerName}.`
   const introHtml = `
     <div style="max-width:390px;font-size:12.5px;line-height:1.33;color:#171717;font-weight:600;">
-      Your order <strong>${escapeHtml(normalizedOrderNumber || safeOrderNumber || safeAwb)}</strong> has been <strong>${escapeHtml(
+      Your order <strong>${escapeHtml(orderNumberDisplay || safeOrderNumber || safeAwb)}</strong> has been <strong>${escapeHtml(
         stageMeta.actionText,
-      )}</strong> to <strong>${escapeHtml(customerName)}</strong>. Thank you for using <strong>${escapeHtml(
-        introPartnerName,
-      )}</strong> as your logistics<br/>
-      partner for this delivery.
-    </div>
-  `
-  const introHtmlNdr = `
-    <div style="max-width:390px;font-size:12.5px;line-height:1.33;color:#171717;font-weight:600;">
-      Your order <strong>${escapeHtml(normalizedOrderNumber || safeOrderNumber || safeAwb)}</strong> has been <strong>${escapeHtml(
-        stageMeta.actionText,
-      )}</strong> to <strong>${escapeHtml(customerName)}</strong>. Thank you for choosing <strong>ChoiceMee Logistic</strong><br/>
-      as your <strong>${escapeHtml(introPartnerName)}</strong> partner.
+      )}</strong> to <strong>${escapeHtml(customerName)}</strong>.
     </div>
   `
   const progressAccentColor = stage === 'ndr' || stage === 'failed' ? '#49A64D' : '#4EA3F1'
@@ -1101,8 +1096,8 @@ export const buildShipmentStatusEmailContent = (opts: {
         width: 100% !important;
         max-width: 640px !important;
         min-width: 0 !important;
-        overflow-x: scroll !important;
-        overflow-y: hidden !important;
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
         -webkit-overflow-scrolling: touch !important;
         scrollbar-color: #94a3b8 #f5f5ed;
         scrollbar-width: thin;
@@ -1110,11 +1105,37 @@ export const buildShipmentStatusEmailContent = (opts: {
       .cm-page::-webkit-scrollbar { height: 8px; }
       .cm-page::-webkit-scrollbar-track { background: #f5f5ed; }
       .cm-page::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
-      .cm-shell { width: 640px !important; max-width: 640px !important; min-width: 640px !important; }
+      .cm-shell { width: 100% !important; max-width: 640px !important; min-width: 0 !important; }
       .cm-logo-wrap { background: #f5f5ed !important; }
       .cm-logo { width: 334px !important; max-width: 334px !important; height: auto !important; background: #ffffff !important; }
       .cm-panel { table-layout: fixed !important; }
       .cm-timeline svg { width: 242px !important; height: 64px !important; }
+      @media only screen and (max-width: 520px) {
+        .cm-page { padding: 8px !important; }
+        .cm-shell { width: 100% !important; max-width: 100% !important; min-width: 0 !important; border-radius: 16px !important; }
+        .cm-header { padding: 10px 12px 12px 12px !important; }
+        .cm-logo-wrap { width: auto !important; }
+        .cm-logo { width: 150px !important; max-width: 150px !important; margin: 0 !important; }
+        .cm-badge { font-size: 10px !important; padding: 8px 12px !important; }
+        .cm-intro { padding: 10px 12px 0 !important; }
+        .cm-intro table, .cm-panel table, .cm-product table, .cm-shipping table { display: block !important; width: 100% !important; }
+        .cm-intro td, .cm-panel td, .cm-product td, .cm-shipping td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; text-align: left !important; }
+        .cm-intro-left, .cm-intro-right, .cm-shipping-right, .cm-address-right { word-break: break-word !important; white-space: normal !important; }
+        .cm-intro-right { padding-top: 8px !important; }
+        .cm-panel-wrap { padding: 14px 12px 8px 12px !important; }
+        .cm-panel { width: 100% !important; }
+        .cm-address-left { padding: 13px 12px 8px 12px !important; }
+        .cm-address-right { padding: 8px 12px 18px 12px !important; }
+        .cm-timeline { width: 160px !important; height: 42px !important; margin: 8px 0 10px 0 !important; }
+        .cm-timeline svg { width: 160px !important; height: 42px !important; }
+        .cm-manage-btn { display: block !important; width: 100% !important; max-width: 240px !important; margin: 0 auto !important; }
+        .cm-product { padding: 0 12px !important; }
+        .cm-product td { font-size: 11px !important; line-height: 1.45 !important; white-space: normal !important; }
+        .cm-shipping { padding: 0 12px !important; }
+        .cm-shipping > div { padding-top: 22px !important; }
+        .cm-shipping-right { padding-top: 10px !important; }
+        .cm-regards { padding: 22px 12px 12px !important; }
+      }
       @media (prefers-color-scheme: dark) {
         .cm-page, .cm-shell { background: #ffffff !important; color: #111111 !important; }
         .cm-header, .cm-logo-wrap, .cm-logo { background: #ffffff !important; }
@@ -1138,13 +1159,13 @@ export const buildShipmentStatusEmailContent = (opts: {
   `
   const html = `
     ${darkModeStyles}
-    <div class="cm-page" style="width:100%;max-width:640px;min-width:0;margin:0 auto;padding:0;background:#ffffff;overflow-x:scroll;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-color:#94a3b8 #f5f5ed;scrollbar-width:thin;">
-      <div class="cm-shell" style="width:640px;max-width:640px;min-width:640px;margin:0 auto;background:#ffffff;border:0;border-radius:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
+    <div class="cm-page" style="width:100%;max-width:640px;min-width:0;margin:0 auto;padding:12px;background:#f5f1e7;overflow-x:hidden;overflow-y:visible;-webkit-overflow-scrolling:touch;scrollbar-color:#94a3b8 #f5f5ed;scrollbar-width:thin;">
+      <div class="cm-shell" style="width:100%;max-width:640px;min-width:0;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 10px 24px rgba(15,23,42,0.08);overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111111;">
         <div class="cm-header" style="padding:11px 24px 17px 30px;background:#f5f5ed;border-bottom:1px solid #e8e0cf;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td class="cm-logo-wrap" valign="top" style="width:68%;padding:0;line-height:0;background:#f5f5ed;">
-                ${buildChoiceMeeEmailLogo()}
+                ${buildChoiceMeeEmailLogo(logoSrc)}
               </td>
               <td valign="top" align="right" style="width:32%;padding-top:15px;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:12px;line-height:1;padding:11px 21px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
@@ -1162,7 +1183,7 @@ export const buildShipmentStatusEmailContent = (opts: {
                 <div style="max-width:390px;font-size:12.5px;font-weight:700;line-height:1.3;color:#171717;margin:0 0 4px;">Hello ${escapeHtml(
                   sellerDisplayName,
                 )} ,</div>
-                ${stage === 'ndr' || stage === 'failed' ? introHtmlNdr : introHtml}
+                ${introHtml}
               </td>
               <td class="cm-intro-right cm-meta" valign="top" align="right" style="width:34%;word-break:break-word;">
                 <div style="font-size:11.5px;line-height:1.35;color:#5f6977;text-align:right;font-weight:700;white-space:nowrap;">Order placed on <span>${escapeHtml(
@@ -1255,7 +1276,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     ...amountLines.map((row) => `${row.label}: ${row.value}`),
     `Courier Name: ${courierName}`,
     `Tracking Link: ${trackingLink}`,
-    `Regards, Team ${footerTeamName}!`,
+    'Regards, Team ChoiceMee Logistics!',
   ].filter(Boolean)
 
   return {
@@ -1275,8 +1296,24 @@ export const sendShipmentStatusEmail = async (opts: {
   sellerLogoUrl?: string | null
   orderDetails?: ShipmentOrderLike | null
 }) => {
-  const content = buildShipmentStatusEmailContent(opts)
-  await sendEmail(opts.to, content.subject, content.html, undefined, content.text)
+  const content = buildShipmentStatusEmailContent({
+    ...opts,
+    brandLogoSrc: 'cid:choiceme-shipment-logo',
+  })
+  await sendEmail(
+    opts.to,
+    content.subject,
+    content.html,
+    [
+      {
+        path: getChoiceMeeEmailLogoPath(),
+        filename: 'shipment-email-logo.png',
+        mimeType: 'image/png',
+        cid: getChoiceMeeEmailLogoCid(),
+      },
+    ],
+    content.text,
+  )
 }
 
 export const sendSmtpTestEmail = async (to?: string) => {
@@ -1827,5 +1864,3 @@ export const sendKycStatusEmail = async (opts: {
 
   await sendEmail(to, subject, html)
 }
-
-
