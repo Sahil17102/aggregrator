@@ -1084,6 +1084,56 @@ export const buildShipmentStatusEmailContent = (opts: {
         </table>
       `
       : ''
+  const mobileProductRowsHtml = productRows.length
+    ? `
+        <div style="border-top:1px solid #ececec;padding-top:12px;">
+          ${productRows
+            .map(
+              (row) => `
+                <div style="padding:8px 0;border-bottom:1px solid #ececec;">
+                  <div style="font-size:12.5px;line-height:1.5;color:#111111;">
+                    <strong style="font-size:12.5px;">Product Name:</strong>
+                    <span class="cm-green" style="color:#1f8a34;font-weight:700;padding-left:6px;">${escapeHtml(
+                      row.name,
+                    )}</span>
+                  </div>
+                  <div style="font-size:12.5px;line-height:1.68;color:#111111;font-weight:700;margin-top:2px;">
+                    Qty: ${escapeHtml(row.qty)}${row.amount ? `&nbsp;&nbsp; Price:&nbsp; ${escapeHtml(row.amount)}` : ''}
+                  </div>
+                </div>
+              `,
+            )
+            .join('')}
+        </div>
+      `
+    : ''
+  const mobileShippingHtml = `
+    <div style="border-top:1px solid #ececec;padding-top:18px;">
+      <div style="font-size:15px;font-weight:800;color:#111111;margin-bottom:8px;">Shipping Details</div>
+      <div style="font-size:12.5px;line-height:1.55;color:#111111;">
+        <div style="margin-bottom:2px;"><strong>Courier Name:</strong> <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
+          courierName,
+        )}</span></div>
+        <div><strong>AWB number:</strong> <span class="cm-green" style="color:#1f8a34;font-weight:700;">${escapeHtml(
+          safeAwb,
+        )}</span></div>
+      </div>
+      <div style="margin-top:14px;font-size:12.5px;line-height:1.7;color:#111111;font-weight:700;">Item(s) total : ${escapeHtml(
+        orderTotalValue,
+      )}</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#111111;font-weight:700;">Amount paid : ${escapeHtml(
+        amountPaidValue,
+      )}</div>
+    </div>
+  `
+  const mobileRegardsHtml = `
+    <div style="padding:22px 0 12px;">
+      <div class="cm-copy" style="font-size:12.5px;line-height:1.55;color:#111111;margin:0 0 2px;">Regards,</div>
+      <div class="cm-copy" style="font-size:12.5px;line-height:1.55;color:#111111;font-weight:700;">Team ${escapeHtml(
+        footerTeamName,
+      )}!</div>
+    </div>
+  `
   const darkModeStyles = `
     <meta name="color-scheme" content="light only">
     <meta name="supported-color-schemes" content="light">
@@ -1112,29 +1162,65 @@ export const buildShipmentStatusEmailContent = (opts: {
       .cm-timeline svg { width: 242px !important; height: 64px !important; }
       @media only screen and (max-width: 520px) {
         .cm-page { padding: 8px !important; }
-        .cm-shell { width: 100% !important; max-width: 100% !important; min-width: 0 !important; border-radius: 16px !important; }
+        .cm-shell {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          border-radius: 16px !important;
+          border: 1px solid #d6dbe2 !important;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+        }
         .cm-header { padding: 10px 12px 12px 12px !important; }
-        .cm-logo-wrap { width: auto !important; }
+        .cm-header table, .cm-panel table, .cm-product table, .cm-shipping table {
+          display: block !important;
+          width: 100% !important;
+        }
+        .cm-header tr, .cm-panel tr, .cm-product tr, .cm-shipping tr {
+          display: block !important;
+          width: 100% !important;
+        }
+        .cm-header td {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          text-align: left !important;
+        }
+        .cm-header td:last-child { padding-top: 10px !important; }
+        .cm-logo-wrap { width: 100% !important; }
         .cm-logo { width: 150px !important; max-width: 150px !important; margin: 0 !important; }
-        .cm-badge { font-size: 10px !important; padding: 8px 12px !important; }
+        .cm-badge { font-size: 10px !important; padding: 8px 12px !important; float: none !important; }
         .cm-intro { padding: 10px 12px 0 !important; }
-        .cm-intro table, .cm-panel table, .cm-product table, .cm-shipping table { display: block !important; width: 100% !important; }
-        .cm-intro td, .cm-panel td, .cm-product td, .cm-shipping td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; text-align: left !important; }
-        .cm-intro-left, .cm-intro-right, .cm-shipping-right, .cm-address-right { word-break: break-word !important; white-space: normal !important; }
-        .cm-intro-right { padding-top: 8px !important; }
-        .cm-panel-wrap { padding: 14px 12px 8px 12px !important; }
-        .cm-panel { width: 100% !important; }
-        .cm-address-left { padding: 13px 12px 8px 12px !important; }
-        .cm-address-right { padding: 8px 12px 18px 12px !important; }
-        .cm-timeline { width: 160px !important; height: 42px !important; margin: 8px 0 10px 0 !important; }
-        .cm-timeline svg { width: 160px !important; height: 42px !important; }
-        .cm-manage-btn { display: block !important; width: 100% !important; max-width: 240px !important; margin: 0 auto !important; }
+        .cm-intro table { display: block !important; width: 100% !important; }
+        .cm-intro td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; text-align: left !important; }
+        .cm-intro-left, .cm-intro-right, .cm-shipping-left, .cm-shipping-right, .cm-address-left, .cm-address-right {
+          width: 100% !important;
+          max-width: 100% !important;
+          word-break: break-word !important;
+          white-space: normal !important;
+        }
+        .cm-panel-wrap, .cm-product, .cm-shipping, .cm-regards {
+          display: none !important;
+        }
+        .cm-mobile-stack {
+          display: block !important;
+        }
+        .cm-intro-right { padding-top: 10px !important; }
+        .cm-panel-wrap { padding: 12px !important; }
+        .cm-panel { width: 100% !important; table-layout: auto !important; }
+        .cm-address-left { padding: 12px 12px 10px 12px !important; border-bottom: 1px solid #edf0f4 !important; }
+        .cm-address-right { padding: 12px 12px 16px 12px !important; text-align: center !important; }
+        .cm-address-line { max-width: 100% !important; }
+        .cm-timeline { width: 100% !important; max-width: 190px !important; height: auto !important; margin: 6px auto 10px !important; }
+        .cm-timeline svg { width: 100% !important; max-width: 190px !important; height: auto !important; }
+        .cm-manage-btn { display: block !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; }
         .cm-product { padding: 0 12px !important; }
-        .cm-product td { font-size: 11px !important; line-height: 1.45 !important; white-space: normal !important; }
+        .cm-product td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; font-size: 11px !important; line-height: 1.45 !important; white-space: normal !important; }
         .cm-shipping { padding: 0 12px !important; }
         .cm-shipping > div { padding-top: 22px !important; }
         .cm-shipping-right { padding-top: 10px !important; }
-        .cm-regards { padding: 22px 12px 12px !important; }
+        .cm-regards { padding: 18px 12px 12px !important; }
       }
       @media (prefers-color-scheme: dark) {
         .cm-page, .cm-shell { background: #ffffff !important; color: #111111 !important; }
@@ -1211,6 +1297,26 @@ export const buildShipmentStatusEmailContent = (opts: {
               </td>
             </tr>
           </table>
+        </div>
+
+        <div class="cm-mobile-stack" style="display:none;">
+          <div style="padding:0 12px 0;">
+            <div style="border:1px solid #dce1e8;border-radius:2px;background:#fbfbfb;overflow:hidden;">
+              <div style="padding:12px 12px 0;">
+                ${consigneeDetailsHtml}
+              </div>
+              <div style="padding:12px 12px 16px;text-align:center;">
+                <div class="cm-timeline" style="width:190px;height:50px;margin:2px auto 10px;">${progressMarkup}</div>
+                <a class="cm-manage-btn" href="${safeTrackingLink}" style="display:inline-block;background:#1d4fbf;color:#ffffff;text-decoration:none;font-size:13px;line-height:1;font-weight:700;padding:11px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(29,79,191,0.25);min-width:132px;white-space:nowrap;">Manage Your Order</a>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:14px 12px 0;">
+            ${mobileProductRowsHtml}
+            ${mobileShippingHtml}
+            ${mobileRegardsHtml}
+          </div>
         </div>
 
         <div class="cm-product" style="padding:0 32px 0;">
