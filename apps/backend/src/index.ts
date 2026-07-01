@@ -3,6 +3,7 @@ import path from 'path'
 import { server } from './app'
 import './crons'
 import { testDatabaseConnection } from './models/client'
+import { ensureInsuranceChargeColumns } from './models/migrations/ensureInsuranceChargeColumns'
 import { ensureInvoicePreferencesColumns } from './models/migrations/ensureInvoicePreferencesColumns'
 import { ensureShipmentEmailDeliveriesTable } from './models/migrations/ensureShipmentEmailDeliveriesTable'
 
@@ -32,6 +33,7 @@ async function startServer() {
     process.exit(1)
   }
 
+  await ensureInsuranceChargeColumns()
   await ensureInvoicePreferencesColumns()
   await ensureShipmentEmailDeliveriesTable()
 

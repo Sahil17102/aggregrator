@@ -6,6 +6,7 @@ import {
   useAvailableCouriers,
   type UseAvailableCouriersParams,
 } from '../../hooks/Integrations/useCouriers'
+import { usePaymentOptions } from '../../hooks/usePaymentOptions'
 import { defaultLogo } from '../../utils/constants'
 import { getCourierDisplayName, getCourierLogo } from '../../utils/courierDisplay'
 import { normalizeParcelWeightInputToGrams } from '../../utils/weight'
@@ -18,11 +19,35 @@ const TEXT_PRIMARY = '#102A54'
 const TEXT_SECONDARY = '#4C6185'
 const SURFACE = '#F6F8FC'
 
+const roundMoney = (value: number) => Math.round(value * 100) / 100
+
+const computeInsuranceChargePreview = ({
+  enabled,
+  threshold,
+  baseAmount,
+  percentage,
+  shipmentValue,
+}: {
+  enabled: boolean
+  threshold: number
+  baseAmount: number
+  percentage: number
+  shipmentValue: number
+}) => {
+  const normalizedValue = roundMoney(Math.max(0, shipmentValue))
+  if (!enabled || normalizedValue <= 0) return 0
+  if (normalizedValue <= threshold) return roundMoney(baseAmount)
+
+  return roundMoney(baseAmount + (Math.max(0, normalizedValue - threshold) * percentage) / 100)
+}
+
 export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b2c' }) => {
   const { watch, setValue, clearErrors } = useFormContext<B2BFormData | B2CFormData>()
+  const { data: paymentOptions } = usePaymentOptions()
 
   const products = watch('products') ?? []
   const b2bBoxes = watch('boxes') as B2BBox[] | undefined
+  const b2bInvoices = (watch('invoices') as Array<{ invoiceValue?: number }> | undefined) ?? []
   const deliveryPincode = watch('pincode') ?? ''
   const pickupPincode = watch('pickupLocationPincode') ?? ''
   const pickupName = watch('pickupLocationName') ?? ''
@@ -47,8 +72,6 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
   const courierCod = Number(watch('courierCod') || 0)
   const forwardCharges = Number(watch('forwardCharges') || 0)
   const otherCharges = Number(watch('otherCharges') || 0)
-  const walletDebitPreview =
-    forwardCharges + otherCharges + (orderType === 'cod' ? courierCod : 0)
 
   // COMPUTE TOTAL WEIGHT AND PRICE
   let totalWeight = 0
@@ -88,6 +111,11 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
     )
   }
 
+  const totalB2BInvoiceValue = b2bInvoices.reduce(
+    (sum, invoice) => sum + Number(invoice?.invoiceValue ?? 0),
+    0,
+  )
+
   // Total shown to seller: customer-facing charges only (what customer pays)
   // Includes: products + shipping + COD (for COD orders only) + transaction_fee + gift_wrap - discount - prepaid
   // Does NOT include courier freight/COD/other charges (those are what seller pays to courier)
@@ -97,6 +125,21 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
     totalProductPrice + shippingCharges + transactionFee + giftWrap - discount,
     0,
   )
+  const insuranceChargeBasis =
+    shipment_type === 'b2b'
+      ? Math.max(totalB2BInvoiceValue + transactionFee - discount, 0)
+      : declaredOrderValue
+  const insuranceCharge = computeInsuranceChargePreview({
+    enabled: Boolean(paymentOptions?.insuranceChargeEnabled),
+    threshold: Number(paymentOptions?.insuranceChargeThreshold ?? 2000),
+    baseAmount: Number(paymentOptions?.insuranceChargeBaseAmount ?? 5),
+    percentage: Number(paymentOptions?.insuranceChargePercentage ?? 0.5),
+    shipmentValue: insuranceChargeBasis,
+  })
+  const walletDebitPreview =
+    forwardCharges + otherCharges + (orderType === 'cod' ? courierCod : 0) + insuranceCharge
+  const shouldShowWalletDebitPreview =
+    Boolean(selectedCourierOptionKey || selectedCourierId) && walletDebitPreview > 0
   const courierPayloadOrderAmount =
     declaredOrderValue > 0 ? declaredOrderValue : Math.max(totalProductPrice, 0)
   const codChargeBasis = Math.max(totalOrderValue, 0)
@@ -336,7 +379,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                 )}
               </Stack>
 
-              {walletDebitPreview > 0 && (
+              {shouldShowWalletDebitPreview && (
                 <>
                   <Divider sx={{ my: 2 }} />
                   <Stack spacing={1.2}>
@@ -344,7 +387,21 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                       Wallet Debit Preview
                     </Typography>
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography sx={{ color: TEXT_PRIMARY, fontWeight: 800 }}>Courier Charge</Typography>
+                      <Typography sx={{ color: TEXT_SECONDARY }}>Courier Charge</Typography>
+                      <Typography sx={{ fontWeight: 900, color: TEXT_PRIMARY }}>
+                        {formatCurrency(forwardCharges + otherCharges + (orderType === 'cod' ? courierCod : 0))}
+                      </Typography>
+                    </Stack>
+                    {insuranceCharge > 0 && (
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography sx={{ color: TEXT_SECONDARY }}>Insurance Charge</Typography>
+                        <Typography sx={{ fontWeight: 800, color: TEXT_PRIMARY }}>
+                          {formatCurrency(insuranceCharge)}
+                        </Typography>
+                      </Stack>
+                    )}
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography sx={{ color: TEXT_PRIMARY, fontWeight: 800 }}>Total Wallet Debit</Typography>
                       <Typography sx={{ fontWeight: 900, color: TEXT_PRIMARY }}>
                         {formatCurrency(walletDebitPreview)}
                       </Typography>

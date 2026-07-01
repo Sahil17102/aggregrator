@@ -89,6 +89,7 @@ import {
   normalizeB2CShippingMode,
 } from './b2cRateCard.service'
 import { fetchPostalLocationsByPincode } from './location.service'
+import { getPaymentOptions } from './paymentOptions.service'
 import { calculateFreight } from './pricing/chargeableFreight'
 
 // Load correct .env based on NODE_ENV
@@ -207,13 +208,15 @@ const getExpectedWalletDebitFromOrder = (order: {
   freight_charges?: number | string | null
   other_charges?: number | string | null
   cod_charges?: number | string | null
+  insurance_charge?: number | string | null
 }) => {
   const freightCharges = Number(order.freight_charges ?? 0)
   const otherCharges = Number(order.other_charges ?? 0)
   const codCharges = Number(order.cod_charges ?? 0)
+  const insuranceCharge = Number(order.insurance_charge ?? 0)
   return String(order.order_type || '').toLowerCase() === 'cod'
-    ? freightCharges + otherCharges + codCharges
-    : freightCharges + otherCharges
+    ? freightCharges + otherCharges + codCharges + insuranceCharge
+    : freightCharges + otherCharges + insuranceCharge
 }
 
 const getExpectedWalletDebitFromChargeParts = ({
@@ -221,16 +224,21 @@ const getExpectedWalletDebitFromChargeParts = ({
   freightCharges,
   otherCharges,
   codCharges,
+  insuranceCharge,
 }: {
   paymentType?: string | null
   freightCharges?: number | string | null
   otherCharges?: number | string | null
   codCharges?: number | string | null
+  insuranceCharge?: number | string | null
 }) => {
   const freight = Number(freightCharges ?? 0)
   const other = Number(otherCharges ?? 0)
   const cod = Number(codCharges ?? 0)
-  return String(paymentType || '').toLowerCase() === 'cod' ? freight + other + cod : freight + other
+  const insurance = Number(insuranceCharge ?? 0)
+  return String(paymentType || '').toLowerCase() === 'cod'
+    ? freight + other + cod + insurance
+    : freight + other + insurance
 }
 
 const getWalletDebitReasonFromOrder = (orderType: string | null | undefined) =>
@@ -455,6 +463,7 @@ const debitManifestSuccessChargeIfNeeded = async ({
       provider_quote_charge: Number(order.courier_cost ?? 0),
       other_charges: Number(order.other_charges ?? 0),
       cod_charges: String(order.order_type || '').toLowerCase() === 'cod' ? Number(order.cod_charges ?? 0) : 0,
+      insurance_charge: Number(order.insurance_charge ?? 0),
       final_courier_charge: getExpectedWalletDebitFromOrder(order),
       triggered_by: 'manifest_success',
       debit_recovery_after_refund: totalManifestRefund > 0,
@@ -1239,6 +1248,71 @@ const QUOTE_BACKED_PROVIDER_KEYS = new Set(['deliveryone'])
 const roundMoneyValue = (value: unknown) => {
   const parsed = Number(value ?? 0)
   return Math.round((Number.isFinite(parsed) ? parsed : 0) * 100) / 100
+}
+
+type ShipmentInsuranceSettings = {
+  enabled: boolean
+  threshold: number
+  baseAmount: number
+  percentage: number
+}
+
+const getShipmentInsuranceSettings = async (): Promise<ShipmentInsuranceSettings> => {
+  const settings = await getPaymentOptions()
+  return {
+    enabled: Boolean(settings.insuranceChargeEnabled ?? false),
+    threshold: Math.max(0, Math.floor(Number(settings.insuranceChargeThreshold ?? 2000))),
+    baseAmount: roundMoneyValue(settings.insuranceChargeBaseAmount ?? 5),
+    percentage: Math.max(0, Number(settings.insuranceChargePercentage ?? 0.5)),
+  }
+}
+
+const computeShipmentInsuranceCharge = ({
+  shipmentValue,
+  settings,
+}: {
+  shipmentValue: number
+  settings: ShipmentInsuranceSettings
+}) => {
+  const normalizedShipmentValue = roundMoneyValue(Math.max(0, shipmentValue))
+  if (!settings.enabled || normalizedShipmentValue <= 0) {
+    return 0
+  }
+
+  const extraValue = Math.max(0, normalizedShipmentValue - settings.threshold)
+  const extraCharge = roundMoneyValue((extraValue * settings.percentage) / 100)
+
+  if (normalizedShipmentValue <= settings.threshold) {
+    return roundMoneyValue(settings.baseAmount)
+  }
+
+  return roundMoneyValue(settings.baseAmount + extraCharge)
+}
+
+const computeB2CInsuranceChargeBasis = (params: ShipmentParams) => {
+  const orderAmount = Number(params.order_amount ?? 0)
+  const shippingCharges = Number(params.shipping_charges ?? 0)
+  const transactionFee = Number(params.transaction_fee ?? 0)
+  const giftWrap = Number(params.gift_wrap ?? 0)
+  const discount = Number(params.discount ?? 0)
+
+  return roundMoneyValue(
+    Math.max(orderAmount + shippingCharges + transactionFee + giftWrap - discount, 0),
+  )
+}
+
+const computeB2BInsuranceChargeBasis = (params: ShipmentParams) => {
+  const invoiceTotal = Array.isArray((params as any).invoices)
+    ? (params as any).invoices.reduce(
+        (sum: number, invoice: any) => sum + Number(invoice?.invoiceValue ?? invoice?.invoice_value ?? 0),
+        0,
+      )
+    : 0
+  const baseValue = invoiceTotal > 0 ? invoiceTotal : Number(params.invoice_amount ?? params.order_amount ?? 0)
+  const transactionFee = Number(params.transaction_fee ?? 0)
+  const discount = Number(params.discount ?? 0)
+
+  return roundMoneyValue(Math.max(baseValue + transactionFee - discount, 0))
 }
 
 const isQuoteBackedProvider = (value?: string | null) =>
@@ -3240,6 +3314,8 @@ export interface InsertB2COrderParams {
   shippingMode?: string | null
   selectedMaxSlabWeight?: number | null
   manifestError?: string | null
+  insuranceCharge?: number
+  insuranceChargeBasis?: number
 }
 
 export async function createB2COrder({
@@ -3261,6 +3337,8 @@ export async function createB2COrder({
   shippingMode,
   selectedMaxSlabWeight,
   manifestError,
+  insuranceCharge = 0,
+  insuranceChargeBasis = 0,
 }: InsertB2COrderParams) {
   const orderAmount = Number(params.order_amount ?? 0)
   const normalizedOrderNumber = await ensureUniqueMerchantOrderNumber(tx, userId, params.order_number)
@@ -3342,6 +3420,8 @@ export async function createB2COrder({
         shipping_charges: shippingCharges, // What seller charges customer (total shipping including other_charges)
         other_charges: otherCharges, // Other charges from courier serviceability API
         freight_charges: freightCharges, // What platform charges seller (based on rate card)
+        insurance_charge: insuranceCharge,
+        insurance_charge_basis: insuranceChargeBasis,
         courier_cost: courierCost ?? null, // What platform pays courier (actual courier cost - can be null initially, updated via webhook)
         transaction_fee: transactionFee,
         gift_wrap: giftWrap,
@@ -4460,11 +4540,18 @@ export const createB2CShipmentService = async (
     }
 
     if (['delhivery', 'deliveryone'].includes(integrationType) && !isReverseShipment) {
+      const insuranceSettings = await getShipmentInsuranceSettings()
+      const insuranceChargeBasis = computeB2CInsuranceChargeBasis(params)
+      const insuranceCharge = computeShipmentInsuranceCharge({
+        shipmentValue: insuranceChargeBasis,
+        settings: insuranceSettings,
+      })
       const expectedWalletDebit = getExpectedWalletDebitFromChargeParts({
         paymentType: params.payment_type,
         freightCharges,
         otherCharges,
         codCharges,
+        insuranceCharge,
       })
       const userWallet = await walletOfUser(userId)
       const walletBalance = Number(userWallet?.balance ?? 0)
@@ -4949,6 +5036,12 @@ export const createB2CShipmentService = async (
     codCharges = isCodOrder ? Number(finalSlabbedFreight.cod_charges ?? 0) : 0
     params.cod_charges = codCharges
     params.cod_charge_basis = Number(finalSlabbedFreight.cod_charge_basis ?? codChargeBasis)
+    const insuranceSettings = await getShipmentInsuranceSettings()
+    const insuranceChargeBasis = computeB2CInsuranceChargeBasis(params)
+    const insuranceCharge = computeShipmentInsuranceCharge({
+      shipmentValue: insuranceChargeBasis,
+      settings: insuranceSettings,
+    })
 
     const result = await db.transaction(async (tx) => {
       const userWallet = await walletOfUser(userId, tx)
@@ -5006,6 +5099,8 @@ export const createB2CShipmentService = async (
         final_courier_charge: finalCourierCharge,
         shipping_charges: shippingCharges, // Base shipping (what seller charges customer)
         other_charges: otherCharges, // Other charges from serviceability API
+        insurance_charge: insuranceCharge,
+        insurance_charge_basis: insuranceChargeBasis,
         total_shipping_charges: totalShippingCharges, // Total shipping (base + other)
       })
       const discount = Number(params?.discount ?? 0)
@@ -5040,6 +5135,8 @@ export const createB2CShipmentService = async (
         provider_quote_charge: providerQuoteCharge,
         freight_charges: freightCharges, // What platform charges seller
         final_courier_charge: finalCourierCharge,
+        insurance_charge: insuranceCharge,
+        insurance_charge_basis: insuranceChargeBasis,
         courier_cost: courierCost, // What platform pays courier
       })
 
@@ -5048,7 +5145,7 @@ export const createB2CShipmentService = async (
         // Prepaid: Seller wallet will be debited for freight charges + other charges after manifest.
         // Customer pays: order_amount + shipping + transaction_fee + gift_wrap - discount - prepaid
         // Seller wallet debit: freight_charges (courier shipping cost) + other_charges (fuel surcharge, handling, etc.)
-        walletDebit = freightCharges + otherCharges
+        walletDebit = freightCharges + otherCharges + insuranceCharge
 
         // Validate that otherCharges are included
         if (otherCharges > 0) {
@@ -5064,8 +5161,9 @@ export const createB2CShipmentService = async (
           wallet_balance: walletBalance,
           freight_charges: freightCharges,
           other_charges: otherCharges,
+          insurance_charge: insuranceCharge,
           wallet_debit: walletDebit,
-          breakdown: `freight (${freightCharges}) + other (${otherCharges}) = ${walletDebit}`,
+          breakdown: `freight (${freightCharges}) + other (${otherCharges}) + insurance (${insuranceCharge}) = ${walletDebit}`,
           reason: 'B2C Prepaid Order Payment',
         })
 
@@ -5073,7 +5171,7 @@ export const createB2CShipmentService = async (
         // COD: Seller wallet will be debited for freight charges + other charges + COD charges after manifest.
         // Customer pays: order_amount + shipping + COD + transaction_fee + gift_wrap - discount
         // Seller wallet debit: freight_charges (courier shipping) + other_charges (fuel surcharge, handling, etc.) + cod_charges (courier COD fee)
-        walletDebit = freightCharges + otherCharges + codCharges
+        walletDebit = freightCharges + otherCharges + codCharges + insuranceCharge
 
         // Validate that otherCharges are included
         if (otherCharges > 0) {
@@ -5090,8 +5188,9 @@ export const createB2CShipmentService = async (
           freight_charges: freightCharges,
           other_charges: otherCharges,
           cod_charges: codCharges,
+          insurance_charge: insuranceCharge,
           wallet_debit: walletDebit,
-          breakdown: `freight (${freightCharges}) + other (${otherCharges}) + cod (${codCharges}) = ${walletDebit}`,
+          breakdown: `freight (${freightCharges}) + other (${otherCharges}) + cod (${codCharges}) + insurance (${insuranceCharge}) = ${walletDebit}`,
           reason: 'B2C COD Service Charges',
         })
 
@@ -5149,6 +5248,8 @@ export const createB2CShipmentService = async (
                 shipping_charges: totalShippingCharges,
                 other_charges: otherCharges,
                 freight_charges: freightCharges || totalShippingCharges,
+                insurance_charge: insuranceCharge,
+                insurance_charge_basis: insuranceChargeBasis,
                 courier_cost: courierCost ?? null,
                 transaction_fee: transactionFee,
                 gift_wrap: giftWrap,
@@ -5234,6 +5335,8 @@ export const createB2CShipmentService = async (
             otherCharges, // Store other_charges separately
             freightCharges,
             codCharges,
+            insuranceCharge,
+            insuranceChargeBasis,
             courierCost: courierCost ?? undefined, // Save courier cost (actual from API or estimated from serviceability)
             transactionFee,
             giftWrap,
@@ -5295,6 +5398,8 @@ export const createB2CShipmentService = async (
             freight_charges: freightCharges,
             other_charges: otherCharges,
             cod_charges: isCodOrder ? codCharges : 0,
+            insurance_charge: insuranceCharge,
+            insurance_charge_basis: insuranceChargeBasis,
             final_courier_charge: finalCourierCharge,
             charged_weight: finalSlabbedFreight.chargeable_weight,
             volumetric_weight: finalSlabbedFreight.volumetric_weight,
@@ -5310,6 +5415,7 @@ export const createB2CShipmentService = async (
             freight_charges: freightCharges,
             other_charges: otherCharges,
             cod_charges: isCodOrder ? codCharges : 0,
+            insurance_charge: insuranceCharge,
           },
           charged_weight: finalSlabbedFreight.chargeable_weight,
           volumetric_weight: finalSlabbedFreight.volumetric_weight,
@@ -5567,9 +5673,13 @@ export const createB2BShipmentService = async (
 
   const pickupDetails = normalizeJsonValue(params.pickup) ?? {}
   const rtoDetails = normalizeJsonValue(params.rto)
-  const normalizedOrderNumber = await ensureUniqueMerchantOrderNumber(db as any, userId, params.order_number)
-
   const invoiceValue = Number(params.invoice_amount ?? params.order_amount ?? 0)
+  const insuranceSettings = await getShipmentInsuranceSettings()
+  const insuranceChargeBasis = computeB2BInsuranceChargeBasis(params)
+  const insuranceCharge = computeShipmentInsuranceCharge({
+    shipmentValue: insuranceChargeBasis,
+    settings: insuranceSettings,
+  })
   const b2bBoxes = Array.isArray(params.boxes) ? params.boxes : []
   const packageWeightKg =
     Number(params.package_weight ?? 0) ||
@@ -5670,50 +5780,81 @@ export const createB2BShipmentService = async (
       : Number(params.freight_charges ?? params.shipping_charges ?? 0)
 
   // 1️⃣ Insert local B2B order as 'pending'
-  const [pendingOrder] = await db
-    .insert(b2b_orders)
-    .values({
-      order_number: normalizedOrderNumber,
-      order_date: params?.order_date,
-      order_amount: params?.order_amount,
-      user_id: userId,
-      company_name: params.consignee?.company_name ?? '',
-      company_gst: params.consignee?.gstin ?? '',
-      buyer_name: params.consignee.name,
-      buyer_phone: params.consignee.phone ?? '',
-      buyer_email: params.consignee.email ?? '',
-      address: params.consignee.address,
-      city: params.consignee.city,
-      state: params.consignee.state,
-      country: 'India',
-      pincode: params.consignee.pincode,
-      packages: params.boxes ? JSON.stringify(params.boxes) : null,
-      order_type: params.payment_type,
-      order_status: 'pending',
-      invoice_number: params?.invoice_number,
-      invoice_date: params?.invoice_date,
-      invoice_amount: params?.invoice_amount ? String(params.invoice_amount) : null,
-      is_insurance: params.is_insurance === 1,
-      declared_value: params.is_insurance === 1 ? invoiceValue : null,
-      rov_charge: params.is_insurance === 1 ? rovCharge : null,
-      charges_breakdown: chargesBreakdown,
-      shipping_charges: params.shipping_charges ?? 0,
-      freight_charges: resolvedFreightCharges, // What platform charges seller
-      courier_cost: params.courier_cost ?? null, // What platform pays courier (will be updated via webhook)
-      transaction_fee: params.transaction_fee ?? 0,
-      discount: params.discount ?? 0,
-      gift_wrap: params.gift_wrap ? Number(params.gift_wrap) : 0,
-      products: params?.order_items ?? [],
-      delivery_location: params.delivery_location ?? params.zone ?? null,
-      pickup_location_id: params.pickup_location_id ?? params.pickup?.warehouse_name ?? null,
-      pickup_details: pickupDetails,
-      rto_details: rtoDetails,
-      is_rto_different: params.is_rto_different === 'yes',
-      is_external_api: is_external_api ?? false,
-      created_at: new Date(),
-      updated_at: new Date(),
-    } as any)
-    .returning({ id: b2b_orders.id })
+  const pendingOrder = await db.transaction(async (tx) => {
+    const normalizedOrderNumber = await ensureUniqueMerchantOrderNumber(
+      tx as any,
+      userId,
+      params.order_number,
+    )
+
+    const [newOrder] = await tx
+      .insert(b2b_orders)
+      .values({
+        order_number: normalizedOrderNumber,
+        order_date: params?.order_date,
+        order_amount: params?.order_amount,
+        user_id: userId,
+        company_name: params.consignee?.company_name ?? '',
+        company_gst: params.consignee?.gstin ?? '',
+        buyer_name: params.consignee.name,
+        buyer_phone: params.consignee.phone ?? '',
+        buyer_email: params.consignee.email ?? '',
+        address: params.consignee.address,
+        city: params.consignee.city,
+        state: params.consignee.state,
+        country: 'India',
+        pincode: params.consignee.pincode,
+        packages: params.boxes ? JSON.stringify(params.boxes) : null,
+        order_type: params.payment_type,
+        order_status: 'pending',
+        invoice_number: params?.invoice_number,
+        invoice_date: params?.invoice_date,
+        invoice_amount: params?.invoice_amount ? String(params.invoice_amount) : null,
+        is_insurance: params.is_insurance === 1,
+        declared_value: params.is_insurance === 1 ? invoiceValue : null,
+        rov_charge: params.is_insurance === 1 ? rovCharge : null,
+        charges_breakdown: chargesBreakdown,
+        shipping_charges: params.shipping_charges ?? 0,
+        freight_charges: resolvedFreightCharges, // What platform charges seller
+        insurance_charge: insuranceCharge,
+        insurance_charge_basis: insuranceChargeBasis,
+        courier_cost: params.courier_cost ?? null, // What platform pays courier (will be updated via webhook)
+        transaction_fee: params.transaction_fee ?? 0,
+        discount: params.discount ?? 0,
+        gift_wrap: params.gift_wrap ? Number(params.gift_wrap) : 0,
+        products: params?.order_items ?? [],
+        delivery_location: params.delivery_location ?? params.zone ?? null,
+        pickup_location_id: params.pickup_location_id ?? params.pickup?.warehouse_name ?? null,
+        pickup_details: pickupDetails,
+        rto_details: rtoDetails,
+        is_rto_different: params.is_rto_different === 'yes',
+        is_external_api: is_external_api ?? false,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as any)
+      .returning({ id: b2b_orders.id })
+
+    if (insuranceCharge > 0) {
+      const wallet = await walletOfUser(userId, tx)
+      await createWalletTransaction({
+        walletId: wallet.id,
+        amount: insuranceCharge,
+        currency: wallet.currency ?? 'INR',
+        type: 'debit',
+        reason: 'B2B Shipment Insurance Charge',
+        ref: newOrder.id?.toString(),
+        meta: {
+          order_number: normalizedOrderNumber,
+          insurance_charge: insuranceCharge,
+          insurance_charge_basis: insuranceChargeBasis,
+          freight_charges: resolvedFreightCharges,
+        },
+        tx: tx as any,
+      })
+    }
+
+    return newOrder
+  })
 
   // 2️⃣ Calculate package weight and dimensions
   const boxes = b2bBoxes.length ? b2bBoxes : params?.order_items ?? []

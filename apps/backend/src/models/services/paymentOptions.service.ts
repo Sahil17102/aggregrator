@@ -31,6 +31,10 @@ export async function updatePaymentOptions(updates: {
   codEnabled?: boolean
   prepaidEnabled?: boolean
   minWalletRecharge?: number
+  insuranceChargeEnabled?: boolean
+  insuranceChargeThreshold?: number
+  insuranceChargeBaseAmount?: number
+  insuranceChargePercentage?: number
 }) {
   // Ensure settings exist
   await getPaymentOptions()
@@ -47,6 +51,21 @@ export async function updatePaymentOptions(updates: {
     const value = Number(updates.minWalletRecharge)
     updateData.minWalletRecharge = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0
   }
+  if (updates.insuranceChargeEnabled !== undefined) {
+    updateData.insuranceChargeEnabled = updates.insuranceChargeEnabled
+  }
+  if (updates.insuranceChargeThreshold !== undefined) {
+    const value = Number(updates.insuranceChargeThreshold)
+    updateData.insuranceChargeThreshold = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0
+  }
+  if (updates.insuranceChargeBaseAmount !== undefined) {
+    const value = Number(updates.insuranceChargeBaseAmount)
+    updateData.insuranceChargeBaseAmount = Number.isFinite(value) && value >= 0 ? value.toFixed(2) : '0.00'
+  }
+  if (updates.insuranceChargePercentage !== undefined) {
+    const value = Number(updates.insuranceChargePercentage)
+    updateData.insuranceChargePercentage = Number.isFinite(value) && value >= 0 ? value.toFixed(4) : '0.0000'
+  }
 
   // Update the first (and only) row
   const [updated] = await db.update(paymentOptions).set(updateData).returning()
@@ -62,6 +81,22 @@ export async function updatePaymentOptions(updates: {
           updates.minWalletRecharge !== undefined && !isNaN(Number(updates.minWalletRecharge))
             ? Math.max(0, Math.floor(Number(updates.minWalletRecharge)))
             : 0,
+        insuranceChargeEnabled: updates.insuranceChargeEnabled ?? false,
+        insuranceChargeThreshold:
+          updates.insuranceChargeThreshold !== undefined &&
+          !isNaN(Number(updates.insuranceChargeThreshold))
+            ? Math.max(0, Math.floor(Number(updates.insuranceChargeThreshold)))
+            : 2000,
+        insuranceChargeBaseAmount:
+          updates.insuranceChargeBaseAmount !== undefined &&
+          Number.isFinite(Number(updates.insuranceChargeBaseAmount))
+            ? Math.max(0, Number(updates.insuranceChargeBaseAmount)).toFixed(2)
+            : '5.00',
+        insuranceChargePercentage:
+          updates.insuranceChargePercentage !== undefined &&
+          Number.isFinite(Number(updates.insuranceChargePercentage))
+            ? Math.max(0, Number(updates.insuranceChargePercentage)).toFixed(4)
+            : '0.5000',
       })
       .returning()
 

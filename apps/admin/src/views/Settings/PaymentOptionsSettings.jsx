@@ -22,6 +22,10 @@ export default function PaymentOptionsSettings() {
     codEnabled: true,
     prepaidEnabled: true,
     minWalletRecharge: 0,
+    insuranceChargeEnabled: false,
+    insuranceChargeThreshold: 2000,
+    insuranceChargeBaseAmount: 5,
+    insuranceChargePercentage: 0.5,
   })
 
   useEffect(() => {
@@ -30,6 +34,10 @@ export default function PaymentOptionsSettings() {
         codEnabled: paymentOptions.settings.codEnabled ?? true,
         prepaidEnabled: paymentOptions.settings.prepaidEnabled ?? true,
         minWalletRecharge: paymentOptions.settings.minWalletRecharge ?? 0,
+        insuranceChargeEnabled: paymentOptions.settings.insuranceChargeEnabled ?? false,
+        insuranceChargeThreshold: paymentOptions.settings.insuranceChargeThreshold ?? 2000,
+        insuranceChargeBaseAmount: paymentOptions.settings.insuranceChargeBaseAmount ?? 5,
+        insuranceChargePercentage: paymentOptions.settings.insuranceChargePercentage ?? 0.5,
       })
     } else if (paymentOptions) {
       // Handle direct response format
@@ -37,6 +45,10 @@ export default function PaymentOptionsSettings() {
         codEnabled: paymentOptions.codEnabled ?? true,
         prepaidEnabled: paymentOptions.prepaidEnabled ?? true,
         minWalletRecharge: paymentOptions.minWalletRecharge ?? 0,
+        insuranceChargeEnabled: paymentOptions.insuranceChargeEnabled ?? false,
+        insuranceChargeThreshold: paymentOptions.insuranceChargeThreshold ?? 2000,
+        insuranceChargeBaseAmount: paymentOptions.insuranceChargeBaseAmount ?? 5,
+        insuranceChargePercentage: paymentOptions.insuranceChargePercentage ?? 0.5,
       })
     }
   }, [paymentOptions])
@@ -55,6 +67,19 @@ export default function PaymentOptionsSettings() {
       minWalletRecharge:
         formData.minWalletRecharge && Number(formData.minWalletRecharge) >= 0
           ? Number(formData.minWalletRecharge)
+          : 0,
+      insuranceChargeEnabled: formData.insuranceChargeEnabled,
+      insuranceChargeThreshold:
+        formData.insuranceChargeThreshold && Number(formData.insuranceChargeThreshold) >= 0
+          ? Number(formData.insuranceChargeThreshold)
+          : 0,
+      insuranceChargeBaseAmount:
+        formData.insuranceChargeBaseAmount && Number(formData.insuranceChargeBaseAmount) >= 0
+          ? Number(formData.insuranceChargeBaseAmount)
+          : 0,
+      insuranceChargePercentage:
+        formData.insuranceChargePercentage && Number(formData.insuranceChargePercentage) >= 0
+          ? Number(formData.insuranceChargePercentage)
           : 0,
     }
 
@@ -193,6 +218,96 @@ export default function PaymentOptionsSettings() {
               />
             </Box>
           </Flex>
+
+          <Box mt={4} p={4} bg={grayBg} borderRadius="md">
+            <Flex justify="space-between" align="center" gap={4}>
+              <Box flex="1">
+                <Text fontWeight="semibold" mb={1}>
+                  Insurance Charge
+                </Text>
+                <Text fontSize="sm" color="gray.500">
+                  Add a separate insurance charge to shipment wallet deductions. This does not need
+                  to appear in the label or invoice.
+                </Text>
+              </Box>
+              <Switch
+                isChecked={formData.insuranceChargeEnabled}
+                onChange={() => handleToggle('insuranceChargeEnabled')}
+                colorScheme="purple"
+                size="lg"
+              />
+            </Flex>
+
+            <Flex mt={4} gap={4} direction={{ base: 'column', md: 'row' }}>
+              <Box flex="1">
+                <Text fontWeight="semibold" mb={1}>
+                  Threshold Value (INR)
+                </Text>
+                <Text fontSize="sm" color="gray.500" mb={2}>
+                  Orders up to this value use the flat amount.
+                </Text>
+                <Input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={formData.insuranceChargeThreshold}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      insuranceChargeThreshold: e.target.value === '' ? '' : Number(e.target.value),
+                    }))
+                  }
+                  placeholder="2000"
+                />
+              </Box>
+
+              <Box flex="1">
+                <Text fontWeight="semibold" mb={1}>
+                  Flat Charge Up To Threshold (INR)
+                </Text>
+                <Text fontSize="sm" color="gray.500" mb={2}>
+                  Example: up to Rs. 2000, charge Rs. 5.
+                </Text>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.insuranceChargeBaseAmount}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      insuranceChargeBaseAmount:
+                        e.target.value === '' ? '' : Number(e.target.value),
+                    }))
+                  }
+                  placeholder="5"
+                />
+              </Box>
+
+              <Box flex="1">
+                <Text fontWeight="semibold" mb={1}>
+                  Percentage Above Threshold
+                </Text>
+                <Text fontSize="sm" color="gray.500" mb={2}>
+                  Example: above Rs. 2000, charge 0.5 percent on the excess value.
+                </Text>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.insuranceChargePercentage}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      insuranceChargePercentage:
+                        e.target.value === '' ? '' : Number(e.target.value),
+                    }))
+                  }
+                  placeholder="0.5"
+                />
+              </Box>
+            </Flex>
+          </Box>
         </Box>
 
         <Flex justify="flex-end" gap={3}>

@@ -160,6 +160,8 @@ export interface B2COrder {
   freight_charges?: number | null
   cod_charges?: number | null
   other_charges?: number | null
+  insurance_charge?: number | null
+  insurance_charge_basis?: number | null
   final_courier_charge?: number | null
   courier_charge?: number | null
   transaction_fee?: number | null
@@ -253,6 +255,8 @@ export interface B2BOrder {
   order_type?: string // prepaid / cod
   order_status: string
   shipping_charges?: number
+  insurance_charge?: number
+  insurance_charge_basis?: number
   transaction_fee?: number
   discount?: number
   courier_partner?: string

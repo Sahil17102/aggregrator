@@ -25,6 +25,8 @@ export const b2b_orders = pgTable(
   prepaid_amount: numeric('prepaid_amount'),
   freight_charges: numeric('freight_charges'), // What platform charges seller (based on rate card)
   shipping_charges: numeric('shipping_charges'), // What seller shows on label (customer-facing)
+  insurance_charge: numeric('insurance_charge'),
+  insurance_charge_basis: numeric('insurance_charge_basis'),
   courier_cost: numeric('courier_cost'), // What platform actually pays to courier (for revenue calculation)
   transaction_fee: numeric('transaction_fee'),
   discount: numeric('discount'),

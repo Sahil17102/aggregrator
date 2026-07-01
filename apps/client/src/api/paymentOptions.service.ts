@@ -4,6 +4,10 @@ export interface PaymentOptions {
   codEnabled: boolean
   prepaidEnabled: boolean
   minWalletRecharge: number
+  insuranceChargeEnabled: boolean
+  insuranceChargeThreshold: number
+  insuranceChargeBaseAmount: number
+  insuranceChargePercentage: number
 }
 
 export const paymentOptionsService = {

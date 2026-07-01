@@ -63,6 +63,8 @@ export const b2c_orders = pgTable(
   freight_charges: numeric('freight_charges').$type<number>(), // What platform charges seller (based on rate card)
   shipping_charges: numeric('shipping_charges').$type<number>(), // What seller shows on label (customer-facing)
   other_charges: numeric('other_charges').$type<number>(), // Other charges from courier serviceability API (e.g. fuel surcharge, handling, etc.)
+  insurance_charge: numeric('insurance_charge').$type<number>(),
+  insurance_charge_basis: numeric('insurance_charge_basis').$type<number>(),
   courier_cost: numeric('courier_cost').$type<number>(), // What platform actually pays to courier (for revenue calculation)
   transaction_fee: numeric('transaction_fee').$type<number>(),
   gift_wrap: numeric('gift_wrap').$type<number>(),

@@ -553,6 +553,7 @@ export async function applyCancellationRefundOnce(
   const freightCharges = Number(order.freight_charges ?? 0)
   const otherCharges = Number(order.other_charges ?? 0)
   const codCharges = Number(order.cod_charges ?? 0)
+  const insuranceCharge = Number(order.insurance_charge ?? 0)
 
   const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, order.user_id))
   if (!wallet) {
@@ -609,6 +610,7 @@ export async function applyCancellationRefundOnce(
       freight_charges: freightCharges,
       other_charges: otherCharges,
       cod_charges: codCharges,
+      insurance_charge: insuranceCharge,
       original_wallet_debit: originalWalletDebit,
       debit_transactions_found: debitTransactions.length,
       debit_reasons: debitTransactions.map((transaction: any) => transaction.reason),
@@ -623,6 +625,7 @@ export async function applyCancellationRefundOnce(
     freight_charges: freightCharges,
     other_charges: otherCharges,
     cod_charges: order.order_type === 'cod' ? codCharges : 0,
+    insurance_charge: insuranceCharge,
     original_wallet_debit: originalWalletDebit,
     debit_transactions_found: debitTransactions.length,
     debit_reasons: debitTransactions.map((transaction: any) => transaction.reason),
@@ -644,6 +647,7 @@ export async function applyCancellationRefundOnce(
       freight_charges: freightCharges,
       other_charges: otherCharges,
       cod_charges: order.order_type === 'cod' ? codCharges : 0,
+      insurance_charge: insuranceCharge,
       original_wallet_debit: originalWalletDebit,
       debit_transactions_found: debitTransactions.length,
       debit_reasons: debitTransactions.map((transaction: any) => transaction.reason),

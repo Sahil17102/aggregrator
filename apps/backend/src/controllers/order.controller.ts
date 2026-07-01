@@ -136,6 +136,8 @@ const buildDraftB2COrderUpdatePayload = (params: ShipmentParams) => {
     volumetric_weight: null,
     charged_weight: null,
     charged_slabs: null,
+    insurance_charge: null,
+    insurance_charge_basis: null,
     weight_discrepancy: false,
     is_insurance: false,
   }
