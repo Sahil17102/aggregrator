@@ -253,7 +253,8 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
     return (
       getSellerFreightCharge(courier) +
       toChargeNumber(courier?.localRates?.forward?.other_charges) +
-      getCourierCodCharge(courier)
+      getCourierCodCharge(courier) +
+      insuranceCharge
     )
   }
 

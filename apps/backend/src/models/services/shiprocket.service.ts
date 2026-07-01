@@ -1289,7 +1289,15 @@ const computeShipmentInsuranceCharge = ({
   return roundMoneyValue(settings.baseAmount + extraCharge)
 }
 
-const computeB2CInsuranceChargeBasis = (params: ShipmentParams) => {
+type B2CInsuranceChargeBasisParams = {
+  order_amount?: unknown
+  shipping_charges?: unknown
+  transaction_fee?: unknown
+  gift_wrap?: unknown
+  discount?: unknown
+}
+
+const computeB2CInsuranceChargeBasis = (params: B2CInsuranceChargeBasisParams) => {
   const orderAmount = Number(params.order_amount ?? 0)
   const shippingCharges = Number(params.shipping_charges ?? 0)
   const transactionFee = Number(params.transaction_fee ?? 0)
@@ -1323,22 +1331,25 @@ export const calculateFinalCourierCharge = ({
   providerQuote,
   codCharge,
   otherCharges,
+  insuranceCharge,
   paymentType,
 }: {
   platformFreight?: unknown
   providerQuote?: unknown
   codCharge?: unknown
   otherCharges?: unknown
+  insuranceCharge?: unknown
   paymentType?: string | null
 }) => {
   const platformFreightCharge = roundMoneyValue(platformFreight)
   const providerQuoteCharge = roundMoneyValue(providerQuote)
   const otherChargeAmount = roundMoneyValue(otherCharges)
+  const insuranceChargeAmount = roundMoneyValue(insuranceCharge)
   const codChargeAmount =
     String(paymentType || '').toLowerCase() === 'cod' ? roundMoneyValue(codCharge) : 0
   const sellerFreightCharge = platformFreightCharge
   const finalCourierCharge = roundMoneyValue(
-    sellerFreightCharge + otherChargeAmount + codChargeAmount,
+    sellerFreightCharge + otherChargeAmount + codChargeAmount + insuranceChargeAmount,
   )
 
   return {
@@ -1347,6 +1358,7 @@ export const calculateFinalCourierCharge = ({
     seller_freight_charge: sellerFreightCharge,
     other_charges: otherChargeAmount,
     cod_charges: codChargeAmount,
+    insurance_charge: insuranceChargeAmount,
     final_courier_charge: finalCourierCharge,
   }
 }
@@ -2709,6 +2721,15 @@ export const fetchAvailableCouriersWithRates = async (
       }
     }
 
+    const insuranceSettings = await getShipmentInsuranceSettings()
+    const insuranceChargeBasis = computeB2CInsuranceChargeBasis({
+      order_amount: params.order_amount ?? params.orderAmount,
+    })
+    const insuranceCharge = computeShipmentInsuranceCharge({
+      shipmentValue: insuranceChargeBasis,
+      settings: insuranceSettings,
+    })
+
     // 🔹 Sorting and tagging
     const finalRateType = isReverseShipment ? 'rto' : 'forward'
     combined = combined.map((courier: any) => {
@@ -2724,6 +2745,7 @@ export const fetchAvailableCouriersWithRates = async (
         providerQuote,
         codCharge: localRate?.cod_charges ?? 0,
         otherCharges: localRate?.other_charges ?? 0,
+        insuranceCharge,
         paymentType: normalizedPaymentType,
       })
 
@@ -2742,12 +2764,15 @@ export const fetchAvailableCouriersWithRates = async (
             : null,
         seller_freight_charge: finalCharge.seller_freight_charge,
         final_freight_charge: finalCharge.seller_freight_charge,
+        insurance_charge: finalCharge.insurance_charge,
+        insurance_charge_basis: insuranceChargeBasis,
         final_courier_charge: finalCharge.final_courier_charge,
         final_rate_breakdown: {
           platform_freight: finalCharge.platform_freight_charge,
           provider_quote: finalCharge.provider_quote_charge,
           other_charges: finalCharge.other_charges,
           cod_charges: finalCharge.cod_charges,
+          insurance_charge: finalCharge.insurance_charge,
         },
       }
     })
@@ -5078,6 +5103,7 @@ export const createB2CShipmentService = async (
         providerQuote: providerQuoteCharge,
         codCharge: codCharges,
         otherCharges,
+        insuranceCharge,
         paymentType: params.payment_type,
       })
       const freightCharges = finalCharge.seller_freight_charge

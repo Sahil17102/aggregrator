@@ -58,13 +58,15 @@ const codFinal = calculateFinalCourierCharge({
   providerQuote: 95,
   codCharge: 50,
   otherCharges: 0,
+  insuranceCharge: 5,
   paymentType: 'cod',
 })
 assert.equal(codFinal.seller_freight_charge, 80)
 assert.equal(codFinal.provider_quote_charge, 95)
-assert.equal(codFinal.final_courier_charge, 130)
+assert.equal(codFinal.insurance_charge, 5)
+assert.equal(codFinal.final_courier_charge, 135)
 console.log(
-  `Final COD charge formula: platform Rs 80 + COD Rs 50, provider quote tracked separately Rs 95 => Rs ${codFinal.final_courier_charge}`,
+  `Final COD charge formula: platform Rs 80 + COD Rs 50 + insurance Rs 5, provider quote tracked separately Rs 95 => Rs ${codFinal.final_courier_charge}`,
 )
 
 const prepaidFinal = calculateFinalCourierCharge({
@@ -72,13 +74,15 @@ const prepaidFinal = calculateFinalCourierCharge({
   providerQuote: 95,
   codCharge: 50,
   otherCharges: 0,
+  insuranceCharge: 5,
   paymentType: 'prepaid',
 })
 assert.equal(prepaidFinal.seller_freight_charge, 80)
 assert.equal(prepaidFinal.provider_quote_charge, 95)
-assert.equal(prepaidFinal.final_courier_charge, 80)
+assert.equal(prepaidFinal.insurance_charge, 5)
+assert.equal(prepaidFinal.final_courier_charge, 85)
 console.log(
-  `Final prepaid charge formula: platform Rs 80, provider quote tracked separately Rs 95 => Rs ${prepaidFinal.final_courier_charge}`,
+  `Final prepaid charge formula: platform Rs 80 + insurance Rs 5, provider quote tracked separately Rs 95 => Rs ${prepaidFinal.final_courier_charge}`,
 )
 
 console.log('PASS: courier charge math checks passed')
