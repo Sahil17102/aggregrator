@@ -747,10 +747,40 @@ const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
   }
 }
 
-const getChoiceMeeEmailLogoPath = () =>
-  path.resolve(backendRoot, '../client/public/brand/shipment-email-logo.png')
-
 const getChoiceMeeEmailLogoCid = () => 'choiceme-shipment-logo'
+
+const getChoiceMeeEmailLogoPathCandidates = () => {
+  const configuredPath = trimEnv(process.env.SHIPMENT_EMAIL_LOGO_PATH)
+
+  return [
+    configuredPath,
+    path.resolve(backendRoot, '../client/public/brand/shipment-email-logo.png'),
+    path.resolve(backendRoot, 'client/public/brand/shipment-email-logo.png'),
+    path.resolve(process.cwd(), 'apps/client/public/brand/shipment-email-logo.png'),
+    path.resolve(process.cwd(), 'client/public/brand/shipment-email-logo.png'),
+  ].filter(Boolean)
+}
+
+const resolveChoiceMeeEmailLogoAttachment = (): AttachmentInput | undefined => {
+  for (const candidate of getChoiceMeeEmailLogoPathCandidates()) {
+    if (!candidate) continue
+
+    if (fs.existsSync(candidate)) {
+      return {
+        path: candidate,
+        filename: 'shipment-email-logo.png',
+        mimeType: 'image/png',
+        cid: getChoiceMeeEmailLogoCid(),
+      }
+    }
+  }
+
+  console.warn('[Email] Shipment logo asset not found on disk; falling back to hosted logo URL', {
+    candidates: getChoiceMeeEmailLogoPathCandidates(),
+  })
+
+  return undefined
+}
 
 const getChoiceMeeEmailLogoSrc = () => {
   const frontendBaseUrl = getFrontendBaseUrl().replace(/\/$/, '')
@@ -1415,22 +1445,16 @@ export const sendShipmentStatusEmail = async (opts: {
   orderDetails?: ShipmentOrderLike | null
   messageId?: string
 }) => {
+  const logoAttachment = resolveChoiceMeeEmailLogoAttachment()
   const content = buildShipmentStatusEmailContent({
     ...opts,
-    brandLogoSrc: 'cid:choiceme-shipment-logo',
+    brandLogoSrc: logoAttachment ? `cid:${getChoiceMeeEmailLogoCid()}` : getChoiceMeeEmailLogoSrc(),
   })
   await sendEmail(
     opts.to,
     content.subject,
     content.html,
-    [
-      {
-        path: getChoiceMeeEmailLogoPath(),
-        filename: 'shipment-email-logo.png',
-        mimeType: 'image/png',
-        cid: getChoiceMeeEmailLogoCid(),
-      },
-    ],
+    logoAttachment ? [logoAttachment] : undefined,
     content.text,
     opts.messageId,
   )
