@@ -5,7 +5,7 @@ const isLocalhost =
 
 const DEFAULT_API_BASE_URL = isLocalhost
   ? 'http://127.0.0.1:5002/api'
-  : 'https://api.choicemee.in/api'
+  : 'https://aggregator-backend-7gmk.onrender.com/api'
 const LEGACY_RAILWAY_API_HOST = 'choiceme-backend-production.up.railway.app'
 
 const normalizeApiBaseUrl = (rawBaseUrl) => {

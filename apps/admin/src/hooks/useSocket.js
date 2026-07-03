@@ -11,7 +11,7 @@ export const useSocket = () => {
   const socketUrl =
     process.env.REACT_APP_SOCKET_URL ||
     process.env.REACT_APP_API_BASE_URL?.replace(/\/api\/?$/, '') ||
-    (isLocalhost ? 'http://127.0.0.1:5002' : 'https://api.choicemee.in')
+    (isLocalhost ? 'http://127.0.0.1:5002' : 'https://aggregator-backend-7gmk.onrender.com')
 
   useEffect(() => {
     if (!userId) return
