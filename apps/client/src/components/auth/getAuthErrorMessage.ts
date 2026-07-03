@@ -42,7 +42,7 @@ export const getAuthErrorMessage = (err: unknown, fallback: string) => {
   if (!isNetwork) return message
 
   const base =
-    import.meta.env.VITE_API_URL || 'https://api.choicemee.in/api'
+    import.meta.env.VITE_API_URL || 'https://aggregator-backend-7gmk.onrender.com/api'
   return `Cannot reach the ChoiceMee API (${base}). Please try again in a minute.`
 }
 

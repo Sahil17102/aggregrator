@@ -3,8 +3,9 @@ import axios from 'axios'
 import { clearAuthTokens, getAuthTokens, setAuthTokens } from './tokenVault'
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_URL
-const DEFAULT_API_BASE_URL = 'https://api.choicemee.in/api'
+const DEFAULT_API_BASE_URL = 'https://aggregator-backend-7gmk.onrender.com/api'
 const LEGACY_RAILWAY_API_HOST = 'choiceme-backend-production.up.railway.app'
+const PLACEHOLDER_API_HOST = 'your-backend-url.onrender.com'
 
 const getApiBaseUrl = () => {
   const fallback = DEFAULT_API_BASE_URL.replace(/\/+$/, '')
@@ -15,6 +16,7 @@ const getApiBaseUrl = () => {
     const candidate = new URL(RAW_API_BASE_URL, window.location.origin)
     const currentHost = window.location.hostname
     const pointsToLegacyRailwayApi = candidate.hostname === LEGACY_RAILWAY_API_HOST
+    const pointsToPlaceholderApi = candidate.hostname === PLACEHOLDER_API_HOST
     const isHostedFrontend =
       currentHost.endsWith('netlify.app') ||
       currentHost.endsWith('vercel.app') ||
@@ -33,7 +35,7 @@ const getApiBaseUrl = () => {
 
     // The old Railway backend host can lag behind the live API and has caused
     // courier calculator requests to fail with unsupported-media responses.
-    if (pointsToLegacyRailwayApi) {
+    if (pointsToLegacyRailwayApi || pointsToPlaceholderApi) {
       return fallback
     }
 

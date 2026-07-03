@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client'
 
-const DEFAULT_SOCKET_URL = 'https://api.choicemee.in'
+const DEFAULT_SOCKET_URL = 'https://aggregator-backend-7gmk.onrender.com'
+const PLACEHOLDER_API_HOST = 'your-backend-url.onrender.com'
 
 const getSocketUrl = () => {
   const rawSocketUrl = import.meta.env.VITE_APP_SOCKET_URL
@@ -15,8 +16,9 @@ const getSocketUrl = () => {
       currentHost.endsWith('vercel.app') ||
       currentHost.endsWith('up.railway.app')
     const pointsBackToFrontend = candidate.hostname === currentHost
+    const pointsToPlaceholderApi = candidate.hostname === PLACEHOLDER_API_HOST
 
-    if (isHostedFrontend && pointsBackToFrontend) {
+    if ((isHostedFrontend && pointsBackToFrontend) || pointsToPlaceholderApi) {
       return DEFAULT_SOCKET_URL
     }
 
