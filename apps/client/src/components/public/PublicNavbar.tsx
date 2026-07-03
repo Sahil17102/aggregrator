@@ -14,12 +14,10 @@ interface PublicNavbarProps {
   links?: NavItem[]
   primaryLabel?: string
   primaryTo?: string
-  secondaryLabel?: string
-  secondaryTo?: string
 }
 
 const desktopLinks: NavItem[] = [
-  { label: 'Platform', to: '/' },
+  { label: 'Platform', to: '#platform' },
   { label: 'Blogs', to: '/' },
   { label: 'Track Shipment', to: '/tracking' },
 ]
@@ -27,8 +25,8 @@ const desktopLinks: NavItem[] = [
 const dropdownLinks = ['Integrations', 'Tools']
 
 const mobileLinks: NavItem[] = [
-  { label: 'Platform', to: '/' },
-  { label: 'Integrations', to: '/channels/channel_list' },
+  { label: 'Platform', to: '#platform' },
+  { label: 'Integrations', to: '#integrations' },
   { label: 'Tools', to: '/rate-calculator' },
   { label: 'Blogs', to: '/' },
   { label: 'Track Shipment', to: '/tracking' },
@@ -37,27 +35,39 @@ const mobileLinks: NavItem[] = [
 export default function PublicNavbar({
   links = desktopLinks,
   primaryLabel = 'Sign Up',
-  primaryTo = '/signin',
+  primaryTo = '/signup',
 }: PublicNavbarProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [location.pathname])
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 64)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const foreground = scrolled ? '#11182d' : '#FFFFFF'
+  const muted = scrolled ? alpha('#11182d', 0.86) : alpha('#FFFFFF', 0.78)
+
   const navLinkSx = {
     px: 1.5,
     py: 1,
     borderRadius: '8px',
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: '0.88rem',
-    fontWeight: 800,
+    color: muted,
+    fontSize: '1rem',
+    fontWeight: 700,
     lineHeight: 1,
+    textDecoration: 'none',
     transition: 'background-color 0.18s ease, color 0.18s ease',
     '&:hover': {
-      bgcolor: alpha('#FFFFFF', 0.08),
-      color: '#FFFFFF',
+      bgcolor: scrolled ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
+      color: foreground,
     },
   } as const
 
@@ -65,12 +75,15 @@ export default function PublicNavbar({
     <Box
       component="nav"
       sx={{
-        position: 'absolute',
+        position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 20,
-        bgcolor: 'transparent',
+        zIndex: 1300,
+        bgcolor: scrolled ? '#FFFFFF' : 'transparent',
+        borderBottom: scrolled ? `1px solid ${alpha('#11182d', 0.08)}` : '1px solid transparent',
+        boxShadow: scrolled ? '0 8px 26px rgba(17, 24, 45, 0.06)' : 'none',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
       }}
     >
       <Stack
@@ -79,9 +92,9 @@ export default function PublicNavbar({
         justifyContent="space-between"
         sx={{
           mx: 'auto',
-          maxWidth: 990,
-          minHeight: { xs: 64, lg: 72 },
-          px: { xs: 2, sm: 3, lg: 0 },
+          maxWidth: 1360,
+          minHeight: { xs: 72, lg: 92 },
+          px: { xs: 2, sm: 3, lg: 4 },
         }}
       >
         <Box
@@ -89,20 +102,34 @@ export default function PublicNavbar({
           to="/"
           aria-label={`${brandIdentity.name} home`}
           sx={{
-            color: '#FFFFFF',
-            fontSize: { xs: '1.12rem', md: '1.2rem' },
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1.6,
+            color: foreground,
+            fontSize: { xs: '1.1rem', md: '1.28rem' },
             fontWeight: 900,
             lineHeight: 1,
             whiteSpace: 'nowrap',
             textDecoration: 'none',
           }}
         >
+          <Box
+            component="img"
+            src={brandIdentity.logoSrc}
+            alt=""
+            sx={{
+              width: { xs: 40, lg: 46 },
+              height: { xs: 40, lg: 46 },
+              borderRadius: '50%',
+              objectFit: 'cover',
+            }}
+          />
           {brandIdentity.name}
         </Box>
 
         <Stack
           direction="row"
-          spacing={0.7}
+          spacing={1.2}
           alignItems="center"
           justifyContent="center"
           sx={{ display: { xs: 'none', lg: 'flex' }, flex: 1 }}
@@ -115,13 +142,13 @@ export default function PublicNavbar({
             <Button
               key={item}
               type="button"
-              endIcon={<FiChevronDown size={14} />}
+              endIcon={<FiChevronDown size={15} />}
               sx={{
                 ...navLinkSx,
                 minHeight: 'auto',
                 minWidth: 'auto',
                 textTransform: 'none',
-                '& .MuiButton-endIcon': { ml: 0.4 },
+                '& .MuiButton-endIcon': { ml: 0.35 },
               }}
             >
               {item}
@@ -142,16 +169,17 @@ export default function PublicNavbar({
             variant="contained"
             sx={{
               display: { xs: 'none', lg: 'inline-flex' },
-              minWidth: 91,
-              minHeight: 40,
-              px: 2.4,
-              borderRadius: '12px',
-              bgcolor: '#FF8424',
+              minWidth: 116,
+              minHeight: 50,
+              px: 2.6,
+              borderRadius: '14px',
+              bgcolor: '#ff751a',
               color: '#FFFFFF',
               fontWeight: 800,
+              fontSize: '1rem',
               boxShadow: 'none',
               '&:hover': {
-                bgcolor: '#F47B14',
+                bgcolor: '#f46b10',
                 boxShadow: 'none',
               },
             }}
@@ -166,10 +194,10 @@ export default function PublicNavbar({
               display: { xs: 'inline-flex', lg: 'none' },
               width: 42,
               height: 42,
-              color: '#FFFFFF',
+              color: foreground,
               borderRadius: '8px',
               '&:hover': {
-                bgcolor: alpha('#FFFFFF', 0.08),
+                bgcolor: scrolled ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
               },
             }}
           >
@@ -182,10 +210,11 @@ export default function PublicNavbar({
         <Box
           sx={{
             mx: 2,
+            mb: 1.4,
             borderRadius: '12px',
-            border: `1px solid ${alpha('#FFFFFF', 0.14)}`,
-            bgcolor: alpha('#11183F', 0.96),
-            boxShadow: '0 22px 54px rgba(0,0,0,0.32)',
+            border: `1px solid ${scrolled ? alpha('#11182d', 0.1) : alpha('#FFFFFF', 0.14)}`,
+            bgcolor: scrolled ? '#FFFFFF' : alpha('#11183F', 0.96),
+            boxShadow: '0 22px 54px rgba(0,0,0,0.22)',
             p: 1,
             display: { xs: 'block', lg: 'none' },
           }}
@@ -200,13 +229,13 @@ export default function PublicNavbar({
                   px: 1.5,
                   py: 1.2,
                   borderRadius: '8px',
-                  color: 'rgba(255,255,255,0.82)',
+                  color: muted,
                   fontSize: '0.92rem',
                   fontWeight: 800,
                   textDecoration: 'none',
                   '&:hover': {
-                    bgcolor: alpha('#FFFFFF', 0.08),
-                    color: '#FFFFFF',
+                    bgcolor: scrolled ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
+                    color: foreground,
                   },
                 }}
               >
@@ -221,12 +250,12 @@ export default function PublicNavbar({
                 mt: 1,
                 minHeight: 42,
                 borderRadius: '10px',
-                bgcolor: '#FF8424',
+                bgcolor: '#ff751a',
                 color: '#FFFFFF',
                 fontWeight: 800,
                 boxShadow: 'none',
                 '&:hover': {
-                  bgcolor: '#F47B14',
+                  bgcolor: '#f46b10',
                   boxShadow: 'none',
                 },
               }}
