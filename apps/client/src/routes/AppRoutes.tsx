@@ -219,6 +219,10 @@ function RoutedApp() {
           {/* public */}
           <Route path="/" element={<RootRoute />} />
           <Route path="/landing" element={<LandingPage />} />
+          <Route path="/platform" element={<LandingPage />} />
+          <Route path="/integrations" element={<Navigate to="/platform#integrations" replace />} />
+          <Route path="/blogs" element={<Navigate to="/platform#support" replace />} />
+          <Route path="/admin/*" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -17,18 +17,21 @@ interface PublicNavbarProps {
 }
 
 const desktopLinks: NavItem[] = [
-  { label: 'Platform', to: '#platform' },
-  { label: 'Blogs', to: '/' },
+  { label: 'Platform', to: '/platform' },
+  { label: 'Blogs', to: '/platform#support' },
   { label: 'Track Shipment', to: '/tracking' },
 ]
 
-const dropdownLinks = ['Integrations', 'Tools']
+const dropdownLinks: NavItem[] = [
+  { label: 'Integrations', to: '/platform#integrations' },
+  { label: 'Tools', to: '/rate-calculator' },
+]
 
 const mobileLinks: NavItem[] = [
-  { label: 'Platform', to: '#platform' },
-  { label: 'Integrations', to: '#integrations' },
+  { label: 'Platform', to: '/platform' },
+  { label: 'Integrations', to: '/platform#integrations' },
   { label: 'Tools', to: '/rate-calculator' },
-  { label: 'Blogs', to: '/' },
+  { label: 'Blogs', to: '/platform#support' },
   { label: 'Track Shipment', to: '/tracking' },
 ]
 
@@ -140,8 +143,9 @@ export default function PublicNavbar({
 
           {dropdownLinks.map((item) => (
             <Button
-              key={item}
-              type="button"
+              key={item.label}
+              component={RouterLink}
+              to={item.to}
               endIcon={<FiChevronDown size={15} />}
               sx={{
                 ...navLinkSx,
@@ -151,7 +155,7 @@ export default function PublicNavbar({
                 '& .MuiButton-endIcon': { ml: 0.35 },
               }}
             >
-              {item}
+              {item.label}
             </Button>
           ))}
 

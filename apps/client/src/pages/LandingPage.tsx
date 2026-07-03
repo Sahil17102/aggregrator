@@ -1,6 +1,6 @@
 import { alpha, Box, Button, Container, Stack, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
-import { type ElementType, type ReactNode } from 'react'
+import { type ElementType, type ReactNode, useEffect } from 'react'
 import {
   FiArrowRight,
   FiBarChart2,
@@ -17,7 +17,7 @@ import {
   FiTrendingUp,
   FiTruck,
 } from 'react-icons/fi'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useLocation } from 'react-router-dom'
 import PublicNavbar from '../components/public/PublicNavbar'
 import { brandIdentity } from '../theme/brand'
 
@@ -392,6 +392,20 @@ function SupportItem({ title, text, icon }: { title: string; text: string; icon:
 }
 
 export default function LandingPage() {
+  const location = useLocation()
+
+  useEffect(() => {
+    if (!location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      return
+    }
+
+    const id = location.hash.replace('#', '')
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [location.pathname, location.hash])
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: page }}>
       <DottedDark component="section" sx={{ minHeight: { xs: 680, lg: 720 } }}>
@@ -483,7 +497,7 @@ export default function LandingPage() {
         </Container>
       </DottedDark>
 
-      <Box component="section" sx={{ bgcolor: page, py: { xs: 8, md: 12 } }}>
+      <Box id="integrations" component="section" sx={{ bgcolor: page, py: { xs: 8, md: 12 }, scrollMarginTop: 96 }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, lg: 8 } }}>
           <SectionHeading
             eyebrow="Why Choose Ship Aggregator"
@@ -499,7 +513,7 @@ export default function LandingPage() {
         </Container>
       </Box>
 
-      <Box id="platform" component="section" sx={{ bgcolor: '#FFFFFF', py: { xs: 8, md: 12 } }}>
+      <Box id="tools" component="section" sx={{ bgcolor: '#FFFFFF', py: { xs: 8, md: 12 }, scrollMarginTop: 96 }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, lg: 8 } }}>
           <SectionHeading
             eyebrow="Platform Capabilities"
@@ -516,7 +530,7 @@ export default function LandingPage() {
         </Container>
       </Box>
 
-      <Box component="section" sx={{ bgcolor: page, py: { xs: 8, md: 12 } }}>
+      <Box id="support" component="section" sx={{ bgcolor: page, py: { xs: 8, md: 12 }, scrollMarginTop: 96 }}>
         <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
           <SectionHeading
             eyebrow="Support"
