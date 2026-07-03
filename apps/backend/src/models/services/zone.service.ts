@@ -511,7 +511,7 @@ export const bulkInsertZoneMappingsFromCSV = async (
     Papa.parse<CSVRecord>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
+      complete: async (results: Papa.ParseResult<CSVRecord>) => {
         try {
           const insertedRecords: CSVRecord[] = []
           const duplicates: {

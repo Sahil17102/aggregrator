@@ -63,7 +63,7 @@ const findUserByPhoneIn = async (phone: string, tx: Tx = db) => {
   if (!normalized) return null
 
   return await tx.query.users.findFirst({
-    where: (users, { eq }) => eq(users.phone, normalized),
+    where: eq(users.phone, normalized),
   })
 }
 
@@ -157,7 +157,7 @@ export const findUserById = async (id: string) => {
 
 export const findUserByEmail = async (email: string, tx: Tx = db) => {
   return await tx.query.users.findFirst({
-    where: (users, { eq }) => eq(users.email, email),
+    where: eq(users.email, email),
   })
 }
 
