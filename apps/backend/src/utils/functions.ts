@@ -72,21 +72,26 @@ export function buildPatch<T extends Record<string, unknown>>(existing: T, merge
 
 export const getBucketName = () => {
   const fallbackBucket = process.env.R2_BUCKET?.trim()
+  const productionBucket = process.env.PROD_BUCKET?.trim()
+  const stagingBucket = process.env.STAGING_BUCKET?.trim()
+  const developmentBucket = process.env.DEV_BUCKET?.trim()
   let bucket: string | undefined
 
   switch (process.env.NODE_ENV) {
     case 'production':
-      bucket = process.env.PROD_BUCKET?.trim()
+      bucket = productionBucket
       break
     case 'staging':
-      bucket = process.env.STAGING_BUCKET?.trim()
+      bucket = stagingBucket
       break
     default:
-      bucket = process.env.DEV_BUCKET?.trim()
+      bucket = developmentBucket
       break
   }
 
-  const resolvedBucket = bucket || fallbackBucket
+  const resolvedBucket =
+    bucket || fallbackBucket || productionBucket || stagingBucket || developmentBucket
+
   if (!resolvedBucket) {
     throw new Error(
       'R2 bucket is not configured. Set R2_BUCKET or the environment-specific bucket variable.',
