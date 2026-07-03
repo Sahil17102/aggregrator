@@ -43,6 +43,49 @@ const getPasswordChangeTimestamp = () => new Date(Math.floor(Date.now() / 1000) 
 const exposeAuthCodes = parseBooleanEnv(process.env.EXPOSE_AUTH_CODES, false)
 const shouldExposeAuthCodes = () => exposeAuthCodes
 
+const isEmailServiceNotConfiguredError = (error: unknown) =>
+  error instanceof Error && error.message.includes('Email service is not configured')
+
+const deliverVerificationToken = async ({
+  email,
+  token,
+  purpose,
+  existingUser,
+  exposeCode,
+}: {
+  email: string
+  token: string
+  purpose: string
+  existingUser: boolean
+  exposeCode: boolean
+}) => {
+  if (exposeCode) {
+    logAuthCode({ purpose, to: email, code: token })
+    console.log('[Auth Email Verification] Skipping verification email because auth codes are exposed inline', {
+      email: maskEmailForLog(email),
+      existingUser,
+    })
+    return true
+  }
+
+  try {
+    console.log('[Auth Email Verification] Sending verification email', {
+      email: maskEmailForLog(email),
+      existingUser,
+    })
+    await sendVerificationEmail(email, token)
+    return false
+  } catch (error) {
+    if (!isEmailServiceNotConfiguredError(error)) throw error
+
+    console.warn('[Auth Email Verification] Email service is not configured; returning inline verification code', {
+      email: maskEmailForLog(email),
+      existingUser,
+    })
+    return true
+  }
+}
+
 type AuthFlow = 'login' | 'signup'
 
 // Define User and NewUser types for convenience
@@ -605,27 +648,23 @@ export const handleEmailVerificationRequest = async (
       await updateUserVerificationToken(normalizedEmail, token, expiresAt, tx)
       shouldSendEmail = true
 
-      if (shouldSendEmail && !exposeCode) {
-        console.log('[Auth Email Verification] Sending verification email', {
-          email: maskEmailForLog(normalizedEmail),
+      const shouldReturnInlineCode =
+        shouldSendEmail &&
+        (await deliverVerificationToken({
+          email: normalizedEmail,
+          token,
+          purpose: 'password-login-verification',
           existingUser: true,
-        })
-        await sendVerificationEmail(normalizedEmail, token)
-      } else if (shouldSendEmail) {
-        logAuthCode({ purpose: 'password-login-verification', to: normalizedEmail, code: token })
-        console.log('[Auth Email Verification] Skipping verification email because auth codes are exposed inline', {
-          email: maskEmailForLog(normalizedEmail),
-          existingUser: true,
-        })
-      }
+          exposeCode,
+        }))
 
       return {
         status: 200,
         data: {
-          message: exposeCode
+          message: shouldReturnInlineCode
             ? 'Verification code generated'
             : 'Verification email sent',
-          ...(exposeCode ? { verificationToken: token } : {}),
+          ...(shouldReturnInlineCode ? { verificationToken: token } : {}),
         },
       }
     }
@@ -671,25 +710,21 @@ export const handleEmailVerificationRequest = async (
 
     shouldSendEmail = true
 
-    if (shouldSendEmail && !exposeCode) {
-      console.log('[Auth Email Verification] Sending verification email', {
-        email: maskEmailForLog(normalizedEmail),
+    const shouldReturnInlineCode =
+      shouldSendEmail &&
+      (await deliverVerificationToken({
+        email: normalizedEmail,
+        token,
+        purpose: 'signup-email-verification',
         existingUser: false,
-      })
-      await sendVerificationEmail(normalizedEmail, token)
-    } else if (shouldSendEmail) {
-      logAuthCode({ purpose: 'signup-email-verification', to: normalizedEmail, code: token })
-      console.log('[Auth Email Verification] Skipping verification email because auth codes are exposed inline', {
-        email: maskEmailForLog(normalizedEmail),
-        existingUser: false,
-      })
-    }
+        exposeCode,
+      }))
 
     return {
       status: 201,
       data: {
-        message: exposeCode ? 'Verification code generated' : 'Verification email sent',
-        ...(exposeCode ? { verificationToken: token } : {}),
+        message: shouldReturnInlineCode ? 'Verification code generated' : 'Verification email sent',
+        ...(shouldReturnInlineCode ? { verificationToken: token } : {}),
       },
     }
   })
