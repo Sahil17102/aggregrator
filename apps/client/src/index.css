@@ -47,6 +47,37 @@ textarea {
   overflow-x: clip;
 }
 
+.landing-marquee-left,
+.landing-marquee-right {
+  will-change: transform;
+}
+
+.landing-marquee-left {
+  animation: landing-marquee-left 42s linear infinite;
+}
+
+.landing-marquee-right {
+  animation: landing-marquee-right 42s linear infinite;
+}
+
+@keyframes landing-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.333%);
+  }
+}
+
+@keyframes landing-marquee-right {
+  from {
+    transform: translateX(-33.333%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
