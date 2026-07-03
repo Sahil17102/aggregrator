@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import React from 'react'
 import './loader.css'
-import Logo from '/brand/choiceme-logo.png'
+import Logo from '/favicon.jpg'
 import { brandIdentity } from '../../../theme/brand'
 
 type Props = {

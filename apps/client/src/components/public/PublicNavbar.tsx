@@ -1,11 +1,9 @@
 import { Box, Button, IconButton, Stack } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { useState } from 'react'
-import { FiArrowUpRight, FiMenu, FiPhone, FiX } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiChevronDown, FiMenu, FiX } from 'react-icons/fi'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
-import BrandLogo from '../brand/BrandLogo'
-import BrandTopBar from '../brand/BrandTopBar'
-import { brand, brandEffects, brandIdentity } from '../../theme/brand'
+import { brandIdentity } from '../../theme/brand'
 
 type NavItem = {
   label: string
@@ -20,268 +18,224 @@ interface PublicNavbarProps {
   secondaryTo?: string
 }
 
-const defaultLinks: NavItem[] = [
-  { label: 'Tracking', to: '/tracking' },
-  { label: 'Rate Calculator', to: '/rate-calculator' },
-  { label: 'Weight Calculator', to: '/weight-calculator' },
+const desktopLinks: NavItem[] = [
+  { label: 'Platform', to: '/' },
+  { label: 'Blogs', to: '/' },
+  { label: 'Track Shipment', to: '/tracking' },
+]
+
+const dropdownLinks = ['Integrations', 'Tools']
+
+const mobileLinks: NavItem[] = [
+  { label: 'Platform', to: '/' },
+  { label: 'Integrations', to: '/channels/channel_list' },
+  { label: 'Tools', to: '/rate-calculator' },
+  { label: 'Blogs', to: '/' },
+  { label: 'Track Shipment', to: '/tracking' },
 ]
 
 export default function PublicNavbar({
-  links = defaultLinks,
+  links = desktopLinks,
   primaryLabel = 'Sign Up',
   primaryTo = '/signin',
-  secondaryLabel = 'Login',
-  secondaryTo = '/login',
 }: PublicNavbarProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev)
-  const closeMobileMenu = () => setMobileMenuOpen(false)
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
 
-  const actionButtonSx = {
-    borderRadius: 999,
-    whiteSpace: 'nowrap',
+  const navLinkSx = {
+    px: 1.5,
+    py: 1,
+    borderRadius: '8px',
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: '0.88rem',
     fontWeight: 800,
-    fontSize: { xs: '0.66rem', sm: '0.8rem' },
-    letterSpacing: '-0.01em',
-    minHeight: { xs: 38, sm: 42 },
+    lineHeight: 1,
+    transition: 'background-color 0.18s ease, color 0.18s ease',
+    '&:hover': {
+      bgcolor: alpha('#FFFFFF', 0.08),
+      color: '#FFFFFF',
+    },
   } as const
 
   return (
-    <BrandTopBar
+    <Box
+      component="nav"
       sx={{
-        px: { xs: 0.6, sm: 2.2, lg: 3 },
-        py: { xs: 0.45, sm: 0.85 },
-        position: { xs: 'relative', md: 'sticky' },
-        top: { xs: 'auto', md: 0 },
-      }}
-      innerSx={{
-        background: alpha('#FFFFFF', 0.92),
-        border: brandEffects.border,
-        boxShadow: '0 14px 34px rgba(68, 92, 138, 0.15)',
-        px: { xs: 1.1, sm: 2.05, lg: 2.5 },
-        py: { xs: 0.55, sm: 0.7 },
-        overflow: { xs: 'visible', md: 'hidden' },
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 20,
+        bgcolor: 'transparent',
       }}
     >
-      <Stack spacing={1} sx={{ width: '100%', minWidth: 0 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{
+          mx: 'auto',
+          maxWidth: 990,
+          minHeight: { xs: 64, lg: 72 },
+          px: { xs: 2, sm: 3, lg: 0 },
+        }}
+      >
+        <Box
+          component={RouterLink}
+          to="/"
+          aria-label={`${brandIdentity.name} home`}
+          sx={{
+            color: '#FFFFFF',
+            fontSize: { xs: '1.12rem', md: '1.2rem' },
+            fontWeight: 900,
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            textDecoration: 'none',
+          }}
+        >
+          {brandIdentity.name}
+        </Box>
+
         <Stack
           direction="row"
-          spacing={{ xs: 0.7, sm: 1.8, lg: 2 }}
+          spacing={0.7}
           alignItems="center"
-          justifyContent="space-between"
-          sx={{ width: '100%', minWidth: 0 }}
+          justifyContent="center"
+          sx={{ display: { xs: 'none', lg: 'flex' }, flex: 1 }}
         >
-          <RouterLink to="/" aria-label={`${brandIdentity.name} home`}>
-            <BrandLogo sx={{ width: { xs: 58, sm: 96, md: 112 } }} />
-          </RouterLink>
+          <Box component={RouterLink} to={links[0]?.to ?? '/'} sx={navLinkSx}>
+            Platform
+          </Box>
 
-          <Stack
-            direction="row"
-            spacing={{ xs: 0.05, sm: 0.35, lg: 0.8 }}
-            alignItems="center"
-            justifyContent="center"
-            sx={{ flex: 1, minWidth: 0, display: { xs: 'none', md: 'flex' } }}
+          {dropdownLinks.map((item) => (
+            <Button
+              key={item}
+              type="button"
+              endIcon={<FiChevronDown size={14} />}
+              sx={{
+                ...navLinkSx,
+                minHeight: 'auto',
+                minWidth: 'auto',
+                textTransform: 'none',
+                '& .MuiButton-endIcon': { ml: 0.4 },
+              }}
+            >
+              {item}
+            </Button>
+          ))}
+
+          {links.slice(1).map((item) => (
+            <Box key={item.label} component={RouterLink} to={item.to} sx={navLinkSx}>
+              {item.label}
+            </Box>
+          ))}
+        </Stack>
+
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            component={RouterLink}
+            to={primaryTo}
+            variant="contained"
+            sx={{
+              display: { xs: 'none', lg: 'inline-flex' },
+              minWidth: 91,
+              minHeight: 40,
+              px: 2.4,
+              borderRadius: '12px',
+              bgcolor: '#FF8424',
+              color: '#FFFFFF',
+              fontWeight: 800,
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: '#F47B14',
+                boxShadow: 'none',
+              },
+            }}
           >
-            {links.map((item) => {
-              const active = location.pathname === item.to
+            {primaryLabel}
+          </Button>
 
-              return (
-                <Box
-                  key={item.to}
-                  component={RouterLink}
-                  to={item.to}
-                  sx={{
-                    px: { xs: 0.18, sm: 0.85, lg: 1.65 },
-                    py: { xs: 0.24, sm: 0.55, lg: 0.7 },
-                    borderRadius: 999,
-                    color: active ? brand.accent : brand.inkSoft,
-                    bgcolor: active ? alpha(brand.accent, 0.12) : 'transparent',
-                    fontSize: { xs: '0.5rem', sm: '0.7rem', md: '0.86rem' },
-                    fontWeight: active ? 800 : 700,
-                    lineHeight: 1.1,
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      color: brand.ink,
-                      bgcolor: alpha(brand.ink, 0.06),
-                    },
-                  }}
-                >
-                  {item.label}
-                </Box>
-              )
-            })}
-          </Stack>
-
-          <Stack
-            direction="row"
-            spacing={{ xs: 0.45, sm: 0.8 }}
-            alignItems="center"
-            justifyContent="flex-end"
-            sx={{ flexShrink: 0, ml: { xs: 'auto', md: 0 }, flexWrap: 'nowrap' }}
+          <IconButton
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            sx={{
+              display: { xs: 'inline-flex', lg: 'none' },
+              width: 42,
+              height: 42,
+              color: '#FFFFFF',
+              borderRadius: '8px',
+              '&:hover': {
+                bgcolor: alpha('#FFFFFF', 0.08),
+              },
+            }}
           >
+            {mobileMenuOpen ? <FiX size={23} /> : <FiMenu size={23} />}
+          </IconButton>
+        </Stack>
+      </Stack>
+
+      {mobileMenuOpen ? (
+        <Box
+          sx={{
+            mx: 2,
+            borderRadius: '12px',
+            border: `1px solid ${alpha('#FFFFFF', 0.14)}`,
+            bgcolor: alpha('#11183F', 0.96),
+            boxShadow: '0 22px 54px rgba(0,0,0,0.32)',
+            p: 1,
+            display: { xs: 'block', lg: 'none' },
+          }}
+        >
+          <Stack spacing={0.4}>
+            {mobileLinks.map((item) => (
+              <Box
+                key={`${item.label}-${item.to}`}
+                component={RouterLink}
+                to={item.to}
+                sx={{
+                  px: 1.5,
+                  py: 1.2,
+                  borderRadius: '8px',
+                  color: 'rgba(255,255,255,0.82)',
+                  fontSize: '0.92rem',
+                  fontWeight: 800,
+                  textDecoration: 'none',
+                  '&:hover': {
+                    bgcolor: alpha('#FFFFFF', 0.08),
+                    color: '#FFFFFF',
+                  },
+                }}
+              >
+                {item.label}
+              </Box>
+            ))}
             <Button
               component={RouterLink}
               to={primaryTo}
               variant="contained"
-              endIcon={<FiArrowUpRight size={18} />}
               sx={{
-                ...actionButtonSx,
-                minWidth: { xs: 78, sm: 154 },
-                px: { xs: 0.95, sm: 2.15 },
+                mt: 1,
+                minHeight: 42,
+                borderRadius: '10px',
+                bgcolor: '#FF8424',
                 color: '#FFFFFF',
-                boxShadow: {
-                  xs: '0 12px 24px rgba(255, 122, 21, 0.22)',
-                  sm: '0 18px 36px rgba(255, 122, 21, 0.28)',
+                fontWeight: 800,
+                boxShadow: 'none',
+                '&:hover': {
+                  bgcolor: '#F47B14',
+                  boxShadow: 'none',
                 },
               }}
             >
               {primaryLabel}
             </Button>
-            <Button
-              component={RouterLink}
-              to={secondaryTo}
-              variant="text"
-              sx={{
-                ...actionButtonSx,
-                display: 'inline-flex',
-                minWidth: { xs: 68, sm: 132 },
-                px: { xs: 0.8, sm: 1.15, md: 1.3 },
-                color: brand.ink,
-                '&:hover': {
-                  backgroundColor: alpha(brand.ink, 0.06),
-                },
-              }}
-            >
-              {secondaryLabel}
-            </Button>
-            <Button
-              component="a"
-              href={`tel:${brandIdentity.supportPhone}`}
-              variant="text"
-              startIcon={<FiPhone size={15} />}
-              sx={{
-                display: { xs: 'none', lg: 'inline-flex' },
-                color: brand.ink,
-                fontWeight: 800,
-                minHeight: 42,
-                '&:hover': {
-                  backgroundColor: alpha(brand.ink, 0.06),
-                },
-              }}
-            >
-              {brandIdentity.supportPhone}
-            </Button>
-            <IconButton
-              aria-label={mobileMenuOpen ? 'Close public menu' : 'Open public menu'}
-              onClick={toggleMobileMenu}
-              sx={{
-                display: { xs: 'inline-flex', md: 'none' },
-                color: brand.ink,
-                border: `1px solid ${alpha(brand.ink, 0.1)}`,
-                bgcolor: alpha('#FFFFFF', 0.86),
-                width: 42,
-                height: 42,
-                flexShrink: 0,
-              }}
-            >
-              {mobileMenuOpen ? <FiX size={18} /> : <FiMenu size={18} />}
-            </IconButton>
-          </Stack>
-        </Stack>
-
-        <Box
-          sx={{
-            display: { xs: mobileMenuOpen ? 'block' : 'none', md: 'none' },
-            width: '100%',
-            pt: 1.2,
-            borderTop: `1px solid ${alpha(brand.ink, 0.08)}`,
-          }}
-        >
-          <Stack spacing={1}>
-            {links.map((item) => {
-              const active = location.pathname === item.to
-
-              return (
-                <Button
-                  key={item.to}
-                  component={RouterLink}
-                  to={item.to}
-                  onClick={closeMobileMenu}
-                  variant="text"
-                  fullWidth
-                  sx={{
-                    justifyContent: 'flex-start',
-                    px: 1.2,
-                    py: 1.05,
-                    borderRadius: 2,
-                    color: active ? brand.accent : brand.ink,
-                    bgcolor: active ? alpha(brand.accent, 0.08) : 'transparent',
-                    fontWeight: 800,
-                    fontSize: '0.98rem',
-                    '&:hover': {
-                      bgcolor: alpha(brand.ink, 0.05),
-                    },
-                  }}
-                >
-                  {item.label}
-                </Button>
-              )
-            })}
-
-            <Stack direction="row" spacing={1} sx={{ pt: 0.6 }}>
-              <Button
-                component={RouterLink}
-                to={secondaryTo}
-                onClick={closeMobileMenu}
-                variant="outlined"
-                fullWidth
-                sx={{
-                  borderColor: alpha(brand.ink, 0.12),
-                  color: brand.ink,
-                  fontWeight: 800,
-                  minHeight: 44,
-                }}
-              >
-                {secondaryLabel}
-              </Button>
-              <Button
-                component={RouterLink}
-                to={primaryTo}
-                onClick={closeMobileMenu}
-                variant="contained"
-                fullWidth
-                endIcon={<FiArrowUpRight size={18} />}
-                sx={{
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  minHeight: 44,
-                }}
-              >
-                {primaryLabel}
-              </Button>
-            </Stack>
-
-            <Button
-              component="a"
-              href={`tel:${brandIdentity.supportPhone}`}
-              variant="outlined"
-              fullWidth
-              startIcon={<FiPhone size={15} />}
-              sx={{
-                borderColor: alpha(brand.ink, 0.12),
-                color: brand.ink,
-                fontWeight: 800,
-                minHeight: 44,
-              }}
-            >
-              {brandIdentity.supportPhone}
-            </Button>
           </Stack>
         </Box>
-      </Stack>
-    </BrandTopBar>
+      ) : null}
+    </Box>
   )
 }

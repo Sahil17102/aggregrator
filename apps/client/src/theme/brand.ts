@@ -24,12 +24,13 @@ export const brandFonts = {
 }
 
 export const brandIdentity = {
-  name: 'ChoiceMee Logistics',
-  shortName: 'ChoiceMee',
-  tagline: 'Your Trust, Our Commitment.',
+  name: 'Ship Aggregator',
+  shortName: 'Ship Aggregator',
+  tagline: 'Ship smarter, ship faster, ship cheaper.',
   supportEmail: 'ops@choicemee.com',
   supportPhone: '9906690088',
   supportAddress: 'Baramulla, Jammu & Kashmir, 193123',
+  logoSrc: '/favicon.jpg',
 }
 
 export const brandGradients = {

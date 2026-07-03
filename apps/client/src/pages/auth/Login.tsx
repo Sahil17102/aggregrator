@@ -23,8 +23,8 @@ export default function Login() {
     <AuthShell
       eyebrow="Client Auth"
       title={'Ship Smarter.\nDeliver Faster.'}
-      subtitle="Track orders, compare courier options, and keep every delivery moving from one polished ChoiceMee workspace."
-      helperTitle="Welcome Back to ChoiceMee"
+      subtitle="Track orders, compare courier options, and keep every delivery moving from one polished Ship Aggregator workspace."
+      helperTitle="Welcome Back to Ship Aggregator"
       helperText="Sign in to open your courier command center."
       showChrome
       showNavbar={false}

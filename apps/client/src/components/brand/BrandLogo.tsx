@@ -9,10 +9,10 @@ export default function BrandLogo({ compact = false, sx, ...rest }: BrandLogoPro
   return (
     <Box
       component="img"
-      src="/brand/choiceme-logo.png"
+      src={brandIdentity.logoSrc}
       alt={brandIdentity.name}
       sx={{
-        width: compact ? 54 : { xs: 150, sm: 176 },
+        width: compact ? 48 : { xs: 54, sm: 64 },
         height: 'auto',
         objectFit: 'contain',
         display: 'block',
