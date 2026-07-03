@@ -3,9 +3,32 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import PageLoader from "./components/common/PageLoader";
 
-const clientAuthUrl = import.meta.env.VITE_CLIENT_AUTH_URL || "http://localhost:5173/login";
-const clientSignupUrl =
-  import.meta.env.VITE_CLIENT_SIGNUP_URL || clientAuthUrl.replace(/\/login\/?$/, "/signup");
+const CLIENT_APP_FALLBACK_URL = "https://courier-aggregator-client.vercel.app";
+
+function getClientPanelUrl(configuredUrl, path) {
+  const fallbackUrl = `${CLIENT_APP_FALLBACK_URL}${path}`;
+
+  if (!configuredUrl) return fallbackUrl;
+
+  try {
+    const url = new URL(configuredUrl, CLIENT_APP_FALLBACK_URL);
+    const urlSignature = `${url.hostname}${url.pathname}`.toLowerCase();
+
+    if (urlSignature.includes("admin")) return fallbackUrl;
+
+    url.pathname = path;
+    return url.toString();
+  } catch {
+    return fallbackUrl;
+  }
+}
+
+const configuredClientAuthUrl = import.meta.env.VITE_CLIENT_AUTH_URL;
+const clientAuthUrl = getClientPanelUrl(configuredClientAuthUrl, "/login");
+const clientSignupUrl = getClientPanelUrl(
+  import.meta.env.VITE_CLIENT_SIGNUP_URL || configuredClientAuthUrl,
+  "/signup",
+);
 
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
