@@ -7,13 +7,14 @@ const DEFAULT_API_BASE_URL = isLocalhost
   ? 'http://127.0.0.1:5002/api'
   : 'https://aggregator-backend-7gmk.onrender.com/api'
 const LEGACY_RAILWAY_API_HOST = 'choiceme-backend-production.up.railway.app'
+const PLACEHOLDER_API_HOST = 'your-backend-url.onrender.com'
 
 const normalizeApiBaseUrl = (rawBaseUrl) => {
   if (!rawBaseUrl) return DEFAULT_API_BASE_URL
 
   try {
     const candidate = new URL(rawBaseUrl)
-    if (candidate.hostname === LEGACY_RAILWAY_API_HOST) {
+    if (candidate.hostname === LEGACY_RAILWAY_API_HOST || candidate.hostname === PLACEHOLDER_API_HOST) {
       return DEFAULT_API_BASE_URL
     }
 
