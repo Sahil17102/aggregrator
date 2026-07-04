@@ -1,14 +1,11 @@
-import { Box, ChakraProvider, Portal, useColorModeValue, useDisclosure } from '@chakra-ui/react'
-import Configurator from 'components/Configurator/Configurator'
-import Footer from 'components/Footer/Footer.js'
+import { ChakraProvider, Portal, useDisclosure } from '@chakra-ui/react'
 import AdminNavbar from 'components/Navbars/AdminNavbar.js'
 import { RouteAssetRecovery, RouteErrorBoundary } from 'components/RouteRecovery/RouteErrorBoundary'
 import Sidebar from 'components/Sidebar'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom'
 import routes from 'routes.js'
 import theme from 'theme/theme.js'
-import FixedPlugin from '../components/FixedPlugin/FixedPlugin'
 import MainPanel from '../components/Layout/MainPanel'
 import PanelContainer from '../components/Layout/PanelContainer'
 import PanelContent from '../components/Layout/PanelContent'
@@ -18,27 +15,7 @@ export default function Dashboard(props) {
   const { ...rest } = props
   const location = useLocation()
   const [sidebarVariant, setSidebarVariant] = useState('transparent')
-  const [fixed, setFixed] = useState(true)
-  const [sidebarWidth, setSidebarWidth] = useState(292)
-  const [isResizing, setIsResizing] = useState(false)
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (isResizing) {
-        const newWidth = Math.min(Math.max(e.clientX, 240), 360)
-        setSidebarWidth(newWidth)
-      }
-    }
-    const handleMouseUp = () => setIsResizing(false)
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isResizing])
+  const [sidebarWidth] = useState(300)
 
   const getRoute = () => window.location.pathname !== '/admin/full-screen-maps'
 
@@ -78,8 +55,6 @@ export default function Dashboard(props) {
     })
 
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const resizeActiveBg = useColorModeValue('rgba(13,27,77,0.16)', 'rgba(255,255,255,0.18)')
-  const resizeHoverBg = useColorModeValue('rgba(13,27,77,0.12)', 'rgba(255,255,255,0.14)')
   document.documentElement.dir = 'ltr'
 
   return (
@@ -99,6 +74,8 @@ export default function Dashboard(props) {
           xl: `calc(100% - ${sidebarWidth}px)`,
         }}
         ml={{ xl: `${sidebarWidth}px` }}
+        bg="#0f141b"
+        minH="100vh"
       >
         <Portal>
           <AdminNavbar
@@ -106,7 +83,6 @@ export default function Dashboard(props) {
             logoText={brandIdentity.name}
             brandText={getActiveRoute(routes)}
             secondary={getActiveNavbar(routes)}
-            fixed={fixed}
             sidebarWidth={sidebarWidth}
             {...rest}
           />
@@ -123,33 +99,7 @@ export default function Dashboard(props) {
             </PanelContainer>
           </PanelContent>
         ) : null}
-        <Footer />
-        <Portal>
-          <FixedPlugin secondary={getActiveNavbar(routes)} fixed={fixed} onOpen={onOpen} />
-        </Portal>
-        <Configurator
-          secondary={getActiveNavbar(routes)}
-          isOpen={isOpen}
-          onClose={onClose}
-          isChecked={fixed}
-          onSwitch={(value) => setFixed(value)}
-          onOpaque={() => setSidebarVariant('opaque')}
-          onTransparent={() => setSidebarVariant('transparent')}
-        />
       </MainPanel>
-
-      <Box
-        position="fixed"
-        left={`${sidebarWidth - 2}px`}
-        top="0"
-        h="100vh"
-        w="4px"
-        cursor="col-resize"
-        zIndex="1400"
-        bg={isResizing ? resizeActiveBg : 'transparent'}
-        _hover={{ bg: resizeHoverBg }}
-        onMouseDown={() => setIsResizing(true)}
-      />
     </ChakraProvider>
   )
 }

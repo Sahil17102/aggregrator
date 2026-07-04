@@ -1,182 +1,121 @@
+import { Badge, Box, Flex, HStack, IconButton, Text, useColorMode } from '@chakra-ui/react'
 import {
-  Box,
-  Button,
-  Flex,
-  HStack,
-  Text,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import PropTypes from "prop-types";
-import { NavLink } from "react-router-dom";
-import { brand, brandIdentity } from "theme/brand";
-import AdminNavbarLinks from "./AdminNavbarLinks";
-
-const navItems = [
-  { label: "Overview", path: "/admin/dashboard" },
-  { label: "Orders", path: "/admin/orders" },
-  { label: "Shipping", path: "/admin/couriers" },
-  { label: "Finance", path: "/admin/billing-invoices" },
-  { label: "Support", path: "/admin/support" },
-];
+  IconBell,
+  IconLayoutSidebarLeftCollapse,
+  IconMenu2,
+  IconMoon,
+  IconSun,
+} from '@tabler/icons-react'
+import PropTypes from 'prop-types'
 
 export default function AdminNavbar(props) {
-  const { fixed, secondary, onOpen, sidebarWidth = 275, brandText, ...rest } = props;
-
-  const mainText = useColorModeValue(brand.ink, "gray.100");
-  const secondaryText = useColorModeValue(brand.inkSoft, "gray.400");
-  const navbarShadow = useColorModeValue(
-    "0 18px 36px rgba(68,92,138,0.1)",
-    "0 18px 36px rgba(0, 0, 0, 0.4)"
-  );
-  const defaultNavbarBg = useColorModeValue(
-    brand.surfaceGlass,
-    "linear-gradient(110deg, rgba(13,27,77,0.94) 0%, rgba(22,62,89,0.94) 100%)"
-  );
-  const defaultNavbarBorder = useColorModeValue(
-    "1px solid rgba(13,27,77,0.08)",
-    "1px solid rgba(255,255,255,0.12)"
-  );
-  const activeBg = useColorModeValue(
-    "rgba(255,138,40,0.12)",
-    "rgba(255,255,255,0.08)"
-  );
-  const navShellBg = useColorModeValue(
-    "rgba(255,255,255,0.72)",
-    "rgba(255,255,255,0.06)"
-  );
-  const navShellBorder = useColorModeValue(
-    "rgba(13,27,77,0.08)",
-    "rgba(255,255,255,0.12)"
-  );
-  const logoSurface = useColorModeValue(
-    "rgba(255,255,255,0.94)",
-    "rgba(255,255,255,0.96)"
-  );
-  const logoBorder = useColorModeValue(
-    "rgba(255,138,40,0.18)",
-    "rgba(255,255,255,0.2)"
-  );
-  const navbarBg = secondary ? "transparent" : defaultNavbarBg;
-  const navbarBorder = secondary ? "none" : defaultNavbarBorder;
+  const { onOpen, sidebarWidth = 300, brandText } = props
+  const { colorMode, toggleColorMode } = useColorMode()
 
   return (
     <Flex
-      position={fixed || !secondary ? "fixed" : "absolute"}
-      boxShadow={secondary ? "none" : navbarShadow}
-      bg={navbarBg}
-      border={navbarBorder}
-      backdropFilter={secondary ? "none" : "blur(14px)"}
-      transition="all 0.3s ease"
-      alignItems="center"
-      borderRadius="14px"
-      minH="64px"
-      left={{ base: "10px", md: "14px", xl: `${sidebarWidth + 24}px` }}
-      right="14px"
-      px={{ base: "12px", md: "16px" }}
-      py="8px"
-      top="12px"
+      position="fixed"
+      top="0"
+      left={{ base: '0', xl: `${sidebarWidth}px` }}
+      right="0"
+      h="70px"
+      px={{ base: '16px', md: '30px' }}
+      align="center"
+      justify="space-between"
+      bg="#151b23"
+      borderBottom="1px solid #2a313a"
+      zIndex="1200"
     >
-      <Flex
-        w="100%"
-        flexDirection={{ base: "row", "2xl": "row" }}
-        alignItems="center"
-        justify="space-between"
-        gap={{ base: 2, "2xl": 3 }}
-      >
-        <Flex
-          direction="row"
-          align="center"
-          minW={0}
-          w={{ base: "auto", "2xl": "auto" }}
-          flex={{ "2xl": "0 1 280px" }}
-          gap="12px"
-        >
-          <Box
-            px="10px"
-            py="5px"
-            borderRadius="12px"
-            bg={logoSurface}
-            border="1px solid"
-            borderColor={logoBorder}
-            boxShadow="0 10px 24px rgba(255,138,40,0.1)"
-          >
-            <Box
-              as="img"
-              src={brandIdentity.logoPath}
-              alt={brandIdentity.name}
-              h="42px"
-              w="132px"
-              objectFit="contain"
-            />
-          </Box>
-          <Box minW={0} display={{ base: "none", md: "block" }}>
-            <Text
-              fontSize="10px"
-              fontWeight="800"
-              letterSpacing="0.14em"
-              textTransform="uppercase"
-              color={secondaryText}
-            >
-              Admin Panel
-            </Text>
-            <Text
-              fontSize="sm"
-              fontWeight="800"
-              color={mainText}
-              noOfLines={1}
-            >
-              {brandText || "Dashboard"}
-            </Text>
-          </Box>
-        </Flex>
+      <HStack spacing="20px" minW={0}>
+        <IconButton
+          aria-label="Open menu"
+          display={{ base: 'inline-flex', xl: 'none' }}
+          icon={<IconMenu2 size={20} />}
+          onClick={onOpen}
+          variant="ghost"
+          color="#9aa4b2"
+          _hover={{ bg: '#202733', color: '#f8fafc' }}
+        />
+        <IconButton
+          aria-label="Collapse sidebar"
+          display={{ base: 'none', xl: 'inline-flex' }}
+          icon={<IconLayoutSidebarLeftCollapse size={22} />}
+          variant="ghost"
+          color="#9aa4b2"
+          _hover={{ bg: '#202733', color: '#f8fafc' }}
+        />
+        <Text color="#f8fafc" fontSize="18px" fontWeight="800" noOfLines={1}>
+          {brandText || 'Dashboard'}
+        </Text>
+      </HStack>
 
-        <HStack
-          display={{ base: "none", "2xl": "flex" }}
-          spacing={1}
-          px="6px"
-          py="4px"
-          borderRadius="12px"
-          border="1px solid"
-          borderColor={navShellBorder}
-          bg={navShellBg}
-        >
-          {navItems.map((item) => (
-            <NavLink key={item.label} to={item.path}>
-              <Button
-                variant="ghost"
-                borderRadius="10px"
-                px="12px"
-                minH="34px"
-                fontSize="13px"
-                fontWeight="700"
-                color={mainText}
-                _hover={{ bg: activeBg }}
-              >
-                {item.label}
-              </Button>
-            </NavLink>
-          ))}
-        </HStack>
-
-        <HStack
-          ms={{ base: 0, "2xl": "auto" }}
-          spacing={2}
-          align="center"
-          justify="flex-end"
-          w={{ base: "auto", "2xl": "auto" }}
-          flexShrink={0}
-        >
-          <AdminNavbarLinks
-            onOpen={onOpen}
-            logoText={props.logoText}
-            secondary={secondary}
-            fixed={fixed}
-            {...rest}
+      <HStack spacing="10px">
+        <HStack spacing="2px" bg="#1d2240" border="1px solid #2d3358" borderRadius="18px" p="3px">
+          <IconButton
+            aria-label="Light mode"
+            icon={<IconSun size={16} />}
+            size="sm"
+            borderRadius="50%"
+            variant="ghost"
+            color="#ff7a1a"
+            bg={colorMode === 'light' ? '#2a2f55' : 'transparent'}
+            _hover={{ bg: '#2a2f55' }}
+          />
+          <IconButton
+            aria-label="Toggle color mode"
+            icon={<IconMoon size={16} />}
+            size="sm"
+            borderRadius="50%"
+            variant="ghost"
+            color="#8d80ff"
+            bg={colorMode === 'dark' ? '#2a2f55' : 'transparent'}
+            _hover={{ bg: '#2a2f55' }}
+            onClick={toggleColorMode}
           />
         </HStack>
-      </Flex>
+
+        <Box position="relative">
+          <IconButton
+            aria-label="Notifications"
+            icon={<IconBell size={20} />}
+            w="38px"
+            h="38px"
+            borderRadius="50%"
+            variant="ghost"
+            color="#f8fafc"
+            bg="#202733"
+            _hover={{ bg: '#28313d' }}
+          />
+          <Badge
+            position="absolute"
+            top="-3px"
+            right="-7px"
+            bg="#f97316"
+            color="white"
+            borderRadius="999px"
+            fontSize="10px"
+            px="5px"
+          >
+            9+
+          </Badge>
+        </Box>
+
+        <Flex
+          w="40px"
+          h="40px"
+          borderRadius="50%"
+          align="center"
+          justify="center"
+          bg="#292866"
+          color="#9b8cff"
+          fontSize="14px"
+          fontWeight="800"
+        >
+          SA
+        </Flex>
+      </HStack>
     </Flex>
-  );
+  )
 }
 
 AdminNavbar.propTypes = {
@@ -185,4 +124,4 @@ AdminNavbar.propTypes = {
   fixed: PropTypes.bool,
   onOpen: PropTypes.func,
   sidebarWidth: PropTypes.number,
-};
+}
