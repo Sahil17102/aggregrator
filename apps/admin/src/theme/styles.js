@@ -1,5 +1,5 @@
 import { mode } from '@chakra-ui/theme-tools'
-import { brand, brandFonts, brandGradients } from './brand'
+import { brandFonts } from './brand'
 import colors from './foundations/colors'
 
 export const globalStyles = {
@@ -9,18 +9,15 @@ export const globalStyles = {
   styles: {
     global: (props) => ({
       body: {
-        bg: mode(brand.page, '#050B24')(props),
+        bg: mode('#0D1117', '#0D1117')(props),
         color: mode('gray.900', 'whiteAlpha.900')(props),
         fontFamily: brandFonts.body,
-        backgroundImage: mode(
-          brandGradients.page,
-          'radial-gradient(circle at 8% 6%, rgba(255,255,255,0.1) 0%, transparent 26%), radial-gradient(circle at 92% 4%, rgba(255,138,40,0.14) 0%, transparent 24%), linear-gradient(180deg, #0D1B4D 0%, #050B24 100%)',
-        ),
+        backgroundImage: 'none',
         backgroundAttachment: 'fixed',
       },
       html: {
         fontFamily: brandFonts.body,
-        bg: mode(brand.page, '#050B24')(props),
+        bg: '#0D1117',
       },
       '#root': {
         minHeight: '100vh',
@@ -38,7 +35,7 @@ export const globalStyles = {
         borderRadius: '10px !important',
       },
       '.admin-card': {
-        borderRadius: '14px !important',
+        borderRadius: '12px !important',
       },
       '.chakra-modal__content': {
         borderRadius: '16px !important',
@@ -54,10 +51,10 @@ export const globalStyles = {
         height: '10px',
       },
       '::-webkit-scrollbar-track': {
-        background: mode('rgba(255,255,255,0.72)', 'rgba(255,255,255,0.06)')(props),
+        background: '#0D1117',
       },
       '::-webkit-scrollbar-thumb': {
-        background: mode('linear-gradient(180deg, rgba(215,226,243,0.92) 0%, rgba(71,120,189,0.92) 100%)', 'rgba(255,255,255,0.22)')(props),
+        background: 'rgba(139, 148, 158, 0.65)',
         borderRadius: '999px',
       },
     }),

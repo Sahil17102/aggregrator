@@ -27,8 +27,8 @@ export const brandIdentity = {
 }
 
 export const brandFonts = {
-  body: "'Poppins', ui-sans-serif, system-ui, sans-serif",
-  display: "'Poppins', ui-sans-serif, system-ui, sans-serif",
+  body: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif",
+  display: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif",
 }
 
 export const brandGradients = {

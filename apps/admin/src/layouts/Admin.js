@@ -62,7 +62,7 @@ export default function Dashboard(props) {
       <RouteAssetRecovery />
       <Sidebar
         routes={routes}
-        logoText={brandIdentity.name}
+        logoText="Admin Panel"
         sidebarVariant={sidebarVariant}
         sidebarWidth={sidebarWidth}
         {...rest}

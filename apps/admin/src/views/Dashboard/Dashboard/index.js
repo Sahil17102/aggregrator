@@ -5,40 +5,68 @@ import {
   Container,
   Flex,
   Grid,
-  Heading,
   HStack,
-  Progress,
+  Select,
   SimpleGrid,
   Spinner,
   Stack,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tr,
   VStack,
-  useColorModeValue,
 } from '@chakra-ui/react'
 import {
   IconAlertTriangle,
+  IconBuildingBank,
   IconChartBar,
-  IconCheck,
-  IconCircleCheck,
   IconCoinRupee,
-  IconMapPin,
+  IconExternalLink,
   IconPackageExport,
   IconRefresh,
-  IconShieldCheck,
+  IconTruck,
+  IconUsers,
+  IconWallet,
 } from '@tabler/icons-react'
 import Card from 'components/Card/Card'
 import CardBody from 'components/Card/CardBody'
 import CardHeader from 'components/Card/CardHeader'
+import CourierDistributionChart from 'components/Charts/CourierDistributionChart'
 import OrdersLineChart from 'components/Charts/OrdersLineChart'
 import RevenueBarChart from 'components/Charts/RevenueBarChart'
 import { useDashboardStats } from 'hooks/useDashboardStats'
 import { useHistory } from 'react-router-dom'
 
+const ui = {
+  page: '#0D1117',
+  surface: '#161B22',
+  surfaceMuted: '#21262D',
+  border: '#30363D',
+  borderSoft: 'rgba(48, 54, 61, 0.72)',
+  text: '#E6EDF3',
+  muted: '#8B949E',
+  tertiary: '#6E7681',
+  primary: '#6C5CE7',
+  primaryBg: 'rgba(108, 92, 231, 0.14)',
+  accent: '#F97316',
+  accentBg: 'rgba(249, 115, 22, 0.14)',
+  success: '#4ADE80',
+  successBg: 'rgba(74, 222, 128, 0.14)',
+  danger: '#F87171',
+  dangerBg: 'rgba(248, 113, 113, 0.14)',
+  blue: '#3B82F6',
+  blueBg: 'rgba(59, 130, 246, 0.14)',
+}
+
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(amount) || 0)
 
 const toNum = (value) => {
@@ -46,55 +74,217 @@ const toNum = (value) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-const ACCENT = '#FF8A28'
-const ACCENT_DARK = '#E67213'
+function EmptyState({ label = 'No data', h = '160px' }) {
+  return (
+    <Flex minH={h} align="center" justify="center" color={ui.muted} fontSize="sm">
+      {label}
+    </Flex>
+  )
+}
 
-function MetricCard({ title, value, subtitle, icon, color = 'accent.500' }) {
-  const textPrimary = useColorModeValue('#111827', 'gray.100')
-  const textSecondary = useColorModeValue('#64748B', 'gray.400')
-  const iconBg = useColorModeValue('rgba(255,138,40,0.13)', 'rgba(255,138,40,0.18)')
-  const cardBg = useColorModeValue('#FFFFFF', 'rgba(18,27,45,0.9)')
-  const cardBorder = useColorModeValue('#E5E7EB', 'rgba(255,255,255,0.08)')
+function Panel({ title, icon, badge, children, minH, gridColumn }) {
+  return (
+    <Card
+      bg={ui.surface}
+      borderWidth="1px"
+      borderColor={ui.border}
+      borderRadius="12px"
+      boxShadow="none"
+      overflow="hidden"
+      p="0"
+      minH={minH}
+      gridColumn={gridColumn}
+    >
+      <CardHeader p={{ base: 4, md: 5 }} borderBottom="1px solid" borderColor={ui.borderSoft}>
+        <HStack spacing={2.5}>
+          {icon ? <Box color={icon.color}>{icon.node}</Box> : null}
+          <Text color={ui.text} fontSize={{ base: 'md', md: 'lg' }} fontWeight="800">
+            {title}
+          </Text>
+          {badge !== undefined ? (
+            <Badge bg={ui.surfaceMuted} color={ui.text} border="1px solid" borderColor={ui.border} borderRadius="8px">
+              {badge}
+            </Badge>
+          ) : null}
+        </HStack>
+      </CardHeader>
+      <CardBody p={{ base: 4, md: 5 }}>{children}</CardBody>
+    </Card>
+  )
+}
+
+function MetricCard({ label, value, subtitle, trend, icon: Icon, color }) {
+  const trendValue = toNum(trend)
+  const hasTrend = trend !== undefined && trend !== null
+  const trendColor = trendValue < 0 ? ui.danger : ui.success
 
   return (
     <Card
-      borderRadius="16px"
-      h="full"
-      bg={cardBg}
+      bg={ui.surface}
       borderWidth="1px"
-      borderColor={cardBorder}
-      boxShadow="0 12px 28px rgba(15,23,42,0.06)"
+      borderColor={ui.border}
+      borderRadius="12px"
+      boxShadow="none"
+      p="0"
+      minH="120px"
     >
-      <CardBody p={4}>
-        <HStack justify="space-between" align="flex-start" mb={2}>
-          <Text fontSize="sm" color={textPrimary} fontWeight="700">
-            {title}
-          </Text>
-          <Flex w="36px" h="36px" borderRadius="10px" bg={iconBg} align="center" justify="center" color={color}>
-            {icon}
+      <CardBody p={5}>
+        <HStack justify="space-between" align="flex-start" spacing={4}>
+          <Box minW={0}>
+            <Text color={ui.muted} fontSize="sm" fontWeight="500">
+              {label}
+            </Text>
+            <Text color={ui.text} fontSize={{ base: '2xl', md: '3xl' }} fontWeight="800" lineHeight="1.1" mt={2}>
+              {value}
+            </Text>
+            <HStack spacing={2} mt={2} minH="18px">
+              {subtitle ? (
+                <Text color={ui.muted} fontSize="sm">
+                  {subtitle}
+                </Text>
+              ) : null}
+              {hasTrend ? (
+                <Text color={trendColor} fontSize="sm" fontWeight="700">
+                  {trendValue > 0 ? '+' : ''}
+                  {trendValue}%
+                </Text>
+              ) : null}
+            </HStack>
+          </Box>
+          <Flex
+            w="50px"
+            h="50px"
+            borderRadius="14px"
+            align="center"
+            justify="center"
+            color={color}
+            bg={`${color}1f`}
+            flexShrink={0}
+          >
+            <Icon size={25} strokeWidth={1.9} />
           </Flex>
         </HStack>
-        <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="800" color={textPrimary} lineHeight="1.1">
-          {value}
-        </Text>
-        <Text mt={1.5} fontSize="xs" color={textSecondary}>
-          {subtitle}
-        </Text>
       </CardBody>
     </Card>
   )
 }
 
-export default function Dashboard() {
-  const history = useHistory()
-  const { data: statsData, isLoading, error, refetch, isRefetching } = useDashboardStats()
+function StatusBars({ items }) {
+  if (!items.length) return <EmptyState h="138px" />
 
-  const pageBg = useColorModeValue('#F5F7FB', '#142238')
-  const panelBg = useColorModeValue('#FFFFFF', '#101D36')
-  const borderColor = useColorModeValue('#E5E7EB', 'rgba(148,163,184,0.2)')
-  const textPrimary = useColorModeValue('#111827', 'gray.100')
-  const textSecondary = useColorModeValue('#64748B', 'gray.400')
-  const tileBg = useColorModeValue('#F8FAFC', 'rgba(148,163,184,0.1)')
+  const maxCount = Math.max(...items.map((item) => item.count), 1)
+
+  return (
+    <Stack spacing={2}>
+      {items.map((item) => (
+        <HStack key={item.status} spacing={3}>
+          <Text color={ui.muted} fontSize="xs" textAlign="right" w="112px" noOfLines={1}>
+            {item.name}
+          </Text>
+          <Box flex="1" h="22px" bg="rgba(48, 54, 61, 0.42)" borderRadius="6px" overflow="hidden">
+            <Box h="100%" minW="4px" w={`${Math.round((item.count / maxCount) * 100)}%`} bg={item.fill} />
+          </Box>
+          <Text color={ui.text} fontSize="xs" fontWeight="700" w="42px" textAlign="right">
+            {item.count}
+          </Text>
+        </HStack>
+      ))}
+    </Stack>
+  )
+}
+
+function ActionRow({ icon, label, count, route, tone = 'amber' }) {
+  const history = useHistory()
+  const toneStyle =
+    tone === 'green'
+      ? { bg: 'rgba(74, 222, 128, 0.13)', border: 'rgba(74, 222, 128, 0.16)', color: ui.success }
+      : { bg: 'rgba(249, 115, 22, 0.12)', border: 'rgba(249, 115, 22, 0.18)', color: ui.accent }
+
+  return (
+    <Flex
+      as="button"
+      type="button"
+      w="100%"
+      align="center"
+      justify="space-between"
+      gap={3}
+      p={3.5}
+      borderRadius="10px"
+      border="1px solid"
+      borderColor={toneStyle.border}
+      bg={toneStyle.bg}
+      textAlign="left"
+      onClick={() => history.push(route)}
+      _hover={{ borderColor: toneStyle.color }}
+    >
+      <HStack spacing={3} minW={0}>
+        <Box color={toneStyle.color}>{icon}</Box>
+        <Text color={ui.text} fontWeight="700" noOfLines={1}>
+          {label}
+        </Text>
+      </HStack>
+      <HStack spacing={3}>
+        <Badge color={toneStyle.color} bg="rgba(249, 115, 22, 0.16)" border="1px solid" borderColor={toneStyle.border}>
+          {count}
+        </Badge>
+        <IconExternalLink size={14} color={ui.muted} />
+      </HStack>
+    </Flex>
+  )
+}
+
+function RevenueTable({ rows }) {
+  return (
+    <Box borderTop="1px solid" borderColor={ui.border} pt={4}>
+      <HStack spacing={7} mb={4}>
+        <Text color={ui.primary} fontWeight="700" borderBottom="2px solid" borderColor={ui.primary} pb={3}>
+          Breakdown
+        </Text>
+        <Text color={ui.text} fontWeight="700" pb={3}>
+          Chart
+        </Text>
+      </HStack>
+      <Box overflowX="auto">
+        <Table variant="simple" size="sm">
+          <Thead bg="#1a2234">
+            <Tr>
+              {['Courier', 'Revenue', 'Cost', 'Margin', 'Margin %', 'Rev/Order'].map((head) => (
+                <Th key={head} color={ui.muted} borderColor="transparent" textTransform="none" fontSize="sm" py={4}>
+                  {head}
+                </Th>
+              ))}
+            </Tr>
+          </Thead>
+          <Tbody>
+            {rows.length ? (
+              rows.map((row) => (
+                <Tr key={row.courier}>
+                  <Td color={ui.text} borderColor={ui.borderSoft}>{row.courier}</Td>
+                  <Td color={ui.text} borderColor={ui.borderSoft}>{formatCurrency(row.revenue)}</Td>
+                  <Td color={ui.text} borderColor={ui.borderSoft}>{formatCurrency(row.cost)}</Td>
+                  <Td color={row.margin >= 0 ? ui.success : ui.danger} borderColor={ui.borderSoft}>
+                    {formatCurrency(row.margin)}
+                  </Td>
+                  <Td color={ui.text} borderColor={ui.borderSoft}>{row.marginPercent}%</Td>
+                  <Td color={ui.text} borderColor={ui.borderSoft}>{formatCurrency(row.revPerOrder)}</Td>
+                </Tr>
+              ))
+            ) : (
+              <Tr>
+                <Td colSpan={6} borderColor={ui.borderSoft}>
+                  <EmptyState h="172px" />
+                </Td>
+              </Tr>
+            )}
+          </Tbody>
+        </Table>
+      </Box>
+    </Box>
+  )
+}
+
+export default function Dashboard() {
+  const { data: statsData, isLoading, error, refetch, isRefetching } = useDashboardStats()
 
   const stats = statsData?.data || {}
   const todayOps = stats.todayOperations || {}
@@ -105,378 +295,302 @@ export default function Dashboard() {
   const couriers = stats.couriers || {}
   const geographic = stats.geographic || {}
   const charts = stats.charts || {}
+  const sellers = stats.sellers || {}
 
-  const heroHighlights = [
-    {
-      title: 'Total orders',
-      value: toNum(operational.totalOrders).toLocaleString(),
-    },
-    {
-      title: 'Delivery success',
-      value: `${toNum(operational.deliverySuccessRate)}%`,
-    },
-    {
-      title: 'Net revenue',
-      value: formatCurrency(financial.totalRevenue),
-    },
-  ]
+  const totalOrders = toNum(operational.totalOrders)
+  const activeSellers = toNum(sellers.active || sellers.activeSellers || operational.activeSellers)
+  const totalRevenue = toNum(financial.totalRevenue)
+  const totalCost = toNum(financial.totalCost || financial.courierCost || financial.freightCost)
+  const totalMargin = Number.isFinite(Number(financial.totalMargin))
+    ? toNum(financial.totalMargin)
+    : totalRevenue - totalCost
+  const deliveryRate = toNum(operational.deliverySuccessRate || operational.deliveryRate)
 
-  const focusItems = [
-    {
-      title: 'Dispatch readiness',
-      value: Math.max(0, 100 - toNum(todayOps.pending)),
-      note: `${toNum(todayOps.pending)} pending`,
-      color: 'accent',
-    },
-    {
-      title: 'Delivery quality',
-      value: toNum(operational.deliverySuccessRate),
-      note: `${toNum(operational.deliveredOrders)} delivered`,
-      color: 'green',
-    },
-    {
-      title: 'Support pressure',
-      value: Math.max(0, 100 - toNum(alerts.openTickets)),
-      note: `${toNum(alerts.openTickets)} open tickets`,
-      color: 'orange',
-    },
-  ]
+  const ordersTrend =
+    toNum(yesterdayOps.orders) > 0
+      ? Math.round(((toNum(todayOps.orders) - toNum(yesterdayOps.orders)) / toNum(yesterdayOps.orders)) * 100)
+      : totalOrders > 0
+        ? 0
+        : -100
+  const revenueTrend = toNum(financial.revenueTrend ?? financial.revenueGrowth ?? (totalRevenue > 0 ? 0 : -100))
 
-  const topCouriers = Object.entries(couriers.performance || {})
-    .map(([name, value]) => ({
-      name,
-      count: toNum(value?.count),
-      deliveryRate: toNum(value?.deliveryRate),
-      revenue: toNum(value?.revenue),
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 4)
+  const statusItems = [
+    { status: 'pending', name: 'Pending', count: toNum(operational.pendingOrders || todayOps.pending), fill: ui.primary },
+    { status: 'delivered', name: 'Delivered', count: toNum(operational.deliveredOrders), fill: ui.success },
+    { status: 'ndr', name: 'NDR', count: toNum(operational.ndrOrders), fill: '#F59E0B' },
+    { status: 'rto', name: 'RTO', count: toNum(operational.rtoOrders), fill: ui.danger },
+  ].filter((item) => item.count > 0)
+
+  const courierRows = Object.entries(couriers.performance || {}).map(([courier, value]) => ({
+    courier,
+    revenue: toNum(value?.revenue),
+    cost: toNum(value?.cost),
+    margin: toNum(value?.margin),
+    marginPercent: toNum(value?.marginPercent),
+    revPerOrder: toNum(value?.revPerOrder),
+  }))
+
+  const topCouriers = Object.entries(couriers.performance || {}).map(([name, value]) => ({
+    name,
+    count: toNum(value?.count),
+    deliveryRate: toNum(value?.deliveryRate),
+    revenue: toNum(value?.revenue),
+  }))
+
+  const topStates = geographic.topStates || geographic.topDestinationStates || []
+  const prepaid = stats.paymentSplit?.prepaid || financial.paymentSplit?.prepaid || {}
+  const cod = stats.paymentSplit?.cod || financial.paymentSplit?.cod || {}
+  const bankApprovals = toNum(alerts.bankApprovalsPending || stats.compliance?.bankApprovalsPending)
+  const codRemittances = toNum(alerts.codRemittancesPending || financial.codRemittancesPending)
 
   if (isLoading) {
     return (
-      <Flex justify="center" align="center" minH="65vh">
+      <Flex minH="70vh" align="center" justify="center" bg={ui.page}>
         <VStack spacing={4}>
-          <Spinner size="xl" color="accent.500" thickness="4px" />
-          <Text color={textSecondary}>Loading dashboard...</Text>
-        </VStack>
-      </Flex>
-    )
-  }
-
-  if (error) {
-    return (
-      <Flex justify="center" align="center" minH="65vh">
-        <VStack spacing={3}>
-          <Text color="red.500" fontWeight="700" fontSize="lg">
-            Failed to load dashboard data
-          </Text>
-          <Button size="sm" onClick={() => refetch()} leftIcon={<IconRefresh size={16} />}>
-            Retry
-          </Button>
+          <Spinner size="xl" color={ui.primary} thickness="4px" />
+          <Text color={ui.muted}>Loading dashboard...</Text>
         </VStack>
       </Flex>
     )
   }
 
   return (
-    <Box minH="100vh" pb={8} bg={pageBg}>
-      <Container maxW="full" pt={{ base: '128px', md: '88px' }} px={{ base: 4, md: 6 }}>
-        <Grid templateColumns={{ base: '1fr', xl: '1.25fr 0.75fr' }} gap={{ base: 4, xl: 5 }} mb={5} alignItems="stretch">
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 14px 34px rgba(15,23,42,0.07)" overflow="hidden" position="relative" _before={{ content: '""', position: 'absolute', top: 0, left: 0, right: 0, h: '4px', bg: `linear-gradient(90deg, ${ACCENT} 0%, #FFB15A 100%)` }}>
-            <CardBody p={{ base: 4, md: 5 }}>
-              <Stack spacing={4}>
-                <HStack justify="space-between" flexWrap="wrap" spacing={3}>
-                  <VStack align="flex-start" spacing={1}>
-                    <Text fontSize="xs" fontWeight="800" letterSpacing="0.12em" textTransform="uppercase" color="accent.500">
-                      Admin dashboard
-                    </Text>
-                    <Heading size="lg" bgGradient="linear(to-r, brand.500, accent.500)" bgClip="text">
-                      Operations overview
-                    </Heading>
-                    <Text color={textSecondary} maxW="620px" lineHeight="1.7">
-                      Monitor shipment volume, revenue, courier health, and priority queues from one clean workspace.
-                    </Text>
-                  </VStack>
-                  <HStack spacing={3}>
-                    <Button
-                      size="sm"
-                      leftIcon={isRefetching ? <Spinner size="sm" /> : <IconRefresh size={16} />}
-                      isLoading={isRefetching}
-                      onClick={() => refetch()}
-                      borderRadius="10px"
-                      bg="accent.500"
-                      color="white"
-                      _hover={{ bg: 'accent.600', boxShadow: '0 12px 26px rgba(255,138,40,0.24)' }}
-                    >
-                      Refresh
-                    </Button>
-                    <Button size="sm" variant="outline" borderColor="accent.200" color="accent.700" borderRadius="10px" onClick={() => history.push('/admin/orders')} _hover={{ bg: 'accent.50' }}>
-                      Orders
-                    </Button>
-                  </HStack>
-                </HStack>
+    <Box minH="100vh" bg={ui.page} color={ui.text} pb={8}>
+      <Container maxW="full" pt={{ base: '102px', md: '96px' }} px={{ base: 4, md: 6 }}>
+        <Flex justify="space-between" align={{ base: 'flex-start', lg: 'flex-end' }} gap={4} mb={7} flexWrap="wrap">
+          <Box>
+            <Text color={ui.text} fontSize={{ base: '2xl', md: '3xl' }} fontWeight="800" lineHeight="1.2">
+              Dashboard
+            </Text>
+            <Text color={ui.muted} fontSize="md" mt={1}>
+              Platform overview
+            </Text>
+          </Box>
+          <HStack spacing={2} flexWrap="wrap">
+            <Select value="30d" size="sm" w="124px" bg={ui.surface} borderColor={ui.border} color={ui.text}>
+              <option value="30d">30 days</option>
+            </Select>
+            <Select value="all" size="sm" w="150px" bg={ui.surface} borderColor={ui.border} color={ui.muted}>
+              <option value="all">All couriers</option>
+            </Select>
+            <Select value="all" size="sm" w="126px" bg={ui.surface} borderColor={ui.border} color={ui.muted}>
+              <option value="all">Payment</option>
+            </Select>
+          </HStack>
+        </Flex>
 
-                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={2.5}>
-                  {heroHighlights.map((item) => (
-                    <Box key={item.title} p={4} borderRadius="14px" bg={tileBg} borderWidth="1px" borderColor={borderColor}>
-                      <Text fontSize="xs" fontWeight="800" color="accent.700">
-                        {item.title}
-                      </Text>
-                      <Text mt={1.5} fontSize="lg" fontWeight="800" color={textPrimary}>
-                        {item.value}
-                      </Text>
-                    </Box>
-                  ))}
-                </SimpleGrid>
-              </Stack>
-            </CardBody>
-          </Card>
+        {error ? (
+          <Panel title="Dashboard data" minH="150px">
+            <VStack spacing={3}>
+              <Text color={ui.danger} fontWeight="700">Failed to load dashboard data</Text>
+              <Button
+                size="sm"
+                leftIcon={<IconRefresh size={16} />}
+                isLoading={isRefetching}
+                onClick={() => refetch()}
+                bg={ui.primary}
+                color="white"
+                _hover={{ bg: '#5A4BD1' }}
+              >
+                Retry
+              </Button>
+            </VStack>
+          </Panel>
+        ) : (
+          <Stack spacing={6}>
+            <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
+              <MetricCard
+                label="Orders (30d)"
+                value={totalOrders.toLocaleString()}
+                subtitle={`${toNum(todayOps.orders)} today`}
+                trend={ordersTrend}
+                icon={IconPackageExport}
+                color={ui.primary}
+              />
+              <MetricCard label="Active Sellers" value={activeSellers.toLocaleString()} icon={IconUsers} color={ui.blue} />
+              <MetricCard
+                label="Revenue (30d)"
+                value={formatCurrency(totalRevenue)}
+                trend={revenueTrend}
+                icon={IconCoinRupee}
+                color={ui.success}
+              />
+              <MetricCard
+                label="Delivery Rate"
+                value={`${deliveryRate}%`}
+                subtitle={operational.avgDeliveryDays ? `Avg ${operational.avgDeliveryDays}d` : undefined}
+                icon={IconTruck}
+                color={ui.accent}
+              />
+            </SimpleGrid>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" boxShadow="0 14px 34px rgba(15,23,42,0.07)" overflow="hidden">
-            <CardBody p={{ base: 4, md: 5 }}>
-              <HStack spacing={3} mb={4}>
-                <Flex w="38px" h="38px" align="center" justify="center" borderRadius="10px" bg="accent.50" color="accent.600" borderWidth="1px" borderColor="accent.100">
-                  <IconChartBar size={18} />
-                </Flex>
-                <Box>
-                  <Heading size="sm" color={textPrimary}>Operational Focus</Heading>
-                  <Text fontSize="sm" color={textSecondary}>Live health snapshot</Text>
-                </Box>
-              </HStack>
-              <VStack align="stretch" spacing={4}>
-                {focusItems.map((item) => (
-                  <Box key={item.title}>
-                    <HStack justify="space-between" mb={2}>
-                      <Text fontSize="sm" fontWeight="700" color={textPrimary}>{item.title}</Text>
-                      <Text fontSize="xs" color={textSecondary}>{item.note}</Text>
-                    </HStack>
-                    <Progress value={Math.min(100, item.value)} size="sm" borderRadius="999px" colorScheme={item.color} bg="gray.100" />
+            <Grid templateColumns={{ base: '1fr', xl: '2fr 1fr' }} gap={5}>
+              <Panel
+                title="Orders by Status (30d)"
+                badge={statusItems.reduce((sum, item) => sum + item.count, 0)}
+                icon={{ node: <IconPackageExport size={18} />, color: ui.primary }}
+                minH="258px"
+              >
+                <StatusBars items={statusItems} />
+              </Panel>
+              <Panel
+                title="Alerts & Actions"
+                badge={toNum(alerts.totalAlerts) + bankApprovals + codRemittances}
+                icon={{ node: <IconAlertTriangle size={18} />, color: ui.danger }}
+                minH="258px"
+              >
+                <Stack spacing={3}>
+                  {bankApprovals > 0 ? (
+                    <ActionRow
+                      icon={<IconBuildingBank size={18} />}
+                      label="Bank approvals pending"
+                      count={bankApprovals}
+                      route="/admin/users-management"
+                    />
+                  ) : null}
+                  {codRemittances > 0 ? (
+                    <ActionRow
+                      icon={<IconWallet size={18} />}
+                      label="COD remittances pending"
+                      count={codRemittances}
+                      route="/admin/cod-remittance"
+                      tone="green"
+                    />
+                  ) : null}
+                  {bankApprovals === 0 && codRemittances === 0 ? <EmptyState label="No alerts or pending actions" h="126px" /> : null}
+                </Stack>
+              </Panel>
+            </Grid>
+
+            <Grid templateColumns={{ base: '1fr', xl: '2fr 1fr' }} gap={5}>
+              <Panel title="Trends (30d)" minH="330px">
+                {(charts.ordersByDate || []).length ? (
+                  <Box h="280px">
+                    <OrdersLineChart data={charts.ordersByDate || []} />
                   </Box>
-                ))}
-              </VStack>
-            </CardBody>
-          </Card>
-        </Grid>
+                ) : (
+                  <EmptyState h="280px" />
+                )}
+              </Panel>
+              <Panel title="Courier Performance (30d)" minH="330px">
+                {topCouriers.length ? (
+                  <Stack spacing={3}>
+                    {topCouriers.slice(0, 5).map((courier) => (
+                      <Flex key={courier.name} justify="space-between" p={3} borderRadius="8px" bg={ui.surfaceMuted}>
+                        <Box>
+                          <Text color={ui.text} fontWeight="700">{courier.name}</Text>
+                          <Text color={ui.muted} fontSize="xs">{courier.count} orders</Text>
+                        </Box>
+                        <Text color={ui.success} fontWeight="800">{courier.deliveryRate}%</Text>
+                      </Flex>
+                    ))}
+                  </Stack>
+                ) : (
+                  <EmptyState h="280px" />
+                )}
+              </Panel>
+            </Grid>
 
-        <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4} mb={6}>
-          <MetricCard
-            title="Total Orders"
-            value={toNum(operational.totalOrders).toLocaleString()}
-            subtitle={
-              <>
-                <Box as="span" color="accent.700" fontWeight="700">
-                  {toNum(todayOps.orders)} today
+            <Panel title="Revenue & Margins" minH="430px">
+              <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4} mb={6}>
+                <Box p={4} borderRadius="10px" bg={ui.primaryBg}>
+                  <Text color={ui.muted} fontSize="sm">Total Revenue</Text>
+                  <Text color={ui.text} fontSize="2xl" fontWeight="800" mt={1}>{formatCurrency(totalRevenue)}</Text>
                 </Box>
-                <Box as="span" color={textSecondary}>
-                  {' | '}
+                <Box p={4} borderRadius="10px" bg={ui.accentBg}>
+                  <Text color={ui.muted} fontSize="sm">Total Cost</Text>
+                  <Text color={ui.text} fontSize="2xl" fontWeight="800" mt={1}>{formatCurrency(totalCost)}</Text>
                 </Box>
-                <Box as="span" color="accent.600" fontWeight="700">
-                  {toNum(yesterdayOps.orders)} yesterday
-                </Box>
-              </>
-            }
-            icon={<IconPackageExport size={18} />}
-            color="accent.500"
-          />
-          <MetricCard
-            title="Delivery Success"
-            value={`${toNum(operational.deliverySuccessRate)}%`}
-            subtitle={`${toNum(operational.deliveredOrders)} delivered out of ${toNum(operational.totalOrders)} orders`}
-            icon={<IconCircleCheck size={18} />}
-            color="green.500"
-          />
-          <MetricCard
-            title="NDR Rate"
-            value={`${toNum(operational.ndrRate)}%`}
-            subtitle={`${toNum(operational.ndrOrders)} active NDR orders`}
-            icon={<IconShieldCheck size={18} />}
-            color="orange.500"
-          />
-          <MetricCard
-            title="Net Revenue"
-            value={formatCurrency(financial.totalRevenue)}
-            subtitle={`Today ${formatCurrency(financial.todayRevenue)} | Freight - courier cost`}
-            icon={<IconCoinRupee size={18} />}
-            color="accent.500"
-          />
-        </SimpleGrid>
-
-        <Grid templateColumns={{ base: '1fr', xl: '1.45fr 1fr' }} gap={6} mb={6}>
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
-            <CardHeader p={5} pb={2}>
-              <Heading size="sm" color={textPrimary}>Orders Trend (7 days)</Heading>
-              <Text fontSize="sm" color={textSecondary} mt={1}>Shipment volume by day</Text>
-            </CardHeader>
-            <CardBody p={5} pt={2}>
-              <Box h={{ base: '240px', md: '320px' }}>
-                <OrdersLineChart data={charts.ordersByDate || []} />
-              </Box>
-            </CardBody>
-          </Card>
-
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
-            <CardHeader p={5} pb={2}>
-              <Heading size="sm" color={textPrimary}>Action Queue</Heading>
-              <Text fontSize="sm" color={textSecondary} mt={1}>Operational items needing attention</Text>
-            </CardHeader>
-            <CardBody p={5} pt={2}>
-              <VStack spacing={3} align="stretch">
-                {[
-                  {
-                    title: 'Open Tickets',
-                    value: toNum(alerts.openTickets),
-                    note: toNum(alerts.overdueTickets) ? `${toNum(alerts.overdueTickets)} overdue` : 'Support triage',
-                    route: '/admin/support',
-                    colorScheme: 'red',
-                  },
-                  {
-                    title: 'Pending KYC',
-                    value: toNum(alerts.pendingKyc),
-                    note: 'Verification queue',
-                    route: '/admin/users-management',
-                    colorScheme: 'orange',
-                  },
-                  {
-                    title: 'Weight Disputes',
-                    value: toNum(alerts.weightDiscrepancies),
-                    note: 'Review reconciliation',
-                    route: '/admin/weight-reconciliation',
-                    colorScheme: 'accent',
-                  },
-                ].map((item) => (
-                  <Flex
-                    key={item.title}
-                    p={3.5}
-                    borderRadius="12px"
-                    borderWidth="1px"
-                    borderColor={`${item.colorScheme}.200`}
-                    bg={`${item.colorScheme}.50`}
-                    justify="space-between"
-                    align="center"
-                    cursor="pointer"
-                    onClick={() => history.push(item.route)}
-                    _hover={{ transform: 'translateY(-1px)' }}
-                    transition="all 0.2s"
-                  >
-                    <Box>
-                      <Text fontSize="sm" fontWeight="700" color={textPrimary}>{item.title}</Text>
-                      <Text fontSize="xs" color={textSecondary}>{item.note}</Text>
-                    </Box>
-                    <Badge colorScheme={item.colorScheme} borderRadius="full">{item.value}</Badge>
-                  </Flex>
-                ))}
-              </VStack>
-            </CardBody>
-          </Card>
-        </Grid>
-
-        <Grid templateColumns={{ base: '1fr', xl: '1fr 1fr' }} gap={6} mb={6}>
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
-            <CardHeader p={5} pb={2}>
-              <Heading size="sm" color={textPrimary}>Revenue Trend (7 days)</Heading>
-              <Text fontSize="sm" color={textSecondary} mt={1}>Net revenue performance</Text>
-            </CardHeader>
-            <CardBody p={5} pt={2}>
-              <Box h={{ base: '240px', md: '300px' }}>
-                <RevenueBarChart data={charts.revenueByDate || []} />
-              </Box>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} mt={4}>
-                <Box p={3.5} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
-                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.45px" color={textSecondary} fontWeight="700">
-                    COD Outstanding
+                <Box p={4} borderRadius="10px" bg={totalMargin >= 0 ? ui.successBg : ui.dangerBg}>
+                  <Text color={ui.muted} fontSize="sm">Total Margin</Text>
+                  <Text color={totalMargin >= 0 ? ui.success : ui.danger} fontSize="2xl" fontWeight="800" mt={1}>
+                    {formatCurrency(totalMargin)}
                   </Text>
-                  <Text mt={1} fontWeight="800" color={textPrimary}>{formatCurrency(financial.codRemittanceDue)}</Text>
-                </Box>
-                <Box p={3.5} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
-                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.45px" color={textSecondary} fontWeight="700">
-                    Total COD Value
-                  </Text>
-                  <Text mt={1} fontWeight="800" color={textPrimary}>{formatCurrency(financial.codAmount)}</Text>
                 </Box>
               </SimpleGrid>
-            </CardBody>
-          </Card>
+              <RevenueTable rows={courierRows} />
+            </Panel>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
-            <CardHeader p={5} pb={2}>
-              <Heading size="sm" color={textPrimary}>Courier Snapshot</Heading>
-              <Text fontSize="sm" color={textSecondary} mt={1}>Top couriers by volume</Text>
-            </CardHeader>
-            <CardBody p={5} pt={2}>
-              <VStack spacing={3} align="stretch">
-                {topCouriers.length === 0 ? (
-                  <Text fontSize="sm" color={textSecondary}>No courier data available.</Text>
+            <Grid templateColumns={{ base: '1fr', xl: '1fr 1fr' }} gap={5}>
+              <Panel title="Order Distribution by Courier" minH="310px">
+                {topCouriers.length ? (
+                  <Box h="250px">
+                    <CourierDistributionChart data={couriers.performance || {}} />
+                  </Box>
                 ) : (
-                  topCouriers.map((courier, index) => (
-                    <Box key={courier.name} p={3.5} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
-                      <HStack justify="space-between" mb={2}>
-                        <HStack spacing={2}>
-                          <Badge borderRadius="full">{index + 1}</Badge>
-                          <Text fontSize="sm" fontWeight="700" color={textPrimary}>{courier.name}</Text>
-                        </HStack>
-                        <Text fontSize="sm" color={textSecondary}>{courier.count} orders</Text>
-                      </HStack>
-                      <HStack justify="space-between" mb={2}>
-                        <Text fontSize="xs" color={textSecondary}>Delivery Rate</Text>
-                        <Text fontSize="xs" color={textSecondary}>{courier.deliveryRate}%</Text>
-                      </HStack>
-                      <Progress size="sm" borderRadius="full" value={courier.deliveryRate} colorScheme="green" mb={2} />
-                      <Text fontSize="xs" color={textSecondary}>Revenue: {formatCurrency(courier.revenue)}</Text>
-                    </Box>
-                  ))
+                  <EmptyState h="250px" />
                 )}
-              </VStack>
-            </CardBody>
-          </Card>
-        </Grid>
+              </Panel>
+              <Panel title="Payment Type Split (30d)" minH="310px">
+                {(charts.revenueByDate || []).length ? (
+                  <Box h="164px" mb={4}>
+                    <RevenueBarChart data={charts.revenueByDate || []} />
+                  </Box>
+                ) : (
+                  <EmptyState h="164px" />
+                )}
+                <SimpleGrid columns={2} spacing={4}>
+                  <Box p={4} borderRadius="10px" bg={ui.primaryBg} textAlign="center">
+                    <Text color={ui.muted} fontSize="sm">Prepaid Revenue</Text>
+                    <Text color={ui.text} fontWeight="800" fontSize="lg" mt={1}>{formatCurrency(prepaid.revenue)}</Text>
+                    <Text color={ui.muted} fontSize="xs">{toNum(prepaid.orders)} orders</Text>
+                  </Box>
+                  <Box p={4} borderRadius="10px" bg={ui.accentBg} textAlign="center">
+                    <Text color={ui.muted} fontSize="sm">COD Revenue</Text>
+                    <Text color={ui.text} fontWeight="800" fontSize="lg" mt={1}>{formatCurrency(cod.revenue)}</Text>
+                    <Text color={ui.muted} fontSize="xs">{toNum(cod.orders)} orders</Text>
+                  </Box>
+                </SimpleGrid>
+              </Panel>
+            </Grid>
 
-        <Grid templateColumns={{ base: '1fr', xl: '1fr 1fr' }} gap={6}>
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
-            <CardHeader p={5} pb={2}>
-              <Heading size="sm" color={textPrimary}>Origin Hotspots</Heading>
-            </CardHeader>
-            <CardBody p={5} pt={2}>
-              <Stack spacing={2.5}>
-                {(geographic.topOriginCities || []).length === 0 ? (
-                  <Text fontSize="sm" color={textSecondary}>No origin city data yet.</Text>
+            <Grid templateColumns={{ base: '1fr', xl: '1fr 1fr' }} gap={5}>
+              <Panel title="Top Sellers" icon={{ node: <IconChartBar size={18} />, color: ui.primary }} minH="235px">
+                {(sellers.topSellers || []).length ? (
+                  <Stack spacing={3}>
+                    {(sellers.topSellers || []).slice(0, 5).map((seller) => (
+                      <Flex key={seller.name || seller.sellerName} justify="space-between" color={ui.text}>
+                        <Text>{seller.name || seller.sellerName}</Text>
+                        <Text fontWeight="800">{toNum(seller.orders)}</Text>
+                      </Flex>
+                    ))}
+                  </Stack>
                 ) : (
-                  (geographic.topOriginCities || []).slice(0, 5).map((item) => (
-                    <HStack key={`origin-${item.city}`} justify="space-between" p={3} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
-                      <HStack spacing={2}>
-                        <IconMapPin size={16} color={ACCENT_DARK} />
-                        <Text color={textPrimary} fontSize="sm">{item.city}</Text>
-                      </HStack>
-                      <Badge>{toNum(item.count)}</Badge>
-                    </HStack>
-                  ))
+                  <EmptyState label="No seller data" h="120px" />
                 )}
-              </Stack>
-            </CardBody>
-          </Card>
+              </Panel>
+              <Panel title="High RTO Sellers" icon={{ node: <IconAlertTriangle size={18} />, color: ui.danger }} minH="235px">
+                {(sellers.highRtoSellers || []).length ? (
+                  <Stack spacing={3}>
+                    {(sellers.highRtoSellers || []).slice(0, 5).map((seller) => (
+                      <Flex key={seller.name || seller.sellerName} justify="space-between" color={ui.text}>
+                        <Text>{seller.name || seller.sellerName}</Text>
+                        <Text color={ui.danger} fontWeight="800">{toNum(seller.rtoRate)}%</Text>
+                      </Flex>
+                    ))}
+                  </Stack>
+                ) : (
+                  <EmptyState label="No high RTO sellers" h="120px" />
+                )}
+              </Panel>
+            </Grid>
 
-          <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="18px" h="full" boxShadow="0 14px 34px rgba(15,23,42,0.06)">
-            <CardHeader p={5} pb={2}>
-              <Heading size="sm" color={textPrimary}>Destination Hotspots</Heading>
-            </CardHeader>
-            <CardBody p={5} pt={2}>
-              <Stack spacing={2.5}>
-                {(geographic.topDestinationCities || []).length === 0 ? (
-                  <Text fontSize="sm" color={textSecondary}>No destination city data yet.</Text>
-                ) : (
-                  (geographic.topDestinationCities || []).slice(0, 5).map((item) => (
-                    <HStack key={`dest-${item.city}`} justify="space-between" p={3} borderRadius="12px" borderWidth="1px" borderColor={borderColor} bg={tileBg}>
-                      <HStack spacing={2}>
-                        <IconMapPin size={16} color="#F57C00" />
-                        <Text color={textPrimary} fontSize="sm">{item.city}</Text>
-                      </HStack>
-                      <Badge>{toNum(item.count)}</Badge>
-                    </HStack>
-                  ))
-                )}
-              </Stack>
-            </CardBody>
-          </Card>
-        </Grid>
+            <Panel title="Top States (30d)" minH="235px">
+              {topStates.length ? (
+                <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={3}>
+                  {topStates.slice(0, 8).map((state) => (
+                    <Flex key={state.state || state.name} p={3} borderRadius="8px" bg={ui.surfaceMuted} justify="space-between">
+                      <Text color={ui.text}>{state.state || state.name}</Text>
+                      <Badge>{toNum(state.count)}</Badge>
+                    </Flex>
+                  ))}
+                </SimpleGrid>
+              ) : (
+                <EmptyState h="120px" />
+              )}
+            </Panel>
+          </Stack>
+        )}
       </Container>
     </Box>
   )

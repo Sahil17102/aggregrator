@@ -46,6 +46,10 @@ const dividerStyles = {
 }
 
 const componentOverrides = {
+  config: {
+    initialColorMode: 'dark',
+    useSystemColorMode: false,
+  },
   components: {
     Input: {
       variants: {
