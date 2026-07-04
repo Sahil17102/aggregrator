@@ -1,6 +1,6 @@
 ﻿{
-  "short_name": "ChoiceMee Admin",
-  "name": "ChoiceMee Logistics Admin",
+  "short_name": "Ship Aggregator",
+  "name": "Ship Aggregator",
   "icons": [
     {
       "src": "brand/choiceme-logo.png",
