@@ -21,7 +21,7 @@ import {
   IconLock,
   IconMail,
   IconSettings,
-  IconShieldLock,
+  IconShield,
   IconUsers,
 } from '@tabler/icons-react'
 import { motion } from 'framer-motion'
@@ -108,7 +108,7 @@ function SignIn() {
     {
       title: 'Secure Access',
       description: 'Role-based access control for admin operations',
-      icon: IconShieldLock,
+      icon: IconShield,
     },
     {
       title: 'User Management',
@@ -130,11 +130,11 @@ function SignIn() {
   return (
     <Flex
       minH="100vh"
-      bg="#171C23"
+      bg="#0E131A"
       align="stretch"
       justify="stretch"
       position="relative"
-      overflow="hidden"
+      overflow={{ base: 'auto', lg: 'hidden' }}
       fontFamily="'Plus Jakarta Sans', sans-serif"
     >
       <Flex
@@ -143,219 +143,270 @@ function SignIn() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35 }}
         w="100%"
-        direction={{ base: 'column', lg: 'row' }}
       >
         <Flex
-          w={{ base: '100%', lg: '42%' }}
-          minH={{ base: 'auto', lg: '100vh' }}
-          bg="#070C12"
+          display={{ base: 'none', lg: 'flex' }}
+          w={{ lg: '45%', xl: '42%' }}
+          minH="100vh"
+          bg="linear-gradient(135deg, #070C12 0%, #141A22 100%)"
           color="white"
           direction="column"
-          justify="center"
+          justify="space-between"
           position="relative"
-          px={{ base: 6, md: 10, xl: '70px' }}
-          py={{ base: 10, lg: 0 }}
+          overflow="hidden"
+          p={{ lg: 10, xl: 14 }}
         >
-          <Box maxW="666px">
-            <HStack spacing="22px" mb={{ base: 12, lg: '88px' }} align="center">
+          <Box position="relative" zIndex="1">
+            <HStack
+              as="a"
+              href="/"
+              spacing="10px"
+              mb="64px"
+              align="center"
+              textDecoration="none"
+              _hover={{ textDecoration: 'none' }}
+            >
               <Box
                 as="img"
                 src={brandIdentity.logoPath}
                 alt={brandIdentity.name}
-                h={{ base: '62px', lg: '82px' }}
-                w={{ base: '62px', lg: '82px' }}
+                h="80px"
+                w="80px"
                 objectFit="contain"
+                flexShrink="0"
               />
-              <Text
-                color="#FFFFFF"
-                fontSize={{ base: '2xl', lg: '30px' }}
-                fontWeight="800"
-                letterSpacing="0"
-                lineHeight="1"
-              >
+              <Text color="#FFFFFF" fontSize="24px" fontWeight="700" lineHeight="1" whiteSpace="nowrap">
                 Admin Panel
               </Text>
             </HStack>
 
-            <Box mb={{ base: 8, lg: '46px' }}>
+            <Box>
               <Heading
                 as="h1"
                 color="#FFFFFF"
-                fontSize={{ base: '38px', md: '48px', xl: '46px' }}
-                fontWeight="800"
-                lineHeight="1.08"
+                fontSize={{ lg: '30px', xl: '36px' }}
+                fontWeight="700"
+                lineHeight="1.22"
                 letterSpacing="0"
-                mb="18px"
+                mb="16px"
               >
                 Admin
-                <Text as="span" display="block" color="#FF7A1A">
+                <Text
+                  as="span"
+                  display="block"
+                  bgGradient="linear(to-r, #FF7A1A, #FF8F34)"
+                  bgClip="text"
+                >
                   Control Panel
                 </Text>
               </Heading>
               <Text
-                color="#9BA6B5"
-                fontSize={{ base: '16px', md: '18px' }}
-                lineHeight="1.55"
-                maxW="470px"
-                fontWeight="500"
+                color="rgba(255,255,255,0.5)"
+                fontSize="14px"
+                lineHeight="1.65"
+                maxW="384px"
               >
-                Manage your courier aggregation platform — users, couriers, rates,
+                Manage your courier aggregation platform &mdash; users, couriers, rates,
                 serviceability, and more.
               </Text>
             </Box>
-
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="666px">
-              {featureCards.map((card) => {
-                const FeatureIcon = card.icon
-                return (
-                  <Box
-                    key={card.title}
-                    minH="178px"
-                    bg="#1D2229"
-                    border="1px solid"
-                    borderColor="#303741"
-                    borderRadius="18px"
-                    px="20px"
-                    py="28px"
-                    boxShadow="inset 0 1px 0 rgba(255,255,255,0.02)"
-                  >
-                    <Box as={FeatureIcon} size={24} color="#FF7A1A" strokeWidth={2.1} mb="28px" />
-                    <Text color="#FFFFFF" fontSize="18px" fontWeight="800" lineHeight="1.2" mb="6px">
-                      {card.title}
-                    </Text>
-                    <Text color="#8D929A" fontSize="15px" lineHeight="1.55" fontWeight="600">
-                      {card.description}
-                    </Text>
-                  </Box>
-                )
-              })}
-            </SimpleGrid>
           </Box>
+
+          <SimpleGrid columns={2} spacing={3} position="relative" zIndex="1">
+            {featureCards.map((card) => {
+              const FeatureIcon = card.icon
+              return (
+                <Box
+                  key={card.title}
+                  bg="rgba(255,255,255,0.06)"
+                  border="1px solid"
+                  borderColor="rgba(255,255,255,0.08)"
+                  borderRadius="12px"
+                  p="16px"
+                  backdropFilter="blur(8px)"
+                >
+                  <Box
+                    w="36px"
+                    h="36px"
+                    borderRadius="8px"
+                    bg="rgba(255,122,26,0.2)"
+                    color="#FF7A1A"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    mb="12px"
+                  >
+                    <Box as={FeatureIcon} size={20} strokeWidth={2} />
+                  </Box>
+                  <Text color="#FFFFFF" fontSize="14px" fontWeight="600" lineHeight="1.25" mb="2px">
+                    {card.title}
+                  </Text>
+                  <Text color="rgba(255,255,255,0.4)" fontSize="12px" lineHeight="1.6">
+                    {card.description}
+                  </Text>
+                </Box>
+              )
+            })}
+          </SimpleGrid>
         </Flex>
 
-        <Flex
-          flex="1"
-          minH={{ base: 'auto', lg: '100vh' }}
-          bg="#171C23"
-          align="center"
-          justify="center"
-          px={{ base: 6, md: 10 }}
-          py={{ base: 12, lg: 0 }}
-        >
-          <Box as="form" noValidate onSubmit={handleSubmit} w="100%" maxW="560px">
-            <VStack spacing="20px" align="stretch">
-              <Box mb="20px">
-                <Heading
-                  as="h2"
-                  color="#FFFFFF"
-                  fontSize={{ base: '34px', md: '40px' }}
-                  fontWeight="800"
-                  lineHeight="1.1"
-                  letterSpacing="0"
-                  mb="10px"
-                >
-                  Admin Login
-                </Heading>
-                <Text color="#9BA6B5" fontSize="17px" fontWeight="500">
-                  Sign in with your admin credentials
-                </Text>
-              </Box>
+        <Flex flex="1" minH="100vh" bg="#171C23" direction="column">
+          <HStack
+            as="a"
+            href="/"
+            display={{ base: 'flex', lg: 'none' }}
+            align="center"
+            spacing="10px"
+            h="64px"
+            w="100%"
+            px="20px"
+            borderBottom="1px solid"
+            borderColor="#272E38"
+            textDecoration="none"
+            _hover={{ textDecoration: 'none' }}
+          >
+            <Box
+              as="img"
+              src={brandIdentity.logoPath}
+              alt={brandIdentity.name}
+              h="40px"
+              w="40px"
+              objectFit="contain"
+              flexShrink="0"
+            />
+            <Text color="#FFFFFF" fontSize="16px" fontWeight="700" lineHeight="1" whiteSpace="nowrap">
+              Admin Panel
+            </Text>
+          </HStack>
 
-              <FormControl>
-                <InputGroup>
-                  <InputLeftElement h="58px" pl="18px" pointerEvents="none">
-                    <Box as={IconMail} size={21} color="#7B68EE" strokeWidth={2} />
-                  </InputLeftElement>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@shipaggregator.com"
-                    h="58px"
-                    pl="52px"
-                    pr="18px"
-                    borderRadius="18px"
-                    bg="#171C23"
-                    border="2px solid"
-                    borderColor="#6C5CE7"
+          <Flex
+            flex="1"
+            align="center"
+            justify="center"
+            w="100%"
+            px={{ base: 5, sm: 8 }}
+            py={{ base: 10, sm: 16 }}
+          >
+            <Box as="form" noValidate onSubmit={handleSubmit} w="100%" maxW="448px">
+              <VStack spacing="16px" align="stretch">
+                <Box mb="16px">
+                  <Heading
+                    as="h2"
                     color="#FFFFFF"
-                    fontSize="16px"
-                    fontWeight="500"
-                    _placeholder={{ color: '#7F8895' }}
-                    _hover={{ borderColor: '#7D6CFF' }}
-                    _focus={{
-                      borderColor: '#7D6CFF',
-                      boxShadow: '0 0 0 1px #7D6CFF',
-                      bg: '#171C23',
-                    }}
-                  />
-                </InputGroup>
-              </FormControl>
+                    fontSize={{ base: '24px', sm: '30px' }}
+                    fontWeight="700"
+                    lineHeight="1.2"
+                    letterSpacing="0"
+                    mb="8px"
+                  >
+                    Admin Login
+                  </Heading>
+                  <Text color="#8A95A3" fontSize="14px">
+                    Sign in with your admin credentials
+                  </Text>
+                </Box>
 
-              <FormControl>
-                <InputGroup>
-                  <InputLeftElement h="58px" pl="18px" pointerEvents="none">
-                    <Box as={IconLock} size={21} color="#828B98" strokeWidth={2} />
-                  </InputLeftElement>
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    h="58px"
-                    pl="52px"
-                    pr="58px"
-                    borderRadius="18px"
-                    bg="#0C1117"
-                    border="2px solid"
-                    borderColor="#2A3038"
-                    color="#FFFFFF"
-                    fontSize="16px"
-                    fontWeight="500"
-                    _placeholder={{ color: '#737B86' }}
-                    _hover={{ borderColor: '#3A414B' }}
-                    _focus={{
-                      borderColor: '#6C5CE7',
-                      boxShadow: '0 0 0 1px #6C5CE7',
-                      bg: '#0C1117',
-                    }}
-                  />
-                  <InputRightElement h="58px" pr="10px">
-                    <IconButton
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
-                      variant="ghost"
-                      size="sm"
-                      color="#8B94A1"
-                      onClick={() => setShowPassword(!showPassword)}
-                      _hover={{ bg: 'transparent', color: '#B8C0CC' }}
-                      _active={{ bg: 'transparent' }}
+                <FormControl>
+                  <InputGroup>
+                    <InputLeftElement h="48px" w="40px" pointerEvents="none">
+                      <Box as={IconMail} size={16} color="#8A95A3" strokeWidth={2} />
+                    </InputLeftElement>
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@shipaggregator.com"
+                      autoComplete="username"
+                      required
+                      h="48px"
+                      pl="40px"
+                      pr="12px"
+                      borderRadius="12px"
+                      bg="#0E131A"
+                      border="2px solid"
+                      borderColor="#29313B"
+                      color="#FFFFFF"
+                      fontSize="14px"
+                      fontWeight="500"
+                      _placeholder={{ color: '#65707D' }}
+                      _hover={{ borderColor: 'rgba(108,92,231,0.35)' }}
+                      _focus={{
+                        borderColor: '#6C5CE7',
+                        boxShadow: 'none',
+                        bg: '#0E131A',
+                      }}
                     />
-                  </InputRightElement>
-                </InputGroup>
-              </FormControl>
+                  </InputGroup>
+                </FormControl>
 
-              <Button
-                type="submit"
-                h="60px"
-                mt="2px"
-                borderRadius="18px"
-                bg="linear-gradient(90deg, #6C5CE7 0%, #8976F2 100%)"
-                color="#FFFFFF"
-                fontSize="16px"
-                fontWeight="800"
-                isLoading={loading}
-                loadingText="Signing in"
-                _hover={{
-                  bg: 'linear-gradient(90deg, #7464EF 0%, #9584FF 100%)',
-                  boxShadow: '0 18px 36px rgba(108, 92, 231, 0.26)',
-                }}
-                _active={{ bg: 'linear-gradient(90deg, #6251DE 0%, #7E6BEA 100%)' }}
-              >
-                Sign in
-              </Button>
-            </VStack>
-          </Box>
+                <FormControl>
+                  <InputGroup>
+                    <InputLeftElement h="48px" w="40px" pointerEvents="none">
+                      <Box as={IconLock} size={16} color="#8A95A3" strokeWidth={2} />
+                    </InputLeftElement>
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      autoComplete="current-password"
+                      required
+                      h="48px"
+                      pl="40px"
+                      pr="44px"
+                      borderRadius="12px"
+                      bg="#0E131A"
+                      border="2px solid"
+                      borderColor="#29313B"
+                      color="#FFFFFF"
+                      fontSize="14px"
+                      fontWeight="500"
+                      _placeholder={{ color: '#65707D' }}
+                      _hover={{ borderColor: 'rgba(108,92,231,0.35)' }}
+                      _focus={{
+                        borderColor: '#6C5CE7',
+                        boxShadow: 'none',
+                        bg: '#0E131A',
+                      }}
+                    />
+                    <InputRightElement h="48px" w="44px">
+                      <IconButton
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
+                        variant="ghost"
+                        size="sm"
+                        color="#8B94A1"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword(!showPassword)}
+                        _hover={{ bg: 'transparent', color: '#FFFFFF' }}
+                        _active={{ bg: 'transparent' }}
+                      />
+                    </InputRightElement>
+                  </InputGroup>
+                </FormControl>
+
+                <Button
+                  type="submit"
+                  h="48px"
+                  borderRadius="12px"
+                  bg="linear-gradient(90deg, #6C5CE7 0%, #7C6CF2 100%)"
+                  color="#FFFFFF"
+                  fontSize="14px"
+                  fontWeight="600"
+                  isLoading={loading}
+                  loadingText="Signing in"
+                  boxShadow="0 12px 28px rgba(108, 92, 231, 0.2)"
+                  _hover={{
+                    bg: 'linear-gradient(90deg, #7464EF 0%, #8878FF 100%)',
+                    boxShadow: '0 16px 34px rgba(108, 92, 231, 0.35)',
+                  }}
+                  _active={{ bg: 'linear-gradient(90deg, #6251DE 0%, #7E6BEA 100%)' }}
+                >
+                  Sign in
+                </Button>
+              </VStack>
+            </Box>
+          </Flex>
         </Flex>
       </Flex>
     </Flex>
