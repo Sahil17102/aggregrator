@@ -139,7 +139,7 @@ export default function Navbar({ handleDrawerToggle, pinned }: NavbarProps) {
         ) : null}
 
         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-          <WalletMenu compactLabel={`₹${Number(walletBalance ?? 0).toLocaleString('en-IN')}`} />
+          <WalletMenu compactLabel={`\u20B9${Number(walletBalance ?? 0).toLocaleString('en-IN')}`} />
         </Box>
 
         <Box

@@ -46,6 +46,12 @@ export default function Home() {
   const [showKycBanner, setShowKycBanner] = useState(true)
 
   const displayName = user?.companyInfo?.contactPerson || user?.name || 'Sahil Mittal'
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }, [])
   const formattedWalletBalance = `\u20B9${Number(walletBalance ?? 0).toLocaleString('en-IN')}`
 
   const statCards = useMemo(
@@ -62,7 +68,7 @@ export default function Home() {
         action: '+ Recharge',
       },
     ],
-    [walletBalance],
+    [formattedWalletBalance],
   )
 
   const setupSteps = [
@@ -160,7 +166,7 @@ export default function Home() {
 
         <Box>
           <Typography sx={{ color: TEXT, fontSize: '1.55rem', fontWeight: 900 }}>
-            Good afternoon, {displayName}!
+            {greeting}, {displayName}!
           </Typography>
           <Typography sx={{ color: MUTED, mt: 0.4, fontSize: '1rem' }}>
             Here's your daily overview.

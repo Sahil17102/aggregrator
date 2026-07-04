@@ -229,9 +229,9 @@ export default function Sidebar({
   }
 
   const navItemSx = {
-    minHeight: 46,
+    minHeight: 43,
     borderRadius: 0,
-    px: isSidebarExpanded ? 3.75 : 0,
+    px: isSidebarExpanded ? 3.6 : 0,
     py: 0,
     color: TEXT,
     position: 'relative',
@@ -293,7 +293,7 @@ export default function Sidebar({
           <ListItemText
             primary={item.text}
             primaryTypographyProps={{
-              fontSize: '1.04rem',
+              fontSize: '1rem',
               fontWeight: active ? 800 : 650,
               letterSpacing: '-0.01em',
             }}
@@ -324,7 +324,7 @@ export default function Sidebar({
 
         {hasChildren && isSidebarExpanded && (
           <Collapse in={showExpanded} timeout="auto" unmountOnExit>
-            <List disablePadding sx={{ ml: 6.8, pr: 1.6, py: 0.45 }}>
+            <List disablePadding sx={{ ml: 6.6, pr: 1.5, py: 0.35 }}>
               {item.children?.map((sub) => {
                 const subActive = isActive(location.pathname, sub.path)
                 return (
@@ -334,7 +334,7 @@ export default function Sidebar({
                     to={sub.path}
                     onClick={handleRouteNavigate}
                     sx={{
-                      minHeight: 34,
+                      minHeight: 32,
                       px: 1.2,
                       py: 0.45,
                       borderRadius: 1,
@@ -441,7 +441,7 @@ export default function Sidebar({
           overscrollBehavior: 'contain',
           scrollbarGutter: 'stable',
           WebkitOverflowScrolling: 'touch',
-          py: 2.2,
+          py: 1.5,
           bgcolor: DARK_BG,
           '&::-webkit-scrollbar': { width: 6 },
           '&::-webkit-scrollbar-track': { background: DARK_BG },
@@ -450,12 +450,12 @@ export default function Sidebar({
       >
         {visibleSections.map((section) =>
           section.items.length ? (
-            <Box key={section.title} sx={{ mb: 3.1 }}>
+            <Box key={section.title} sx={{ mb: 2.2 }}>
               {isSidebarExpanded ? (
                 <Typography
                   sx={{
-                    px: 3.75,
-                    mb: 1.1,
+                    px: 3.6,
+                    mb: 0.8,
                     color: MUTED,
                     fontSize: '0.82rem',
                     fontWeight: 850,
@@ -477,8 +477,8 @@ export default function Sidebar({
         {isSidebarExpanded ? (
           <Box
             sx={{
-              px: 3.75,
-              py: 2.7,
+              px: 3.6,
+              py: 1.85,
               borderTop: `1px solid ${BORDER}`,
               display: 'flex',
               alignItems: 'center',

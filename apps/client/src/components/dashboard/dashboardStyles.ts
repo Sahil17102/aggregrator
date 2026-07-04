@@ -2,20 +2,21 @@ import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 import { brand, brandFonts } from '../../theme/brand'
 
 export const dashboardPalette = {
-  page: '#F5F7FB',
-  surface: '#FFFFFF',
-  tile: '#F8FAFC',
-  ink: '#111827',
-  muted: '#64748B',
-  line: '#E5E7EB',
-  orange: brand.accent,
+  page: '#0f141b',
+  surface: '#151b23',
+  tile: '#0f141b',
+  ink: '#f8fafc',
+  muted: '#9badc3',
+  line: '#2a313a',
+  orange: '#ff7a17',
   orangeDark: '#E67213',
-  orangeSoft: '#FFF3EA',
-  blue: brand.accent,
-  blueDark: '#E67213',
-  green: '#16A34A',
+  orangeSoft: '#2b2118',
+  blue: '#7657ff',
+  blueDark: '#6547ea',
+  green: '#35d27f',
   amber: '#F59E0B',
-  red: '#DC2626',
+  red: '#ef4444',
+  track: '#2a313a',
 }
 
 export const dashboardCardSx = {
@@ -24,14 +25,14 @@ export const dashboardCardSx = {
   position: 'relative',
   border: `1px solid ${dashboardPalette.line}`,
   background: dashboardPalette.surface,
-  boxShadow: '0 14px 34px rgba(15, 23, 42, 0.06)',
+  boxShadow: 'none',
   overflow: 'hidden',
 } satisfies SxProps<Theme>
 
 export const dashboardTileSx = (color = dashboardPalette.orange) => ({
   borderRadius: '12px',
   border: `1px solid ${alpha(color, 0.16)}`,
-  backgroundColor: alpha(color, 0.055),
+  backgroundColor: alpha(color, 0.075),
 }) satisfies SxProps<Theme>
 
 export const dashboardIconSx = (color = dashboardPalette.orange) => ({
@@ -41,7 +42,7 @@ export const dashboardIconSx = (color = dashboardPalette.orange) => ({
   display: 'grid',
   placeItems: 'center',
   color,
-  background: `linear-gradient(135deg, ${alpha(color, 0.14)} 0%, ${alpha(brand.gold, 0.16)} 100%)`,
+  background: `linear-gradient(135deg, ${alpha(color, 0.18)} 0%, ${alpha(brand.gold, 0.1)} 100%)`,
   border: `1px solid ${alpha(color, 0.16)}`,
   flex: '0 0 auto',
 }) satisfies SxProps<Theme>
@@ -65,6 +66,6 @@ export const dashboardChartBase = {
 }
 
 export const dashboardText = {
-  title: brand.ink || dashboardPalette.ink,
-  muted: brand.inkSoft || dashboardPalette.muted,
+  title: dashboardPalette.ink,
+  muted: dashboardPalette.muted,
 }
