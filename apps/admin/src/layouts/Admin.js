@@ -1,11 +1,10 @@
-import { ChakraProvider, Portal, useDisclosure } from '@chakra-ui/react'
+import { Portal, useColorModeValue, useDisclosure } from '@chakra-ui/react'
 import AdminNavbar from 'components/Navbars/AdminNavbar.js'
 import { RouteAssetRecovery, RouteErrorBoundary } from 'components/RouteRecovery/RouteErrorBoundary'
 import Sidebar from 'components/Sidebar'
 import { useState } from 'react'
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom'
 import routes from 'routes.js'
-import theme from 'theme/theme.js'
 import MainPanel from '../components/Layout/MainPanel'
 import PanelContainer from '../components/Layout/PanelContainer'
 import PanelContent from '../components/Layout/PanelContent'
@@ -15,7 +14,14 @@ export default function Dashboard(props) {
   const { ...rest } = props
   const location = useLocation()
   const [sidebarVariant, setSidebarVariant] = useState('transparent')
-  const [sidebarWidth] = useState(300)
+  const expandedSidebarWidth = 300
+  const [sidebarWidth, setSidebarWidth] = useState(expandedSidebarWidth)
+  const mainBg = useColorModeValue('#FAFBFE', '#0D1117')
+  const isSidebarCollapsed = sidebarWidth === 0
+
+  const toggleSidebar = () => {
+    setSidebarWidth((currentWidth) => (currentWidth === 0 ? expandedSidebarWidth : 0))
+  }
 
   const getRoute = () => window.location.pathname !== '/admin/full-screen-maps'
 
@@ -58,7 +64,7 @@ export default function Dashboard(props) {
   document.documentElement.dir = 'ltr'
 
   return (
-    <ChakraProvider theme={theme} resetCss={false}>
+    <>
       <RouteAssetRecovery />
       <Sidebar
         routes={routes}
@@ -74,12 +80,14 @@ export default function Dashboard(props) {
           xl: `calc(100% - ${sidebarWidth}px)`,
         }}
         ml={{ xl: `${sidebarWidth}px` }}
-        bg="#0f141b"
+        bg={mainBg}
         minH="100vh"
       >
         <Portal>
           <AdminNavbar
             onOpen={onOpen}
+            onToggleSidebar={toggleSidebar}
+            isSidebarCollapsed={isSidebarCollapsed}
             logoText={brandIdentity.name}
             brandText={getActiveRoute(routes)}
             secondary={getActiveNavbar(routes)}
@@ -100,6 +108,6 @@ export default function Dashboard(props) {
           </PanelContent>
         ) : null}
       </MainPanel>
-    </ChakraProvider>
+    </>
   )
 }

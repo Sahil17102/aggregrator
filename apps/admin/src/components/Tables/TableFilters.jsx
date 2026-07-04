@@ -44,9 +44,9 @@ const TableFilters = ({
   const { isOpen, onOpen, onClose } = useDisclosure()
   const isMobile = useBreakpointValue({ base: true, md: false })
 
-  const cardBg = useColorModeValue('white', '#0F1C35')
-  const borderColor = useColorModeValue('rgba(148, 163, 184, 0.34)', 'rgba(148, 163, 184, 0.22)')
-  const labelColor = useColorModeValue('gray.700', 'gray.100')
+  const cardBg = useColorModeValue('#FFFFFF', '#161B22')
+  const borderColor = useColorModeValue('#E2E8F0', '#30363D')
+  const labelColor = useColorModeValue('#0F172A', '#8B949E')
 
   useEffect(() => {
     const currentValues = values || {}
@@ -94,12 +94,16 @@ const TableFilters = ({
   const visibleFilters = shouldLimit ? filters.slice(0, DEFAULT_VISIBLE_COUNT) : filters
 
   const commonInputProps = {
-    bg: useColorModeValue('white', 'rgba(15, 28, 53, 0.85)'),
+    bg: useColorModeValue('#FFFFFF', '#161B22'),
     borderColor,
-    borderRadius: '10px',
+    borderRadius: '8px',
+    color: useColorModeValue('#0F172A', '#E6EDF3'),
+    _placeholder: {
+      color: useColorModeValue('#94A3B8', '#6E7681'),
+    },
     _focus: {
-      borderColor: 'brand.500',
-      boxShadow: '0 0 0 3px rgba(138, 31, 67, 0.12)',
+      borderColor: '#6C5CE7',
+      boxShadow: '0 0 0 3px rgba(108, 92, 231, 0.18)',
     },
   }
 
@@ -113,7 +117,7 @@ const TableFilters = ({
     if (type === 'text' || type === 'search') {
       return (
         <Box key={key}>
-          <Text mb="1.5" fontWeight="700" fontSize="sm" color={labelColor}>
+          <Text mb="1.5" fontWeight="500" fontSize="sm" color={labelColor}>
             {label}
           </Text>
           <InputGroup>
@@ -152,7 +156,7 @@ const TableFilters = ({
     if (type === 'date') {
       return (
         <Box key={key}>
-          <Text mb="1.5" fontWeight="700" fontSize="sm" color={labelColor}>
+          <Text mb="1.5" fontWeight="500" fontSize="sm" color={labelColor}>
             {label}
           </Text>
           <InputGroup>
@@ -174,7 +178,7 @@ const TableFilters = ({
     if (type === 'number') {
       return (
         <Box key={key}>
-          <Text mb="1.5" fontWeight="700" fontSize="sm" color={labelColor}>
+          <Text mb="1.5" fontWeight="500" fontSize="sm" color={labelColor}>
             {label}
           </Text>
           <Input
@@ -191,7 +195,7 @@ const TableFilters = ({
     if (type === 'select') {
       return (
         <Box key={key}>
-          <Text mb="1.5" fontWeight="700" fontSize="sm" color={labelColor}>
+          <Text mb="1.5" fontWeight="500" fontSize="sm" color={labelColor}>
             {label}
           </Text>
           <Select

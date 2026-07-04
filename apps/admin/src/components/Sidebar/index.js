@@ -13,7 +13,7 @@ function Sidebar(props) {
         <Box
           pointerEvents="auto"
           w={`${sidebarWidth}px`}
-          minW="260px"
+          minW={sidebarWidth > 0 ? '260px' : '0px'}
           h="100vh"
           overflow="hidden"
           position="relative"

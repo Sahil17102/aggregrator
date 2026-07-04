@@ -1,57 +1,61 @@
-'use client'
-
 import {
   Box,
   Button,
   Flex,
-  FormControl,
-  FormLabel,
+  HStack,
   Icon,
   Input,
+  InputGroup,
+  InputLeftElement,
   Stack,
   Text,
-  VStack,
   useColorModeValue,
 } from '@chakra-ui/react'
+import Card from 'components/Card/Card'
 import TrackingDetails from 'components/Tools/OrderTracking/TrackingDetails'
 import { useTracking } from 'hooks/useTracking'
 import { useEffect, useState } from 'react'
-import { FaEnvelopeOpenText, FaHashtag, FaPhoneAlt, FaReceipt, FaSearch } from 'react-icons/fa'
+import { FiMail, FiPhone, FiSearch } from 'react-icons/fi'
 import { useLocation } from 'react-router-dom'
+
+const tabs = [
+  { key: 'order', label: 'Order ID' },
+  { key: 'awb', label: 'AWB' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+]
 
 export default function OrderTrackingPage() {
   const location = useLocation()
-  const [mode, setMode] = useState('awb')
-  const [form, setForm] = useState({ awb: '', orderNumber: '', contact: '' })
-  const [error, setError] = useState('')
+  const [mode, setMode] = useState('order')
+  const [query, setQuery] = useState('')
   const trackingMutation = useTracking()
 
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contact)
-  const isPhone = /^[0-9+\-\s()]{7,}$/.test(form.contact)
-  const isContactValid = !form.contact || isEmail || isPhone
+  const panelBg = useColorModeValue('#FFFFFF', '#161B22')
+  const borderColor = useColorModeValue('#E2E8F0', '#30363D')
+  const textColor = useColorModeValue('#0F172A', '#E6EDF3')
+  const mutedColor = useColorModeValue('#64748B', '#8B949E')
+  const tabBg = useColorModeValue('#F9FAFB', '#0D1117')
 
-  const canSubmit =
+  const placeholder =
     mode === 'awb'
-      ? form.awb.trim().length > 3
-      : form.orderNumber.trim().length > 2 && form.contact.trim().length > 3 && isContactValid
+      ? 'Enter AWB'
+      : mode === 'email'
+        ? 'Enter email'
+        : mode === 'phone'
+          ? 'Enter phone'
+          : 'Enter Order ID'
 
-  const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
+  const canSubmit = query.trim().length > 2
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     if (!canSubmit) return
-    setError('')
-    try {
-      await trackingMutation.mutateAsync({
-        awb: mode === 'awb' ? form.awb.trim() : null,
-        order: mode === 'order' ? form.orderNumber.trim() : null,
-        contact: mode === 'order' ? form.contact.trim() : null,
-      })
-    } catch (err) {
-      setError(err.message || 'Something went wrong')
-    }
+    await trackingMutation.mutateAsync({
+      awb: mode === 'awb' ? query.trim() : null,
+      order: mode === 'order' ? query.trim() : null,
+      contact: mode === 'email' || mode === 'phone' ? query.trim() : null,
+    })
   }
 
   useEffect(() => {
@@ -59,164 +63,91 @@ export default function OrderTrackingPage() {
     const awb = params.get('awb')
     if (awb) {
       setMode('awb')
-      setForm({ awb, orderNumber: '', contact: '' })
+      setQuery(awb)
     }
   }, [location.search])
 
   return (
-    <Flex direction="column" pt={{ base: '120px', md: '75px' }}>
-      <Box
-        bg={useColorModeValue('white', 'gray.800')}
-        shadow="xl"
-        rounded="2xl"
-        p={{ base: 6, md: 10 }}
-        mb={6}
-      >
-        {/* Header */}
-        <Box borderBottom="1px" borderColor="gray.200" pb={6} mb={6}>
-          <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="extrabold" color="gray.700">
-            Track{' '}
-            <Text as="span" color="brand.500">
-              Order
+    <Flex direction="column" pt={{ base: '100px', md: '92px' }} gap={6}>
+      <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="20px" p="26px" boxShadow="none">
+        <HStack spacing={4}>
+          <Flex w="46px" h="46px" borderRadius="14px" bg="rgba(108, 92, 231, 0.16)" align="center" justify="center">
+            <Icon as={FiSearch} color="#6C5CE7" boxSize={5} />
+          </Flex>
+          <Box>
+            <Text color={textColor} fontSize="22px" fontWeight="800">
+              Order Tracking
             </Text>
-          </Text>
-          <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.500" mt={1}>
-            Enter AWB number or order details to track shipment.
-          </Text>
-        </Box>
+            <Text color={mutedColor} fontSize="15px">
+              Track any shipment by Order ID, AWB number, email, or phone
+            </Text>
+          </Box>
+        </HStack>
+      </Card>
 
-        {/* Tabs */}
-        <Stack
-          direction={{ base: 'column', sm: 'row' }}
-          spacing={4}
-          mb={6}
-          align={{ base: 'stretch', sm: 'center' }}
-        >
-          {[
-            { key: 'awb', label: 'Track by AWB' },
-            { key: 'order', label: 'Track by Order ID' },
-          ].map((tab) => (
-            <Button
-              key={tab.key}
-              onClick={() => {
-                setMode(tab.key)
-                setForm({ awb: '', orderNumber: '', contact: '' })
-                setError('')
-              }}
-              flex={{ base: 1, sm: 'initial' }}
-              fontWeight="semibold"
-              colorScheme={mode === tab.key ? 'brand' : 'gray'}
-              variant={mode === tab.key ? 'solid' : 'outline'}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </Stack>
-
-        {/* Form */}
+      <Card bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="20px" p="26px" boxShadow="none">
         <form onSubmit={handleSubmit}>
-          <VStack spacing={6} align="stretch">
-            {mode === 'awb' ? (
-              <FormControl>
-                <FormLabel fontWeight="semibold">AWB Number</FormLabel>
-                <Flex align="center" gap={2}>
-                  <Icon as={FaHashtag} color="gray.400" />
-                  <Input
-                    placeholder="e.g. 1234567890"
-                    value={form.awb}
-                    onChange={(e) => handleChange('awb', e.target.value)}
-                  />
-                </Flex>
-              </FormControl>
-            ) : (
-              <>
-                <FormControl>
-                  <FormLabel fontWeight="semibold">Order ID</FormLabel>
-                  <Flex align="center" gap={2}>
-                    <Icon as={FaReceipt} color="gray.400" />
-                    <Input
-                      placeholder="e.g. ORD-2025-0001"
-                      value={form.orderNumber}
-                      onChange={(e) => handleChange('orderNumber', e.target.value)}
-                    />
-                  </Flex>
-                </FormControl>
-                <FormControl>
-                  <FormLabel fontWeight="semibold">
-                    {isEmail ? 'Email' : isPhone ? 'Phone' : 'Email or Phone'}
-                  </FormLabel>
-                  <Flex align="center" gap={2}>
-                    <Icon as={isEmail ? FaEnvelopeOpenText : FaPhoneAlt} color="gray.400" />
-                    <Input
-                      placeholder="you@example.com or +91 98765 43210"
-                      value={form.contact}
-                      onChange={(e) => handleChange('contact', e.target.value)}
-                      borderColor={!isContactValid ? 'red.400' : undefined}
-                    />
-                  </Flex>
-                  {!isContactValid && (
-                    <Text fontSize="xs" color="red.500" mt={1}>
-                      Enter a valid email or phone.
-                    </Text>
-                  )}
-                </FormControl>
-              </>
-            )}
+          <Stack spacing={5} align="stretch" maxW="780px">
+            <HStack spacing={0} bg={tabBg} borderRadius="8px" p="3px" alignSelf="flex-start">
+              {tabs.map((tab) => (
+                <Button
+                  key={tab.key}
+                  size="sm"
+                  variant="ghost"
+                  bg={mode === tab.key ? '#26334a' : 'transparent'}
+                  color={mode === tab.key ? textColor : mutedColor}
+                  _hover={{ bg: mode === tab.key ? '#26334a' : 'rgba(108, 92, 231, 0.08)' }}
+                  onClick={() => {
+                    setMode(tab.key)
+                    setQuery('')
+                  }}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </HStack>
 
-            {error && (
-              <Box
-                rounded="md"
-                border="1px"
-                borderColor="red.200"
-                bg="red.50"
-                color="red.700"
-                fontSize="sm"
-                px={3}
-                py={2}
-              >
-                {error}
-              </Box>
-            )}
-
-            {/* Buttons */}
-            <Stack
-              direction={{ base: 'column', sm: 'row' }}
-              spacing={4}
-              align={{ base: 'stretch', sm: 'center' }}
-            >
+            <HStack spacing={4} align="center">
+              <InputGroup flex="1">
+                <InputLeftElement pointerEvents="none">
+                  <Icon as={mode === 'email' ? FiMail : mode === 'phone' ? FiPhone : FiSearch} color={mutedColor} />
+                </InputLeftElement>
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={placeholder}
+                  bg={panelBg}
+                  borderColor={borderColor}
+                  color={textColor}
+                  _placeholder={{ color: '#6E7681' }}
+                  h="50px"
+                  fontSize="20px"
+                />
+              </InputGroup>
               <Button
                 type="submit"
+                h="50px"
+                px="22px"
                 isDisabled={!canSubmit || trackingMutation.isPending}
-                colorScheme="brand"
-                leftIcon={<FaSearch />}
-                w={{ base: '100%', sm: 'auto' }}
+                isLoading={trackingMutation.isPending}
+                bg="#30363D"
+                color={mutedColor}
+                _hover={{ bg: '#3f4652' }}
               >
-                {trackingMutation.isPending ? 'Tracking…' : 'Track Order'}
+                Track
               </Button>
-              <Button
-                type="button"
-                variant="link"
-                color="gray.500"
-                onClick={() => {
-                  setForm({ awb: '', orderNumber: '', contact: '' })
-                }}
-                w={{ base: '100%', sm: 'auto' }}
-              >
-                Reset
-              </Button>
-            </Stack>
-          </VStack>
+            </HStack>
+          </Stack>
         </form>
-      </Box>
+      </Card>
 
-      {/* Tracking Results */}
-      {trackingMutation.isSuccess && (
+      {trackingMutation.isSuccess ? (
         <TrackingDetails
           isLoading={trackingMutation?.isPending}
           data={trackingMutation?.data}
           error={trackingMutation?.isError}
         />
-      )}
+      ) : null}
     </Flex>
   )
 }

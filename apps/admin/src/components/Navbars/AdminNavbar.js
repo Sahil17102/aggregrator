@@ -1,16 +1,70 @@
-import { Badge, Box, Flex, HStack, IconButton, Text, useColorMode } from '@chakra-ui/react'
+import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  HStack,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuDivider,
+  MenuItem,
+  MenuList,
+  Text,
+  useColorMode,
+  useColorModeValue,
+} from '@chakra-ui/react'
 import {
   IconBell,
+  IconDashboard,
+  IconKey,
   IconLayoutSidebarLeftCollapse,
+  IconLogout,
   IconMenu2,
   IconMoon,
+  IconSettings,
   IconSun,
 } from '@tabler/icons-react'
 import PropTypes from 'prop-types'
+import { useHistory } from 'react-router-dom'
+import { useAuthStore } from 'store/useAuthStore'
 
 export default function AdminNavbar(props) {
-  const { onOpen, sidebarWidth = 300, brandText } = props
+  const { onOpen, onToggleSidebar, isSidebarCollapsed = false, sidebarWidth = 300, brandText } = props
   const { colorMode, toggleColorMode } = useColorMode()
+  const history = useHistory()
+  const logout = useAuthStore((state) => state.logout)
+
+  const navBg = useColorModeValue('#FFFFFF', '#161B22')
+  const borderColor = useColorModeValue('#E2E8F0', '#30363D')
+  const titleColor = useColorModeValue('#0F172A', '#E6EDF3')
+  const iconColor = useColorModeValue('#64748B', '#8B949E')
+  const iconHoverBg = useColorModeValue('#F9FAFB', '#21262D')
+  const iconHoverColor = useColorModeValue('#0F172A', '#E6EDF3')
+  const switchBg = useColorModeValue('#F5F3FF', '#1a2234')
+  const switchBorder = useColorModeValue('#E2E8F0', '#30363D')
+  const switchActiveBg = useColorModeValue('#FFFFFF', '#242349')
+  const notificationBg = useColorModeValue('#F9FAFB', '#21262D')
+  const notificationHoverBg = useColorModeValue('#EDE9FE', '#30363D')
+  const avatarBg = useColorModeValue('#EDE9FE', '#242349')
+  const avatarColor = useColorModeValue('#6C5CE7', '#8B7CF6')
+  const menuBg = useColorModeValue('#FFFFFF', '#161B22')
+  const menuText = useColorModeValue('#0F172A', '#E6EDF3')
+  const menuMuted = useColorModeValue('#64748B', '#8B949E')
+  const menuHoverBg = useColorModeValue('#F9FAFB', '#21262D')
+
+  const setLightMode = () => {
+    if (colorMode !== 'light') toggleColorMode()
+  }
+
+  const setDarkMode = () => {
+    if (colorMode !== 'dark') toggleColorMode()
+  }
+
+  const handleLogout = () => {
+    logout()
+    history.replace('/login')
+  }
 
   return (
     <Flex
@@ -22,8 +76,9 @@ export default function AdminNavbar(props) {
       px={{ base: '16px', md: '30px' }}
       align="center"
       justify="space-between"
-      bg="#151b23"
-      borderBottom="1px solid #2a313a"
+      bg={navBg}
+      borderBottom="1px solid"
+      borderColor={borderColor}
       zIndex="1200"
     >
       <HStack spacing="20px" minW={0}>
@@ -33,24 +88,25 @@ export default function AdminNavbar(props) {
           icon={<IconMenu2 size={20} />}
           onClick={onOpen}
           variant="ghost"
-          color="#9aa4b2"
-          _hover={{ bg: '#202733', color: '#f8fafc' }}
+          color={iconColor}
+          _hover={{ bg: iconHoverBg, color: iconHoverColor }}
         />
         <IconButton
-          aria-label="Collapse sidebar"
+          aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           display={{ base: 'none', xl: 'inline-flex' }}
           icon={<IconLayoutSidebarLeftCollapse size={22} />}
           variant="ghost"
-          color="#9aa4b2"
-          _hover={{ bg: '#202733', color: '#f8fafc' }}
+          color={iconColor}
+          _hover={{ bg: iconHoverBg, color: iconHoverColor }}
+          onClick={onToggleSidebar}
         />
-        <Text color="#f8fafc" fontSize="18px" fontWeight="800" noOfLines={1}>
+        <Text color={titleColor} fontSize="18px" fontWeight="800" noOfLines={1}>
           {brandText || 'Dashboard'}
         </Text>
       </HStack>
 
       <HStack spacing="10px">
-        <HStack spacing="2px" bg="#1d2240" border="1px solid #2d3358" borderRadius="18px" p="3px">
+        <HStack spacing="2px" bg={switchBg} border="1px solid" borderColor={switchBorder} borderRadius="18px" p="3px">
           <IconButton
             aria-label="Light mode"
             icon={<IconSun size={16} />}
@@ -58,19 +114,20 @@ export default function AdminNavbar(props) {
             borderRadius="50%"
             variant="ghost"
             color="#ff7a1a"
-            bg={colorMode === 'light' ? '#2a2f55' : 'transparent'}
-            _hover={{ bg: '#2a2f55' }}
+            bg={colorMode === 'light' ? switchActiveBg : 'transparent'}
+            _hover={{ bg: switchActiveBg }}
+            onClick={setLightMode}
           />
           <IconButton
-            aria-label="Toggle color mode"
+            aria-label="Dark mode"
             icon={<IconMoon size={16} />}
             size="sm"
             borderRadius="50%"
             variant="ghost"
             color="#8d80ff"
-            bg={colorMode === 'dark' ? '#2a2f55' : 'transparent'}
-            _hover={{ bg: '#2a2f55' }}
-            onClick={toggleColorMode}
+            bg={colorMode === 'dark' ? switchActiveBg : 'transparent'}
+            _hover={{ bg: switchActiveBg }}
+            onClick={setDarkMode}
           />
         </HStack>
 
@@ -82,9 +139,10 @@ export default function AdminNavbar(props) {
             h="38px"
             borderRadius="50%"
             variant="ghost"
-            color="#f8fafc"
-            bg="#202733"
-            _hover={{ bg: '#28313d' }}
+            color={titleColor}
+            bg={notificationBg}
+            _hover={{ bg: notificationHoverBg }}
+            onClick={() => history.push('/admin/notifications')}
           />
           <Badge
             position="absolute"
@@ -100,19 +158,68 @@ export default function AdminNavbar(props) {
           </Badge>
         </Box>
 
-        <Flex
-          w="40px"
-          h="40px"
-          borderRadius="50%"
-          align="center"
-          justify="center"
-          bg="#292866"
-          color="#9b8cff"
-          fontSize="14px"
-          fontWeight="800"
-        >
-          SA
-        </Flex>
+        <Menu placement="bottom-end">
+          <MenuButton
+            as={Button}
+            h="40px"
+            w="40px"
+            minW="40px"
+            p="0"
+            variant="ghost"
+            borderRadius="999px"
+            color={titleColor}
+            _hover={{ bg: iconHoverBg }}
+            _active={{ bg: iconHoverBg }}
+          >
+            <HStack spacing="8px">
+              <Flex
+                w="32px"
+                h="32px"
+                borderRadius="50%"
+                align="center"
+                justify="center"
+                bg={avatarBg}
+                color={avatarColor}
+                fontSize="13px"
+                fontWeight="800"
+                flexShrink={0}
+              >
+                SA
+              </Flex>
+            </HStack>
+          </MenuButton>
+          <MenuList
+            bg={menuBg}
+            borderColor={borderColor}
+            color={menuText}
+            boxShadow="0 18px 42px rgba(15, 23, 42, 0.18)"
+            minW="220px"
+            zIndex="popover"
+          >
+            <Box px="12px" py="10px">
+              <Text fontSize="sm" fontWeight="800">
+                Super Admin
+              </Text>
+              <Text fontSize="xs" color={menuMuted}>
+                Admin workspace
+              </Text>
+            </Box>
+            <MenuDivider borderColor={borderColor} />
+            <MenuItem icon={<IconDashboard size={18} />} _hover={{ bg: menuHoverBg }} onClick={() => history.push('/admin/dashboard')}>
+              Dashboard
+            </MenuItem>
+            <MenuItem icon={<IconKey size={18} />} _hover={{ bg: menuHoverBg }} onClick={() => history.push('/admin/settings/change-password')}>
+              Change password
+            </MenuItem>
+            <MenuItem icon={<IconSettings size={18} />} _hover={{ bg: menuHoverBg }} onClick={() => history.push('/admin/settings/payment-options')}>
+              Payment options
+            </MenuItem>
+            <MenuDivider borderColor={borderColor} />
+            <MenuItem icon={<IconLogout size={18} />} color="red.400" _hover={{ bg: menuHoverBg }} onClick={handleLogout}>
+              Logout
+            </MenuItem>
+          </MenuList>
+        </Menu>
       </HStack>
     </Flex>
   )
@@ -123,5 +230,7 @@ AdminNavbar.propTypes = {
   secondary: PropTypes.bool,
   fixed: PropTypes.bool,
   onOpen: PropTypes.func,
+  onToggleSidebar: PropTypes.func,
+  isSidebarCollapsed: PropTypes.bool,
   sidebarWidth: PropTypes.number,
 }

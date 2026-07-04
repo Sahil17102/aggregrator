@@ -17,7 +17,8 @@ const TablesTableRow = ({
   stickyRightColumnKeys = [],
   stickyRightOffsets = {},
 }) => {
-  const bg = useColorModeValue('white', 'gray.800')
+  const bg = useColorModeValue('#FFFFFF', '#161B22')
+  const borderColor = useColorModeValue('#E2E8F0', '#30363D')
 
   return (
     <Tr>
@@ -30,8 +31,8 @@ const TablesTableRow = ({
         return (
           <Td
             key={idx}
-            ps={8}
-            pe={isLastDataColumn && renderActions ? 10 : 8}
+            ps={5}
+            pe={isLastDataColumn && renderActions ? 8 : 5}
             minW={columnWidths[key] || 'auto'}
             maxW={columnWidths[key] || 'auto'}
             overflow="visible"
@@ -39,9 +40,11 @@ const TablesTableRow = ({
             right={stickyRightColumnKeys.includes(key) ? stickyRightOffsets[key] || 0 : undefined}
             zIndex={stickyRightColumnKeys.includes(key) ? 2 : undefined}
             bg={stickyRightColumnKeys.includes(key) ? bg : undefined}
+            borderColor={borderColor}
+            py="18px"
             boxShadow={
               stickyRightColumnKeys.includes(key) && (stickyRightOffsets[key] || 0) === 0
-                ? '-6px 0 10px rgba(13, 59, 142, 0.08)'
+                ? '-6px 0 10px rgba(1, 4, 9, 0.25)'
                 : undefined
             }
           >
@@ -52,7 +55,7 @@ const TablesTableRow = ({
 
       {renderActions && (
         <Td
-          px={8}
+          px={5}
           minW={actionsColumnWidth}
           w={actionsColumnWidth}
           bg={bg}
@@ -62,7 +65,7 @@ const TablesTableRow = ({
           overflow="visible"
           whiteSpace="nowrap"
           borderLeft="1px solid"
-          borderColor={stickyDivider}
+          borderColor={stickyDivider || borderColor}
           boxShadow={stickyShadow}
         >
           {renderActions(row)}

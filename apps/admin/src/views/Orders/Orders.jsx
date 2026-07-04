@@ -2,31 +2,22 @@ import {
   Box,
   Button,
   Flex,
-  Grid,
-  Heading,
   HStack,
   Icon,
-  Text,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Select,
+  Stack,
+  Text,
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react'
 import Card from 'components/Card/Card'
-import CardBody from 'components/Card/CardBody'
 import OrdersTable from 'components/Tables/OrdersTable'
-import TableFilters from 'components/Tables/TableFilters'
 import { useOrders } from 'hooks/useOrders'
 import { useEffect, useMemo, useState } from 'react'
-import {
-  FiAlertTriangle,
-  FiCheckCircle,
-  FiDownload,
-  FiPackage,
-  FiRefreshCw,
-  FiShoppingBag,
-  FiTruck,
-  FiXCircle,
-} from 'react-icons/fi'
+import { FiChevronDown, FiDownload, FiPackage, FiPlus, FiSearch } from 'react-icons/fi'
 import { useLocation } from 'react-router-dom'
 import { exportOrdersToCSV } from 'services/order.service'
 
@@ -45,62 +36,39 @@ const Orders = () => {
   })
   const [isExporting, setIsExporting] = useState(false)
 
-  const { data: ordersData, isLoading, isFetching, refetch } = useOrders(page, limit, filters)
+  const { data: ordersData, isLoading, isFetching } = useOrders(page, limit, filters)
   const toast = useToast()
 
   useEffect(() => {
     const nextSearch = new URLSearchParams(location.search).get('search') || ''
-    setFilters((prev) => {
-      if (prev.search === nextSearch) return prev
-      return {
-        ...prev,
-        search: nextSearch,
-      }
-    })
+    setFilters((prev) => (prev.search === nextSearch ? prev : { ...prev, search: nextSearch }))
     setPage(1)
   }, [location.search])
 
-  const textColor = useColorModeValue('gray.700', 'white')
-  const bgStats = useColorModeValue('white', 'gray.700')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
+  const panelBg = useColorModeValue('#FFFFFF', '#161B22')
+  const borderColor = useColorModeValue('#E2E8F0', '#30363D')
+  const textColor = useColorModeValue('#0F172A', '#E6EDF3')
+  const mutedColor = useColorModeValue('#64748B', '#8B949E')
+  const inputBg = useColorModeValue('#FFFFFF', '#161B22')
+  const totalCount = ordersData?.totalCount || 0
 
-  // Calculate statistics
   const stats = useMemo(() => {
     const orders = ordersData?.orders || []
     return {
-      total: ordersData?.totalCount || 0,
-      pending: orders.filter((o) => o.order_status === 'pending').length,
-      shipped: orders.filter(
-        (o) => o.order_status === 'shipment_created' || o.order_status === 'in_transit',
-      ).length,
+      total: totalCount,
+      inTransit: orders.filter((o) => ['shipment_created', 'in_transit', 'pickup_initiated'].includes(o.order_status)).length,
       delivered: orders.filter((o) => o.order_status === 'delivered').length,
       cancelled: orders.filter((o) => o.order_status === 'cancelled').length,
-      cancellationRequested: orders.filter((o) => o.order_status === 'cancellation_requested')
-        .length,
+      rto: orders.filter((o) => String(o.order_status || '').includes('rto')).length,
+      revenue: orders.reduce((sum, order) => sum + Number(order.order_amount || 0), 0),
     }
-  }, [ordersData])
-
-  const handleStatusFilter = (statusValue = '') => {
-    setFilters((prev) => ({
-      ...prev,
-      status: statusValue,
-    }))
-    setPage(1)
-  }
-
-  const isStatusActive = (statusValue = '') => filters.status === statusValue
+  }, [ordersData, totalCount])
 
   const handleExport = async () => {
     try {
       setIsExporting(true)
       await exportOrdersToCSV(filters)
-      toast({
-        title: 'Export successful',
-        description: 'Orders have been exported to CSV',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      })
+      toast({ title: 'Orders exported', status: 'success', duration: 2500, isClosable: true })
     } catch (error) {
       toast({
         title: 'Export failed',
@@ -114,310 +82,122 @@ const Orders = () => {
     }
   }
 
-  const filterOptions = [
-    {
-      key: 'search',
-      label: 'Search',
-      type: 'search',
-      placeholder: 'Search by Order ID, AWB, or Customer...',
-    },
-    {
-      key: 'status',
-      label: 'Order Status',
-      type: 'select',
-      placeholder: 'All Statuses',
-      options: [
-        { value: 'pending', label: 'Pending' },
-        { value: 'shipment_created', label: 'Shipment Created' },
-        { value: 'in_transit', label: 'In Transit' },
-        { value: 'out_for_delivery', label: 'Out for Delivery' },
-        { value: 'delivered', label: 'Delivered' },
-        { value: 'cancellation_requested', label: 'Cancellation Requested' },
-        { value: 'cancelled', label: 'Cancelled' },
-        { value: 'rto', label: 'RTO' },
-        { value: 'rto_in_transit', label: 'RTO In Transit' },
-        { value: 'rto_delivered', label: 'RTO Delivered' },
-      ],
-    },
-    {
-      key: 'fromDate',
-      label: 'From Date',
-      type: 'date',
-      placeholder: 'Start Date',
-    },
-    {
-      key: 'toDate',
-      label: 'To Date',
-      type: 'date',
-      placeholder: 'End Date',
-    },
-  ]
+  const updateFilter = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
+    setPage(1)
+  }
 
   return (
-    <Box pt={{ base: '120px', md: '75px' }}>
-      {/* Page Header */}
-      <Flex justify="space-between" align="center" mb={6}>
-        <HStack spacing={3}>
-          <Flex
-            align="center"
-            justify="center"
-            w={12}
-            h={12}
-            borderRadius="xl"
-            bg={useColorModeValue('blue.500', 'blue.400')}
-          >
-            <Icon as={FiShoppingBag} w={6} h={6} color="white" />
-          </Flex>
-          <Box>
-            <Heading size="lg" color={textColor}>
-              Orders Management
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              Track and manage all your orders
-            </Text>
-          </Box>
-        </HStack>
-        <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
-          <Button
-            leftIcon={<FiRefreshCw />}
-            onClick={() => refetch()}
-            isLoading={isFetching}
-            variant="outline"
-            size="md"
-          >
-            Refresh
-          </Button>
-          <Button
-            leftIcon={<FiDownload />}
-            onClick={handleExport}
-            isLoading={isExporting}
-            loadingText="Exporting..."
-            colorScheme="blue"
-            size="md"
-          >
-            Export
-          </Button>
-        </HStack>
-      </Flex>
+    <Box pt={{ base: '100px', md: '92px' }}>
+      <Card bg={panelBg} borderColor={borderColor} borderWidth="1px" borderRadius="20px" p="26px" mb="20px" boxShadow="none">
+        <Flex justify="space-between" align={{ base: 'flex-start', xl: 'center' }} gap={5} wrap="wrap">
+          <HStack spacing={4}>
+            <Flex w="46px" h="46px" borderRadius="14px" bg="rgba(108, 92, 231, 0.16)" align="center" justify="center">
+              <Icon as={FiPackage} color="#6C5CE7" boxSize={5} />
+            </Flex>
+            <Box>
+              <Text color={textColor} fontSize="22px" fontWeight="800">
+                Orders
+              </Text>
+              <Text color={mutedColor} fontSize="15px">
+                View and manage all orders across users
+              </Text>
+            </Box>
+          </HStack>
 
-      {/* Compact Statistics */}
-      <Grid
-        templateColumns={{
-          base: 'repeat(2, 1fr)',
-          md: 'repeat(3, 1fr)',
-          xl: 'repeat(6, 1fr)',
-        }}
-        gap={3}
-        mb={4}
-      >
-        <Flex
-          bg={useColorModeValue('blue.50', 'blue.900')}
-          p={3}
-          borderRadius="lg"
-          align="center"
-          gap={3}
-          cursor="pointer"
-          _hover={{ bg: useColorModeValue('blue.100', 'blue.800') }}
-          transition="all 0.2s"
-          borderWidth={isStatusActive('') ? '2px' : '1px'}
-          borderColor={isStatusActive('') ? 'blue.400' : borderColor}
-          onClick={() => handleStatusFilter('')}
-        >
-          <Icon as={FiPackage} w={5} h={5} color="blue.500" flexShrink={0} />
-          <Box>
-            <Text fontSize="xs" color="gray.600" fontWeight="500">
-              Total
+          <HStack spacing={4} wrap="wrap" color={mutedColor}>
+            <StatDot color="#6C5CE7" value={stats.total} label="total" />
+            <StatDot color="#3B82F6" value={stats.inTransit} label="in transit" />
+            <StatDot color="#10B981" value={stats.delivered} label="delivered" />
+            <StatDot color="#F87171" value={stats.cancelled} label="cancelled" />
+            <StatDot color="#F97316" value={stats.rto} label="RTO" />
+            <Text color={textColor} fontWeight="800">
+              ₹ {stats.revenue.toLocaleString('en-IN')}
+              <Text as="span" color={mutedColor} fontWeight="400" ml={2}>
+                revenue
+              </Text>
             </Text>
-            <Text fontSize="xl" fontWeight="bold" color={textColor}>
-              {stats.total}
-            </Text>
-          </Box>
+          </HStack>
         </Flex>
 
-        <Flex
-          bg={useColorModeValue('orange.50', 'orange.900')}
-          p={3}
-          borderRadius="lg"
-          align="center"
-          gap={3}
-          cursor="pointer"
-          _hover={{ bg: useColorModeValue('orange.100', 'orange.800') }}
-          transition="all 0.2s"
-          borderWidth={isStatusActive('pending') ? '2px' : '1px'}
-          borderColor={isStatusActive('pending') ? 'orange.400' : borderColor}
-          onClick={() => handleStatusFilter('pending')}
-        >
-          <Icon as={FiRefreshCw} w={5} h={5} color="orange.500" flexShrink={0} />
-          <Box>
-            <Text fontSize="xs" color="gray.600" fontWeight="500">
-              Pending
+        <Box h="1px" bg={borderColor} my="20px" />
+
+        <Flex justify="space-between" align={{ base: 'stretch', lg: 'flex-end' }} gap={4} wrap="wrap">
+          <Stack direction={{ base: 'column', md: 'row' }} spacing={4} flex="1">
+            <Box minW={{ base: '100%', md: '300px' }}>
+              <Text color={mutedColor} fontSize="14px" mb="8px">
+                Search
+              </Text>
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <Icon as={FiSearch} color={mutedColor} />
+                </InputLeftElement>
+                <Input
+                  value={filters.search}
+                  onChange={(event) => updateFilter('search', event.target.value)}
+                  placeholder="Order ID, AWB, name, city..."
+                  bg={inputBg}
+                  borderColor={borderColor}
+                  color={textColor}
+                  _placeholder={{ color: '#6E7681' }}
+                />
+              </InputGroup>
+            </Box>
+            <Box minW={{ base: '100%', md: '200px' }}>
+              <Text color={mutedColor} fontSize="14px" mb="8px">
+                Status
+              </Text>
+              <Select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)} bg={inputBg} borderColor={borderColor} color={textColor}>
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="shipment_created">Shipment Created</option>
+                <option value="in_transit">In Transit</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="rto_delivered">RTO Delivered</option>
+              </Select>
+            </Box>
+            <Button variant="link" color="#6C5CE7" rightIcon={<FiChevronDown />} alignSelf={{ base: 'flex-start', md: 'flex-end' }}>
+              More filters
+            </Button>
+          </Stack>
+
+          <HStack spacing={4} justify="flex-end">
+            <Text color={mutedColor} whiteSpace="nowrap">
+              {totalCount} orders
             </Text>
-            <Text fontSize="xl" fontWeight="bold" color="orange.500">
-              {stats.pending}
-            </Text>
-          </Box>
+            <Button leftIcon={<FiDownload />} variant="outline" borderColor={borderColor} color={textColor} isLoading={isExporting} onClick={handleExport}>
+              Export CSV
+            </Button>
+            <Button leftIcon={<FiPlus />} bg="#6C5CE7" color="white" _hover={{ bg: '#5A4BD1' }}>
+              Create Manual Order
+            </Button>
+          </HStack>
         </Flex>
-
-        <Flex
-          bg={useColorModeValue('purple.50', 'purple.900')}
-          p={3}
-          borderRadius="lg"
-          align="center"
-          gap={3}
-          cursor="pointer"
-          _hover={{ bg: useColorModeValue('purple.100', 'purple.800') }}
-          transition="all 0.2s"
-          borderWidth={
-            filters.status === 'shipment_created' || filters.status === 'in_transit' ? '2px' : '1px'
-          }
-          borderColor={
-            filters.status === 'shipment_created' || filters.status === 'in_transit'
-              ? 'purple.400'
-              : borderColor
-          }
-          onClick={() => handleStatusFilter('in_transit')}
-        >
-          <Icon as={FiTruck} w={5} h={5} color="purple.500" flexShrink={0} />
-          <Box>
-            <Text fontSize="xs" color="gray.600" fontWeight="500">
-              Shipped
-            </Text>
-            <Text fontSize="xl" fontWeight="bold" color="purple.500">
-              {stats.shipped}
-            </Text>
-          </Box>
-        </Flex>
-
-        <Flex
-          bg={useColorModeValue('green.50', 'green.900')}
-          p={3}
-          borderRadius="lg"
-          align="center"
-          gap={3}
-          cursor="pointer"
-          _hover={{ bg: useColorModeValue('green.100', 'green.800') }}
-          transition="all 0.2s"
-          borderWidth={isStatusActive('delivered') ? '2px' : '1px'}
-          borderColor={isStatusActive('delivered') ? 'green.400' : borderColor}
-          onClick={() => handleStatusFilter('delivered')}
-        >
-          <Icon as={FiCheckCircle} w={5} h={5} color="green.500" flexShrink={0} />
-          <Box>
-            <Text fontSize="xs" color="gray.600" fontWeight="500">
-              Delivered
-            </Text>
-            <Text fontSize="xl" fontWeight="bold" color="green.500">
-              {stats.delivered}
-            </Text>
-          </Box>
-        </Flex>
-
-        <Flex
-          bg={useColorModeValue('yellow.50', 'yellow.900')}
-          p={3}
-          borderRadius="lg"
-          align="center"
-          gap={3}
-          cursor="pointer"
-          _hover={{ bg: useColorModeValue('yellow.100', 'yellow.800') }}
-          transition="all 0.2s"
-          borderWidth={isStatusActive('cancellation_requested') ? '2px' : '1px'}
-          borderColor={isStatusActive('cancellation_requested') ? 'yellow.500' : borderColor}
-          onClick={() => handleStatusFilter('cancellation_requested')}
-        >
-          <Icon as={FiAlertTriangle} w={5} h={5} color="yellow.600" flexShrink={0} />
-          <Box>
-            <Text fontSize="xs" color="gray.600" fontWeight="500">
-              Cancellation Requested
-            </Text>
-            <Text fontSize="xl" fontWeight="bold" color="yellow.600">
-              {stats.cancellationRequested}
-            </Text>
-          </Box>
-        </Flex>
-
-        <Flex
-          bg={useColorModeValue('red.50', 'red.900')}
-          p={3}
-          borderRadius="lg"
-          align="center"
-          gap={3}
-          cursor="pointer"
-          _hover={{ bg: useColorModeValue('red.100', 'red.800') }}
-          transition="all 0.2s"
-          borderWidth={isStatusActive('cancelled') ? '2px' : '1px'}
-          borderColor={isStatusActive('cancelled') ? 'red.400' : borderColor}
-          onClick={() => handleStatusFilter('cancelled')}
-        >
-          <Icon as={FiXCircle} w={5} h={5} color="red.500" flexShrink={0} />
-          <Box>
-            <Text fontSize="xs" color="gray.600" fontWeight="500">
-              Cancelled
-            </Text>
-            <Text fontSize="xl" fontWeight="bold" color="red.500">
-              {stats.cancelled}
-            </Text>
-          </Box>
-        </Flex>
-      </Grid>
-
-      <Flex justify="flex-end" align="center" mb={3}>
-        <HStack spacing={3}>
-          <Text fontSize="sm" color="gray.500">
-            Sort by Created At
-          </Text>
-          <Select
-            size="sm"
-            w="180px"
-            value={filters.sortOrder}
-            onChange={(e) => {
-              setFilters((prev) => ({
-                ...prev,
-                sortBy: 'created_at',
-                sortOrder: e.target.value,
-              }))
-              setPage(1)
-            }}
-          >
-            <option value="asc">Newest first</option>
-            <option value="desc">Oldest first</option>
-          </Select>
-        </HStack>
-      </Flex>
-
-      {/* Filters Card */}
-      <Card mb={4} boxShadow="sm">
-        <CardBody p={4}>
-          <TableFilters
-            filters={filterOptions}
-            values={filters}
-            onApply={(appliedFilters) => {
-              setFilters((prev) => ({
-                ...appliedFilters,
-                sortBy: prev.sortBy || 'created_at',
-                sortOrder: prev.sortOrder || 'desc',
-              }))
-              setPage(1)
-            }}
-            actions={[]}
-            showActiveFiltersCount={true}
-            cardStyle={false}
-          />
-        </CardBody>
       </Card>
 
-      {/* Orders Table */}
       <OrdersTable
         orders={ordersData?.orders}
-        totalCount={ordersData?.totalCount}
+        totalCount={totalCount}
         page={page}
         setPage={setPage}
         perPage={limit}
         setPerPage={setLimit}
         loading={isLoading || isFetching}
-        onRefresh={refetch}
       />
     </Box>
+  )
+}
+
+function StatDot({ color, value, label }) {
+  return (
+    <HStack spacing={1.5}>
+      <Box w="14px" h="14px" borderRadius="4px" border="2px solid" borderColor={color} />
+      <Text color="#E6EDF3" fontWeight="800">
+        {value}
+      </Text>
+      <Text color="#8B949E">{label}</Text>
+    </HStack>
   )
 }
 

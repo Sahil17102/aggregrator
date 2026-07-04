@@ -1,25 +1,38 @@
-import {
-  Badge,
-  Button,
-  Flex,
-  Icon,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Portal,
-  Stack,
-  Tooltip,
-  useDisclosure,
-  useToast,
-} from '@chakra-ui/react'
-import { useCancelOrderMutation, useRegenerateOrderDocumentsMutation } from 'hooks/useOrders'
-import { useMemo, useState } from 'react'
-import { FiCopy, FiEye, FiMoreVertical, FiRefreshCw, FiTruck, FiXCircle } from 'react-icons/fi'
-import { useHistory } from 'react-router-dom'
+import { Badge, Flex, Icon, Stack, Text } from '@chakra-ui/react'
+import { FiCopy, FiMapPin } from 'react-icons/fi'
 import { getCourierDisplayName } from 'utils/courierDisplay'
 import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
-import OrderDetailsModal from './OrderDetailsModal'
+
+const statusColors = {
+  pending: 'orange',
+  booked: 'cyan',
+  shipment_created: 'blue',
+  pickup_initiated: 'blue',
+  in_transit: 'purple',
+  out_for_delivery: 'cyan',
+  delivered: 'green',
+  cancelled: 'gray',
+  cancellation_requested: 'yellow',
+  rto: 'orange',
+  rto_in_transit: 'purple',
+  rto_delivered: 'red',
+}
+
+const formatStatus = (value) => {
+  if (!value) return 'N/A'
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+const formatDate = (value) => {
+  if (!value) return 'N/A'
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 const OrdersTable = ({
   orders,
@@ -29,372 +42,129 @@ const OrdersTable = ({
   perPage,
   setPerPage,
   loading = false,
-  onRefresh,
 }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const [selectedOrder, setSelectedOrder] = useState(null)
-  const history = useHistory()
-  const toast = useToast()
-  const { mutateAsync: cancelOrderMutation, isPending: isCancelling } = useCancelOrderMutation()
-  const {
-    mutateAsync: regenerateDocuments,
-    isPending: isRegenerating,
-  } = useRegenerateOrderDocumentsMutation()
-
-  const cancellableStatuses = useMemo(
-    () => new Set(['pending', 'shipment_created', 'in_transit', 'pickup_initiated', 'booked']),
-    [],
-  )
-
-  const supportedCancellationProviders = useMemo(() => new Set(['delhivery', 'deliveryone']), [])
-
-  const captions = [
-    'Order ID',
-    'AWB Number',
-    'Docs',
-    'Merchant',
-    'Customer',
-    'Status',
-    'Order Type',
-    'Amount',
-    'Courier',
-    'Order Date',
-  ]
+  const captions = ['Order', 'Status', 'Type', 'Destination', 'Provider', 'AWB', 'Charge', 'Created']
   const columnKeys = [
-    'order_number',
-    'awb_number',
-    'documents',
-    'merchantName',
-    'buyer_name',
+    'order_summary',
     'order_status',
     'order_type',
-    'order_amount',
+    'destination',
     'courier_partner',
+    'awb_number',
+    'order_amount',
     'order_date',
   ]
-  const actionsColumnWidth = '180px'
-  const docsColumnWidth = '240px'
-
-  const getStatusColor = (status) => {
-    const statusColors = {
-      pending: 'orange',
-      shipment_created: 'blue',
-      in_transit: 'purple',
-      out_for_delivery: 'cyan',
-      delivered: 'green',
-      cancelled: 'red',
-      cancellation_requested: 'yellow',
-      rto: 'pink',
-      rto_in_transit: 'purple',
-      rto_delivered: 'gray',
-    }
-    return statusColors[status] || 'gray'
-  }
-
-  const getOrderTypeColor = (type) => {
-    return type === 'cod' ? 'green' : 'blue'
-  }
-
-  const handleViewDetails = (order) => {
-    setSelectedOrder(order)
-    onOpen()
-  }
-
-  const handleOrderUpdated = (updatedOrder) => {
-    setSelectedOrder(updatedOrder)
-    if (onRefresh) onRefresh()
-  }
-
-  const handleCopyAWB = (awb) => {
-    if (awb) {
-      navigator.clipboard.writeText(awb)
-      // You might want to show a toast notification here
-    }
-  }
-
-  const handleTrackShipment = (order) => {
-    if (!order?.awb_number) return
-    history.push(`/admin/order-tracking?awb=${encodeURIComponent(order.awb_number)}`)
-  }
-
-  const canCancelShipment = (order) => {
-    if (!order) return false
-    const status = (order.order_status || '').toLowerCase()
-    if (!cancellableStatuses.has(status)) return false
-    const provider = (order.integration_type || '').toLowerCase()
-    if (provider && !supportedCancellationProviders.has(provider)) return false
-    return Boolean(order.id)
-  }
-
-  const handleCancelShipment = async (order) => {
-    if (!order?.id) {
-      toast({
-        title: 'Unable to cancel order',
-        description: 'Missing order identifier.',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      })
-      return
-    }
-
-    try {
-      await cancelOrderMutation(order.id)
-      toast({
-        title: 'Cancellation requested',
-        description: `Order ${order.order_id || order.id} cancellation has been requested.`,
-        status: 'success',
-        duration: 4000,
-        isClosable: true,
-      })
-      if (onRefresh) onRefresh()
-    } catch (error) {
-      const message =
-        error.response?.data?.message || error.message || 'Failed to request cancellation.'
-      toast({
-        title: 'Cancellation failed',
-        description: message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    }
-  }
-
-  const handleRegenerateDocuments = async (order) => {
-    if (!order?.id) {
-      toast({
-        title: 'Unable to regenerate',
-        description: 'Missing order identifier.',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      })
-      return
-    }
-
-    try {
-      await regenerateDocuments({
-        orderId: order.id,
-        regenerateLabel: true,
-        regenerateInvoice: true,
-      })
-      toast({
-        title: 'Regenerated successfully',
-        description: `Label and invoice regenerated for order ${order.order_number || order.id}.`,
-        status: 'success',
-        duration: 4000,
-        isClosable: true,
-      })
-      if (onRefresh) onRefresh()
-    } catch (error) {
-      const message =
-        error?.response?.data?.message || error?.message || 'Failed to regenerate documents.'
-      toast({
-        title: 'Regeneration failed',
-        description: message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    }
-  }
 
   const renderers = {
-    order_id: (value) => (
-      <Tooltip label={value}>
-        <span
-          style={{
-            maxWidth: '120px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            display: 'block',
-            fontWeight: 'bold',
-          }}
-        >
-          {value || 'N/A'}
-        </span>
-      </Tooltip>
+    order_summary: (_value, row) => (
+      <Stack spacing={1}>
+        <Text fontWeight="800" fontSize="lg" color="inherit">
+          {row.order_number || row.order_id || row.id || 'N/A'}
+        </Text>
+        <Text color="gray.500" fontSize="sm">
+          {row.buyer_name || row.merchantName || row.merchantEmail || 'N/A'}
+        </Text>
+      </Stack>
     ),
-    merchantName: (value, row) => (
-      <Button
-        variant="link"
-        colorScheme="blue"
-        size="sm"
-        onClick={() => {
-          if (row?.user_id) {
-            history.push(`/admin/users-management/${row.user_id}/overview`)
-          } else {
-            toast({
-              title: 'Merchant details unavailable',
-              description: 'User identifier missing for this order.',
-              status: 'warning',
-              duration: 4000,
-              isClosable: true,
-            })
-          }
-        }}
+    order_status: (value) => (
+      <Badge
+        colorScheme={statusColors[value] || 'gray'}
+        fontSize="sm"
+        px={2.5}
+        py={1}
+        borderRadius="8px"
+        textTransform="none"
       >
-        {value || row?.merchantEmail || row?.merchantPhone || 'Unknown Merchant'}
-      </Button>
+        {formatStatus(value)}
+      </Badge>
     ),
+    order_type: (value, row) => (
+      <Stack spacing={1} align="flex-start">
+        <Badge colorScheme="purple" fontSize="sm" px={2.5} py={1} borderRadius="8px">
+          {(row.shipping_mode || 'B2C').toUpperCase()}
+        </Badge>
+        <Badge colorScheme={value === 'cod' ? 'green' : 'green'} fontSize="xs" px={2.5} py={1} borderRadius="8px">
+          {(value || 'prepaid').toUpperCase()}
+        </Badge>
+      </Stack>
+    ),
+    destination: (_value, row) => (
+      <Flex align="center" gap={2} minW="220px">
+        <Icon as={FiMapPin} color="gray.500" />
+        <Text fontWeight="600">
+          {[row.buyer_city, row.buyer_state].filter(Boolean).join(', ') || row.destination || 'N/A'}
+        </Text>
+      </Flex>
+    ),
+    courier_partner: (value, row) =>
+      value ? (
+        <Badge bg="rgba(249, 115, 22, 0.14)" color="#F97316" borderRadius="8px" px={2.5} py={1} textTransform="none">
+          {getCourierDisplayName(
+            {
+              name: value,
+              courier_id: row?.courier_id,
+              integration_type: row?.integration_type,
+            },
+            'Not Assigned',
+          )}
+        </Badge>
+      ) : (
+        <Text color="gray.500">Not Assigned</Text>
+      ),
     awb_number: (value) => (
       <Flex align="center" gap={2}>
-        <span style={{ fontFamily: 'monospace' }}>{value || 'N/A'}</span>
-        {value && (
+        <Text as="span" fontFamily="mono" fontSize="sm">
+          {value || 'N/A'}
+        </Text>
+        {value ? (
           <Icon
             as={FiCopy}
             cursor="pointer"
-            onClick={() => handleCopyAWB(value)}
             color="gray.500"
-            _hover={{ color: 'blue.500' }}
+            _hover={{ color: '#6C5CE7' }}
+            onClick={() => navigator.clipboard.writeText(value)}
           />
-        )}
+        ) : null}
       </Flex>
     ),
-    documents: (_value, row) => {
-      const hasLabel = Boolean(String(row.label_url || row.label_key || row.label || '').trim())
-      const hasInvoice = Boolean(
-        String(row.invoice_url || row.invoice_key || row.invoice_link || '').trim(),
-      )
-
-      return (
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          <Badge colorScheme={hasLabel ? 'green' : 'orange'} borderRadius="md" px={2} py={1}>
-            {hasLabel ? 'Label Generated' : 'Label Pending'}
-          </Badge>
-          <Badge colorScheme={hasInvoice ? 'green' : 'orange'} borderRadius="md" px={2} py={1}>
-            {hasInvoice ? 'Invoice Generated' : 'Invoice Pending'}
-          </Badge>
-        </Stack>
-      )
-    },
-    buyer_name: (value, row) => (
-      <div>
-        <div style={{ fontWeight: '500' }}>{value}</div>
-        {row.buyer_phone && (
-          <div style={{ fontSize: '0.85em', color: 'gray' }}>{row.buyer_phone}</div>
-        )}
-      </div>
-    ),
-    order_status: (value) => (
-      <Badge colorScheme={getStatusColor(value)} fontSize="0.8em" px={2} py={1} borderRadius="md">
-        {value?.replace(/_/g, ' ').toUpperCase()}
-      </Badge>
-    ),
-    order_type: (value) => (
-      <Badge
-        colorScheme={getOrderTypeColor(value)}
-        fontSize="0.8em"
-        px={2}
-        py={1}
-        borderRadius="md"
-      >
-        {value?.toUpperCase()}
-      </Badge>
-    ),
     order_amount: (value) => (
-      <span style={{ fontWeight: '600' }}>₹{parseFloat(value || 0).toFixed(2)}</span>
+      <Text fontWeight="800" fontSize="lg">
+        ₹{parseFloat(value || 0).toFixed(2)}
+      </Text>
     ),
-    courier_partner: (value, row) =>
-      getCourierDisplayName(
-        {
-          name: value,
-          courier_id: row?.courier_id,
-          integration_type: row?.integration_type,
-        },
-        'Not Assigned',
-      ),
-    order_date: (value) => {
-      if (!value) return 'N/A'
-      const date = new Date(value)
-      return date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
-    },
+    order_date: (value) => (
+      <Text color="gray.500" fontSize="lg">
+        {formatDate(value)}
+      </Text>
+    ),
   }
 
-  const renderActions = (order) => (
-    <Menu placement="bottom-end">
-      <MenuButton as={Button} size="sm" variant="ghost" rightIcon={<FiMoreVertical />}>
-        Actions
-      </MenuButton>
-      <Portal>
-        <MenuList zIndex={2000} boxShadow="xl">
-          <MenuItem icon={<FiEye />} onClick={() => handleViewDetails(order)}>
-            View Details
-          </MenuItem>
-          <MenuItem
-            icon={<FiRefreshCw />}
-            onClick={() => handleRegenerateDocuments(order)}
-            isDisabled={isRegenerating}
-          >
-            Regenerate Label & Invoice
-          </MenuItem>
-          {order.awb_number && (
-            <MenuItem icon={<FiTruck />} onClick={() => handleTrackShipment(order)}>
-              Track Shipment
-            </MenuItem>
-          )}
-          {canCancelShipment(order) && (
-            <MenuItem
-              icon={<FiXCircle />}
-              onClick={() => handleCancelShipment(order)}
-              isDisabled={isCancelling}
-            >
-              Cancel Shipment
-            </MenuItem>
-          )}
-        </MenuList>
-      </Portal>
-    </Menu>
-  )
-
   return (
-    <>
-      <GenericTable
-        title="Orders Management"
-        data={orders}
-        captions={captions}
-        columnKeys={columnKeys}
-        renderers={renderers}
-        renderActions={renderActions}
-        loading={loading}
-        paginated={true}
-        page={page}
-        setPage={setPage}
-        totalCount={totalCount}
-        perPage={perPage}
-        setPerPage={setPerPage}
-        perPageOptions={[10, 20, 50, 100]}
-        actionsColumnWidth={actionsColumnWidth}
-        columnWidths={{
-          order_id: '140px',
-          awb_number: '180px',
-          documents: docsColumnWidth,
-          buyer_name: '200px',
-          order_status: '150px',
-          order_type: '100px',
-          order_amount: '120px',
-          courier_partner: '150px',
-          order_date: '120px',
-        }}
-        stickyRightColumnKeys={['documents']}
-        stickyRightOffsets={{ documents: actionsColumnWidth }}
-      />
-
-      {selectedOrder && (
-        <OrderDetailsModal
-          isOpen={isOpen}
-          onClose={onClose}
-          order={selectedOrder}
-          onOrderUpdated={handleOrderUpdated}
-        />
-      )}
-    </>
+    <GenericTable
+      title={null}
+      data={orders || []}
+      captions={captions}
+      columnKeys={columnKeys}
+      renderers={renderers}
+      loading={loading}
+      paginated
+      page={page}
+      setPage={setPage}
+      totalCount={totalCount}
+      perPage={perPage}
+      setPerPage={setPerPage}
+      perPageOptions={[10, 20, 50, 100]}
+      columnWidths={{
+        order_summary: '260px',
+        order_status: '180px',
+        order_type: '120px',
+        destination: '280px',
+        courier_partner: '180px',
+        awb_number: '180px',
+        order_amount: '120px',
+        order_date: '140px',
+      }}
+    />
   )
 }
 

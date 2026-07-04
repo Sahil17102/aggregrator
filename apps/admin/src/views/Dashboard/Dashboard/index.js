@@ -76,7 +76,17 @@ const toNum = (value) => {
 
 function EmptyState({ label = 'No data', h = '160px' }) {
   return (
-    <Flex minH={h} align="center" justify="center" color={ui.muted} fontSize="sm">
+    <Flex
+      minH={h}
+      align="center"
+      justify="center"
+      bg={ui.surface}
+      border="1px solid"
+      borderColor={ui.borderSoft}
+      borderRadius="10px"
+      color={ui.muted}
+      fontSize="sm"
+    >
       {label}
     </Flex>
   )
@@ -271,7 +281,7 @@ function RevenueTable({ rows }) {
               ))
             ) : (
               <Tr>
-                <Td colSpan={6} borderColor={ui.borderSoft}>
+                <Td colSpan={6} bg={ui.surface} borderColor={ui.borderSoft} p={0}>
                   <EmptyState h="172px" />
                 </Td>
               </Tr>

@@ -1,5 +1,5 @@
 import { ChevronRightIcon } from '@chakra-ui/icons'
-import { Box, Button, Collapse, Flex, Stack, Text } from '@chakra-ui/react'
+import { Box, Button, Collapse, Flex, Stack, Text, useColorModeValue } from '@chakra-ui/react'
 import {
   IconCalculator,
   IconChartBar,
@@ -36,17 +36,15 @@ const sidebarItems = [
     label: 'Sellers',
     icon: IconUsers,
     children: [
-      { label: 'Users Management', path: '/admin/users-management' },
+      { label: 'Sellers', path: '/admin/users-management' },
       { label: 'Plans', path: '/admin/plans' },
+      { label: 'Team Members', path: '/admin/team-members' },
     ],
   },
   {
     label: 'Support',
     icon: IconHelpCircle,
-    children: [
-      { label: 'Tickets', path: '/admin/support' },
-      { label: 'About Us Page', path: '/admin/about-us' },
-    ],
+    path: '/admin/support-tickets',
   },
   {
     label: 'Finance',
@@ -55,16 +53,14 @@ const sidebarItems = [
       { label: 'Invoices', path: '/admin/billing-invoices' },
       { label: 'COD Remittance', path: '/admin/cod-remittance' },
       { label: 'Wallet', path: '/admin/wallet' },
-      { label: 'Weight Reconciliation', path: '/admin/weight-reconciliation' },
-      { label: 'Dispute Management', path: '/admin/dispute-management' },
     ],
   },
   {
     label: 'Insights',
     icon: IconChartBar,
     children: [
-      { label: 'Developer Logs', path: '/admin/developer' },
-      { label: 'Notifications', path: '/admin/notifications' },
+      { label: 'Reports', path: '/admin/reports' },
+      { label: 'Activity Log', path: '/admin/activity-log' },
     ],
   },
   {
@@ -72,8 +68,6 @@ const sidebarItems = [
     icon: IconCalculator,
     children: [
       { label: 'Rate Calculator', path: '/admin/rate-calculator' },
-      { label: 'Order Tracking', path: '/admin/order-tracking' },
-      { label: 'API Integration', path: '/admin/api-integration' },
     ],
   },
   {
@@ -81,28 +75,28 @@ const sidebarItems = [
     icon: IconSettings,
     children: [
       { label: 'Couriers', path: '/admin/couriers' },
-      { label: 'Courier Credentials', path: '/admin/courier-credentials' },
       { label: 'Service Providers', path: '/admin/service-providers' },
       { label: 'Serviceability', path: '/admin/serviceability' },
-      { label: 'B2B Pricing', path: '/admin/pricing/b2b' },
+      { label: 'Manual Serviceability', path: '/admin/manual-serviceability' },
       { label: 'B2C Pricing', path: '/admin/pricing/b2c' },
-      { label: 'Payment Options', path: '/admin/settings/payment-options' },
+      { label: 'B2B Pricing', path: '/admin/pricing/b2b' },
     ],
   },
   {
     label: 'Marketing',
     icon: IconSpeakerphone,
     children: [
-      { label: 'About Us Page', path: '/admin/about-us' },
-      { label: 'Plans', path: '/admin/plans' },
+      { label: 'All Blogs', path: '/admin/blogs' },
+      { label: 'Create Blog', path: '/admin/create-blog' },
     ],
   },
   {
     label: 'Settings',
     icon: IconUserCircle,
     children: [
-      { label: 'Change Password', path: '/admin/settings/change-password' },
-      { label: 'Billing Preferences', path: '/admin/billing-preferences' },
+      { label: 'My Account', path: '/admin/account' },
+      { label: 'Notifications', path: '/admin/notifications' },
+      { label: 'Notification Settings', path: '/admin/notifications/settings' },
     ],
   },
 ]
@@ -115,6 +109,19 @@ const isItemActive = (pathname, item) => {
 const SidebarContent = ({ logoText, sidebarWidth }) => {
   const location = useLocation()
   const [openGroups, setOpenGroups] = React.useState({})
+  const sidebarBg = useColorModeValue('#ffffff', '#161B22')
+  const borderColor = useColorModeValue('#E2E8F0', '#30363D')
+  const logoColor = useColorModeValue('#0F172A', '#E6EDF3')
+  const itemColor = useColorModeValue('#64748B', '#8B949E')
+  const itemHoverBg = useColorModeValue('#F9FAFB', '#21262D')
+  const itemHoverColor = useColorModeValue('#0F172A', '#E6EDF3')
+  const itemActiveBg = useColorModeValue('#EDE9FE', '#242349')
+  const itemActiveColor = useColorModeValue('#6C5CE7', '#6C5CE7')
+  const iconColor = useColorModeValue('#94A3B8', '#8B949E')
+  const childColor = useColorModeValue('#64748B', '#8B949E')
+  const childActiveBg = useColorModeValue('#EDE9FE', '#242349')
+  const childActiveColor = useColorModeValue('#6C5CE7', '#6C5CE7')
+  const scrollbarThumb = useColorModeValue('#CBD5E1', '#6E7681')
 
   React.useEffect(() => {
     const nextOpen = {}
@@ -132,7 +139,7 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
 
   const renderIcon = (Icon, active) => (
     <Box
-      color={active ? '#7c5cff' : '#9aa4b2'}
+      color={active ? itemActiveColor : iconColor}
       display="flex"
       alignItems="center"
       justifyContent="center"
@@ -147,8 +154,9 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
     <Box
       h="100vh"
       w={`${sidebarWidth}px`}
-      bg="#151b23"
-      borderRight="1px solid #2a313a"
+      bg={sidebarBg}
+      borderRight="1px solid"
+      borderColor={borderColor}
       position="fixed"
       left="0"
       top="0"
@@ -157,14 +165,14 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
       css={{
         scrollbarWidth: 'thin',
         '&::-webkit-scrollbar': { width: '5px' },
-        '&::-webkit-scrollbar-track': { background: '#151b23' },
+        '&::-webkit-scrollbar-track': { background: sidebarBg },
         '&::-webkit-scrollbar-thumb': {
-          background: '#3a4350',
+          background: scrollbarThumb,
           borderRadius: '4px',
         },
       }}
     >
-      <Flex h="70px" px="28px" align="center" gap="14px" borderBottom="1px solid #2a313a">
+      <Flex h="70px" px="28px" align="center" gap="14px" borderBottom="1px solid" borderColor={borderColor}>
         <Box
           as="img"
           src={brandIdentity.logoPath}
@@ -174,7 +182,7 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
           borderRadius="50%"
           objectFit="cover"
         />
-        <Text color="#f8fafc" fontSize="20px" fontWeight="800" letterSpacing="-0.02em">
+        <Text color={logoColor} fontSize="22px" fontWeight="800" letterSpacing="0">
           {logoText || 'Admin Panel'}
         </Text>
       </Flex>
@@ -188,14 +196,14 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
             return (
               <NavLink key={item.label} to={item.path}>
                 <Flex
-                  h="45px"
+                  h="39px"
                   px="16px"
                   align="center"
                   gap="12px"
                   borderRadius="8px"
-                  bg={active ? '#29284f' : 'transparent'}
-                  color={active ? '#7c5cff' : '#a8b3c2'}
-                  _hover={{ bg: active ? '#29284f' : '#1d242d', color: '#f8fafc' }}
+                  bg={active ? itemActiveBg : 'transparent'}
+                  color={active ? itemActiveColor : itemColor}
+                  _hover={{ bg: active ? itemActiveBg : itemHoverBg, color: itemHoverColor }}
                   transition="all 0.16s ease"
                 >
                   {renderIcon(Icon, active)}
@@ -214,16 +222,16 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
               <Button
                 type="button"
                 onClick={() => toggleGroup(item.label)}
-                h="45px"
+                h="39px"
                 w="100%"
                 px="16px"
                 justifyContent="space-between"
                 borderRadius="8px"
-                bg={active ? '#29284f' : 'transparent'}
-                color={active ? '#7c5cff' : '#a8b3c2'}
+                bg={active ? itemActiveBg : 'transparent'}
+                color={active ? itemActiveColor : itemColor}
                 fontWeight="500"
-                _hover={{ bg: active ? '#29284f' : '#1d242d', color: '#f8fafc' }}
-                _active={{ bg: '#29284f' }}
+                _hover={{ bg: active ? itemActiveBg : itemHoverBg, color: itemHoverColor }}
+                _active={{ bg: itemActiveBg }}
               >
                 <Flex align="center" gap="12px">
                   {renderIcon(Icon, active)}
@@ -234,20 +242,20 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
                 </Box>
               </Button>
               <Collapse in={open} animateOpacity>
-                <Stack spacing="4px" mt="6px" mb="4px" pl="42px">
+                <Stack spacing="5px" mt="8px" mb="8px" pl="48px">
                   {item.children.map((child) => {
                     const childActive = location.pathname.startsWith(child.path)
                     return (
                       <NavLink key={child.path} to={child.path}>
                         <Box
                           px="12px"
-                          py="8px"
+                          py="9px"
                           borderRadius="7px"
-                          color={childActive ? '#f8fafc' : '#8f9bad'}
-                          bg={childActive ? '#202733' : 'transparent'}
+                          color={childActive ? childActiveColor : childColor}
+                          bg={childActive ? childActiveBg : 'transparent'}
                           fontSize="14px"
                           fontWeight={childActive ? '700' : '500'}
-                          _hover={{ bg: '#202733', color: '#f8fafc' }}
+                          _hover={{ bg: childActiveBg, color: childActiveColor }}
                         >
                           {child.label}
                         </Box>

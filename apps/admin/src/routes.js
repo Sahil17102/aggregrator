@@ -16,6 +16,7 @@ import {
   IconTrack,
   IconTruck,
   IconUser,
+  IconUsers,
 } from '@tabler/icons-react'
 import { FaMoneyBill } from 'react-icons/fa'
 import { MdAccountBalanceWallet } from 'react-icons/md'
@@ -31,6 +32,7 @@ import { AdminRoute } from 'views/Auth/AdminRoute'
 import SignIn from 'views/Auth/SignIn'
 import AdminBillingInvoices from 'views/Billing/AdminBillingInvoices'
 import AdminBillingPreferences from 'views/Billing/AdminBillingPreferences'
+import Blogs from 'views/Blogs/Blogs'
 import AdminCodRemittancePage from 'views/CodRemittance/AdminCodRemittancePage'
 import Couriers from 'views/Couriers/Couriers'
 import CourierCredentials from 'views/Couriers/CourierCredentials'
@@ -56,6 +58,7 @@ import AdminWallets from 'views/Wallets/AdminWallets'
 import AdminDisputeManagement from 'views/WeightReconciliation/AdminDisputeManagement'
 import AdminWeightReconciliationDashboard from 'views/WeightReconciliation/AdminWeightReconciliationDashboard'
 import ZoneMappingsPage from 'views/Zones/ZoneMappingsPage'
+import CreateBlog from './components/Blogs/CreateBlog'
 
 // Lazy load pricing management pages
 const B2BPricingManagement = lazy(() => import('views/Pricing/B2BPricingManagement'))
@@ -142,7 +145,7 @@ const dashRoutes = [
   },
   {
     path: '/users-management',
-    name: 'Users Management',
+    name: 'Sellers',
     icon: <IconUser size={20} />,
     component: () => (
       <AdminRoute>
@@ -150,6 +153,18 @@ const dashRoutes = [
       </AdminRoute>
     ),
     layout: '/admin',
+  },
+  {
+    path: '/notifications/settings',
+    name: 'Notification Settings',
+    icon: <IconSettings />,
+    component: () => (
+      <AdminRoute>
+        <AdminNotificationsPage />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
   },
   {
     path: '/notifications',
@@ -167,7 +182,7 @@ const dashRoutes = [
   // Plan Management
   {
     path: '/plans',
-    name: 'Plan Management',
+    name: 'Plans',
     icon: <IconStar size={19} />,
     component: () => (
       <AdminRoute>
@@ -175,6 +190,18 @@ const dashRoutes = [
       </AdminRoute>
     ),
     layout: '/admin',
+  },
+  {
+    path: '/team-members',
+    name: 'Team Members',
+    icon: <IconUsers size={20} />,
+    component: () => (
+      <AdminRoute>
+        <UsersManagementPage />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
   },
 
   // ========== SHIPPING & LOGISTICS ==========
@@ -241,6 +268,18 @@ const dashRoutes = [
         layout: '/admin',
       },
 
+      {
+        path: '/manual-serviceability',
+        name: 'Manual Serviceability',
+        icon: <IoLocation />,
+        component: () => (
+          <AdminRoute>
+            <ServiceabilityPage />
+          </AdminRoute>
+        ),
+        layout: '/admin',
+        show: false,
+      },
       {
         path: '/pricing/b2b',
         name: 'B2B',
@@ -325,6 +364,30 @@ const dashRoutes = [
         layout: '/admin',
       },
     ],
+  },
+  {
+    path: '/reports',
+    name: 'Reports',
+    icon: <IconChartBar size={20} />,
+    component: () => (
+      <AdminRoute>
+        <Dashboard />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
+  },
+  {
+    path: '/activity-log',
+    name: 'Activity Log',
+    icon: <IconTools size={20} />,
+    component: () => (
+      <AdminRoute>
+        <DeveloperLogs />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
   },
 
   // Reconciliation (Weight Discrepancies, Disputes)
@@ -453,17 +516,17 @@ const dashRoutes = [
   // Support
   // Place the more specific route first so it doesn't get shadowed by `/support`
   {
-    path: '/about-us',
-    name: 'About Us Page',
-    icon: <IconInfoCircle />,
+    path: '/support-tickets',
+    name: 'Support',
+    icon: <IconHelpCircle />,
     component: () => (
       <AdminRoute>
-        <AboutUsEditor />
+        <AdminTicketDashboard />
       </AdminRoute>
     ),
     layout: '/admin',
+    show: false,
   },
-
   {
     path: '/support',
     name: 'Support',
@@ -474,6 +537,43 @@ const dashRoutes = [
       </AdminRoute>
     ),
     layout: '/admin',
+  },
+
+  {
+    path: '/blogs',
+    name: 'All Blogs',
+    icon: <IconInfoCircle />,
+    component: () => (
+      <AdminRoute>
+        <Blogs />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
+  },
+  {
+    path: '/create-blog/:id',
+    name: 'Edit Blog',
+    icon: <IconInfoCircle />,
+    component: () => (
+      <AdminRoute>
+        <CreateBlog />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
+  },
+  {
+    path: '/create-blog',
+    name: 'Create Blog',
+    icon: <IconInfoCircle />,
+    component: () => (
+      <AdminRoute>
+        <CreateBlog />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
   },
 
   // ========== SETTINGS ==========
@@ -499,7 +599,18 @@ const dashRoutes = [
     ),
     layout: '/admin',
   },
-
+  {
+    path: '/account',
+    name: 'My Account',
+    icon: <IconUser />,
+    component: () => (
+      <AdminRoute>
+        <AdminChangePassword />
+      </AdminRoute>
+    ),
+    layout: '/admin',
+    show: false,
+  },
   {
     path: '/developer',
     name: 'Developer',

@@ -14,20 +14,36 @@ import { breakpoints } from './foundations/breakpoints'
 import { globalStyles } from './styles'
 
 const fieldBase = {
-  borderRadius: '10px',
-  borderColor: 'rgba(13,27,77,0.12)',
-  bg: 'rgba(255,255,255,0.86)',
+  borderRadius: '8px',
+  borderColor: '#E2E8F0',
+  bg: '#FFFFFF',
   fontWeight: '600',
   _placeholder: {
     color: 'gray.500',
   },
   _hover: {
-    borderColor: 'rgba(13,27,77,0.24)',
+    borderColor: '#CBD5E1',
   },
   _focusVisible: {
-    borderColor: 'accent.500',
-    boxShadow: '0 0 0 4px rgba(255, 138, 40, 0.2)',
-    bg: 'rgba(255,255,255,0.9)',
+    borderColor: 'brand.500',
+    boxShadow: '0 0 0 3px rgba(108, 92, 231, 0.18)',
+    bg: '#FFFFFF',
+  },
+  _dark: {
+    bg: '#161B22',
+    borderColor: '#30363D',
+    color: '#E6EDF3',
+    _placeholder: {
+      color: '#6E7681',
+    },
+    _hover: {
+      borderColor: '#3f4652',
+    },
+    _focusVisible: {
+      borderColor: '#6C5CE7',
+      boxShadow: '0 0 0 3px rgba(108, 92, 231, 0.22)',
+      bg: '#161B22',
+    },
   },
 }
 
@@ -106,7 +122,7 @@ const componentOverrides = {
         simple: {
           table: {
             borderCollapse: 'separate',
-            borderSpacing: '0 10px',
+            borderSpacing: '0',
           },
           thead: {
             tr: {
@@ -116,28 +132,30 @@ const componentOverrides = {
                 fontWeight: '800',
                 fontSize: '11px',
                 color: 'gray.600',
-                borderColor: 'rgba(13,27,77,0.12)',
-                bg: 'transparent',
-                pb: '10px',
+                borderColor: '#E2E8F0',
+                bg: '#F8FAFC',
+                py: '14px',
+                _dark: {
+                  color: '#8B949E',
+                  borderColor: '#30363D',
+                  bg: '#1a2234',
+                },
               },
             },
           },
           tbody: {
             tr: {
               td: {
-                bg: 'rgba(255,255,255,0.78)',
-                borderColor: 'rgba(13,27,77,0.08)',
+                bg: '#FFFFFF',
+                borderColor: '#E2E8F0',
                 fontSize: '14px',
-                color: 'gray.800',
-                py: '16px',
-              },
-              '& td:first-of-type': {
-                borderTopLeftRadius: '10px',
-                borderBottomLeftRadius: '10px',
-              },
-              '& td:last-of-type': {
-                borderTopRightRadius: '10px',
-                borderBottomRightRadius: '10px',
+                color: '#0F172A',
+                py: '18px',
+                _dark: {
+                  bg: '#161B22',
+                  borderColor: '#30363D',
+                  color: '#E6EDF3',
+                },
               },
             },
           },

@@ -9,15 +9,15 @@ export const globalStyles = {
   styles: {
     global: (props) => ({
       body: {
-        bg: mode('#0D1117', '#0D1117')(props),
-        color: mode('gray.900', 'whiteAlpha.900')(props),
+        bg: mode('#FAFBFE', '#0D1117')(props),
+        color: mode('#0F172A', '#E6EDF3')(props),
         fontFamily: brandFonts.body,
         backgroundImage: 'none',
         backgroundAttachment: 'fixed',
       },
       html: {
         fontFamily: brandFonts.body,
-        bg: '#0D1117',
+        bg: mode('#FAFBFE', '#0D1117')(props),
       },
       '#root': {
         minHeight: '100vh',
@@ -26,13 +26,13 @@ export const globalStyles = {
         boxSizing: 'border-box',
       },
       '.chakra-button': {
-        borderRadius: '10px !important',
+        borderRadius: '8px !important',
         minHeight: '40px',
         alignItems: 'center',
         justifyContent: 'center',
       },
       '.chakra-icon-button': {
-        borderRadius: '10px !important',
+        borderRadius: '8px !important',
       },
       '.admin-card': {
         borderRadius: '12px !important',
@@ -41,7 +41,7 @@ export const globalStyles = {
         borderRadius: '16px !important',
       },
       '.chakra-input, .chakra-select, .chakra-textarea': {
-        borderRadius: '10px !important',
+        borderRadius: '8px !important',
       },
       '::selection': {
         background: mode('brand.100', 'accent.600')(props),
@@ -51,7 +51,7 @@ export const globalStyles = {
         height: '10px',
       },
       '::-webkit-scrollbar-track': {
-        background: '#0D1117',
+        background: mode('#FAFBFE', '#0D1117')(props),
       },
       '::-webkit-scrollbar-thumb': {
         background: 'rgba(139, 148, 158, 0.65)',
