@@ -1,10 +1,12 @@
 import { alpha, Box, Button, LinearProgress, Stack, Typography } from '@mui/material'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   TbAlertTriangle,
+  TbArrowRight,
   TbCalculator,
   TbChartBar,
+  TbCheck,
   TbCreditCard,
   TbCube,
   TbPackage,
@@ -13,6 +15,7 @@ import {
   TbShieldCheck,
   TbTruckDelivery,
   TbWallet,
+  TbX,
 } from 'react-icons/tb'
 import { useAuth } from '../../context/auth/AuthContext'
 import { useMerchantReadiness } from '../../hooks/useMerchantReadiness'
@@ -40,9 +43,10 @@ export default function Home() {
   const navigate = useNavigate()
   const { walletBalance, user } = useAuth()
   const { progress } = useMerchantReadiness()
+  const [showKycBanner, setShowKycBanner] = useState(true)
 
   const displayName = user?.companyInfo?.contactPerson || user?.name || 'Sahil Mittal'
-  const firstName = displayName.split(' ')[0]
+  const formattedWalletBalance = `\u20B9${Number(walletBalance ?? 0).toLocaleString('en-IN')}`
 
   const statCards = useMemo(
     () => [
@@ -52,7 +56,7 @@ export default function Home() {
       { label: 'RTO Active', value: '0', icon: <TbRefresh />, color: ORANGE },
       {
         label: 'Wallet',
-        value: `₹${Number(walletBalance ?? 0).toLocaleString('en-IN')}`,
+        value: formattedWalletBalance,
         icon: <TbWallet />,
         color: PURPLE,
         action: '+ Recharge',
@@ -81,55 +85,82 @@ export default function Home() {
   return (
     <Box sx={{ bgcolor: PAGE_BG, color: TEXT, minHeight: '100%', pb: 5 }}>
       <Stack spacing={3}>
-        <Box
-          sx={{
-            ...cardSx,
-            minHeight: 92,
-            px: { xs: 2, md: 3.2 },
-            py: 2,
-            borderColor: alpha('#ffffff', 0.86),
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr auto' },
-            gap: 2,
-            alignItems: 'center',
-          }}
-        >
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Box sx={{ color: ORANGE, display: 'grid', placeItems: 'center' }}>
-              <TbShieldCheck size={22} />
-            </Box>
-            <Box>
-              <Typography sx={{ color: ORANGE, fontWeight: 900, fontSize: '1.05rem' }}>
-                Complete Your KYC
-              </Typography>
-              <Typography sx={{ color: DIM, fontWeight: 600 }}>
-                Verify your identity to unlock COD orders, wallet withdrawals, and more.
-              </Typography>
-            </Box>
-          </Stack>
-          <Button
-            variant="contained"
-            endIcon={<TbPlus />}
-            onClick={() => navigate('/profile/kyc_details')}
+        {showKycBanner ? (
+          <Box
             sx={{
-              justifySelf: { xs: 'start', md: 'end' },
-              bgcolor: PURPLE,
-              color: '#ffffff',
-              borderRadius: 2,
-              px: 2.6,
-              py: 1.1,
-              fontWeight: 900,
-              textTransform: 'none',
-              '&:hover': { bgcolor: '#6547ea' },
+              ...cardSx,
+              minHeight: 92,
+              px: { xs: 2, md: 3.2 },
+              py: 2,
+              pr: { xs: 5, md: 3.2 },
+              borderColor: alpha('#ffffff', 0.86),
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr auto' },
+              gap: 2,
+              alignItems: 'center',
+              position: 'relative',
             }}
           >
-            Start KYC
-          </Button>
-        </Box>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box sx={{ color: ORANGE, display: 'grid', placeItems: 'center' }}>
+                <TbShieldCheck size={22} />
+              </Box>
+              <Box>
+                <Typography sx={{ color: ORANGE, fontWeight: 900, fontSize: '1.05rem' }}>
+                  Complete Your KYC
+                </Typography>
+                <Typography sx={{ color: DIM, fontWeight: 600 }}>
+                  Verify your identity to unlock COD orders, wallet withdrawals, and more.
+                </Typography>
+              </Box>
+            </Stack>
+            <Button
+              variant="contained"
+              endIcon={<TbArrowRight />}
+              onClick={() => navigate('/profile/kyc_details')}
+              sx={{
+                justifySelf: { xs: 'start', md: 'end' },
+                bgcolor: PURPLE,
+                color: '#ffffff',
+                borderRadius: 2,
+                px: 2.6,
+                py: 1.1,
+                fontWeight: 900,
+                textTransform: 'none',
+                '&:hover': { bgcolor: '#6547ea' },
+              }}
+            >
+              Start KYC
+            </Button>
+            <Box
+              component="button"
+              type="button"
+              aria-label="Dismiss KYC reminder"
+              onClick={() => setShowKycBanner(false)}
+              sx={{
+                position: 'absolute',
+                top: 14,
+                right: 14,
+                width: 26,
+                height: 26,
+                border: 0,
+                borderRadius: '50%',
+                bgcolor: 'transparent',
+                color: DIM,
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer',
+                '&:hover': { color: TEXT, bgcolor: alpha('#ffffff', 0.07) },
+              }}
+            >
+              <TbX size={18} />
+            </Box>
+          </Box>
+        ) : null}
 
         <Box>
           <Typography sx={{ color: TEXT, fontSize: '1.55rem', fontWeight: 900 }}>
-            Good afternoon, {firstName}!
+            Good afternoon, {displayName}!
           </Typography>
           <Typography sx={{ color: MUTED, mt: 0.4, fontSize: '1rem' }}>
             Here's your daily overview.
@@ -234,11 +265,23 @@ export default function Home() {
                     borderRadius: '50%',
                     border: `2px solid ${step.done ? GREEN : '#2d3744'}`,
                     bgcolor: step.done ? GREEN : 'transparent',
+                    color: '#ffffff',
                     flexShrink: 0,
+                    display: 'grid',
+                    placeItems: 'center',
                   }}
-                />
+                >
+                  {step.done ? <TbCheck size={15} strokeWidth={3} /> : null}
+                </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ color: step.done ? alpha(TEXT, 0.6) : TEXT, fontWeight: 850 }} noWrap>
+                  <Typography
+                    sx={{
+                      color: step.done ? alpha(TEXT, 0.6) : TEXT,
+                      fontWeight: 850,
+                      textDecoration: step.done ? 'line-through' : 'none',
+                    }}
+                    noWrap
+                  >
                     {step.title}
                   </Typography>
                   <Typography sx={{ color: MUTED, fontSize: '0.78rem' }} noWrap>
@@ -325,7 +368,7 @@ export default function Home() {
               Recent Orders
             </Typography>
             <Typography onClick={() => navigate('/orders/list')} sx={{ color: PURPLE, fontWeight: 800, cursor: 'pointer' }}>
-              View all →
+              View all {'\u2192'}
             </Typography>
           </Stack>
           <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 300 }}>
