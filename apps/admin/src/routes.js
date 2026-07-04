@@ -3,6 +3,7 @@ import {
   IconAlertTriangle,
   IconArrowBackUp,
   IconBell,
+  IconChartBar,
   IconCoinRupee,
   IconDashboard,
   IconHelpCircle,
