@@ -3,179 +3,141 @@ import { alpha } from '@mui/material/styles'
 import { FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa6'
 import { FiMail, FiMapPin, FiPhone } from 'react-icons/fi'
 import { Link as RouterLink } from 'react-router-dom'
-import BrandLogo from '../brand/BrandLogo'
-import { brand, brandIdentity } from '../../theme/brand'
+import { brandIdentity } from '../../theme/brand'
 
-const platformLinks = [
-  { label: 'Portal Login', to: '/login' },
-  { label: 'Tracking', to: '/tracking' },
-  { label: 'Rate Calculator', to: '/rate-calculator' },
-  { label: 'Weight Calculator', to: '/weight-calculator' },
+const productLinks = [
+  { label: 'Platform', to: '/platform' },
+  { label: 'Rate Calculator', to: '/resources/rate-calculator' },
+  { label: 'Weight Estimator', to: '/resources/weight-estimator' },
+  { label: 'Track Shipment', to: '/track' },
+  { label: 'Integrations', to: '/integrations/sales-channels' },
 ]
 
 const companyLinks = [
-  { label: 'Portal Login', to: '/login' },
-  { label: 'Track Shipment', to: '/tracking' },
-  { label: 'Terms & Conditions', to: '/terms-and-conditions' },
-  { label: 'Privacy Policy', to: '/privacy-policy' },
+  { label: 'About Us', to: '/about' },
+  { label: 'Blogs', to: '/blogs' },
+  { label: 'Careers', to: '/careers' },
+  { label: 'Contact Us', to: '/contact' },
+  { label: 'Partner With Us', to: '/partners' },
 ]
 
-const footerText = '#FFFFFF'
-const footerMuted = alpha('#FFFFFF', 0.78)
-const footerSoft = alpha('#FFFFFF', 0.66)
+const legalLinks = [
+  { label: 'Terms of Service', to: '/terms' },
+  { label: 'Privacy Policy', to: '/privacy' },
+  { label: 'Refund Policy', to: '/refund' },
+  { label: 'Cookie Policy', to: '/cookies' },
+]
+
+function FooterLink({ label, to }: { label: string; to: string }) {
+  return (
+    <Box
+      component={RouterLink}
+      to={to}
+      sx={{
+        color: alpha('#fff', 0.58),
+        fontSize: '0.88rem',
+        fontWeight: 600,
+        textDecoration: 'none',
+        '&:hover': { color: '#fff' },
+      }}
+    >
+      {label}
+    </Box>
+  )
+}
 
 export default function PublicFooter() {
   return (
-    <Box component="footer" sx={{ mt: 10, pb: 4, px: { xs: 2, sm: 3 } }}>
-      <Container maxWidth="xl" sx={{ px: 0 }}>
-        <Box
-          sx={{
-            borderRadius: { xs: '32px', md: '42px' },
-            background:
-              'linear-gradient(145deg, #07143D 0%, #0D2A63 48%, #154585 100%)',
-            border: `1px solid ${alpha('#FFFFFF', 0.16)}`,
-            boxShadow: '0 24px 60px rgba(7, 20, 61, 0.28)',
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', lg: '1.2fr 0.8fr 0.8fr 1fr' },
-              gap: { xs: 3, lg: 4 },
-              px: { xs: 2.4, md: 3.2, lg: 4 },
-              py: { xs: 3, md: 4 },
-            }}
-          >
-            <Stack spacing={1.5}>
-              <RouterLink to="/" aria-label={`${brandIdentity.name} home`}>
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    bgcolor: alpha('#FFFFFF', 0.96),
-                    borderRadius: 2,
-                    px: 1.2,
-                    py: 0.8,
-                    boxShadow: '0 14px 30px rgba(0, 0, 0, 0.18)',
-                  }}
-                >
-                  <BrandLogo sx={{ width: { xs: 148, sm: 166 } }} />
-                </Box>
-              </RouterLink>
-              <Typography sx={{ color: footerMuted, lineHeight: 1.75, maxWidth: 360 }}>
-                {brandIdentity.tagline} Premium shipping infrastructure for teams that want better
-                courier visibility, cleaner rates, and modern delivery experiences.
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                {[
-                  { href: 'https://www.linkedin.com/', icon: <FaLinkedinIn size={15} /> },
-                  { href: 'https://www.instagram.com/', icon: <FaInstagram size={15} /> },
-                  { href: 'https://www.facebook.com/', icon: <FaFacebookF size={15} /> },
-                ].map((item) => (
-                  <IconButton
-                    key={item.href}
-                    component="a"
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 999,
-                      color: footerText,
-                      bgcolor: alpha('#FFFFFF', 0.12),
-                      border: `1px solid ${alpha('#FFFFFF', 0.12)}`,
-                      '&:hover': {
-                        bgcolor: alpha(brand.accent, 0.2),
-                        color: footerText,
-                      },
-                    }}
-                  >
-                    {item.icon}
-                  </IconButton>
-                ))}
-              </Stack>
-            </Stack>
-
-            <Stack spacing={1.3}>
-              <Typography sx={{ fontWeight: 800, color: footerText }}>Platform</Typography>
-              {platformLinks.map((item) => (
-                <Box
-                  key={item.to}
-                  component={RouterLink}
-                  to={item.to}
-                  sx={{
-                    color: footerMuted,
-                    fontWeight: 600,
-                    '&:hover': {
-                      color: footerText,
-                    },
-                  }}
-                >
-                  {item.label}
-                </Box>
-              ))}
-            </Stack>
-
-            <Stack spacing={1.3}>
-              <Typography sx={{ fontWeight: 800, color: footerText }}>Company</Typography>
-              {companyLinks.map((item) => (
-                <Box
-                  key={item.to}
-                  component={RouterLink}
-                  to={item.to}
-                  sx={{
-                    color: footerMuted,
-                    fontWeight: 600,
-                    '&:hover': {
-                      color: footerText,
-                    },
-                  }}
-                >
-                  {item.label}
-                </Box>
-              ))}
-            </Stack>
-
+    <Box
+      component="footer"
+      sx={{
+        bgcolor: '#0f172a',
+        color: '#fff',
+        backgroundImage: 'linear-gradient(120deg, #0f172a 0%, #11183f 54%, #17154a 100%)',
+        pt: { xs: 8, md: 10 },
+        pb: 5,
+      }}
+    >
+      <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.45fr repeat(3, 1fr)' }, gap: { xs: 5, md: 6 } }}>
+          <Stack spacing={2.2}>
+            <Box component={RouterLink} to="/" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.2, color: '#fff', textDecoration: 'none', fontWeight: 800 }}>
+              <Box component="img" src={brandIdentity.logoSrc} alt={brandIdentity.name} sx={{ width: 38, height: 38, borderRadius: '50%' }} />
+              {brandIdentity.name}
+            </Box>
+            <Typography sx={{ color: alpha('#fff', 0.58), lineHeight: 1.7, maxWidth: 360, fontSize: '0.95rem' }}>
+              {brandIdentity.tagline}
+            </Typography>
             <Stack spacing={1.4}>
-              <Typography sx={{ fontWeight: 800, color: footerText }}>Contact</Typography>
-              <Stack direction="row" spacing={1.2} alignItems="flex-start">
-                <Box sx={{ color: brand.accent, mt: 0.15, lineHeight: 0 }}>
-                  <FiPhone size={18} />
+              <Stack direction="row" spacing={1.2} alignItems="center">
+                <FiMail color="#6c5ce7" />
+                <Box component="a" href={`mailto:${brandIdentity.supportEmail}`} sx={{ color: alpha('#fff', 0.62), fontWeight: 600 }}>
+                  {brandIdentity.supportEmail}
                 </Box>
-                <Box component="a" href={`tel:${brandIdentity.supportPhone}`} sx={{ color: footerMuted }}>
+              </Stack>
+              <Stack direction="row" spacing={1.2} alignItems="center">
+                <FiPhone color="#6c5ce7" />
+                <Box component="a" href="tel:+919403891046" sx={{ color: alpha('#fff', 0.62), fontWeight: 600 }}>
                   {brandIdentity.supportPhone}
                 </Box>
               </Stack>
               <Stack direction="row" spacing={1.2} alignItems="flex-start">
-                <Box sx={{ color: brand.accent, mt: 0.15, lineHeight: 0 }}>
-                  <FiMail size={18} />
+                <FiMapPin color="#6c5ce7" style={{ marginTop: 3, flexShrink: 0 }} />
+                <Box
+                  component="a"
+                  href="https://maps.google.com/?q=Telipara+Bilaspur+Chhattisgarh"
+                  target="_blank"
+                  rel="noreferrer"
+                  sx={{ color: alpha('#fff', 0.62), fontWeight: 600, maxWidth: 300 }}
+                >
+                  {brandIdentity.supportAddress}
                 </Box>
-                <Box component="a" href={`mailto:${brandIdentity.supportEmail}`} sx={{ color: footerMuted }}>
-                  {brandIdentity.supportEmail}
-                </Box>
-              </Stack>
-              <Stack direction="row" spacing={1.2} alignItems="flex-start">
-                <Box sx={{ color: brand.accent, mt: 0.15, lineHeight: 0 }}>
-                  <FiMapPin size={18} />
-                </Box>
-                <Typography sx={{ color: footerMuted }}>{brandIdentity.supportAddress}</Typography>
               </Stack>
             </Stack>
-          </Box>
+            <Stack direction="row" spacing={1}>
+              {[
+                { href: '#', icon: <FaLinkedinIn size={14} /> },
+                { href: '#', icon: <FaInstagram size={14} /> },
+                { href: '#', icon: <FaFacebookF size={14} /> },
+              ].map((item, index) => (
+                <IconButton
+                  key={index}
+                  component="a"
+                  href={item.href}
+                  sx={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: '50%',
+                    color: alpha('#fff', 0.62),
+                    bgcolor: alpha('#fff', 0.08),
+                    '&:hover': { bgcolor: alpha('#fff', 0.14), color: '#fff' },
+                  }}
+                >
+                  {item.icon}
+                </IconButton>
+              ))}
+            </Stack>
+          </Stack>
 
-          <Box
-            sx={{
-              px: { xs: 2.4, md: 4 },
-              py: 1.5,
-              borderTop: `1px solid ${alpha('#FFFFFF', 0.12)}`,
-              bgcolor: alpha('#031033', 0.32),
-            }}
-          >
-            <Typography sx={{ color: footerSoft, fontSize: '0.9rem' }}>
-              © 2026 {brandIdentity.name}. Built for dependable logistics operations across India.
-            </Typography>
-          </Box>
+          {[
+            ['Product', productLinks],
+            ['Company', companyLinks],
+            ['Legal', legalLinks],
+          ].map(([heading, links]) => (
+            <Stack key={heading as string} spacing={1.35}>
+              <Typography sx={{ color: '#fff', fontWeight: 800, mb: 0.6 }}>{heading as string}</Typography>
+              {(links as typeof productLinks).map((item) => (
+                <FooterLink key={item.label} {...item} />
+              ))}
+            </Stack>
+          ))}
+        </Box>
+
+        <Box sx={{ borderTop: `1px solid ${alpha('#fff', 0.08)}`, mt: 7, pt: 4, display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+          <Typography sx={{ color: alpha('#fff', 0.45), fontSize: '0.82rem' }}>
+            © 2026 {brandIdentity.name}. All rights reserved.
+          </Typography>
+          <Typography sx={{ color: alpha('#fff', 0.45), fontSize: '0.82rem' }}>Made with care in India</Typography>
         </Box>
       </Container>
     </Box>

@@ -13,19 +13,15 @@ import {
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { BiListPlus } from 'react-icons/bi'
 import { CgTrack } from 'react-icons/cg'
-import { FaBalanceScaleLeft } from 'react-icons/fa'
 import { FaClipboardList as FaFileAlt, FaToolbox } from 'react-icons/fa6'
-import { HiDocumentReport } from 'react-icons/hi'
 import {
   MdAccountBalanceWallet,
   MdApps,
   MdDashboard,
   MdExpandMore,
-  MdHome,
   MdKeyboardReturn,
   MdLocalShipping,
   MdOutlineAddBusiness,
-  MdOutlineRateReview,
   MdShoppingCart,
   MdSyncProblem,
 } from 'react-icons/md'
@@ -86,9 +82,9 @@ const navSections: NavSection[] = [
     title: 'Main',
     items: [
       {
-        text: 'Home',
-        icon: <MdHome size={STANDARD_ICON_SIZE} />,
-        path: '/home',
+        text: 'Dashboard',
+        icon: <MdDashboard size={STANDARD_ICON_SIZE} />,
+        path: '/dashboard',
         roles: ['customer', 'admin'],
       },
       {
@@ -102,23 +98,6 @@ const navSections: NavSection[] = [
           { text: 'B2C Orders', path: '/orders/b2c/list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
           { text: 'B2B Orders', path: '/orders/b2b/list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
         ],
-      },
-    ],
-  },
-  {
-    title: 'Analytics',
-    items: [
-      {
-        text: 'Dashboard',
-        icon: <MdDashboard size={STANDARD_ICON_SIZE} />,
-        path: '/dashboard',
-        roles: ['customer', 'admin'],
-      },
-      {
-        text: 'Reports',
-        icon: <HiDocumentReport size={STANDARD_ICON_SIZE} />,
-        path: '/reports',
-        roles: ['customer', 'admin'],
       },
     ],
   },
@@ -143,16 +122,10 @@ const navSections: NavSection[] = [
         path: '/billing/invoice_management',
         roles: ['customer', 'admin'],
       },
-      {
-        text: 'Reconciliation',
-        icon: <FaBalanceScaleLeft size={STANDARD_ICON_SIZE} />,
-        path: '/reconciliation/weight',
-        roles: ['customer', 'admin'],
-      },
     ],
   },
   {
-    title: 'Other',
+    title: 'Operations',
     items: [
       {
         text: 'Operations',
@@ -162,18 +135,34 @@ const navSections: NavSection[] = [
         children: [
           { text: 'NDR', path: '/ops/ndr', icon: <MdSyncProblem size={STANDARD_ICON_SIZE} /> },
           { text: 'RTO', path: '/ops/rto', icon: <MdKeyboardReturn size={STANDARD_ICON_SIZE} /> },
-          { text: 'Couriers', path: '/couriers/partners', icon: <MdLocalShipping size={STANDARD_ICON_SIZE} /> },
-          { text: 'Channels', path: '/channels/connected', icon: <MdApps size={STANDARD_ICON_SIZE} /> },
-          { text: 'Channel Integrations', path: '/channels/channel_list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
         ],
       },
+    ],
+  },
+  {
+    title: 'Integrations',
+    items: [
+      {
+        text: 'Integrations',
+        icon: <MdApps size={STANDARD_ICON_SIZE} />,
+        path: '/channels',
+        roles: ['customer', 'admin'],
+        children: [
+          { text: 'Couriers', path: '/couriers/partners', icon: <MdLocalShipping size={STANDARD_ICON_SIZE} /> },
+          { text: 'Channels', path: '/channels/connected', icon: <MdApps size={STANDARD_ICON_SIZE} /> },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Tools',
+    items: [
       {
         text: 'Tools',
         icon: <FaToolbox size={STANDARD_ICON_SIZE} />,
         path: '/tools',
         roles: ['customer', 'admin'],
         children: [
-          { text: 'Rate Card', path: '/tools/rate_card', icon: <MdOutlineRateReview size={STANDARD_ICON_SIZE} /> },
           { text: 'Rate Calculator', path: '/tools/rate_calculator', icon: <TbReportAnalytics size={STANDARD_ICON_SIZE} /> },
           { text: 'Order Tracking', path: '/tools/order_tracking', icon: <CgTrack size={STANDARD_ICON_SIZE} /> },
         ],

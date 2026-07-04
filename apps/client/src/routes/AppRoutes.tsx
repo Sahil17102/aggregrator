@@ -221,7 +221,12 @@ function RoutedApp() {
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/platform" element={<LandingPage />} />
           <Route path="/integrations" element={<Navigate to="/platform#integrations" replace />} />
-          <Route path="/blogs" element={<Navigate to="/platform#support" replace />} />
+          <Route path="/integrations/sales-channels" element={<Navigate to="/platform#integrations" replace />} />
+          <Route path="/blogs" element={<LandingPage />} />
+          <Route path="/about" element={<LandingPage />} />
+          <Route path="/careers" element={<LandingPage />} />
+          <Route path="/contact" element={<LandingPage />} />
+          <Route path="/partners" element={<LandingPage />} />
           <Route path="/admin/*" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signin" element={<SignIn />} />
@@ -230,9 +235,16 @@ function RoutedApp() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/app" element={<AppEntry />} />
           <Route path="/preview" element={<ClientPreview />} />
-          <Route path="/tracking" element={<TrackingRoute />} />
-          <Route path="/rate-calculator" element={<RateCalculator publicView="rate" />} />
-          <Route path="/weight-calculator" element={<RateCalculator publicView="weight" />} />
+          <Route path="/track" element={<TrackingRoute />} />
+          <Route path="/tracking" element={<Navigate to="/track" replace />} />
+          <Route path="/resources/rate-calculator" element={<RateCalculator publicView="rate" />} />
+          <Route path="/resources/weight-estimator" element={<RateCalculator publicView="weight" />} />
+          <Route path="/rate-calculator" element={<Navigate to="/resources/rate-calculator" replace />} />
+          <Route path="/weight-calculator" element={<Navigate to="/resources/weight-estimator" replace />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/refund" element={<CancellationPolicy />} />
+          <Route path="/cookies" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* onboarding */}

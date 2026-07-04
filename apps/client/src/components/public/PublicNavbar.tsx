@@ -18,21 +18,21 @@ interface PublicNavbarProps {
 
 const desktopLinks: NavItem[] = [
   { label: 'Platform', to: '/platform' },
-  { label: 'Blogs', to: '/platform#support' },
-  { label: 'Track Shipment', to: '/tracking' },
+  { label: 'Blogs', to: '/blogs' },
+  { label: 'Track Shipment', to: '/track' },
 ]
 
 const dropdownLinks: NavItem[] = [
-  { label: 'Integrations', to: '/platform#integrations' },
-  { label: 'Tools', to: '/rate-calculator' },
+  { label: 'Integrations', to: '/integrations/sales-channels' },
+  { label: 'Tools', to: '/resources/rate-calculator' },
 ]
 
 const mobileLinks: NavItem[] = [
   { label: 'Platform', to: '/platform' },
-  { label: 'Integrations', to: '/platform#integrations' },
-  { label: 'Tools', to: '/rate-calculator' },
-  { label: 'Blogs', to: '/platform#support' },
-  { label: 'Track Shipment', to: '/tracking' },
+  { label: 'Integrations', to: '/integrations/sales-channels' },
+  { label: 'Tools', to: '/resources/rate-calculator' },
+  { label: 'Blogs', to: '/blogs' },
+  { label: 'Track Shipment', to: '/track' },
 ]
 
 export default function PublicNavbar({
@@ -95,9 +95,9 @@ export default function PublicNavbar({
         justifyContent="space-between"
         sx={{
           mx: 'auto',
-          maxWidth: 1360,
-          minHeight: { xs: 72, lg: 92 },
-          px: { xs: 2, sm: 3, lg: 4 },
+          maxWidth: 1180,
+          minHeight: { xs: 70, lg: 72 },
+          px: { xs: 2, sm: 3 },
         }}
       >
         <Box
@@ -109,7 +109,7 @@ export default function PublicNavbar({
             alignItems: 'center',
             gap: 1.6,
             color: foreground,
-            fontSize: { xs: '1.1rem', md: '1.28rem' },
+            fontSize: { xs: '0.95rem', md: '1rem' },
             fontWeight: 900,
             lineHeight: 1,
             whiteSpace: 'nowrap',
@@ -121,8 +121,8 @@ export default function PublicNavbar({
             src={brandIdentity.logoSrc}
             alt=""
             sx={{
-              width: { xs: 40, lg: 46 },
-              height: { xs: 40, lg: 46 },
+              width: { xs: 38, lg: 44 },
+              height: { xs: 38, lg: 44 },
               borderRadius: '50%',
               objectFit: 'cover',
             }}
@@ -173,17 +173,17 @@ export default function PublicNavbar({
             variant="contained"
             sx={{
               display: { xs: 'none', lg: 'inline-flex' },
-              minWidth: 116,
-              minHeight: 50,
-              px: 2.6,
-              borderRadius: '14px',
-              bgcolor: '#ff751a',
+              minWidth: 92,
+              minHeight: 38,
+              px: 2.2,
+              borderRadius: '8px',
+              bgcolor: '#f97316',
               color: '#FFFFFF',
               fontWeight: 800,
-              fontSize: '1rem',
+              fontSize: '0.84rem',
               boxShadow: 'none',
               '&:hover': {
-                bgcolor: '#f46b10',
+                bgcolor: '#ea580c',
                 boxShadow: 'none',
               },
             }}
@@ -254,12 +254,12 @@ export default function PublicNavbar({
                 mt: 1,
                 minHeight: 42,
                 borderRadius: '10px',
-                bgcolor: '#ff751a',
+                bgcolor: '#f97316',
                 color: '#FFFFFF',
                 fontWeight: 800,
                 boxShadow: 'none',
                 '&:hover': {
-                  bgcolor: '#f46b10',
+                  bgcolor: '#ea580c',
                   boxShadow: 'none',
                 },
               }}

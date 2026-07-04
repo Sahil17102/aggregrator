@@ -1,15 +1,15 @@
 ﻿import { alpha } from '@mui/material/styles'
 
 export const brand = {
-  ink: '#0D1B4D',
-  inkSoft: '#607397',
-  page: '#EEF3FB',
+  ink: '#0F172A',
+  inkSoft: '#64748B',
+  page: '#FAFBFE',
   cream: '#F8FAFE',
-  sky: '#D7E2F3',
+  sky: '#E2E8F0',
   aqua: '#EAF1FB',
-  accent: '#FF8A28',
-  gold: '#FFB15A',
-  line: '#D6E0EF',
+  accent: '#F97316',
+  gold: '#FBBF24',
+  line: '#E2E8F0',
   surface: '#FFFFFF',
   surfaceGlass: 'rgba(255,255,255,0.88)',
   success: '#35B98C',
@@ -26,10 +26,10 @@ export const brandFonts = {
 export const brandIdentity = {
   name: 'Ship Aggregator',
   shortName: 'Ship Aggregator',
-  tagline: 'Ship smarter, ship faster, ship cheaper.',
-  supportEmail: 'ops@choicemee.com',
-  supportPhone: '9906690088',
-  supportAddress: 'Baramulla, Jammu & Kashmir, 193123',
+  tagline: 'A leading courier aggregator company that delivers customized supply chain solutions. ISO (9001:2015) certified.',
+  supportEmail: 'cs@shipaggregator.com',
+  supportPhone: '+91 94038 91046',
+  supportAddress: 'G-10, Bajrang Complex, Telipara, Bilaspur, Chhattisgarh',
   logoSrc: '/favicon.jpg',
 }
 
