@@ -1,29 +1,36 @@
-﻿import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
+import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
 import {
   Box,
   Button,
   Flex,
   FormControl,
-  FormLabel,
   Heading,
   HStack,
   IconButton,
   Input,
   InputGroup,
+  InputLeftElement,
   InputRightElement,
+  SimpleGrid,
   Text,
-  useColorModeValue,
   useToast,
   VStack,
 } from '@chakra-ui/react'
+import {
+  IconChartBar,
+  IconLock,
+  IconMail,
+  IconSettings,
+  IconShieldLock,
+  IconUsers,
+} from '@tabler/icons-react'
 import { motion } from 'framer-motion'
 import { jwtDecode } from 'jwt-decode'
 import { useEffect, useState } from 'react'
 import { useHistory } from 'react-router-dom'
-import { DoorstepCourierScene } from '../../components/Brand/AnimatedCourierScene'
 import { loginAdmin } from '../../services/auth.service'
 import { useAuthStore } from '../../store/useAuthStore'
-import { brand as brandTokens, brandFonts, brandGradients, brandIdentity } from '../../theme/brand'
+import { brandIdentity } from '../../theme/brand'
 
 function isTokenValid(token) {
   try {
@@ -35,22 +42,6 @@ function isTokenValid(token) {
 }
 
 function SignIn() {
-  const pageBg = useColorModeValue(brandTokens.page, '#050B24')
-  const shellBg = useColorModeValue('rgba(255,255,255,0.94)', 'rgba(13, 27, 77, 0.92)')
-  const shellBorder = useColorModeValue('rgba(13,27,77,0.08)', 'rgba(255,255,255,0.12)')
-  const sideBg = useColorModeValue(
-    brandGradients.hero,
-    'linear-gradient(180deg, rgba(13,27,77,0.96) 0%, rgba(22,62,89,0.94) 100%)',
-  )
-  const textPrimary = useColorModeValue(brandTokens.ink, 'whiteAlpha.900')
-  const textSecondary = useColorModeValue(brandTokens.inkSoft, 'whiteAlpha.700')
-  const inputBg = useColorModeValue('rgba(255,255,255,0.94)', 'rgba(38, 30, 25, 0.72)')
-  const inputBorder = useColorModeValue('rgba(13,27,77,0.12)', 'rgba(255,255,255,0.18)')
-  const iconHoverBg = useColorModeValue('rgba(13,27,77,0.06)', 'rgba(255,255,255,0.12)')
-  const chipBg = useColorModeValue('rgba(255,138,40,0.09)', 'rgba(255,255,255,0.08)')
-  const chipBorder = useColorModeValue('rgba(255,138,40,0.18)', 'rgba(255,255,255,0.14)')
-  const brand = useColorModeValue(brandTokens.accent, '#FFC58F')
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -113,224 +104,232 @@ function SignIn() {
     }
   }, [history])
 
+  const featureCards = [
+    {
+      title: 'Secure Access',
+      description: 'Role-based access control for admin operations',
+      icon: IconShieldLock,
+    },
+    {
+      title: 'User Management',
+      description: 'Manage users, plans and permissions',
+      icon: IconUsers,
+    },
+    {
+      title: 'Analytics',
+      description: 'Real-time insights and reporting dashboard',
+      icon: IconChartBar,
+    },
+    {
+      title: 'System Control',
+      description: 'Configure couriers, rates and serviceability',
+      icon: IconSettings,
+    },
+  ]
+
   return (
     <Flex
       minH="100vh"
-      bg={pageBg}
-      align="center"
-      justify="center"
-      px={{ base: 4, md: 6 }}
-      py={{ base: 6, md: 8 }}
+      bg="#171C23"
+      align="stretch"
+      justify="stretch"
       position="relative"
       overflow="hidden"
+      fontFamily="'Plus Jakarta Sans', sans-serif"
     >
-      <Box
-        position="absolute"
-        inset="0"
-        bgImage={useColorModeValue(
-          brandGradients.page,
-          'radial-gradient(circle at 10% 8%, rgba(255,255,255,0.1) 0%, transparent 38%), radial-gradient(circle at 94% 2%, rgba(255,138,40,0.12) 0%, transparent 28%)',
-        )}
-      />
-
       <Flex
         as={motion.div}
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35 }}
         w="100%"
-        maxW="1080px"
-        bg={shellBg}
-        border="1px solid"
-        borderColor={shellBorder}
-        borderRadius={{ base: '14px', lg: '16px' }}
-        boxShadow={useColorModeValue(
-          brandTokens.shadow,
-          '0 28px 72px rgba(0,0,0,0.38)',
-        )}
-        overflow="hidden"
-        direction={{ base: 'column', '2xl': 'row' }}
-        backdropFilter="blur(16px)"
-        zIndex="1"
+        direction={{ base: 'column', lg: 'row' }}
       >
         <Flex
-          display={{ base: 'none', '2xl': 'flex' }}
-          w={{ '2xl': '40%' }}
-          bg={sideBg}
-          color={textPrimary}
-          p={{ base: 6, md: 7 }}
+          w={{ base: '100%', lg: '42%' }}
+          minH={{ base: 'auto', lg: '100vh' }}
+          bg="#070C12"
+          color="white"
           direction="column"
-          justify="flex-start"
-          minH={{ base: '240px', '2xl': 'unset' }}
+          justify="center"
           position="relative"
-          overflow="hidden"
-          borderRight={{ base: 'none', '2xl': '1px solid rgba(13,27,77,0.08)' }}
+          px={{ base: 6, md: 10, xl: '70px' }}
+          py={{ base: 10, lg: 0 }}
         >
-          <VStack align="flex-start" spacing={4} position="relative" zIndex="1">
-            <HStack spacing={2.5} flexWrap="wrap">
-              {['Dispatch', 'Finance', 'Visibility'].map((tag) => (
-                <Box
-                  key={tag}
-                  px={3}
-                  py={1.5}
-                  borderRadius="10px"
-                  bg={chipBg}
-                  border={`1px solid ${chipBorder}`}
-                >
-                  <Text fontSize="xs" fontWeight="700" color={textSecondary}>
-                    {tag}
-                  </Text>
-                </Box>
-              ))}
-            </HStack>
-
-            <HStack spacing={3} align="center">
+          <Box maxW="666px">
+            <HStack spacing="22px" mb={{ base: 12, lg: '88px' }} align="center">
               <Box
                 as="img"
                 src={brandIdentity.logoPath}
                 alt={brandIdentity.name}
-                h="62px"
-                w="224px"
+                h={{ base: '62px', lg: '82px' }}
+                w={{ base: '62px', lg: '82px' }}
                 objectFit="contain"
               />
-              <Text fontSize="sm" fontWeight="800" letterSpacing="0.6px" color={textSecondary}>
-                ADMIN
+              <Text
+                color="#FFFFFF"
+                fontSize={{ base: '2xl', lg: '30px' }}
+                fontWeight="800"
+                letterSpacing="0"
+                lineHeight="1"
+              >
+                Admin Panel
               </Text>
             </HStack>
 
-            <Heading
-              fontFamily={brandFonts.display}
-              fontSize={{ base: '3xl', md: '4xl' }}
-              fontWeight="800"
-              lineHeight="0.98"
-              letterSpacing="-0.04em"
-            >
-              Keep every shipment
-              <Text as="span" display="block" color={brand}>
-                moving with clarity.
+            <Box mb={{ base: 8, lg: '46px' }}>
+              <Heading
+                as="h1"
+                color="#FFFFFF"
+                fontSize={{ base: '38px', md: '48px', xl: '46px' }}
+                fontWeight="800"
+                lineHeight="1.08"
+                letterSpacing="0"
+                mb="18px"
+              >
+                Admin
+                <Text as="span" display="block" color="#FF7A1A">
+                  Control Panel
+                </Text>
+              </Heading>
+              <Text
+                color="#9BA6B5"
+                fontSize={{ base: '16px', md: '18px' }}
+                lineHeight="1.55"
+                maxW="470px"
+                fontWeight="500"
+              >
+                Manage your courier aggregation platform — users, couriers, rates,
+                serviceability, and more.
               </Text>
-            </Heading>
+            </Box>
 
-            <Text color={textSecondary} fontSize="sm" maxW="420px" lineHeight="1.8">
-              Review orders, monitor activity, and manage operations from a cleaner ChoiceMee admin
-              workspace with stronger hierarchy and a calmer daily rhythm.
-            </Text>
-          </VStack>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="666px">
+              {featureCards.map((card) => {
+                const FeatureIcon = card.icon
+                return (
+                  <Box
+                    key={card.title}
+                    minH="178px"
+                    bg="#1D2229"
+                    border="1px solid"
+                    borderColor="#303741"
+                    borderRadius="18px"
+                    px="20px"
+                    py="28px"
+                    boxShadow="inset 0 1px 0 rgba(255,255,255,0.02)"
+                  >
+                    <Box as={FeatureIcon} size={24} color="#FF7A1A" strokeWidth={2.1} mb="28px" />
+                    <Text color="#FFFFFF" fontSize="18px" fontWeight="800" lineHeight="1.2" mb="6px">
+                      {card.title}
+                    </Text>
+                    <Text color="#8D929A" fontSize="15px" lineHeight="1.55" fontWeight="600">
+                      {card.description}
+                    </Text>
+                  </Box>
+                )
+              })}
+            </SimpleGrid>
+          </Box>
         </Flex>
 
         <Flex
-          w={{ base: '100%', '2xl': '60%' }}
+          flex="1"
+          minH={{ base: 'auto', lg: '100vh' }}
+          bg="#171C23"
           align="center"
           justify="center"
-          px={{ base: 5, md: 8 }}
-          py={{ base: 7, md: 9 }}
+          px={{ base: 6, md: 10 }}
+          py={{ base: 12, lg: 0 }}
         >
-          <Box as="form" noValidate onSubmit={handleSubmit} w="100%" maxW="460px">
-            <VStack spacing={6} align="stretch">
-              <Box display={{ base: 'block', md: 'none' }}>
-                <DoorstepCourierScene compact />
-              </Box>
-
-              <Box>
-                <HStack spacing={3} align="center" mb={4}>
-                  <Box
-                    as="img"
-                    src={brandIdentity.logoPath}
-                    alt={brandIdentity.name}
-                    h="46px"
-                    w="168px"
-                    objectFit="contain"
-                  />
-                  <Text fontSize="xs" fontWeight="800" letterSpacing="0.18em" color={textSecondary}>
-                    ADMIN
-                  </Text>
-                </HStack>
-                <Text fontSize="xs" fontWeight="800" letterSpacing="0.7px" color={brand} mb={2}>
-                  SECURE ACCESS
-                </Text>
+          <Box as="form" noValidate onSubmit={handleSubmit} w="100%" maxW="560px">
+            <VStack spacing="20px" align="stretch">
+              <Box mb="20px">
                 <Heading
-                  fontFamily={brandFonts.display}
-                  fontSize={{ base: '2xl', md: '4xl' }}
+                  as="h2"
+                  color="#FFFFFF"
+                  fontSize={{ base: '34px', md: '40px' }}
                   fontWeight="800"
-                  color={textPrimary}
-                  lineHeight="1.02"
-                  letterSpacing="-0.04em"
+                  lineHeight="1.1"
+                  letterSpacing="0"
+                  mb="10px"
                 >
-                  Welcome back
+                  Admin Login
                 </Heading>
-                <Text mt={2} color={textSecondary} fontSize="sm" lineHeight="1.8">
-                  Sign in with your administrator credentials.
+                <Text color="#9BA6B5" fontSize="17px" fontWeight="500">
+                  Sign in with your admin credentials
                 </Text>
               </Box>
-
-              <HStack spacing={2} flexWrap="wrap">
-                {['Fast access', 'Live ops focus'].map((pill) => (
-                  <Box
-                    key={pill}
-                    px={3}
-                    py={1.5}
-                    borderRadius="10px"
-                    bg="rgba(255,255,255,0.78)"
-                    border="1px solid rgba(13,27,77,0.08)"
-                  >
-                    <Text fontSize="xs" fontWeight="700" color={textPrimary}>
-                      {pill}
-                    </Text>
-                  </Box>
-                ))}
-              </HStack>
 
               <FormControl>
-                <FormLabel fontSize="sm" fontWeight="700" color={textPrimary} mb={2}>
-                  Email
-                </FormLabel>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter admin email"
-                  h="54px"
-                  borderRadius="10px"
-                  bg={inputBg}
-                  borderColor={inputBorder}
-                  _hover={{ borderColor: 'brand.400' }}
-                  _focus={{
-                    borderColor: 'accent.500',
-                    boxShadow: '0 0 0 4px rgba(255,138,40,0.16)',
-                  }}
-                />
+                <InputGroup>
+                  <InputLeftElement h="58px" pl="18px" pointerEvents="none">
+                    <Box as={IconMail} size={21} color="#7B68EE" strokeWidth={2} />
+                  </InputLeftElement>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@shipaggregator.com"
+                    h="58px"
+                    pl="52px"
+                    pr="18px"
+                    borderRadius="18px"
+                    bg="#171C23"
+                    border="2px solid"
+                    borderColor="#6C5CE7"
+                    color="#FFFFFF"
+                    fontSize="16px"
+                    fontWeight="500"
+                    _placeholder={{ color: '#7F8895' }}
+                    _hover={{ borderColor: '#7D6CFF' }}
+                    _focus={{
+                      borderColor: '#7D6CFF',
+                      boxShadow: '0 0 0 1px #7D6CFF',
+                      bg: '#171C23',
+                    }}
+                  />
+                </InputGroup>
               </FormControl>
 
               <FormControl>
-                <FormLabel fontSize="sm" fontWeight="700" color={textPrimary} mb={2}>
-                  Password
-                </FormLabel>
                 <InputGroup>
+                  <InputLeftElement h="58px" pl="18px" pointerEvents="none">
+                    <Box as={IconLock} size={21} color="#828B98" strokeWidth={2} />
+                  </InputLeftElement>
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    h="54px"
-                    borderRadius="10px"
-                    bg={inputBg}
-                    borderColor={inputBorder}
-                    pr="48px"
-                    _hover={{ borderColor: 'brand.400' }}
+                    placeholder="Password"
+                    h="58px"
+                    pl="52px"
+                    pr="58px"
+                    borderRadius="18px"
+                    bg="#0C1117"
+                    border="2px solid"
+                    borderColor="#2A3038"
+                    color="#FFFFFF"
+                    fontSize="16px"
+                    fontWeight="500"
+                    _placeholder={{ color: '#737B86' }}
+                    _hover={{ borderColor: '#3A414B' }}
                     _focus={{
-                      borderColor: 'accent.500',
-                      boxShadow: '0 0 0 4px rgba(255,138,40,0.16)',
+                      borderColor: '#6C5CE7',
+                      boxShadow: '0 0 0 1px #6C5CE7',
+                      bg: '#0C1117',
                     }}
                   />
-                  <InputRightElement h="54px" pr="10px">
+                  <InputRightElement h="58px" pr="10px">
                     <IconButton
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
                       variant="ghost"
                       size="sm"
-                      color={textSecondary}
+                      color="#8B94A1"
                       onClick={() => setShowPassword(!showPassword)}
-                      _hover={{ bg: iconHoverBg, color: brand }}
+                      _hover={{ bg: 'transparent', color: '#B8C0CC' }}
+                      _active={{ bg: 'transparent' }}
                     />
                   </InputRightElement>
                 </InputGroup>
@@ -338,17 +337,22 @@ function SignIn() {
 
               <Button
                 type="submit"
-                h="54px"
-                borderRadius="10px"
-                bg={brandGradients.button}
-                color="white"
-                fontWeight="700"
+                h="60px"
+                mt="2px"
+                borderRadius="18px"
+                bg="linear-gradient(90deg, #6C5CE7 0%, #8976F2 100%)"
+                color="#FFFFFF"
+                fontSize="16px"
+                fontWeight="800"
                 isLoading={loading}
                 loadingText="Signing in"
-                _hover={{ boxShadow: '0 20px 36px rgba(255, 122, 21, 0.28)', transform: 'translateY(-1px)' }}
-                _active={{ transform: 'translateY(0)' }}
+                _hover={{
+                  bg: 'linear-gradient(90deg, #7464EF 0%, #9584FF 100%)',
+                  boxShadow: '0 18px 36px rgba(108, 92, 231, 0.26)',
+                }}
+                _active={{ bg: 'linear-gradient(90deg, #6251DE 0%, #7E6BEA 100%)' }}
               >
-                Sign In
+                Sign in
               </Button>
             </VStack>
           </Box>
@@ -359,5 +363,3 @@ function SignIn() {
 }
 
 export default SignIn
-
-

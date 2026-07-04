@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import AdminLayout from "layouts/Admin.js";
 import AuthLayout from "layouts/Auth.js";
 import RTLLayout from "layouts/RTL.js";
+import SignIn from "views/Auth/SignIn";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Redirect, Route, Switch } from "react-router-dom";
 import theme from "theme/theme.js";
@@ -25,6 +26,7 @@ root.render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Switch>
+          <Route exact path="/login" component={SignIn} />
           <Route path="/auth" component={AuthLayout} />
           <Route path="/admin" component={AdminLayout} />
           <Route path="/rtl" component={RTLLayout} />

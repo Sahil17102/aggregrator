@@ -36,8 +36,8 @@ const api = axios.create({
 let refreshPromise = null
 
 const redirectToSignIn = () => {
-  if (window.location.pathname !== '/auth/signin') {
-    window.location.replace('/auth/signin')
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login')
   }
 }
 

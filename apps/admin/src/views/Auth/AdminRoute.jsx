@@ -19,7 +19,7 @@ export const AdminRoute = ({ children }) => {
   useEffect(() => {
     if (!token || !refreshToken || isTokenExpired(refreshToken)) {
       logout()
-      history.replace('/auth/signin')
+      history.replace('/login')
     }
   }, [token, refreshToken, logout, history])
 
