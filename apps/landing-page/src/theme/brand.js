@@ -16,13 +16,13 @@ export const brand = {
 };
 
 export const brandIdentity = {
-  name: "ChoiceMee Logistics",
-  shortName: "ChoiceMee",
-  tagline: "Your Trust, Our Commitment.",
-  supportEmail: "ops@choicemee.com",
-  supportPhone: "9906690088",
-  supportAddress: "Baramulla, Jammu & Kashmir, 193123",
-  logoSrc: "/brand/choicemee-logistics-logo.png",
+  name: "Ship Aggregator",
+  shortName: "Ship Aggregator",
+  tagline: "Customized supply chain solutions.",
+  supportEmail: "cs@shipaggregator.com",
+  supportPhone: "+91 94038 91046",
+  supportAddress: "G-10, Bajrang Complex, Telipara, Bilaspur, Chhattisgarh",
+  logoSrc: "/favicon.jpg",
 };
 
 export const brandGradients = {
