@@ -1,4 +1,4 @@
-﻿import {
+import {
   alpha,
   Box,
   Collapse,
@@ -11,17 +11,16 @@
   useTheme,
 } from '@mui/material'
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
-import { BiInfoCircle, BiListPlus } from 'react-icons/bi'
+import { BiListPlus } from 'react-icons/bi'
 import { CgTrack } from 'react-icons/cg'
 import { FaBalanceScaleLeft } from 'react-icons/fa'
-import { FaClipboardList as FaFileAlt, FaMoneyBill, FaToolbox } from 'react-icons/fa6'
+import { FaClipboardList as FaFileAlt, FaToolbox } from 'react-icons/fa6'
 import { HiDocumentReport } from 'react-icons/hi'
 import {
   MdAccountBalanceWallet,
   MdApps,
   MdDashboard,
   MdExpandMore,
-  MdHelp,
   MdHome,
   MdKeyboardReturn,
   MdLocalShipping,
@@ -36,9 +35,10 @@ import { NavLink, useLocation } from 'react-router-dom'
 
 import type { JSX } from '@emotion/react/jsx-runtime'
 import BrandLogo from '../brand/BrandLogo'
-import { brand, brandGradients } from '../../theme/brand'
+import { brandIdentity } from '../../theme/brand'
 import { DRAWER_WIDTH } from '../../utils/constants'
 import { isActive } from '../../utils/functions'
+import { useAuth } from '../../context/auth/AuthContext'
 
 export type Role = 'customer' | 'admin'
 
@@ -56,6 +56,11 @@ export interface NavItem {
   children?: SubItem[]
 }
 
+interface NavSection {
+  title: string
+  items: NavItem[]
+}
+
 interface SidebarProps {
   role?: Role
   pinned: boolean
@@ -66,173 +71,126 @@ interface SidebarProps {
   onNavigate?: () => void
 }
 
-export const COLLAPSED_WIDTH = 80
+export const COLLAPSED_WIDTH = 72
 
-const STANDARD_ICON_SIZE = 19
-const navItems: NavItem[] = [
+const STANDARD_ICON_SIZE = 21
+const DARK_BG = '#151b23'
+const BORDER = '#2a313a'
+const TEXT = '#9db0c8'
+const MUTED = '#73849c'
+const ACTIVE = '#7657ff'
+const WHITE = '#f8fafc'
+
+const navSections: NavSection[] = [
   {
-    text: 'Dashboard',
-    icon: <MdDashboard size={STANDARD_ICON_SIZE} />,
-    path: '/dashboard',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'Home',
-    icon: <MdHome size={STANDARD_ICON_SIZE} />,
-    path: '/home',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'Channels',
-    icon: <MdApps size={STANDARD_ICON_SIZE} />,
-    path: '/channels',
-    roles: ['customer', 'admin'],
-    children: [
+    title: 'Main',
+    items: [
       {
-        text: 'Connected Channels',
-        path: '/channels/connected',
-        icon: <MdApps size={STANDARD_ICON_SIZE} />,
+        text: 'Home',
+        icon: <MdHome size={STANDARD_ICON_SIZE} />,
+        path: '/home',
+        roles: ['customer', 'admin'],
       },
       {
-        text: 'Channel Integrations',
-        path: '/channels/channel_list',
-        icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} />,
-      },
-    ],
-  },
-  {
-    text: 'Orders',
-    icon: <MdShoppingCart size={STANDARD_ICON_SIZE} />,
-    path: '/orders',
-    roles: ['customer', 'admin'],
-    children: [
-      { text: 'All Orders', path: '/orders/list', icon: <FaFileAlt size={STANDARD_ICON_SIZE} /> },
-      {
-        text: 'Create Order',
-        path: '/orders/create',
-        icon: <BiListPlus size={STANDARD_ICON_SIZE} />,
-      },
-      {
-        text: 'B2C Orders',
-        path: '/orders/b2c/list',
-        icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} />,
-      },
-      {
-        text: 'B2B Orders',
-        path: '/orders/b2b/list',
-        icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} />,
+        text: 'Orders',
+        icon: <MdShoppingCart size={STANDARD_ICON_SIZE} />,
+        path: '/orders',
+        roles: ['customer', 'admin'],
+        children: [
+          { text: 'All Orders', path: '/orders/list', icon: <FaFileAlt size={STANDARD_ICON_SIZE} /> },
+          { text: 'Create Order', path: '/orders/create', icon: <BiListPlus size={STANDARD_ICON_SIZE} /> },
+          { text: 'B2C Orders', path: '/orders/b2c/list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
+          { text: 'B2B Orders', path: '/orders/b2b/list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
+        ],
       },
     ],
   },
   {
-    text: 'Couriers',
-    icon: <MdLocalShipping size={STANDARD_ICON_SIZE} />,
-    path: '/couriers/partners',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'NDR',
-    icon: <MdSyncProblem size={STANDARD_ICON_SIZE} />,
-    path: '/ops/ndr',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'RTO',
-    icon: <MdKeyboardReturn size={STANDARD_ICON_SIZE} />,
-    path: '/ops/rto',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'Billing',
-    icon: <FaMoneyBill size={STANDARD_ICON_SIZE} />,
-    path: '/billing',
-    roles: ['customer', 'admin'],
-    children: [
+    title: 'Analytics',
+    items: [
       {
-        text: 'Wallet Transactions',
+        text: 'Dashboard',
+        icon: <MdDashboard size={STANDARD_ICON_SIZE} />,
+        path: '/dashboard',
+        roles: ['customer', 'admin'],
+      },
+      {
+        text: 'Reports',
+        icon: <HiDocumentReport size={STANDARD_ICON_SIZE} />,
+        path: '/reports',
+        roles: ['customer', 'admin'],
+      },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      {
+        text: 'Wallet',
+        icon: <MdAccountBalanceWallet size={STANDARD_ICON_SIZE} />,
         path: '/billing/wallet_transactions',
-        icon: <TbTransactionRupee size={STANDARD_ICON_SIZE} />,
-      },
-      {
-        text: 'Billing Invoices',
-        path: '/billing/invoice_management',
-        icon: <TbInvoice size={STANDARD_ICON_SIZE} />,
+        roles: ['customer', 'admin'],
       },
       {
         text: 'COD Remittance',
+        icon: <TbTransactionRupee size={STANDARD_ICON_SIZE} />,
         path: '/cod-remittance',
-        icon: <MdAccountBalanceWallet size={STANDARD_ICON_SIZE} />,
+        roles: ['customer', 'admin'],
       },
-    ],
-  },
-  {
-    text: 'Weight Discrepancy',
-    icon: <FaBalanceScaleLeft size={STANDARD_ICON_SIZE} />,
-    path: '/reconciliation',
-    roles: ['customer', 'admin'],
-    children: [
       {
-        text: 'All Discrepancies',
-        path: '/reconciliation/weight',
+        text: 'Billings',
+        icon: <TbInvoice size={STANDARD_ICON_SIZE} />,
+        path: '/billing/invoice_management',
+        roles: ['customer', 'admin'],
+      },
+      {
+        text: 'Reconciliation',
         icon: <FaBalanceScaleLeft size={STANDARD_ICON_SIZE} />,
-      },
-      {
-        text: 'Discrepancy Settings',
-        path: '/reconciliation/weight/settings',
-        icon: <RiSettings2Fill size={STANDARD_ICON_SIZE} />,
+        path: '/reconciliation/weight',
+        roles: ['customer', 'admin'],
       },
     ],
   },
   {
-    text: 'Tools',
-    icon: <FaToolbox size={STANDARD_ICON_SIZE} />,
-    path: '/tools',
-    roles: ['customer', 'admin'],
-    children: [
+    title: 'Other',
+    items: [
       {
-        text: 'Rate Card',
-        path: '/tools/rate_card',
-        icon: <MdOutlineRateReview size={STANDARD_ICON_SIZE} />,
+        text: 'Operations',
+        icon: <MdSyncProblem size={STANDARD_ICON_SIZE} />,
+        path: '/ops',
+        roles: ['customer', 'admin'],
+        children: [
+          { text: 'NDR', path: '/ops/ndr', icon: <MdSyncProblem size={STANDARD_ICON_SIZE} /> },
+          { text: 'RTO', path: '/ops/rto', icon: <MdKeyboardReturn size={STANDARD_ICON_SIZE} /> },
+          { text: 'Couriers', path: '/couriers/partners', icon: <MdLocalShipping size={STANDARD_ICON_SIZE} /> },
+          { text: 'Channels', path: '/channels/connected', icon: <MdApps size={STANDARD_ICON_SIZE} /> },
+          { text: 'Channel Integrations', path: '/channels/channel_list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
+        ],
       },
       {
-        text: 'Rate Calculator',
-        path: '/tools/rate_calculator',
-        icon: <TbReportAnalytics size={STANDARD_ICON_SIZE} />,
-      },
-      {
-        text: 'Order Tracking',
-        path: '/tools/order_tracking',
-        icon: <CgTrack size={STANDARD_ICON_SIZE} />,
-      },
-    ],
-  },
-  {
-    text: 'Reports',
-    icon: <HiDocumentReport size={STANDARD_ICON_SIZE} />,
-    path: '/reports',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'Settings',
-    icon: <RiSettings2Fill size={STANDARD_ICON_SIZE} />,
-    path: '/settings',
-    roles: ['customer', 'admin'],
-  },
-  {
-    text: 'Support',
-    icon: <MdHelp size={STANDARD_ICON_SIZE} />,
-    path: '/support',
-    roles: ['customer', 'admin'],
-    children: [
-      { text: 'Tickets', path: '/support/tickets', icon: <BiListPlus size={STANDARD_ICON_SIZE} /> },
-      {
-        text: 'About Us',
-        path: '/support/about_us',
-        icon: <BiInfoCircle size={STANDARD_ICON_SIZE} />,
+        text: 'Tools',
+        icon: <FaToolbox size={STANDARD_ICON_SIZE} />,
+        path: '/tools',
+        roles: ['customer', 'admin'],
+        children: [
+          { text: 'Rate Card', path: '/tools/rate_card', icon: <MdOutlineRateReview size={STANDARD_ICON_SIZE} /> },
+          { text: 'Rate Calculator', path: '/tools/rate_calculator', icon: <TbReportAnalytics size={STANDARD_ICON_SIZE} /> },
+          { text: 'Order Tracking', path: '/tools/order_tracking', icon: <CgTrack size={STANDARD_ICON_SIZE} /> },
+        ],
       },
     ],
   },
 ]
+
+const settingsItem: NavItem = {
+  text: 'Settings',
+  icon: <RiSettings2Fill size={STANDARD_ICON_SIZE} />,
+  path: '/settings',
+  roles: ['customer', 'admin'],
+}
+
+const itemHasActiveChild = (pathname: string, item: NavItem) =>
+  Boolean(item.children?.some((sub) => isActive(pathname, sub.path)))
 
 export default function Sidebar({
   role = 'customer',
@@ -244,13 +202,23 @@ export default function Sidebar({
 }: SidebarProps) {
   const location = useLocation()
   const theme = useTheme()
-  const isSidebarExpanded = pinned || hovered
-
+  const { user } = useAuth()
+  const isSidebarExpanded = temporary || pinned || hovered
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!isSidebarExpanded) setExpandedItems({})
   }, [isSidebarExpanded])
+
+  useEffect(() => {
+    const nextExpanded: Record<string, boolean> = {}
+    ;[...navSections.flatMap((section) => section.items), settingsItem].forEach((item) => {
+      if (item.children?.some((sub) => isActive(location.pathname, sub.path))) {
+        nextExpanded[item.text] = true
+      }
+    })
+    setExpandedItems((prev) => ({ ...prev, ...nextExpanded }))
+  }, [location.pathname])
 
   const toggleExpand = (key: string) => {
     setExpandedItems((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -260,147 +228,155 @@ export default function Sidebar({
     onNavigate?.()
   }
 
-  const activeItemSx = {
-    background: brandGradients.button,
-    color: brand.ink,
-    '& .MuiListItemIcon-root': { color: brand.ink },
-    '& .MuiListItemText-primary': { fontWeight: 800 },
-    boxShadow: '0 8px 18px rgba(130,194,255,0.18)',
-  }
-
   const navItemSx = {
-    mx: 0,
-    my: 0.35,
-    borderRadius: 999,
-    py: 0.95,
-    px: 1.6,
-    color: brand.inkSoft,
-    border: '1px solid transparent',
-    transition:
-      'background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
+    minHeight: 46,
+    borderRadius: 0,
+    px: isSidebarExpanded ? 3.75 : 0,
+    py: 0,
+    color: TEXT,
+    position: 'relative',
+    transition: 'background-color 160ms ease, color 160ms ease',
     '&:hover': {
-      bgcolor: alpha('#FFFFFF', 0.72),
-      color: brand.ink,
-      borderColor: alpha(brand.ink, 0.06),
-      '& .MuiListItemIcon-root': { color: brand.ink },
+      bgcolor: alpha('#ffffff', 0.035),
+      color: WHITE,
+      '& .MuiListItemIcon-root': { color: WHITE },
     },
   }
 
-  const renderNavList = (items: NavItem[]) => (
-    <List disablePadding>
-      {items.map((item) => {
-        const isSelected = isActive(location.pathname, item.path)
-        const hasChildren = Boolean(item.children?.length)
-        const isExpanded = expandedItems[item.text]
-        const childSelected = Boolean(
-          item.children?.some((sub) => isActive(location.pathname, sub.path)),
-        )
-        const showExpanded = isSidebarExpanded && isExpanded
+  const activeItemSx = {
+    bgcolor: alpha(ACTIVE, 0.08),
+    color: ACTIVE,
+    '& .MuiListItemIcon-root': { color: ACTIVE },
+    '& .MuiListItemText-primary': { fontWeight: 800 },
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      top: 11,
+      bottom: 11,
+      width: 4,
+      borderRadius: '0 8px 8px 0',
+      bgcolor: ACTIVE,
+    },
+  }
 
-        const listItem = (
-          <ListItemButton
-            component={hasChildren ? 'div' : NavLink}
-            to={hasChildren ? undefined : item.path}
-            onClick={hasChildren ? () => toggleExpand(item.text) : handleRouteNavigate}
-            sx={{
-              ...navItemSx,
-              justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-              px: isSidebarExpanded ? 1.4 : 0.95,
-              ...(isSelected && !hasChildren ? activeItemSx : {}),
-              ...(hasChildren && childSelected
-                ? {
-                    bgcolor: alpha('#FFFFFF', 0.72),
-                    color: brand.ink,
-                    '& .MuiListItemIcon-root': { color: brand.ink },
-                  }
-                : {}),
+  const renderItem = (item: NavItem) => {
+    const isSelected = isActive(location.pathname, item.path)
+    const hasChildren = Boolean(item.children?.length)
+    const childSelected = itemHasActiveChild(location.pathname, item)
+    const isExpanded = expandedItems[item.text]
+    const showExpanded = isSidebarExpanded && isExpanded
+    const active = (isSelected && !hasChildren) || childSelected
+
+    const listItem = (
+      <ListItemButton
+        component={hasChildren ? 'div' : NavLink}
+        to={hasChildren ? undefined : item.path}
+        onClick={hasChildren ? () => toggleExpand(item.text) : handleRouteNavigate}
+        sx={{
+          ...navItemSx,
+          justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+          ...(active ? activeItemSx : {}),
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: isSidebarExpanded ? 38 : 0,
+            justifyContent: 'center',
+            color: active ? ACTIVE : '#8190a5',
+            transition: 'color 160ms ease',
+          }}
+        >
+          {item.icon}
+        </ListItemIcon>
+        {isSidebarExpanded ? (
+          <ListItemText
+            primary={item.text}
+            primaryTypographyProps={{
+              fontSize: '1.04rem',
+              fontWeight: active ? 800 : 650,
+              letterSpacing: '-0.01em',
             }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: isSidebarExpanded ? 36 : 0,
-                justifyContent: 'center',
-                color: isSelected || childSelected ? brand.ink : 'inherit',
-                transition: 'color 160ms ease',
-              }}
-            >
-              {item.icon}
-            </ListItemIcon>
-            {isSidebarExpanded ? (
-              <ListItemText
-                primary={item.text}
-                primaryTypographyProps={{
-                  fontSize: '0.85rem',
-                  fontWeight: isSelected || childSelected ? 800 : 600,
-                  letterSpacing: '-0.01em',
-                }}
-              />
-            ) : null}
-            {hasChildren && isSidebarExpanded ? (
-              <MdExpandMore
-                style={{
-                  transform: showExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s',
-                  color: showExpanded ? brand.ink : 'inherit',
-                }}
-              />
-            ) : null}
-          </ListItemButton>
-        )
+          />
+        ) : null}
+        {hasChildren && isSidebarExpanded ? (
+          <MdExpandMore
+            size={20}
+            style={{
+              transform: showExpanded ? 'rotate(180deg)' : 'rotate(-90deg)',
+              transition: 'transform 0.2s',
+              color: active ? ACTIVE : '#8190a5',
+            }}
+          />
+        ) : null}
+      </ListItemButton>
+    )
 
-        return (
-          <Box key={item.text}>
-            {isSidebarExpanded ? (
-              listItem
-            ) : (
-              <Tooltip title={item.text} placement="right">
-                <Box>{listItem}</Box>
-              </Tooltip>
-            )}
+    return (
+      <Box key={item.text}>
+        {isSidebarExpanded ? (
+          listItem
+        ) : (
+          <Tooltip title={item.text} placement="right">
+            <Box>{listItem}</Box>
+          </Tooltip>
+        )}
 
-            {hasChildren && isSidebarExpanded && (
-              <Collapse in={showExpanded} timeout="auto" unmountOnExit>
-                <List disablePadding sx={{ ml: 3.9, mt: 0.5, mb: 0.85 }}>
-                  {item.children?.map((sub) => {
-                    const subActive = isActive(location.pathname, sub.path)
-                    return (
-                      <ListItemButton
-                        key={sub.text}
-                        component={NavLink}
-                        to={sub.path}
-                        onClick={handleRouteNavigate}
-                        sx={{
-                          py: 0.65,
-                          px: 1.3,
-                          borderRadius: 999,
-                          color: subActive ? brand.ink : alpha(brand.ink, 0.72),
-                          bgcolor: subActive ? alpha(brand.sky, 0.46) : 'transparent',
-                          transition: 'background-color 160ms ease, color 160ms ease',
-                          '&:hover': {
-                            bgcolor: alpha('#FFFFFF', 0.72),
-                            color: brand.ink,
-                          },
-                          mb: 0.4,
-                        }}
-                      >
-                        <ListItemText
-                          primary={sub.text}
-                          primaryTypographyProps={{
-                            fontSize: '0.8rem',
-                            fontWeight: subActive ? 800 : 500,
-                          }}
-                        />
-                      </ListItemButton>
-                    )
-                  })}
-                </List>
-              </Collapse>
-            )}
-          </Box>
-        )
-      })}
-    </List>
-  )
+        {hasChildren && isSidebarExpanded && (
+          <Collapse in={showExpanded} timeout="auto" unmountOnExit>
+            <List disablePadding sx={{ ml: 6.8, pr: 1.6, py: 0.45 }}>
+              {item.children?.map((sub) => {
+                const subActive = isActive(location.pathname, sub.path)
+                return (
+                  <ListItemButton
+                    key={sub.text}
+                    component={NavLink}
+                    to={sub.path}
+                    onClick={handleRouteNavigate}
+                    sx={{
+                      minHeight: 34,
+                      px: 1.2,
+                      py: 0.45,
+                      borderRadius: 1,
+                      color: subActive ? WHITE : '#8292aa',
+                      bgcolor: subActive ? alpha(ACTIVE, 0.14) : 'transparent',
+                      '&:hover': {
+                        bgcolor: alpha('#ffffff', 0.045),
+                        color: WHITE,
+                      },
+                      mb: 0.25,
+                    }}
+                  >
+                    <ListItemText
+                      primary={sub.text}
+                      primaryTypographyProps={{
+                        fontSize: '0.88rem',
+                        fontWeight: subActive ? 800 : 650,
+                      }}
+                    />
+                  </ListItemButton>
+                )
+              })}
+            </List>
+          </Collapse>
+        )}
+      </Box>
+    )
+  }
+
+  const visibleSections = navSections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => item.roles.includes(role || 'customer')),
+  }))
+
+  const displayName = user?.companyInfo?.contactPerson || user?.name || 'Sahil Mittal'
+  const displayEmail = user?.companyInfo?.contactEmail || user?.email || 'sahilmittal1920@gmail...'
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <Box
@@ -408,8 +384,8 @@ export default function Sidebar({
         width: temporary ? '100%' : isSidebarExpanded ? DRAWER_WIDTH : COLLAPSED_WIDTH,
         height: temporary ? '100%' : '100dvh',
         maxHeight: temporary ? '100%' : '100dvh',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.96) 100%)',
-        borderRight: `1px solid ${alpha(brand.ink, 0.08)}`,
+        background: DARK_BG,
+        borderRight: `1px solid ${BORDER}`,
         transition: 'width 220ms ease',
         display: 'flex',
         flexDirection: 'column',
@@ -418,9 +394,7 @@ export default function Sidebar({
         left: temporary ? 'auto' : 0,
         top: temporary ? 'auto' : 0,
         overflow: 'hidden',
-        boxShadow: temporary ? 'none' : '8px 0 24px rgba(15,44,67,0.08)',
-        backdropFilter: 'none',
-        WebkitBackdropFilter: 'none',
+        boxShadow: 'none',
         contain: 'layout paint style',
         willChange: temporary ? 'auto' : 'width',
       }}
@@ -431,48 +405,31 @@ export default function Sidebar({
         if (!temporary) setHovered(false)
       }}
     >
-      <Box sx={{ p: 1.25, mb: 0.85, flexShrink: 0 }}>
-        <Box
-          sx={{
-            p: isSidebarExpanded ? 1.7 : 1,
-            borderRadius: '30px',
-            background: brandGradients.hero,
-            color: brand.ink,
-            minHeight: isSidebarExpanded ? 118 : 58,
-            display: 'flex',
-            alignItems: isSidebarExpanded ? 'stretch' : 'center',
-            justifyContent: 'center',
-            flexDirection: isSidebarExpanded ? 'column' : 'row',
-            border: `1px solid ${alpha('#FFFFFF', 0.6)}`,
-          }}
-        >
-          <BrandLogo
-            compact={!isSidebarExpanded}
+      <Box
+        sx={{
+          height: 72,
+          px: isSidebarExpanded ? 2.25 : 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          flexShrink: 0,
+          borderBottom: `1px solid ${BORDER}`,
+        }}
+      >
+        <BrandLogo compact sx={{ width: 44, height: 44, objectFit: 'contain', flexShrink: 0 }} />
+        {isSidebarExpanded ? (
+          <Typography
             sx={{
-              width: isSidebarExpanded ? 160 : 38,
-              alignSelf: isSidebarExpanded ? 'flex-start' : 'center',
+              color: WHITE,
+              fontSize: '1.28rem',
+              fontWeight: 900,
+              letterSpacing: '-0.05em',
+              whiteSpace: 'nowrap',
             }}
-          />
-          {isSidebarExpanded && (
-            <Box sx={{ mt: 1.1 }}>
-              <Typography
-                sx={{
-                  fontSize: '0.58rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: alpha(brand.inkSoft, 0.92),
-                  mb: 0.55,
-                }}
-              >
-                Seller panel
-              </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: '0.96rem', lineHeight: 1.1 }}>
-                ChoiceMee workspace
-              </Typography>
-            </Box>
-          )}
-        </Box>
+          >
+            {brandIdentity.name}
+          </Typography>
+        ) : null}
       </Box>
 
       <Box
@@ -484,54 +441,78 @@ export default function Sidebar({
           overscrollBehavior: 'contain',
           scrollbarGutter: 'stable',
           WebkitOverflowScrolling: 'touch',
-          px: isSidebarExpanded ? 1 : 0.8,
-          pb: 0.6,
+          py: 2.2,
+          bgcolor: DARK_BG,
+          '&::-webkit-scrollbar': { width: 6 },
+          '&::-webkit-scrollbar-track': { background: DARK_BG },
+          '&::-webkit-scrollbar-thumb': { background: '#3a4350', borderRadius: 8 },
         }}
       >
-        <Box
-          sx={{
-            p: isSidebarExpanded ? 0.7 : 0.2,
-            borderRadius: '30px',
-            bgcolor: alpha('#FFFFFF', 0.52),
-            border: `1px solid ${alpha(brand.ink, 0.05)}`,
-          }}
-        >
-          {renderNavList(navItems.filter((item) => item.roles.includes(role || 'customer')))}
-        </Box>
+        {visibleSections.map((section) =>
+          section.items.length ? (
+            <Box key={section.title} sx={{ mb: 3.1 }}>
+              {isSidebarExpanded ? (
+                <Typography
+                  sx={{
+                    px: 3.75,
+                    mb: 1.1,
+                    color: MUTED,
+                    fontSize: '0.82rem',
+                    fontWeight: 850,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0,
+                  }}
+                >
+                  {section.title}
+                </Typography>
+              ) : null}
+              <List disablePadding>{section.items.map(renderItem)}</List>
+            </Box>
+          ) : null,
+        )}
       </Box>
 
-      <Box
-        sx={{
-          p: 1.1,
-          flexShrink: 0,
-          borderTop: `1px solid ${alpha(brand.ink, 0.08)}`,
-          bgcolor: alpha('#FFFFFF', 0.72),
-        }}
-      >
-        <ListItemButton
-          component={NavLink}
-          to="/settings"
-          onClick={handleRouteNavigate}
-          sx={{
-            ...navItemSx,
-            justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-            px: isSidebarExpanded ? 1.4 : 0.95,
-            ...(isActive(location.pathname, '/settings') ? activeItemSx : {}),
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: isSidebarExpanded ? 36 : 0, justifyContent: 'center' }}>
-            <RiSettings2Fill size={STANDARD_ICON_SIZE} />
-          </ListItemIcon>
-          {isSidebarExpanded ? (
-            <ListItemText
-              primary="Settings"
-              primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 600 }}
-            />
-          ) : null}
-        </ListItemButton>
+      <Box sx={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, bgcolor: DARK_BG }}>
+        {renderItem(settingsItem)}
+        {isSidebarExpanded ? (
+          <Box
+            sx={{
+              px: 3.75,
+              py: 2.7,
+              borderTop: `1px solid ${BORDER}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.35,
+            }}
+          >
+            <Box
+              sx={{
+                width: 30,
+                height: 30,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: ACTIVE,
+                fontSize: '0.9rem',
+                fontWeight: 900,
+                flexShrink: 0,
+              }}
+            >
+              {initials}
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography sx={{ color: WHITE, fontWeight: 850, fontSize: '0.98rem' }} noWrap>
+                {displayName}
+              </Typography>
+              <Typography sx={{ color: '#8292aa', fontWeight: 600, fontSize: '0.85rem' }} noWrap>
+                {displayEmail}
+              </Typography>
+            </Box>
+            <MdExpandMore size={19} color="#8292aa" />
+          </Box>
+        ) : null}
       </Box>
     </Box>
   )
 }
-
-

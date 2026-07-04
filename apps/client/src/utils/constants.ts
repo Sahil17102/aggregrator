@@ -97,7 +97,7 @@ Contact and Grievance
 `
 
 // components/layout/constants.ts
-export const DRAWER_WIDTH = 280
+export const DRAWER_WIDTH = 300
 export const NAVBAR_HEIGHT = 80
 export const RADIUS = 8 // master corner radius
 export const ACTIVE_BG = 'rgba(10, 78, 163, 0.08)' // background behind selected item

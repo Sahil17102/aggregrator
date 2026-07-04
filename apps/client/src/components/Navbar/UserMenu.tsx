@@ -36,7 +36,11 @@ const getInitials = (fullName?: string) => {
   return `${firstInitial}${lastInitial}`.toUpperCase()
 }
 
-const UserMenu = () => {
+interface UserMenuProps {
+  compact?: boolean
+}
+
+const UserMenu = ({ compact = false }: UserMenuProps) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -109,25 +113,29 @@ const UserMenu = () => {
         onClick={(event) => setAnchorEl(event.currentTarget)}
         size="small"
         sx={{
-          p: 0.45,
-          borderRadius: 2,
-          border: `1px solid ${alpha(INK, 0.08)}`,
-          bgcolor: alpha('#FFFFFF', 0.84),
-          boxShadow: `0 8px 18px ${alpha(INK, 0.05)}`,
+          p: compact ? 0 : 0.45,
+          minWidth: compact ? 42 : 'auto',
+          height: compact ? 38 : 'auto',
+          borderRadius: compact ? 1.5 : 2,
+          border: compact ? '1px solid transparent' : `1px solid ${alpha(INK, 0.08)}`,
+          bgcolor: compact ? 'transparent' : alpha('#FFFFFF', 0.84),
+          color: compact ? '#7657ff' : 'inherit',
+          boxShadow: compact ? 'none' : `0 8px 18px ${alpha(INK, 0.05)}`,
           '&:hover': {
-            bgcolor: alpha(INK, 0.04),
+            bgcolor: compact ? alpha('#ffffff', 0.05) : alpha(INK, 0.04),
           },
         }}
       >
         <Avatar
           src={avatarUrl?.[0] ?? ''}
           sx={{
-            width: 32,
-            height: 32,
-            bgcolor: INK,
-            fontSize: '0.82rem',
+            width: compact ? 38 : 32,
+            height: compact ? 38 : 32,
+            bgcolor: compact ? 'transparent' : INK,
+            color: compact ? '#7657ff' : '#ffffff',
+            fontSize: compact ? '0.94rem' : '0.82rem',
             fontWeight: 900,
-            borderRadius: 2,
+            borderRadius: compact ? 1.5 : 2,
           }}
         >
           {getInitials(user?.companyInfo?.contactPerson || user?.name)}

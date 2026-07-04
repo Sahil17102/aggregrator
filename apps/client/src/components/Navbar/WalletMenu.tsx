@@ -8,7 +8,11 @@ import AddMoneyDialog from '../AddMoneyDialog'
 const INK = '#182235'
 const ACCENT = '#D66F3D'
 
-const WalletMenu = () => {
+interface WalletMenuProps {
+  compactLabel?: string
+}
+
+const WalletMenu = ({ compactLabel }: WalletMenuProps) => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const { walletBalance, setWalletBalance } = useAuth()
   const { data, isLoading } = useWalletBalance(true)
@@ -30,32 +34,33 @@ const WalletMenu = () => {
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: 0.85,
-          px: { xs: 0.95, sm: 1.05 },
-          py: 0.78,
-          borderRadius: 3,
-          border: `1px solid ${alpha(INK, 0.08)}`,
-          bgcolor: alpha('#FFFFFF', 0.84),
-          minWidth: { xs: 'auto', sm: 156 },
-          boxShadow: `0 8px 18px ${alpha(INK, 0.05)}`,
+          gap: compactLabel ? 0.75 : 0.85,
+          height: compactLabel ? 38 : 'auto',
+          px: compactLabel ? 1.35 : { xs: 0.95, sm: 1.05 },
+          py: compactLabel ? 0 : 0.78,
+          borderRadius: compactLabel ? 2 : 3,
+          border: compactLabel ? '1px solid #2a313a' : `1px solid ${alpha(INK, 0.08)}`,
+          bgcolor: compactLabel ? '#101720' : alpha('#FFFFFF', 0.84),
+          minWidth: compactLabel ? 'auto' : { xs: 'auto', sm: 156 },
+          boxShadow: compactLabel ? 'none' : `0 8px 18px ${alpha(INK, 0.05)}`,
           transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: alpha(ACCENT, 0.24),
+            borderColor: compactLabel ? alpha('#7657ff', 0.5) : alpha(ACCENT, 0.24),
             transform: 'translateY(-1px)',
           },
         }}
       >
         <Box
           sx={{
-            width: 32,
-            height: 32,
-            borderRadius: 2.5,
+            width: compactLabel ? 20 : 32,
+            height: compactLabel ? 20 : 32,
+            borderRadius: compactLabel ? 1 : 2.5,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: alpha(ACCENT, 0.12),
-            color: ACCENT,
-            border: `1px solid ${alpha(ACCENT, 0.14)}`,
+            bgcolor: compactLabel ? 'transparent' : alpha(ACCENT, 0.12),
+            color: compactLabel ? '#ff7a17' : ACCENT,
+            border: compactLabel ? 0 : `1px solid ${alpha(ACCENT, 0.14)}`,
             flexShrink: 0,
           }}
         >
@@ -63,29 +68,31 @@ const WalletMenu = () => {
         </Box>
 
         <Stack spacing={0.02} sx={{ minWidth: 0 }}>
-          <Typography
-            sx={{
-              fontSize: '0.64rem',
-              fontWeight: 800,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: alpha(INK, 0.46),
-            }}
-          >
-            Wallet
-          </Typography>
+          {!compactLabel ? (
+            <Typography
+              sx={{
+                fontSize: '0.64rem',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: alpha(INK, 0.46),
+              }}
+            >
+              Wallet
+            </Typography>
+          ) : null}
           {isLoading || walletBalance === null ? (
             <Skeleton variant="text" width={70} height={20} sx={{ bgcolor: alpha(INK, 0.08) }} />
           ) : (
             <Typography
               sx={{
-                fontSize: '0.86rem',
+                fontSize: compactLabel ? '0.94rem' : '0.86rem',
                 fontWeight: 900,
-                color: INK,
+                color: compactLabel ? '#f8fafc' : INK,
                 letterSpacing: '-0.02em',
               }}
             >
-              INR {walletBalance?.toLocaleString('en-IN')}
+              {compactLabel || `INR ${walletBalance?.toLocaleString('en-IN')}`}
             </Typography>
           )}
         </Stack>

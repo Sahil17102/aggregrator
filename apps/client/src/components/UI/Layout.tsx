@@ -1,7 +1,6 @@
 import { Box, Container, Drawer, Stack, useMediaQuery, useTheme } from '@mui/material'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useOutlet } from 'react-router-dom'
-import { brandGradients } from '../../theme/brand'
 import { DRAWER_WIDTH } from '../../utils/constants'
 import Navbar from '../Navbar/Navbar'
 import KeyboardShortcuts from './keyboard/KeyboardShortcuts'
@@ -14,7 +13,7 @@ export default function Layout() {
   const outlet = useOutlet()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const mainScrollRef = useRef<HTMLDivElement | null>(null)
-  const [pinned, setPinned] = useState(false)
+  const [pinned, setPinned] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [hovered, setHovered] = useState(false)
   const routeContentKey = [location.key, location.pathname, location.search, location.hash]
@@ -46,7 +45,7 @@ export default function Layout() {
         minHeight: '100dvh',
         minWidth: 0,
         overflow: 'hidden',
-        backgroundImage: brandGradients.page,
+        background: '#0f141b',
       }}
     >
       <KeyboardShortcuts />
@@ -63,9 +62,9 @@ export default function Layout() {
               maxWidth: '86vw',
               top: 'var(--client-navbar-offset, 88px)',
               height: 'calc(100dvh - var(--client-navbar-offset, 88px))',
-              bgcolor: '#ffffff',
-              color: '#10324A',
-              borderRight: '1px solid rgba(16, 50, 74, 0.08)',
+              bgcolor: '#151b23',
+              color: '#f8fafc',
+              borderRight: '1px solid #2a313a',
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
               overflow: 'hidden',
@@ -109,10 +108,10 @@ export default function Layout() {
           height: '100dvh',
           minHeight: 0,
           overflow: 'hidden',
-          bgcolor: 'transparent',
+          bgcolor: '#0f141b',
         }}
       >
-        <Stack sx={{ flexGrow: 1, height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: 'transparent' }}>
+        <Stack sx={{ flexGrow: 1, height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: '#0f141b' }}>
           <Box
             sx={{
               flexShrink: 0,
@@ -129,11 +128,11 @@ export default function Layout() {
             sx={{
               flexGrow: 1,
               overflow: 'auto',
-              bgcolor: 'transparent',
+              bgcolor: '#0f141b',
               position: 'relative',
               zIndex: 0,
-              px: { xs: 1, md: 2 },
-              pb: { xs: 1.5, md: 2.5 },
+              px: { xs: 1.5, md: 3 },
+              pb: { xs: 1.5, md: 3 },
               height: '100%',
               minHeight: 0,
               overscrollBehavior: 'auto',
@@ -145,8 +144,8 @@ export default function Layout() {
               maxWidth="xl"
               sx={{
                 bgcolor: 'transparent',
-                pt: 0.4,
-                px: { xs: 0.5, md: 1.5 },
+                pt: { xs: 2, md: 3 },
+                px: { xs: 0, md: 0 },
                 overflowX: 'visible',
               }}
             >
