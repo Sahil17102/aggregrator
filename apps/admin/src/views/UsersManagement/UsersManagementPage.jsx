@@ -1,232 +1,438 @@
 import {
   Avatar,
+  Box,
   Button,
   Flex,
   HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
+  Icon,
+  IconButton,
   Stack,
+  Switch,
   Text,
-  useDisclosure,
   useToast,
-} from '@chakra-ui/react'
-import StatusBadge from 'components/Badge/StatusBadge'
-import SortControls from 'components/SortControls'
-import TableFilters from 'components/Tables/TableFilters'
-import { useDeleteUser, useUsersWithRoleUser } from 'hooks/useUsers'
-import { useState } from 'react'
-import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
-import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
-const userFilterOptions = [
-  {
-    key: 'search',
-    label: 'Search',
-    type: 'text',
-    placeholder: 'Brand, Contact, Email, POC, or Business Name',
-  },
-  {
-    key: 'businessTypes',
-    label: 'Business Type',
-    type: 'multiselect',
-    options: [
-      { label: 'D2C', value: 'd2c' },
-      { label: 'B2B', value: 'b2b' },
-      { label: 'B2C', value: 'b2c' },
-    ],
-  },
-  {
-    key: 'onboardingComplete',
-    label: 'Onboarding Complete',
-    type: 'select',
-    options: [
-      { label: 'Yes', value: true },
-      { label: 'No', value: false },
-    ],
-  },
-  {
-    key: 'approved',
-    label: 'Account Status',
-    type: 'select',
-    options: [
-      { label: 'Approved', value: true },
-      { label: 'Not Approved', value: false },
-    ],
-  },
-]
+} from "@chakra-ui/react";
+import {
+  IconClock,
+  IconEye,
+  IconMail,
+  IconPhone,
+  IconShieldCheck,
+  IconShieldX,
+  IconUsers,
+  IconUserX,
+  IconWaveSine,
+} from "@tabler/icons-react";
+import {
+  AdminSelect,
+  AdminStack,
+  DataTable,
+  Metric,
+  PageIntro,
+  SearchInput,
+  SoftBadge,
+  ToolbarCard,
+} from "components/AdminUI/AdminPage";
+import { useDeleteUser, useUsersWithRoleUser } from "hooks/useUsers";
+import { useMemo, useState } from "react";
+import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
+
+const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "SA";
+
+const toDate = (value) => {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const lastLogin = (value) => {
+  if (!value) return "—";
+  const diff = Date.now() - new Date(value).getTime();
+  const hours = Math.max(1, Math.round(diff / 36e5));
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+};
 
 export default function UsersManagementPage() {
-  const history = useHistory()
-  const toast = useToast()
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(10)
-  const [filters, setFilters] = useState({})
-  const [selectedUserId, setSelectedUserId] = useState(null)
-  const { isOpen, onOpen, onClose } = useDisclosure()
-
-  const [sortBy, setSortBy] = useState('createdAt')
-  const [sortOrder, setSortOrder] = useState('desc')
-
-  const deleteUserMutation = useDeleteUser()
-
-  const handleSortByChange = (e) => {
-    setSortBy(e)
-    setPage(1)
-  }
-
-  const handleSortOrderChange = (e) => {
-    setSortOrder(e)
-    setPage(1)
-  }
+  const history = useHistory();
+  const toast = useToast();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [plan, setPlan] = useState("");
+  const deleteUserMutation = useDeleteUser();
 
   const { data: usersResponse, isLoading } = useUsersWithRoleUser({
     page,
     perPage,
-    sortBy,
-    sortOrder,
-    ...filters,
-  })
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    search,
+    approved:
+      status === "active" ? true : status === "inactive" ? false : undefined,
+    plan: plan || undefined,
+  });
 
-  const users = usersResponse?.data ?? []
-  const totalCount = usersResponse?.totalCount ?? 0
+  const users = usersResponse?.data ?? [];
+  const totalCount = usersResponse?.totalCount ?? users.length;
 
-  const captions = [
-    'User ID',
-    'Contact Person',
-    'Contact Number',
-    'Email',
-    'Account Status',
-    'Role',
-  ]
-  const columnKeys = ['id', 'contactPerson', 'contactNumber', 'email', 'approved', 'role']
+  const summary = useMemo(() => {
+    const onboarded = users.filter(
+      (user) => user.onboardingComplete || user.onboarding_complete
+    ).length;
+    const verified = users.filter(
+      (user) =>
+        user.kycVerified || user.kyc_verified || user.kycStatus === "verified"
+    ).length;
+    const inactive = users.filter(
+      (user) => user.approved === false || user.isActive === false
+    ).length;
+    return {
+      total: totalCount,
+      verified,
+      pending: users.filter((user) => user.kycStatus === "pending").length,
+      onboarded,
+      active: Math.max(0, totalCount - inactive),
+      inactive,
+    };
+  }, [totalCount, users]);
 
   const handleView = (id) => {
-    history.push(`/admin/users-management/${id}/overview`)
-  }
+    history.push(`/admin/users-management/${id}/overview`);
+  };
 
-  const handleDeleteClick = (userId) => {
-    setSelectedUserId(userId)
-    onOpen()
-  }
-
-  const handleDeleteConfirm = async () => {
+  const handleDelete = async (id) => {
     try {
-      await deleteUserMutation.mutateAsync(selectedUserId)
-      toast({
-        title: 'User deleted',
-        description: 'User has been deleted successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      })
-      onClose()
+      await deleteUserMutation.mutateAsync(id);
+      toast({ status: "success", title: "Seller updated" });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete user',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
+        status: "error",
+        title: "Action failed",
+        description: error.response?.data?.message || "Please try again.",
+      });
     }
-  }
+  };
 
   return (
-    <Flex direction="column" pt={{ base: '120px', md: '75px' }}>
-      <TableFilters
-        filters={userFilterOptions}
-        values={filters}
-        onApply={(finalFilters) => {
-          setFilters(finalFilters)
-          setPage(1) // reset to first page
-        }}
+    <AdminStack>
+      <PageIntro
+        icon={IconUsers}
+        title="Users"
+        subtitle="Manage all registered users"
+        right={
+          <HStack spacing="26px" wrap="wrap">
+            <Metric icon={IconUsers} value={summary.total} label="total" />
+            <Metric
+              icon={IconShieldCheck}
+              value={summary.verified}
+              label="KYC verified"
+              color="#00A881"
+            />
+            <Metric
+              icon={IconShieldX}
+              value={summary.pending}
+              label="KYC pending"
+              color="#FF7A1A"
+            />
+            <Metric
+              icon={IconWaveSine}
+              value={summary.onboarded}
+              label="onboarded"
+              color="#2F80ED"
+            />
+            <Metric
+              icon={IconWaveSine}
+              value={summary.active}
+              label="active"
+              color="#FF7A1A"
+            />
+            <Metric
+              icon={IconUserX}
+              value={summary.inactive}
+              label="inactive"
+              color="#FF4D4F"
+            />
+          </HStack>
+        }
       />
 
-      <GenericTable
-        paginated
+      <ToolbarCard>
+        <Flex align="end" gap="14px" wrap="wrap">
+          <Box>
+            <Text fontSize="14px" color="#41557A" mb="7px">
+              Search
+            </Text>
+            <SearchInput
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Name, email, phone..."
+              maxW="300px"
+            />
+          </Box>
+          <Box>
+            <Text fontSize="14px" color="#41557A" mb="7px">
+              Status
+            </Text>
+            <AdminSelect
+              value={status}
+              onChange={(value) => {
+                setStatus(value);
+                setPage(1);
+              }}
+              placeholder="All statuses"
+            >
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </AdminSelect>
+          </Box>
+          <Box>
+            <Text fontSize="14px" color="#41557A" mb="7px">
+              Plan
+            </Text>
+            <AdminSelect
+              value={plan}
+              onChange={(value) => {
+                setPlan(value);
+                setPage(1);
+              }}
+              placeholder="All Plans"
+            >
+              <option value="">All Plans</option>
+              <option value="basic">Basic</option>
+              <option value="gold">Gold</option>
+              <option value="platinum">Platinum</option>
+            </AdminSelect>
+          </Box>
+          <Button variant="ghost" color="#6C5CE7" mt={{ base: 0, md: "27px" }}>
+            More filters
+          </Button>
+          <Text ml="auto" color="#607397" fontSize="15px" alignSelf="center">
+            {totalCount} results
+          </Text>
+        </Flex>
+      </ToolbarCard>
+
+      <HStack
+        spacing="38px"
+        borderBottom="1px solid #E5EAF3"
+        px="20px"
+        overflowX="auto"
+      >
+        {[
+          ["All Users", summary.total, true],
+          ["Verified", summary.verified],
+          ["Pending KYC", summary.pending],
+          [
+            "KYC Not Started",
+            Math.max(0, summary.total - summary.verified - summary.pending),
+          ],
+          ["Not Onboarded", Math.max(0, summary.total - summary.onboarded)],
+          ["Inactive", summary.inactive],
+        ].map(([label, count, active]) => (
+          <HStack
+            key={label}
+            pb="15px"
+            borderBottom={
+              active ? "2px solid #6C5CE7" : "2px solid transparent"
+            }
+            color={active ? "#6C5CE7" : "#586B8A"}
+            flexShrink={0}
+          >
+            <Text fontSize="18px">{label}</Text>
+            <SoftBadge colorScheme={active ? "purple" : "gray"}>
+              {count}
+            </SoftBadge>
+          </HStack>
+        ))}
+      </HStack>
+
+      <DataTable
         loading={isLoading}
-        page={page}
-        setPage={setPage}
-        sortByComponent={
-          <SortControls
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortByChange={handleSortByChange}
-            onSortOrderChange={handleSortOrderChange}
-          />
-        }
-        totalCount={totalCount}
-        perPage={perPage}
-        setPerPage={setPerPage}
-        title="Users Management"
-        data={users}
-        captions={captions}
-        columnKeys={columnKeys}
-        renderActions={(row) => (
-          <HStack spacing={2}>
-            <Button size="sm" colorScheme="blue" onClick={() => handleView(row.id)}>
-              View Details
-            </Button>
-            <Button size="sm" colorScheme="red" onClick={() => handleDeleteClick(row.id)}>
-              Delete
-            </Button>
+        rows={users}
+        columns={[
+          {
+            key: "contactPerson",
+            label: "User",
+            render: (value, row) => {
+              const name =
+                value ||
+                row.name ||
+                row.companyInfo?.contactPerson ||
+                row.email ||
+                "User";
+              const business =
+                row.companyInfo?.brandName ||
+                row.companyInfo?.businessName ||
+                row.businessName;
+              return (
+                <HStack spacing="12px">
+                  <Avatar
+                    name={getInitials(name)}
+                    size="sm"
+                    bg="#F0EDFF"
+                    color="#6C5CE7"
+                  />
+                  <Box>
+                    <Text fontWeight="600">{name}</Text>
+                    {business ? (
+                      <Text fontSize="15px" color="#607397">
+                        {business}
+                      </Text>
+                    ) : null}
+                  </Box>
+                </HStack>
+              );
+            },
+          },
+          {
+            key: "email",
+            label: "Email",
+            render: (value) => (
+              <HStack color="#23324D">
+                <Icon as={IconMail} boxSize="17px" color="#607397" />
+                <Text noOfLines={1}>{value || "—"}</Text>
+              </HStack>
+            ),
+          },
+          {
+            key: "contactNumber",
+            label: "Phone",
+            render: (value) =>
+              value ? (
+                <HStack>
+                  <Icon as={IconPhone} boxSize="17px" color="#607397" />
+                  <Text>{value}</Text>
+                </HStack>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            key: "approved",
+            label: "Status",
+            render: (value, row) => (
+              <Stack spacing="5px" align="flex-start">
+                <SoftBadge
+                  colorScheme={
+                    row.onboardingComplete || row.onboarding_complete
+                      ? "green"
+                      : "orange"
+                  }
+                >
+                  {row.onboardingComplete || row.onboarding_complete
+                    ? "Onboarded"
+                    : "Not Onboarded"}
+                </SoftBadge>
+                <SoftBadge
+                  colorScheme={
+                    row.kycVerified ||
+                    row.kyc_verified ||
+                    row.kycStatus === "verified"
+                      ? "green"
+                      : "gray"
+                  }
+                >
+                  {row.kycVerified ||
+                  row.kyc_verified ||
+                  row.kycStatus === "verified"
+                    ? "KYC Verified"
+                    : "KYC Not Started"}
+                </SoftBadge>
+              </Stack>
+            ),
+          },
+          {
+            key: "plan",
+            label: "Plan",
+            render: (value, row) => (
+              <SoftBadge colorScheme="gray">
+                {value?.name || row.planName || "Basic"}
+              </SoftBadge>
+            ),
+          },
+          {
+            key: "lastLogin",
+            label: "Last Login",
+            render: (value, row) => (
+              <HStack>
+                <Icon as={IconClock} boxSize="16px" color="#607397" />
+                <Text>
+                  {lastLogin(value || row.last_login_at || row.updatedAt)}
+                </Text>
+              </HStack>
+            ),
+          },
+          {
+            key: "createdAt",
+            label: "Joined",
+            render: (value) => toDate(value),
+          },
+        ]}
+        actions={(row) => (
+          <HStack justify="flex-end" spacing="12px">
+            <IconButton
+              aria-label="View seller"
+              icon={<IconEye size={18} />}
+              size="sm"
+              variant="ghost"
+              color="#607397"
+              onClick={() => handleView(row.id)}
+            />
+            <Switch
+              colorScheme="purple"
+              defaultChecked={row.approved !== false}
+              onChange={() => handleDelete(row.id)}
+            />
           </HStack>
         )}
-        renderers={{
-          approved: (value) => (
-            <StatusBadge
-              status={value ? 'APPROVED' : 'NOT APPROVED'}
-              type={value ? 'success' : 'warning'}
-            />
-          ),
-          contactPerson: (value, row) => (
-            <Stack direction={'row'} alignItems={'center'} gap={1}>
-              <Avatar
-                name={value}
-                src={row?.profilePicture}
-                _hover={{ zIndex: '3', cursor: 'pointer' }}
-                size="sm"
-              />
-              <span style={{ fontWeight: '500' }}>{value || '—'}</span>
-            </Stack>
-          ),
-        }}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Delete User</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text>Are you sure you want to delete this user?</Text>
-            <Text mt={2} color="red.500" fontWeight="bold">
-              This action cannot be undone!
+        footer={
+          <>
+            <Text color="#607397" fontSize="16px">
+              Page {page}
             </Text>
-            <Text mt={2} fontSize="sm" color="gray.600">
-              All user data including profile, wallet, addresses, bank accounts, and KYC details
-              will be permanently deleted.
-            </Text>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Cancel
+            <Button
+              size="sm"
+              variant="outline"
+              isDisabled={page <= 1}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+            >
+              Previous
             </Button>
             <Button
-              colorScheme="red"
-              onClick={handleDeleteConfirm}
-              isLoading={deleteUserMutation.isLoading}
+              size="sm"
+              variant="outline"
+              isDisabled={users.length < perPage}
+              onClick={() => setPage((value) => value + 1)}
             >
-              Delete User
+              Next
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </Flex>
-  )
+            <AdminSelect
+              value={perPage}
+              onChange={(value) => setPerPage(Number(value))}
+              maxW="135px"
+            >
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+            </AdminSelect>
+          </>
+        }
+        minW="1320px"
+      />
+    </AdminStack>
+  );
 }
