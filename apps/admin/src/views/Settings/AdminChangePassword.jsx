@@ -32,6 +32,7 @@ import {
 } from "components/AdminUI/AdminPage";
 import { useState } from "react";
 import { changeAdminPassword } from "services/auth.service";
+import { useAuthStore } from "store/useAuthStore";
 
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
 
@@ -76,8 +77,29 @@ function PasswordField({
   );
 }
 
+function getInitials(name, email) {
+  const source = name || email || "Admin User";
+  const words = source
+    .replace(/@.*/, "")
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+
+  if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
+
 export default function AdminChangePassword() {
   const toast = useToast();
+  const { user, userId } = useAuthStore();
+  const adminName =
+    user?.name ||
+    user?.username ||
+    user?.fullName ||
+    user?.email?.split("@")?.[0] ||
+    "Admin User";
+  const adminEmail = user?.email || "Signed-in admin";
+  const adminRole = user?.role || "SUPERADMIN";
+  const initials = getInitials(adminName, adminEmail);
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -192,7 +214,7 @@ export default function AdminChangePassword() {
                 fontSize="28px"
                 fontWeight="800"
               >
-                SA
+                {initials}
               </Flex>
               <Text
                 fontSize="22px"
@@ -200,7 +222,7 @@ export default function AdminChangePassword() {
                 color={adminUi.text}
                 mt="18px"
               >
-                Ship Admin
+                {adminName}
               </Text>
               <SoftBadge
                 colorScheme="orange"
@@ -210,15 +232,20 @@ export default function AdminChangePassword() {
               >
                 <HStack spacing="4px">
                   <Icon as={IconShieldCheck} boxSize="13px" />
-                  <Text>SUPERADMIN</Text>
+                  <Text>{String(adminRole).toUpperCase()}</Text>
                 </HStack>
               </SoftBadge>
               <HStack spacing="12px" mt="26px" color={adminUi.text}>
                 <Icon as={IconMail} boxSize="18px" color="#607397" />
                 <Text fontSize="16px" fontWeight="600">
-                  admin@shipaggregator.com
+                  {adminEmail}
                 </Text>
               </HStack>
+              {userId ? (
+                <Text fontSize="13px" color={adminUi.muted} mt="8px">
+                  ID: {userId}
+                </Text>
+              ) : null}
             </Flex>
           </AdminCard>
 

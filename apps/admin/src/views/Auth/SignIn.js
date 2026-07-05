@@ -1,4 +1,4 @@
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   Text,
   useToast,
   VStack,
-} from '@chakra-ui/react'
+} from "@chakra-ui/react";
 import {
   IconChartBar,
   IconLock,
@@ -23,109 +23,113 @@ import {
   IconSettings,
   IconShield,
   IconUsers,
-} from '@tabler/icons-react'
-import { motion } from 'framer-motion'
-import { jwtDecode } from 'jwt-decode'
-import { useEffect, useState } from 'react'
-import { useHistory } from 'react-router-dom'
-import { loginAdmin } from '../../services/auth.service'
-import { useAuthStore } from '../../store/useAuthStore'
-import { brandIdentity } from '../../theme/brand'
+} from "@tabler/icons-react";
+import { motion } from "framer-motion";
+import { jwtDecode } from "jwt-decode";
+import { useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
+import { loginAdmin } from "../../services/auth.service";
+import { useAuthStore } from "../../store/useAuthStore";
+import { brandIdentity } from "../../theme/brand";
 
 function isTokenValid(token) {
   try {
-    const decoded = jwtDecode(token)
-    return decoded.exp > Date.now() / 1000
+    const decoded = jwtDecode(token);
+    return decoded.exp > Date.now() / 1000;
   } catch {
-    return false
+    return false;
   }
 }
 
 function SignIn() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const toast = useToast()
-  const history = useHistory()
-  const login = useAuthStore((state) => state.login)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const history = useHistory();
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!email.trim() || !password.trim()) {
       toast({
-        title: 'Enter email and password',
-        description: 'Use your admin credentials to continue.',
-        status: 'warning',
+        title: "Enter email and password",
+        description: "Use your admin credentials to continue.",
+        status: "warning",
         duration: 2500,
         isClosable: true,
-      })
-      return
+      });
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const data = await loginAdmin(email, password)
+      const data = await loginAdmin(email, password);
 
-      login(data.token, data?.user?.id, data.refreshToken)
+      const adminUser = data?.user || data?.admin || null;
+      login(data.token, adminUser?.id, data.refreshToken, adminUser);
 
       toast({
-        title: 'Login successful',
-        status: 'success',
+        title: "Login successful",
+        status: "success",
         duration: 2000,
         isClosable: true,
-      })
+      });
 
-      history.push('/admin/dashboard')
+      history.push("/admin/dashboard");
     } catch (err) {
-      const status = err?.response?.status
+      const status = err?.response?.status;
 
       toast({
-        title: status === 401 ? 'Invalid email or password' : 'Unable to sign in',
+        title:
+          status === 401 ? "Invalid email or password" : "Unable to sign in",
         description:
-          status === 401 ? 'Please use a valid admin account.' : 'Please try again in a moment.',
-        status: 'error',
+          status === 401
+            ? "Please use a valid admin account."
+            : "Please try again in a moment.",
+        status: "error",
         duration: 3000,
         isClosable: true,
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken')
-    const refreshToken = localStorage.getItem('refreshToken')
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
 
     if (accessToken && refreshToken && isTokenValid(refreshToken)) {
-      history.replace('/admin/dashboard')
+      history.replace("/admin/dashboard");
     }
-  }, [history])
+  }, [history]);
 
   const featureCards = [
     {
-      title: 'Secure Access',
-      description: 'Role-based access control for admin operations',
+      title: "Secure Access",
+      description: "Role-based access control for admin operations",
       icon: IconShield,
     },
     {
-      title: 'User Management',
-      description: 'Manage users, plans and permissions',
+      title: "User Management",
+      description: "Manage users, plans and permissions",
       icon: IconUsers,
     },
     {
-      title: 'Analytics',
-      description: 'Real-time insights and reporting dashboard',
+      title: "Analytics",
+      description: "Real-time insights and reporting dashboard",
       icon: IconChartBar,
     },
     {
-      title: 'System Control',
-      description: 'Configure couriers, rates and serviceability',
+      title: "System Control",
+      description: "Configure couriers, rates and serviceability",
       icon: IconSettings,
     },
-  ]
+  ];
 
   return (
     <Flex
@@ -134,7 +138,7 @@ function SignIn() {
       align="stretch"
       justify="stretch"
       position="relative"
-      overflow={{ base: 'auto', lg: 'hidden' }}
+      overflow={{ base: "auto", lg: "hidden" }}
       fontFamily="'Plus Jakarta Sans', sans-serif"
     >
       <Flex
@@ -145,8 +149,8 @@ function SignIn() {
         w="100%"
       >
         <Flex
-          display={{ base: 'none', lg: 'flex' }}
-          w={{ lg: '45%', xl: '42%' }}
+          display={{ base: "none", lg: "flex" }}
+          w={{ lg: "45%", xl: "42%" }}
           minH="100vh"
           bg="linear-gradient(135deg, #070C12 0%, #141A22 100%)"
           color="white"
@@ -164,7 +168,7 @@ function SignIn() {
               mb="64px"
               align="center"
               textDecoration="none"
-              _hover={{ textDecoration: 'none' }}
+              _hover={{ textDecoration: "none" }}
             >
               <Box
                 as="img"
@@ -175,7 +179,13 @@ function SignIn() {
                 objectFit="contain"
                 flexShrink="0"
               />
-              <Text color="#FFFFFF" fontSize="24px" fontWeight="700" lineHeight="1" whiteSpace="nowrap">
+              <Text
+                color="#FFFFFF"
+                fontSize="24px"
+                fontWeight="700"
+                lineHeight="1"
+                whiteSpace="nowrap"
+              >
                 Admin Panel
               </Text>
             </HStack>
@@ -184,7 +194,7 @@ function SignIn() {
               <Heading
                 as="h1"
                 color="#FFFFFF"
-                fontSize={{ lg: '30px', xl: '36px' }}
+                fontSize={{ lg: "30px", xl: "36px" }}
                 fontWeight="700"
                 lineHeight="1.22"
                 letterSpacing="0"
@@ -206,15 +216,15 @@ function SignIn() {
                 lineHeight="1.65"
                 maxW="384px"
               >
-                Manage your courier aggregation platform &mdash; users, couriers, rates,
-                serviceability, and more.
+                Manage your courier aggregation platform &mdash; users,
+                couriers, rates, serviceability, and more.
               </Text>
             </Box>
           </Box>
 
           <SimpleGrid columns={2} spacing={3} position="relative" zIndex="1">
             {featureCards.map((card) => {
-              const FeatureIcon = card.icon
+              const FeatureIcon = card.icon;
               return (
                 <Box
                   key={card.title}
@@ -238,14 +248,24 @@ function SignIn() {
                   >
                     <Box as={FeatureIcon} size={20} strokeWidth={2} />
                   </Box>
-                  <Text color="#FFFFFF" fontSize="14px" fontWeight="600" lineHeight="1.25" mb="2px">
+                  <Text
+                    color="#FFFFFF"
+                    fontSize="14px"
+                    fontWeight="600"
+                    lineHeight="1.25"
+                    mb="2px"
+                  >
                     {card.title}
                   </Text>
-                  <Text color="rgba(255,255,255,0.4)" fontSize="12px" lineHeight="1.6">
+                  <Text
+                    color="rgba(255,255,255,0.4)"
+                    fontSize="12px"
+                    lineHeight="1.6"
+                  >
                     {card.description}
                   </Text>
                 </Box>
-              )
+              );
             })}
           </SimpleGrid>
         </Flex>
@@ -254,7 +274,7 @@ function SignIn() {
           <HStack
             as="a"
             href="/"
-            display={{ base: 'flex', lg: 'none' }}
+            display={{ base: "flex", lg: "none" }}
             align="center"
             spacing="10px"
             h="64px"
@@ -263,7 +283,7 @@ function SignIn() {
             borderBottom="1px solid"
             borderColor="#272E38"
             textDecoration="none"
-            _hover={{ textDecoration: 'none' }}
+            _hover={{ textDecoration: "none" }}
           >
             <Box
               as="img"
@@ -274,7 +294,13 @@ function SignIn() {
               objectFit="contain"
               flexShrink="0"
             />
-            <Text color="#FFFFFF" fontSize="16px" fontWeight="700" lineHeight="1" whiteSpace="nowrap">
+            <Text
+              color="#FFFFFF"
+              fontSize="16px"
+              fontWeight="700"
+              lineHeight="1"
+              whiteSpace="nowrap"
+            >
               Admin Panel
             </Text>
           </HStack>
@@ -287,13 +313,19 @@ function SignIn() {
             px={{ base: 5, sm: 8 }}
             py={{ base: 10, sm: 16 }}
           >
-            <Box as="form" noValidate onSubmit={handleSubmit} w="100%" maxW="448px">
+            <Box
+              as="form"
+              noValidate
+              onSubmit={handleSubmit}
+              w="100%"
+              maxW="448px"
+            >
               <VStack spacing="16px" align="stretch">
                 <Box mb="16px">
                   <Heading
                     as="h2"
                     color="#FFFFFF"
-                    fontSize={{ base: '24px', sm: '30px' }}
+                    fontSize={{ base: "24px", sm: "30px" }}
                     fontWeight="700"
                     lineHeight="1.2"
                     letterSpacing="0"
@@ -309,13 +341,18 @@ function SignIn() {
                 <FormControl>
                   <InputGroup>
                     <InputLeftElement h="48px" w="40px" pointerEvents="none">
-                      <Box as={IconMail} size={16} color="#8A95A3" strokeWidth={2} />
+                      <Box
+                        as={IconMail}
+                        size={16}
+                        color="#8A95A3"
+                        strokeWidth={2}
+                      />
                     </InputLeftElement>
                     <Input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@shipaggregator.com"
+                      placeholder="Enter admin email"
                       autoComplete="username"
                       required
                       h="48px"
@@ -328,12 +365,12 @@ function SignIn() {
                       color="#FFFFFF"
                       fontSize="14px"
                       fontWeight="500"
-                      _placeholder={{ color: '#65707D' }}
-                      _hover={{ borderColor: 'rgba(108,92,231,0.35)' }}
+                      _placeholder={{ color: "#65707D" }}
+                      _hover={{ borderColor: "rgba(108,92,231,0.35)" }}
                       _focus={{
-                        borderColor: '#6C5CE7',
-                        boxShadow: 'none',
-                        bg: '#0E131A',
+                        borderColor: "#6C5CE7",
+                        boxShadow: "none",
+                        bg: "#0E131A",
                       }}
                     />
                   </InputGroup>
@@ -342,10 +379,15 @@ function SignIn() {
                 <FormControl>
                   <InputGroup>
                     <InputLeftElement h="48px" w="40px" pointerEvents="none">
-                      <Box as={IconLock} size={16} color="#8A95A3" strokeWidth={2} />
+                      <Box
+                        as={IconLock}
+                        size={16}
+                        color="#8A95A3"
+                        strokeWidth={2}
+                      />
                     </InputLeftElement>
                     <Input
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Password"
@@ -361,25 +403,27 @@ function SignIn() {
                       color="#FFFFFF"
                       fontSize="14px"
                       fontWeight="500"
-                      _placeholder={{ color: '#65707D' }}
-                      _hover={{ borderColor: 'rgba(108,92,231,0.35)' }}
+                      _placeholder={{ color: "#65707D" }}
+                      _hover={{ borderColor: "rgba(108,92,231,0.35)" }}
                       _focus={{
-                        borderColor: '#6C5CE7',
-                        boxShadow: 'none',
-                        bg: '#0E131A',
+                        borderColor: "#6C5CE7",
+                        boxShadow: "none",
+                        bg: "#0E131A",
                       }}
                     />
                     <InputRightElement h="48px" w="44px">
                       <IconButton
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                         icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
                         variant="ghost"
                         size="sm"
                         color="#8B94A1"
                         tabIndex={-1}
                         onClick={() => setShowPassword(!showPassword)}
-                        _hover={{ bg: 'transparent', color: '#FFFFFF' }}
-                        _active={{ bg: 'transparent' }}
+                        _hover={{ bg: "transparent", color: "#FFFFFF" }}
+                        _active={{ bg: "transparent" }}
                       />
                     </InputRightElement>
                   </InputGroup>
@@ -397,10 +441,12 @@ function SignIn() {
                   loadingText="Signing in"
                   boxShadow="0 12px 28px rgba(108, 92, 231, 0.2)"
                   _hover={{
-                    bg: 'linear-gradient(90deg, #7464EF 0%, #8878FF 100%)',
-                    boxShadow: '0 16px 34px rgba(108, 92, 231, 0.35)',
+                    bg: "linear-gradient(90deg, #7464EF 0%, #8878FF 100%)",
+                    boxShadow: "0 16px 34px rgba(108, 92, 231, 0.35)",
                   }}
-                  _active={{ bg: 'linear-gradient(90deg, #6251DE 0%, #7E6BEA 100%)' }}
+                  _active={{
+                    bg: "linear-gradient(90deg, #6251DE 0%, #7E6BEA 100%)",
+                  }}
                 >
                   Sign in
                 </Button>
@@ -410,7 +456,7 @@ function SignIn() {
         </Flex>
       </Flex>
     </Flex>
-  )
+  );
 }
 
-export default SignIn
+export default SignIn;

@@ -1,57 +1,65 @@
-import axios from 'axios'
+import axios from "axios";
 
 const isLocalhost =
-  typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
 const DEFAULT_API_BASE_URL = isLocalhost
-  ? 'http://127.0.0.1:5002/api'
-  : 'https://aggregator-backend-7gmk.onrender.com/api'
-const LEGACY_RAILWAY_API_HOST = 'choiceme-backend-production.up.railway.app'
-const PLACEHOLDER_API_HOST = 'your-backend-url.onrender.com'
+  ? "http://127.0.0.1:5002/api"
+  : "https://aggregator-backend-7gmk.onrender.com/api";
+const LEGACY_RAILWAY_API_HOST = "choiceme-backend-production.up.railway.app";
+const PLACEHOLDER_API_HOST = "your-backend-url.onrender.com";
 
 const normalizeApiBaseUrl = (rawBaseUrl) => {
-  if (!rawBaseUrl) return DEFAULT_API_BASE_URL
+  if (!rawBaseUrl) return DEFAULT_API_BASE_URL;
 
   try {
-    const candidate = new URL(rawBaseUrl)
-    if (candidate.hostname === LEGACY_RAILWAY_API_HOST || candidate.hostname === PLACEHOLDER_API_HOST) {
-      return DEFAULT_API_BASE_URL
+    const candidate = new URL(rawBaseUrl);
+    if (
+      candidate.hostname === LEGACY_RAILWAY_API_HOST ||
+      candidate.hostname === PLACEHOLDER_API_HOST
+    ) {
+      return DEFAULT_API_BASE_URL;
     }
 
-    const normalized = candidate.href.replace(/\/+$/, '')
-    if (normalized.endsWith('/api') || normalized.includes('/api/')) return normalized
-    return `${normalized}/api`
+    const normalized = candidate.href.replace(/\/+$/, "");
+    if (normalized.endsWith("/api") || normalized.includes("/api/"))
+      return normalized;
+    return `${normalized}/api`;
   } catch {
-    return DEFAULT_API_BASE_URL
+    return DEFAULT_API_BASE_URL;
   }
-}
+};
 
-const API_BASE_URL = normalizeApiBaseUrl(process.env.REACT_APP_API_BASE_URL)
+const API_BASE_URL = normalizeApiBaseUrl(process.env.REACT_APP_API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-})
+});
 
-let refreshPromise = null
+let refreshPromise = null;
 
 const redirectToSignIn = () => {
-  if (window.location.pathname !== '/login') {
-    window.location.replace('/login')
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
   }
-}
+};
 
 const clearStoredAuth = () => {
-  localStorage.removeItem('accessToken')
-  localStorage.removeItem('refreshToken')
-  localStorage.removeItem('userId')
-}
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("adminUser");
+};
 
 const updateAuthStore = async (accessToken, refreshToken) => {
-  const { useAuthStore } = await import('../store/useAuthStore')
-  const userId = localStorage.getItem('userId')
-  useAuthStore.getState().login(accessToken, userId, refreshToken)
-}
+  const { useAuthStore } = await import("../store/useAuthStore");
+  const userId = localStorage.getItem("userId");
+  useAuthStore
+    .getState()
+    .login(accessToken, userId, refreshToken, useAuthStore.getState().user);
+};
 
 const refreshAuthTokens = (refreshToken) => {
   if (!refreshPromise) {
@@ -61,73 +69,73 @@ const refreshAuthTokens = (refreshToken) => {
         { refreshToken },
         {
           headers: {
-            'x-refresh-token': refreshToken,
+            "x-refresh-token": refreshToken,
           },
-        },
+        }
       )
       .then(async ({ data }) => {
         if (!data?.accessToken || !data?.refreshToken) {
-          throw new Error('Invalid response from refresh token endpoint')
+          throw new Error("Invalid response from refresh token endpoint");
         }
 
-        localStorage.setItem('accessToken', data.accessToken)
-        localStorage.setItem('refreshToken', data.refreshToken)
-        await updateAuthStore(data.accessToken, data.refreshToken)
-        return data
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        await updateAuthStore(data.accessToken, data.refreshToken);
+        return data;
       })
       .finally(() => {
-        refreshPromise = null
-      })
+        refreshPromise = null;
+      });
   }
 
-  return refreshPromise
-}
+  return refreshPromise;
+};
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken')
+  const token = localStorage.getItem("accessToken");
   if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  return config
-})
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config
-    const requestUrl = originalRequest?.url || ''
+    const originalRequest = error.config;
+    const requestUrl = originalRequest?.url || "";
 
     if (
       error.response?.status !== 401 ||
       !originalRequest ||
       originalRequest._retry ||
-      requestUrl.includes('/auth/')
+      requestUrl.includes("/auth/")
     ) {
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
 
-    const refreshToken = localStorage.getItem('refreshToken')
+    const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
-      clearStoredAuth()
-      redirectToSignIn()
-      return Promise.reject(error)
+      clearStoredAuth();
+      redirectToSignIn();
+      return Promise.reject(error);
     }
 
-    originalRequest._retry = true
+    originalRequest._retry = true;
 
     try {
-      const data = await refreshAuthTokens(refreshToken)
-      originalRequest.headers = originalRequest.headers || {}
-      originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
-      return api(originalRequest)
+      const data = await refreshAuthTokens(refreshToken);
+      originalRequest.headers = originalRequest.headers || {};
+      originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+      return api(originalRequest);
     } catch (refreshErr) {
-      clearStoredAuth()
-      const { useAuthStore } = await import('../store/useAuthStore')
-      useAuthStore.getState().logout()
-      redirectToSignIn()
-      return Promise.reject(refreshErr)
+      clearStoredAuth();
+      const { useAuthStore } = await import("../store/useAuthStore");
+      useAuthStore.getState().logout();
+      redirectToSignIn();
+      return Promise.reject(refreshErr);
     }
-  },
-)
+  }
+);
 
-export default api
+export default api;
