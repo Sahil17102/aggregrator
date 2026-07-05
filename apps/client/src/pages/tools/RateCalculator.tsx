@@ -5,15 +5,23 @@ import {
   CircularProgress,
   Container,
   Grid,
+  InputAdornment,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { FaPlane, FaTruck } from 'react-icons/fa'
-import { TbScale } from 'react-icons/tb'
-import { useNavigate } from 'react-router-dom'
+import {
+  FiArrowRight,
+  FiBox,
+  FiBriefcase,
+  FiPackage,
+  FiZap,
+} from 'react-icons/fi'
+import { TbRulerMeasure, TbScale } from 'react-icons/tb'
+import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import type { Courier } from '../../components/CourierRateCard'
 import PublicFooter from '../../components/public/PublicFooter'
 import PublicNavbar from '../../components/public/PublicNavbar'
@@ -72,6 +80,89 @@ const ui = {
   panelShadow: '0 16px 34px rgba(15, 44, 67, 0.08)',
   softAccent: alpha(brand.accent, 0.1),
   softNavy: alpha(brand.ink, 0.055),
+}
+
+const publicColors = {
+  ink: '#0f172a',
+  muted: '#667895',
+  purple: '#7867f3',
+  orange: '#f97316',
+  amber: '#f59e0b',
+  page: '#f8fafc',
+  line: '#e6eaf2',
+  navy: '#0f172a',
+  navy2: '#17154a',
+}
+
+const dottedLightBackground = `
+  radial-gradient(circle, rgba(120, 103, 243, 0.12) 1px, transparent 1px),
+  linear-gradient(180deg, #fbfcff 0%, #ffffff 100%)
+`
+
+const dottedDarkBackground = `
+  radial-gradient(circle, rgba(120, 103, 243, 0.34) 1px, transparent 1.2px),
+  linear-gradient(120deg, ${publicColors.navy} 0%, #11183f 48%, ${publicColors.navy2} 100%)
+`
+
+const publicCardSx = {
+  position: 'relative',
+  overflow: 'hidden',
+  width: '100%',
+  minWidth: 0,
+  borderRadius: '18px',
+  border: `1px solid ${publicColors.line}`,
+  bgcolor: '#ffffff',
+  boxShadow: '0 22px 42px rgba(15, 23, 42, 0.14)',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 5,
+    background: `linear-gradient(90deg, ${publicColors.purple} 0%, ${publicColors.orange} 50%, ${publicColors.purple} 100%)`,
+  },
+}
+
+const estimatorInputSx = {
+  '& .MuiOutlinedInput-root': {
+    height: 60,
+    borderRadius: '18px',
+    bgcolor: '#f8fafc',
+    color: publicColors.ink,
+    fontSize: '1rem',
+    fontWeight: 700,
+    '& fieldset': {
+      borderColor: '#e3e8f2',
+      borderWidth: 1.5,
+    },
+    '&:hover fieldset': {
+      borderColor: alpha(publicColors.purple, 0.4),
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: publicColors.purple,
+      borderWidth: 1.5,
+    },
+  },
+  '& input::placeholder': {
+    color: '#8393b1',
+    opacity: 1,
+    fontWeight: 600,
+  },
+}
+
+const estimatorLabelSx = {
+  mb: 1,
+  color: '#52627d',
+  fontSize: '0.92rem',
+  fontWeight: 700,
+}
+
+const metricBoxSx = {
+  p: 2,
+  borderRadius: '14px',
+  border: `1px solid ${alpha(publicColors.purple, 0.16)}`,
+  bgcolor: alpha(publicColors.purple, 0.055),
 }
 
 export const cardStyles = {
@@ -211,6 +302,143 @@ const getZoneChipLabel = (courier: Courier) => {
   if (deliveryLocation) return deliveryLocation
   if (courier.special_zone) return 'Special Zone'
   return 'Not returned'
+}
+
+function PublicSectionBadge({ label, dotColor = publicColors.purple }: { label: string; dotColor?: string }) {
+  return (
+    <Box
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 1,
+        px: 1.8,
+        py: 0.8,
+        borderRadius: '999px',
+        bgcolor: alpha(dotColor, 0.1),
+        color: dotColor,
+        fontSize: '0.92rem',
+        fontWeight: 800,
+        lineHeight: 1,
+      }}
+    >
+      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: dotColor }} />
+      {label}
+    </Box>
+  )
+}
+
+function CalculatorInput({
+  label,
+  name,
+  placeholder,
+  endLabel,
+  icon,
+  register,
+}: {
+  label: string
+  name: keyof Pick<RateCalculatorFormValues, 'length' | 'breadth' | 'height' | 'weight'>
+  placeholder: string
+  endLabel: string
+  icon: ReactNode
+  register: ReturnType<typeof useForm<RateCalculatorFormValues>>['register']
+}) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={estimatorLabelSx}>{label}</Typography>
+      <TextField
+        type="number"
+        placeholder={placeholder}
+        {...register(name)}
+        fullWidth
+        inputProps={{ min: 0, step: name === 'weight' ? 0.1 : 1 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Box sx={{ color: '#70809b', display: 'flex', fontSize: 21 }}>{icon}</Box>
+            </InputAdornment>
+          ),
+          endAdornment: (
+            <InputAdornment position="end">
+              <Typography sx={{ color: '#52627d', fontSize: '0.9rem', fontWeight: 700 }}>
+                {endLabel}
+              </Typography>
+            </InputAdornment>
+          ),
+        }}
+        sx={estimatorInputSx}
+      />
+    </Box>
+  )
+}
+
+function BreakdownMetric({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <Box sx={metricBoxSx}>
+      <Typography sx={{ color: publicColors.muted, fontSize: '0.82rem', fontWeight: 800 }}>
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          mt: 0.5,
+          color: highlight ? publicColors.orange : publicColors.ink,
+          fontSize: { xs: '1.55rem', sm: '1.85rem' },
+          fontWeight: 900,
+          lineHeight: 1.05,
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  )
+}
+
+function TipCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode
+  title: string
+  text: string
+}) {
+  return (
+    <Stack
+      direction="row"
+      spacing={2.3}
+      sx={{
+        minHeight: 153,
+        p: { xs: 2.5, md: 3 },
+        borderRadius: '18px',
+        border: `1px solid ${publicColors.line}`,
+        bgcolor: '#ffffff',
+        alignItems: 'flex-start',
+      }}
+    >
+      <Box
+        sx={{
+          width: 50,
+          height: 50,
+          borderRadius: '18px',
+          bgcolor: alpha(publicColors.orange, 0.1),
+          color: publicColors.orange,
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 23,
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <Typography sx={{ color: '#020617', fontSize: '1.18rem', fontWeight: 900, lineHeight: 1.25 }}>
+          {title}
+        </Typography>
+        <Typography sx={{ mt: 1, color: '#61718e', fontSize: '1rem', lineHeight: 1.55, fontWeight: 500 }}>
+          {text}
+        </Typography>
+      </Box>
+    </Stack>
+  )
 }
 
 export function RateCalculator({ publicView }: RateCalculatorProps) {
@@ -401,6 +629,387 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
   const handleViewRateCard = () => {
     if (!isPublic) navigate('/tools/rate_card')
   }
+
+  const hasEstimatorCalculation =
+    toNumber(watchedLength) > 0 &&
+    toNumber(watchedBreadth) > 0 &&
+    toNumber(watchedHeight) > 0 &&
+    toNumber(watchedWeight) > 0
+  const actualWeightKg = toNumber(watchedWeight)
+  const volumetricWeightKg = toNumber(clientMetrics.volumetricWeightKg)
+  const chargeableWeightKg = hasEstimatorCalculation
+    ? Math.max(actualWeightKg, volumetricWeightKg, 0.5)
+    : 0
+
+  const publicWeightEstimator = (
+    <Box sx={{ bgcolor: publicColors.page, minHeight: '100vh', overflowX: 'hidden' }}>
+      <PublicNavbar solid primaryLabel="Go to Dashboard" primaryTo="/dashboard" />
+      <Box component="main">
+        <Box
+          id="calculator"
+          component="section"
+          sx={{
+            pt: { xs: 14, md: 18.5, lg: 23 },
+            pb: { xs: 8, md: 13, lg: 17 },
+            textAlign: 'center',
+            backgroundColor: '#ffffff',
+            backgroundImage: dottedLightBackground,
+            backgroundSize: '34px 34px, auto',
+          }}
+        >
+          <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+            <PublicSectionBadge label="Weight Estimator" />
+            <Typography
+              component="h1"
+              sx={{
+                mt: 3.5,
+                color: publicColors.ink,
+                mx: 'auto',
+                maxWidth: 1040,
+                fontSize: { xs: '1.82rem', sm: '3.45rem', lg: '4rem' },
+                fontWeight: 900,
+                lineHeight: 1.1,
+                letterSpacing: 0,
+              }}
+            >
+              Calculate Your{' '}
+              <Box component="span" sx={{ color: publicColors.purple, display: { xs: 'block', sm: 'inline' } }}>
+                Shipping Weight
+              </Box>
+            </Typography>
+            <Typography
+              sx={{
+                mt: 2.7,
+                mx: 'auto',
+                maxWidth: { xs: 330, sm: 820 },
+                px: { xs: 1, sm: 0 },
+                color: '#667895',
+                fontSize: { xs: '1.08rem', md: '1.36rem' },
+                lineHeight: 1.45,
+                fontWeight: 500,
+              }}
+            >
+              Couriers charge based on the higher of actual weight vs volumetric weight. Use
+              this tool to find your chargeable weight before shipping.
+            </Typography>
+          </Container>
+        </Box>
+
+        <Box
+          component="section"
+          sx={{
+            bgcolor: publicColors.page,
+            pt: { xs: 6, md: 10, lg: 15.5 },
+            pb: { xs: 10, md: 15, lg: 19 },
+          }}
+        >
+          <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+            <Grid
+              container
+              spacing={{ xs: 3, lg: 5.5 }}
+              sx={{
+                maxWidth: 1220,
+                width: '100%',
+                mx: 'auto',
+                alignItems: 'stretch',
+                '& > .MuiGrid-root': { minWidth: 0 },
+              }}
+            >
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <Box sx={{ ...publicCardSx, minHeight: { xs: 420, md: 372 }, p: { xs: 3, md: 4 } }}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: '16px',
+                        bgcolor: alpha(publicColors.purple, 0.08),
+                        color: publicColors.purple,
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: 24,
+                      }}
+                    >
+                      <TbScale />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ color: '#020617', fontSize: '1.35rem', fontWeight: 900 }}>
+                        Package Dimensions
+                      </Typography>
+                      <Typography sx={{ mt: 0.25, color: publicColors.muted, fontWeight: 600 }}>
+                        All fields required for calculation
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Grid container spacing={2} sx={{ mt: 4 }}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <CalculatorInput
+                        label="Length"
+                        name="length"
+                        placeholder="0"
+                        endLabel="cm"
+                        icon={<TbRulerMeasure />}
+                        register={register}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <CalculatorInput
+                        label="Width"
+                        name="breadth"
+                        placeholder="0"
+                        endLabel="cm"
+                        icon={<TbRulerMeasure />}
+                        register={register}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <CalculatorInput
+                        label="Height"
+                        name="height"
+                        placeholder="0"
+                        endLabel="cm"
+                        icon={<FiBox />}
+                        register={register}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Box sx={{ mt: 3 }}>
+                    <CalculatorInput
+                      label="Actual Weight"
+                      name="weight"
+                      placeholder="e.g. 0.5"
+                      endLabel="kg"
+                      icon={<FiBriefcase />}
+                      register={register}
+                    />
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <Box sx={{ ...publicCardSx, minHeight: { xs: 360, md: 372 }, p: { xs: 3, md: 4 } }}>
+                  <Typography sx={{ color: '#020617', fontSize: '1.35rem', fontWeight: 900 }}>
+                    Weight Breakdown
+                  </Typography>
+
+                  {hasEstimatorCalculation ? (
+                    <Stack spacing={2.2} sx={{ mt: 4 }}>
+                      <BreakdownMetric
+                        label="Actual Weight"
+                        value={`${actualWeightKg.toLocaleString('en-IN', {
+                          maximumFractionDigits: 2,
+                        })} kg`}
+                      />
+                      <BreakdownMetric
+                        label="Volumetric Weight"
+                        value={`${volumetricWeightKg.toLocaleString('en-IN', {
+                          maximumFractionDigits: 2,
+                        })} kg`}
+                      />
+                      <BreakdownMetric
+                        label="Chargeable Weight"
+                        value={`${chargeableWeightKg.toLocaleString('en-IN', {
+                          maximumFractionDigits: 2,
+                        })} kg`}
+                        highlight
+                      />
+                    </Stack>
+                  ) : (
+                    <Stack
+                      alignItems="center"
+                      justifyContent="center"
+                      textAlign="center"
+                      sx={{ minHeight: 250, color: publicColors.muted, px: 3 }}
+                    >
+                      <Box
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: '20px',
+                          bgcolor: '#fafbfe',
+                          color: publicColors.ink,
+                          display: 'grid',
+                          placeItems: 'center',
+                          fontSize: 42,
+                          mb: 2.7,
+                        }}
+                      >
+                        <TbScale />
+                      </Box>
+                      <Typography sx={{ maxWidth: 480, color: '#52627d', fontWeight: 600, lineHeight: 1.45 }}>
+                        Enter package dimensions and weight on the left to see
+                        your chargeable weight instantly.
+                      </Typography>
+                    </Stack>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
+
+            <Box id="tips" sx={{ mt: { xs: 11, md: 18, lg: 25 }, textAlign: 'center' }}>
+              <PublicSectionBadge label="Pro Tips" dotColor={publicColors.orange} />
+              <Typography
+                component="h2"
+                sx={{
+                  mt: 2.6,
+                  color: publicColors.ink,
+                  fontSize: { xs: '2.1rem', sm: '2.9rem' },
+                  fontWeight: 900,
+                  lineHeight: 1.12,
+                  letterSpacing: 0,
+                }}
+              >
+                Reduce your{' '}
+                <Box component="span" sx={{ color: publicColors.orange }}>
+                  shipping weight
+                </Box>
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 2,
+                  mx: 'auto',
+                  maxWidth: 720,
+                  color: publicColors.muted,
+                  fontSize: { xs: '1rem', md: '1.18rem' },
+                  lineHeight: 1.55,
+                  fontWeight: 500,
+                }}
+              >
+                Small packaging optimizations can save you thousands in shipping costs
+                every month.
+              </Typography>
+            </Box>
+
+            <Grid container spacing={{ xs: 2.5, lg: 5 }} sx={{ mt: { xs: 6, md: 8.5 }, maxWidth: 1380, mx: 'auto' }}>
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <TipCard
+                  icon={<FiPackage />}
+                  title="Use the right box size"
+                  text="Avoid oversized boxes - they increase volumetric weight and cost more. Trim packaging to fit snugly."
+                />
+              </Grid>
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <TipCard
+                  icon={<TbRulerMeasure />}
+                  title="Measure accurately"
+                  text="Measure the longest, widest, and tallest points of the packed box. Round up to the nearest centimeter."
+                />
+              </Grid>
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <TipCard
+                  icon={<FiBriefcase />}
+                  title="Weigh after packing"
+                  text="Always weigh your package after adding padding, bubble wrap, and the outer box to get the actual weight."
+                />
+              </Grid>
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <TipCard
+                  icon={<FiZap />}
+                  title="Consider lightweight materials"
+                  text="Switch to lighter packaging materials like poly mailers for non-fragile items to save on shipping."
+                />
+              </Grid>
+            </Grid>
+          </Container>
+        </Box>
+
+        <Box
+          id="cta"
+          component="section"
+          sx={{
+            color: '#ffffff',
+            backgroundColor: publicColors.navy,
+            backgroundImage: dottedDarkBackground,
+            backgroundSize: '35px 35px, auto',
+            pt: { xs: 9, md: 13.5 },
+            pb: { xs: 9, md: 12 },
+            textAlign: 'center',
+          }}
+        >
+          <Container maxWidth="md">
+            <Typography
+              component="h2"
+              sx={{
+                color: '#ffffff',
+                fontSize: { xs: '2.4rem', md: '3.8rem' },
+                fontWeight: 900,
+                lineHeight: 1.08,
+                letterSpacing: 0,
+              }}
+            >
+              Ready to optimize
+              <br />
+              your shipping costs?
+            </Typography>
+            <Typography
+              sx={{
+                mt: 3,
+                color: alpha('#ffffff', 0.62),
+                fontSize: { xs: '1.05rem', md: '1.25rem' },
+                lineHeight: 1.55,
+                fontWeight: 500,
+              }}
+            >
+              Join 1.5 Lakh+ businesses using Ship Aggregator to ship
+              smarter and cheaper across India.
+            </Typography>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.4}
+              justifyContent="center"
+              sx={{ mt: 5.5 }}
+            >
+              <Button
+                component={RouterLink}
+                to="/signup"
+                variant="contained"
+                endIcon={<FiArrowRight />}
+                sx={{
+                  minHeight: 66,
+                  px: 4,
+                  borderRadius: '14px',
+                  bgcolor: publicColors.orange,
+                  color: '#ffffff',
+                  fontSize: '1rem',
+                  fontWeight: 900,
+                  boxShadow: '0 18px 34px rgba(249, 115, 22, 0.28)',
+                  '&:hover': { bgcolor: '#ea580c', boxShadow: '0 18px 34px rgba(249, 115, 22, 0.28)' },
+                }}
+              >
+                Start Free Trial
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/resources/rate-calculator"
+                variant="outlined"
+                sx={{
+                  minHeight: 66,
+                  px: 4,
+                  borderRadius: '14px',
+                  color: '#ffffff',
+                  borderColor: alpha('#ffffff', 0.18),
+                  bgcolor: 'transparent',
+                  fontSize: '1rem',
+                  fontWeight: 900,
+                  '&:hover': {
+                    borderColor: alpha('#ffffff', 0.32),
+                    bgcolor: alpha('#ffffff', 0.06),
+                  },
+                }}
+              >
+                Compare Rates
+              </Button>
+            </Stack>
+          </Container>
+        </Box>
+      </Box>
+      <PublicFooter />
+    </Box>
+  )
+
+  if (isPublic && publicView === 'weight') return publicWeightEstimator
 
   const calculatorPanel = (
     <FormProvider {...methods}>

@@ -166,9 +166,9 @@ export default function PublicNavbar({
         justifyContent="space-between"
         sx={{
           mx: 'auto',
-          maxWidth: 1180,
-          minHeight: { xs: 70, lg: 72 },
-          px: { xs: 2, sm: 3 },
+          maxWidth: 1380,
+          minHeight: { xs: 72, lg: 90 },
+          px: { xs: 2, sm: 3, lg: 4 },
         }}
       >
         <Box
@@ -192,8 +192,8 @@ export default function PublicNavbar({
             src={brandIdentity.logoSrc}
             alt=""
             sx={{
-              width: { xs: 38, lg: 44 },
-              height: { xs: 38, lg: 44 },
+              width: { xs: 38, lg: 48 },
+              height: { xs: 38, lg: 48 },
               borderRadius: '50%',
               objectFit: 'cover',
             }}
@@ -203,7 +203,7 @@ export default function PublicNavbar({
 
         <Stack
           direction="row"
-          spacing={1.2}
+          spacing={1.4}
           alignItems="center"
           justifyContent="center"
           sx={{ display: { xs: 'none', lg: 'flex' }, flex: 1 }}
@@ -314,14 +314,14 @@ export default function PublicNavbar({
             variant="contained"
             sx={{
               display: { xs: 'none', lg: 'inline-flex' },
-              minWidth: 92,
-              minHeight: 38,
-              px: 2.2,
-              borderRadius: '8px',
+              minWidth: 194,
+              minHeight: 50,
+              px: 3.2,
+              borderRadius: '12px',
               bgcolor: '#f97316',
               color: '#FFFFFF',
               fontWeight: 800,
-              fontSize: '0.84rem',
+              fontSize: '1rem',
               boxShadow: 'none',
               '&:hover': {
                 bgcolor: '#ea580c',

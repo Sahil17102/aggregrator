@@ -53,7 +53,11 @@ export default function PublicFooter() {
       sx={{
         bgcolor: '#0f172a',
         color: '#fff',
-        backgroundImage: 'linear-gradient(120deg, #0f172a 0%, #11183f 54%, #17154a 100%)',
+        backgroundImage: `
+          radial-gradient(circle, rgba(120, 103, 243, 0.34) 1px, transparent 1.2px),
+          linear-gradient(120deg, #0f172a 0%, #11183f 54%, #17154a 100%)
+        `,
+        backgroundSize: '35px 35px, auto',
         pt: { xs: 8, md: 10 },
         pb: 5,
       }}
@@ -137,7 +141,7 @@ export default function PublicFooter() {
 
         <Box sx={{ borderTop: `1px solid ${alpha('#fff', 0.08)}`, mt: 7, pt: 4, display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
           <Typography sx={{ color: alpha('#fff', 0.45), fontSize: '0.82rem' }}>
-            © 2026 {brandIdentity.name}. All rights reserved.
+            &copy; 2026 {brandIdentity.name}. All rights reserved.
           </Typography>
           <Typography sx={{ color: alpha('#fff', 0.45), fontSize: '0.82rem' }}>Made with care in India</Typography>
         </Box>
