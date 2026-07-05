@@ -1,4 +1,5 @@
 import { Box, Button, Container, Stack, Typography } from '@mui/material'
+import { alpha, useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { FiDownload, FiSettings } from 'react-icons/fi'
 import { RiScales3Line } from 'react-icons/ri'
@@ -22,6 +23,8 @@ const statusColorMap: Record<string, 'success' | 'error' | 'info' | 'pending'> =
 }
 
 export default function WeightReconciliation() {
+    const theme = useTheme()
+    const isDark = theme.palette.mode === 'dark'
     const navigate = useNavigate()
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -48,6 +51,28 @@ export default function WeightReconciliation() {
 
     const discrepancies = discrepanciesData?.discrepancies || []
     const totalCount = discrepanciesData?.pagination?.total || 0
+    const surface = isDark ? '#151b23' : '#FFFFFF'
+    const borderColor = isDark ? alpha('#f8fafc', 0.1) : '#E2E8F0'
+    const cardShadow = isDark ? '0 14px 34px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.06)'
+    const panelSx = {
+        backgroundColor: surface,
+        borderRadius: '12px',
+        border: `1px solid ${borderColor}`,
+        boxShadow: cardShadow,
+    }
+    const actionButtonSx = {
+        borderColor: isDark ? alpha(theme.palette.primary.main, 0.45) : '#333369',
+        color: isDark ? theme.palette.text.primary : '#333369',
+        fontWeight: 600,
+        textTransform: 'none',
+        px: 2.5,
+        py: 1,
+        borderRadius: '8px',
+        '&:hover': {
+            borderColor: isDark ? theme.palette.primary.main : '#2F3B5F',
+            backgroundColor: isDark ? alpha(theme.palette.primary.main, 0.12) : 'rgba(59, 74, 116, 0.08)',
+        },
+    }
 
     const filteredDiscrepancies = filters.search ? discrepancies.filter((d: WeightDiscrepancy) => {
         const query = String(filters.search || '').toLowerCase()
@@ -166,35 +191,35 @@ export default function WeightReconciliation() {
                 <Stack direction={{ xs: 'column', lg: 'row' }} alignItems={{ xs: 'stretch', lg: 'center' }} justifyContent='space-between' gap={2}>
                     <PageHeading eyebrow='Discrepancy Panel' title='Weight Discrepancy' subtitle='Manage weight discrepancies, resolve extra charges, and keep courier billing aligned in one reconciliation panel.' icon={<RiScales3Line size={12} />} />
                     <Stack direction='row' gap={2}>
-                        <Button startIcon={<FiDownload />} onClick={handleExport} variant='outlined' sx={{ borderColor: '#333369', color: '#333369', fontWeight: 600, textTransform: 'none', px: 2.5, py: 1, borderRadius: '8px', '&:hover': { borderColor: '#2F3B5F', backgroundColor: 'rgba(59, 74, 116, 0.08)', }, }}>
+                        <Button startIcon={<FiDownload />} onClick={handleExport} variant='outlined' sx={actionButtonSx}>
                             Export CSV
                         </Button>
-                        <Button startIcon={<FiSettings />} onClick={() => navigate('/reconciliation/weight/settings')} variant='outlined' sx={{ borderColor: '#333369', color: '#333369', fontWeight: 600, textTransform: 'none', px: 2.5, py: 1, borderRadius: '8px', '&:hover': { borderColor: '#2F3B5F', backgroundColor: 'rgba(59, 74, 116, 0.08)', }, }}>
+                        <Button startIcon={<FiSettings />} onClick={() => navigate('/reconciliation/weight/settings')} variant='outlined' sx={actionButtonSx}>
                             Settings
                         </Button>
                     </Stack>
                 </Stack>
                 {summary?.summary && (
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2, }}>
-                        <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', p: 2.5, }}>
-                            <Typography variant='body2' sx={{ color: '#6B7280', fontSize: '13px', mb: 1 }}> Total Discrepancies </Typography>
-                            <Typography variant='h5' sx={{ color: '#333369', fontWeight: 700 }}> {summary.summary.totalDiscrepancies} </Typography>
+                        <Box sx={{ ...panelSx, p: 2.5 }}>
+                            <Typography variant='body2' sx={{ color: 'text.secondary', fontSize: '13px', mb: 1 }}> Total Discrepancies </Typography>
+                            <Typography variant='h5' sx={{ color: 'text.primary', fontWeight: 700 }}> {summary.summary.totalDiscrepancies} </Typography>
                         </Box>
-                        <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', p: 2.5, }}>
-                            <Typography variant='body2' sx={{ color: '#6B7280', fontSize: '13px', mb: 1 }}> Pending Review </Typography>
+                        <Box sx={{ ...panelSx, p: 2.5 }}>
+                            <Typography variant='body2' sx={{ color: 'text.secondary', fontSize: '13px', mb: 1 }}> Pending Review </Typography>
                             <Typography variant='h5' sx={{ color: '#F39C12', fontWeight: 700 }}> {summary.summary.pendingCount} </Typography>
                         </Box>
-                        <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', p: 2.5, }}>
-                            <Typography variant='body2' sx={{ color: '#6B7280', fontSize: '13px', mb: 1 }}> Active Disputes </Typography>
+                        <Box sx={{ ...panelSx, p: 2.5 }}>
+                            <Typography variant='body2' sx={{ color: 'text.secondary', fontSize: '13px', mb: 1 }}> Active Disputes </Typography>
                             <Typography variant='h5' sx={{ color: '#3498DB', fontWeight: 700 }}> {summary.summary.disputedCount} </Typography>
                         </Box>
-                        <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', p: 2.5, }}>
-                            <Typography variant='body2' sx={{ color: '#6B7280', fontSize: '13px', mb: 1 }}> Total Extra Charges </Typography>
+                        <Box sx={{ ...panelSx, p: 2.5 }}>
+                            <Typography variant='body2' sx={{ color: 'text.secondary', fontSize: '13px', mb: 1 }}> Total Extra Charges </Typography>
                             <Typography variant='h5' sx={{ color: '#E74C3C', fontWeight: 700 }}> ₹{Number(summary.summary.totalAdditionalCharges || 0).toFixed(2)} </Typography>
                         </Box>
                     </Box>
                 )}
-                <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', p: 3, }}>
+                <Box sx={{ ...panelSx, p: 3 }}>
                     <FilterBar
                         fields={filterFields}
                         defaultValues={filters}
@@ -205,9 +230,9 @@ export default function WeightReconciliation() {
                     />
                 </Box>
                 {selectedDiscrepancies.length > 0 && (
-                    <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #333369', boxShadow: '0 2px 8px rgba(59, 74, 116, 0.15)', p: 2, }}>
+                    <Box sx={{ ...panelSx, borderColor: isDark ? alpha(theme.palette.primary.main, 0.36) : '#333369', boxShadow: isDark ? cardShadow : '0 2px 8px rgba(59, 74, 116, 0.15)', p: 2 }}>
                         <Stack direction='row' alignItems='center' justifyContent='space-between'>
-                            <Typography sx={{ color: '#333369', fontWeight: 600 }}> {selectedDiscrepancies.length} selected </Typography>
+                            <Typography sx={{ color: 'text.primary', fontWeight: 600 }}> {selectedDiscrepancies.length} selected </Typography>
                             <Stack direction='row' gap={2}>
                                 <Button variant='contained' onClick={handleBulkAccept} disabled={bulkAccept.isPending} sx={{ bgcolor: '#27AE60', textTransform: 'none', '&:hover': { bgcolor: '#229954' }, }}>
                                     Accept Selected
@@ -219,7 +244,7 @@ export default function WeightReconciliation() {
                         </Stack>
                     </Box>
                 )}
-                <Box sx={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden', }}>
+                <Box sx={{ ...panelSx, overflow: 'hidden' }}>
                     <DataTable
                         columns={columns}
                         rows={filteredDiscrepancies}
