@@ -1,6 +1,6 @@
-import { alpha, Box, Button, Container, Stack, Typography } from '@mui/material'
+import { alpha, Box, Button, Collapse, Container, IconButton, Stack, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import {
   FiArrowRight,
   FiBarChart2,
@@ -151,14 +151,46 @@ const testimonials = [
 ]
 
 const faqs = [
-  'What services does Ship Aggregator provide?',
-  'How can I track my shipment?',
-  'What areas do you cover for delivery?',
-  'What are your delivery timelines?',
-  'What payment options are available?',
-  'Is my shipment insured?',
-  'How can I contact customer support?',
-  'What are the packaging guidelines?',
+  {
+    question: 'What services does Ship Aggregator provide?',
+    answer:
+      'Ship Aggregator provides comprehensive courier & logistics services including B2B and B2C shipping solutions, express delivery, warehousing, distribution, cargo transportation, and reverse logistics. We offer domestic and international shipping services tailored to meet your business needs.',
+  },
+  {
+    question: 'How can I track my shipment?',
+    answer:
+      'You can track your shipment using our online tracking system. Simply enter your LR Number, AWB number, or Order ID in the search box on our website. You can also track multiple shipments at once and receive real-time updates on your shipment status.',
+  },
+  {
+    question: 'What areas do you cover for delivery?',
+    answer:
+      'We provide coverage across 29,000+ pin codes in India with regional offices and 50+ hub/SPOC offices. Our extensive network ensures reliable delivery services to both metro cities and remote locations across the country.',
+  },
+  {
+    question: 'What are your delivery timelines?',
+    answer:
+      'Delivery timelines vary based on the service type and destination. Express deliveries typically take 1-2 business days for metro cities, while standard deliveries take 2-5 business days. Rural and remote areas may take 3-7 business days depending on accessibility.',
+  },
+  {
+    question: 'What payment options are available?',
+    answer:
+      'We offer multiple payment options including Prepaid, Cash on Delivery (COD), and To Pay services. You can pay using credit/debit cards, net banking, UPI, wallets, or traditional payment methods based on your preference and service type.',
+  },
+  {
+    question: 'Is my shipment insured?',
+    answer:
+      'Yes, we provide insurance coverage for shipments based on the declared value. Our secure packaging and handling processes, combined with insurance options, ensure your valuable items are protected throughout the shipping process.',
+  },
+  {
+    question: 'How can I contact customer support?',
+    answer:
+      'Our customer support team is available 24/7 to assist you. You can reach us at +919403891046, email us at cs@shipaggregator.com, or chat with us on WhatsApp. Our office hours are 9:00 AM to 6:00 PM, Monday to Friday.',
+  },
+  {
+    question: 'What are the packaging guidelines?',
+    answer:
+      'Proper packaging is essential for safe delivery. Use sturdy boxes, adequate cushioning materials, and ensure items are securely packed. Fragile items should be clearly marked. We provide packaging guidelines and can assist with professional packaging services if needed.',
+  },
 ]
 
 function DarkBand({ children, sx = {} }: { children: ReactNode; sx?: object }) {
@@ -269,6 +301,7 @@ function Card({ children, dark = false }: { children: ReactNode; dark?: boolean 
 
 export default function LandingPage() {
   const location = useLocation()
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (!location.hash) {
@@ -541,26 +574,93 @@ export default function LandingPage() {
           <Stack spacing={1.4}>
             {faqs.map((faq, index) => (
               <Box
-                key={faq}
-                component="button"
-                type="button"
+                key={faq.question}
                 sx={{
                   width: '100%',
                   border: `1px solid ${border}`,
                   bgcolor: '#fff',
                   borderRadius: '12px',
-                  px: { xs: 2, sm: 2.5 },
-                  py: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
+                  overflow: 'hidden',
+                  boxShadow: openFaqIndex === index ? '0 12px 28px rgba(15, 23, 42, 0.08)' : 'none',
                   color: ink,
-                  textAlign: 'left',
+                  position: 'relative',
+                  transition: 'box-shadow 0.18s ease, border-color 0.18s ease',
+                  ...(openFaqIndex === index
+                    ? {
+                        borderColor: alpha(purple, 0.22),
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: 5,
+                          background: `linear-gradient(180deg, ${purple}, ${orange})`,
+                        },
+                      }
+                    : {}),
                 }}
               >
-                <Typography sx={{ color: muted, fontWeight: 800 }}>{String(index + 1).padStart(2, '0')}</Typography>
-                <Typography sx={{ flex: 1, fontWeight: 800 }}>{faq}</Typography>
-                <FiChevronDown />
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={2}
+                  sx={{ px: { xs: 2, sm: 2.5 }, py: 2.1 }}
+                >
+                  <Typography
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '12px',
+                      display: 'grid',
+                      placeItems: 'center',
+                      flexShrink: 0,
+                      color: openFaqIndex === index ? '#fff' : purple,
+                      bgcolor: openFaqIndex === index ? 'transparent' : alpha(purple, 0.1),
+                      background: openFaqIndex === index ? `linear-gradient(135deg, ${purple}, ${orange})` : undefined,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </Typography>
+                  <Typography sx={{ flex: 1, fontWeight: 850, fontSize: { xs: '1rem', sm: '1.05rem' } }}>
+                    {faq.question}
+                  </Typography>
+                  <IconButton
+                    aria-label={`${openFaqIndex === index ? 'Collapse' : 'Expand'} ${faq.question}`}
+                    aria-expanded={openFaqIndex === index}
+                    onClick={() => setOpenFaqIndex((current) => (current === index ? null : index))}
+                    sx={{
+                      color: openFaqIndex === index ? purple : '#53657e',
+                      width: 34,
+                      height: 34,
+                      borderRadius: '8px',
+                      '&:hover': { bgcolor: alpha(purple, 0.08) },
+                    }}
+                  >
+                    <FiChevronDown
+                      size={18}
+                      style={{
+                        transform: openFaqIndex === index ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.18s ease',
+                      }}
+                    />
+                  </IconButton>
+                </Stack>
+                <Collapse in={openFaqIndex === index} timeout={220} unmountOnExit>
+                  <Typography
+                    sx={{
+                      color: muted,
+                      pl: { xs: 8.9, sm: 10.6 },
+                      pr: { xs: 2.4, sm: 5.5 },
+                      pb: { xs: 2.4, sm: 3 },
+                      lineHeight: 1.65,
+                      fontSize: { xs: '0.96rem', sm: '1rem' },
+                    }}
+                  >
+                    {faq.answer}
+                  </Typography>
+                </Collapse>
               </Box>
             ))}
           </Stack>
