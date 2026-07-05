@@ -1,13 +1,31 @@
-import { Box, Button, IconButton, Stack } from '@mui/material'
+import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { useEffect, useState } from 'react'
-import { FiChevronDown, FiMenu, FiX } from 'react-icons/fi'
+import { useEffect, useState, type ReactNode } from 'react'
+import {
+  FiChevronDown,
+  FiGrid,
+  FiMenu,
+  FiShoppingBag,
+  FiSliders,
+  FiTruck,
+  FiX,
+} from 'react-icons/fi'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { brandIdentity } from '../../theme/brand'
 
 type NavItem = {
   label: string
   to: string
+}
+
+type DropdownItem = NavItem & {
+  description: string
+  icon: ReactNode
+}
+
+type DropdownMenu = {
+  label: string
+  items: DropdownItem[]
 }
 
 interface PublicNavbarProps {
@@ -22,9 +40,41 @@ const desktopLinks: NavItem[] = [
   { label: 'Track Shipment', to: '/track' },
 ]
 
-const dropdownLinks: NavItem[] = [
-  { label: 'Integrations', to: '/integrations/sales-channels' },
-  { label: 'Tools', to: '/resources/rate-calculator' },
+const dropdownMenus: DropdownMenu[] = [
+  {
+    label: 'Integrations',
+    items: [
+      {
+        label: 'Sales Channels',
+        description: 'Amazon, Flipkart, Shopify & more',
+        to: '/integrations/sales-channels',
+        icon: <FiShoppingBag />,
+      },
+      {
+        label: 'Courier Partners',
+        description: 'BlueDart, Delhivery, DTDC & more',
+        to: '/integrations',
+        icon: <FiTruck />,
+      },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      {
+        label: 'Weight Estimator',
+        description: 'Calculate volumetric & dead weight',
+        to: '/resources/weight-estimator',
+        icon: <FiSliders />,
+      },
+      {
+        label: 'Rate Calculator',
+        description: 'Compare shipping rates instantly',
+        to: '/resources/rate-calculator',
+        icon: <FiGrid />,
+      },
+    ],
+  },
 ]
 
 const mobileLinks: NavItem[] = [
@@ -42,10 +92,12 @@ export default function PublicNavbar({
 }: PublicNavbarProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     setMobileMenuOpen(false)
+    setOpenDropdown(null)
   }, [location.pathname])
 
   useEffect(() => {
@@ -73,6 +125,22 @@ export default function PublicNavbar({
       color: foreground,
     },
   } as const
+
+  const dropdownButtonSx = (open: boolean) =>
+    ({
+      ...navLinkSx,
+      minHeight: 44,
+      minWidth: 'auto',
+      px: 1.7,
+      textTransform: 'none',
+      color: open ? foreground : muted,
+      bgcolor: open ? (scrolled ? alpha('#7867f3', 0.12) : alpha('#FFFFFF', 0.14)) : 'transparent',
+      '&:hover': {
+        bgcolor: scrolled ? alpha('#7867f3', 0.12) : alpha('#FFFFFF', 0.14),
+        color: foreground,
+      },
+      '& .MuiButton-endIcon': { ml: 0.35 },
+    }) as const
 
   return (
     <Box
@@ -141,22 +209,92 @@ export default function PublicNavbar({
             Platform
           </Box>
 
-          {dropdownLinks.map((item) => (
-            <Button
-              key={item.label}
-              component={RouterLink}
-              to={item.to}
-              endIcon={<FiChevronDown size={15} />}
-              sx={{
-                ...navLinkSx,
-                minHeight: 'auto',
-                minWidth: 'auto',
-                textTransform: 'none',
-                '& .MuiButton-endIcon': { ml: 0.35 },
-              }}
+          {dropdownMenus.map((menu) => (
+            <Box
+              key={menu.label}
+              onMouseEnter={() => setOpenDropdown(menu.label)}
+              onMouseLeave={() => setOpenDropdown((current) => (current === menu.label ? null : current))}
+              sx={{ position: 'relative' }}
             >
-              {item.label}
-            </Button>
+              <Button
+                type="button"
+                onClick={() =>
+                  setOpenDropdown((current) => (current === menu.label ? null : menu.label))
+                }
+                endIcon={
+                  <FiChevronDown
+                    size={15}
+                    style={{
+                      transform: openDropdown === menu.label ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.18s ease',
+                    }}
+                  />
+                }
+                sx={dropdownButtonSx(openDropdown === menu.label)}
+              >
+                {menu.label}
+              </Button>
+
+              {openDropdown === menu.label ? (
+                <Stack
+                  spacing={1.2}
+                  sx={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    minWidth: 360,
+                    p: 2,
+                    borderRadius: '16px',
+                    bgcolor: '#FFFFFF',
+                    border: `1px solid ${alpha('#11182d', 0.06)}`,
+                    boxShadow: '0 24px 70px rgba(17, 24, 45, 0.16)',
+                  }}
+                >
+                  {menu.items.map((item) => (
+                    <Stack
+                      key={item.label}
+                      component={RouterLink}
+                      to={item.to}
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      onClick={() => setOpenDropdown(null)}
+                      sx={{
+                        p: 1.2,
+                        borderRadius: '12px',
+                        color: '#11182d',
+                        textDecoration: 'none',
+                        '&:hover': { bgcolor: alpha('#7867f3', 0.08) },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: '14px',
+                          bgcolor: alpha('#7867f3', 0.1),
+                          color: '#7867f3',
+                          display: 'grid',
+                          placeItems: 'center',
+                          fontSize: 22,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.icon}
+                      </Box>
+                      <Box>
+                        <Typography sx={{ color: '#11182d', fontWeight: 900, fontSize: '1rem' }}>
+                          {item.label}
+                        </Typography>
+                        <Typography sx={{ color: alpha('#334155', 0.74), fontSize: '0.86rem', mt: 0.25 }}>
+                          {item.description}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  ))}
+                </Stack>
+              ) : null}
+            </Box>
           ))}
 
           {links.slice(1).map((item) => (
