@@ -1,4 +1,4 @@
-import { alpha, Box, Button, LinearProgress, Stack, Typography } from '@mui/material'
+import { alpha, Box, Button, LinearProgress, Stack, Typography, useTheme } from '@mui/material'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -20,30 +20,36 @@ import {
 import { useAuth } from '../../context/auth/AuthContext'
 import { useMerchantReadiness } from '../../hooks/useMerchantReadiness'
 
-const PAGE_BG = '#0f141b'
-const CARD_BG = '#151b23'
-const CARD_DARK = '#0f141b'
-const BORDER = '#2a313a'
-const TEXT = '#f8fafc'
-const MUTED = '#9badc3'
-const DIM = '#7f8fa6'
 const PURPLE = '#7657ff'
 const ORANGE = '#ff7a17'
 const BLUE = '#3082ff'
 const RED = '#ef4444'
 const GREEN = '#35d27f'
 
-const cardSx = {
-  border: `1px solid ${BORDER}`,
-  bgcolor: CARD_BG,
-  borderRadius: 3,
-}
-
 export default function Home() {
   const navigate = useNavigate()
+  const theme = useTheme()
   const { walletBalance, user } = useAuth()
   const { progress } = useMerchantReadiness()
   const [showKycBanner, setShowKycBanner] = useState(true)
+  const isDark = theme.palette.mode === 'dark'
+  const pageBg = isDark ? '#0f141b' : '#f4f7fb'
+  const cardBg = isDark ? '#151b23' : '#ffffff'
+  const nestedCardBg = isDark ? '#0f141b' : '#f8fafc'
+  const border = isDark ? '#2a313a' : alpha('#0f172a', 0.12)
+  const strongBorder = isDark ? alpha('#ffffff', 0.86) : alpha(PURPLE, 0.34)
+  const text = isDark ? '#f8fafc' : '#111827'
+  const muted = isDark ? '#9badc3' : '#5b6b82'
+  const dim = isDark ? '#7f8fa6' : '#64748b'
+  const progressTrack = isDark ? '#2a313a' : alpha('#0f172a', 0.1)
+  const emptyStepBorder = isDark ? '#2d3744' : alpha('#64748b', 0.36)
+  const closeHoverBg = isDark ? alpha('#ffffff', 0.07) : alpha('#0f172a', 0.07)
+  const cardSx = {
+    border: `1px solid ${border}`,
+    bgcolor: cardBg,
+    borderRadius: 3,
+    boxShadow: isDark ? 'none' : '0 12px 30px rgba(15, 23, 42, 0.05)',
+  }
 
   const displayName = user?.companyInfo?.contactPerson || user?.name || 'Sahil Mittal'
   const greeting = useMemo(() => {
@@ -89,7 +95,7 @@ export default function Home() {
   ]
 
   return (
-    <Box sx={{ bgcolor: PAGE_BG, color: TEXT, minHeight: '100%', pb: 5 }}>
+    <Box sx={{ bgcolor: pageBg, color: text, minHeight: '100%', pb: 5 }}>
       <Stack spacing={3}>
         {showKycBanner ? (
           <Box
@@ -99,7 +105,7 @@ export default function Home() {
               px: { xs: 2, md: 3.2 },
               py: 2,
               pr: { xs: 5, md: 3.2 },
-              borderColor: alpha('#ffffff', 0.86),
+              borderColor: strongBorder,
               display: 'grid',
               gridTemplateColumns: { xs: '1fr', md: '1fr auto' },
               gap: 2,
@@ -115,7 +121,7 @@ export default function Home() {
                 <Typography sx={{ color: ORANGE, fontWeight: 900, fontSize: '1.05rem' }}>
                   Complete Your KYC
                 </Typography>
-                <Typography sx={{ color: DIM, fontWeight: 600 }}>
+                <Typography sx={{ color: dim, fontWeight: 600 }}>
                   Verify your identity to unlock COD orders, wallet withdrawals, and more.
                 </Typography>
               </Box>
@@ -152,11 +158,11 @@ export default function Home() {
                 border: 0,
                 borderRadius: '50%',
                 bgcolor: 'transparent',
-                color: DIM,
+                color: dim,
                 display: 'grid',
                 placeItems: 'center',
                 cursor: 'pointer',
-                '&:hover': { color: TEXT, bgcolor: alpha('#ffffff', 0.07) },
+                '&:hover': { color: text, bgcolor: closeHoverBg },
               }}
             >
               <TbX size={18} />
@@ -165,10 +171,10 @@ export default function Home() {
         ) : null}
 
         <Box>
-          <Typography sx={{ color: TEXT, fontSize: '1.55rem', fontWeight: 900 }}>
+          <Typography sx={{ color: text, fontSize: '1.55rem', fontWeight: 900 }}>
             {greeting}, {displayName}!
           </Typography>
-          <Typography sx={{ color: MUTED, mt: 0.4, fontSize: '1rem' }}>
+          <Typography sx={{ color: muted, mt: 0.4, fontSize: '1rem' }}>
             Here's your daily overview.
           </Typography>
         </Box>
@@ -189,7 +195,7 @@ export default function Home() {
                 p: 2,
                 position: 'relative',
                 overflow: 'hidden',
-                borderColor: item.label === 'Wallet' ? alpha('#ffffff', 0.86) : BORDER,
+                borderColor: item.label === 'Wallet' ? strongBorder : border,
                 '&::before': {
                   content: '""',
                   position: 'absolute',
@@ -203,8 +209,8 @@ export default function Home() {
             >
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                 <Box>
-                  <Typography sx={{ color: DIM, fontWeight: 700 }}>{item.label}</Typography>
-                  <Typography sx={{ color: TEXT, fontSize: '1.75rem', lineHeight: 1.1, fontWeight: 900 }}>
+                  <Typography sx={{ color: dim, fontWeight: 700 }}>{item.label}</Typography>
+                  <Typography sx={{ color: text, fontSize: '1.75rem', lineHeight: 1.1, fontWeight: 900 }}>
                     {item.value}
                   </Typography>
                   {item.action ? (
@@ -219,11 +225,11 @@ export default function Home() {
           ))}
         </Box>
 
-        <Box sx={{ ...cardSx, borderColor: alpha('#ffffff', 0.86), p: { xs: 2, md: 3 } }}>
+        <Box sx={{ ...cardSx, borderColor: strongBorder, p: { xs: 2, md: 3 } }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2.2}>
             <Stack direction="row" spacing={2} alignItems="center">
               <TbShieldCheck color={PURPLE} />
-              <Typography sx={{ color: TEXT, fontWeight: 900, fontSize: '1.1rem' }}>
+              <Typography sx={{ color: text, fontWeight: 900, fontSize: '1.1rem' }}>
                 Complete Your Profile
               </Typography>
             </Stack>
@@ -235,7 +241,7 @@ export default function Home() {
             sx={{
               height: 7,
               borderRadius: 999,
-              bgcolor: '#2a313a',
+              bgcolor: progressTrack,
               mb: 2.4,
               '& .MuiLinearProgress-bar': {
                 borderRadius: 999,
@@ -257,8 +263,8 @@ export default function Home() {
                   minHeight: 66,
                   p: 1.6,
                   borderRadius: 2,
-                  border: `1px solid ${step.done ? alpha('#ffffff', 0.86) : BORDER}`,
-                  bgcolor: CARD_BG,
+                  border: `1px solid ${step.done ? strongBorder : border}`,
+                  bgcolor: cardBg,
                   display: 'flex',
                   gap: 1.5,
                   alignItems: 'center',
@@ -269,7 +275,7 @@ export default function Home() {
                     width: 25,
                     height: 25,
                     borderRadius: '50%',
-                    border: `2px solid ${step.done ? GREEN : '#2d3744'}`,
+                    border: `2px solid ${step.done ? GREEN : emptyStepBorder}`,
                     bgcolor: step.done ? GREEN : 'transparent',
                     color: '#ffffff',
                     flexShrink: 0,
@@ -282,7 +288,7 @@ export default function Home() {
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
                     sx={{
-                      color: step.done ? alpha(TEXT, 0.6) : TEXT,
+                      color: step.done ? alpha(text, 0.6) : text,
                       fontWeight: 850,
                       textDecoration: step.done ? 'line-through' : 'none',
                     }}
@@ -290,7 +296,7 @@ export default function Home() {
                   >
                     {step.title}
                   </Typography>
-                  <Typography sx={{ color: MUTED, fontSize: '0.78rem' }} noWrap>
+                  <Typography sx={{ color: muted, fontSize: '0.78rem' }} noWrap>
                     {step.text}
                   </Typography>
                 </Box>
@@ -304,20 +310,20 @@ export default function Home() {
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Stack direction="row" spacing={1.4} alignItems="center">
                 <TbChartBar color={PURPLE} />
-                <Typography sx={{ color: TEXT, fontWeight: 900, fontSize: '1.08rem' }}>
+                <Typography sx={{ color: text, fontWeight: 900, fontSize: '1.08rem' }}>
                   Orders by Status
                 </Typography>
               </Stack>
-              <Typography sx={{ color: MUTED }}>0 total</Typography>
+              <Typography sx={{ color: muted }}>0 total</Typography>
             </Stack>
             <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 178 }}>
-              <TbPackage size={32} color={MUTED} />
-              <Typography sx={{ color: MUTED, mt: 1.3 }}>No orders yet</Typography>
+              <TbPackage size={32} color={muted} />
+              <Typography sx={{ color: muted, mt: 1.3 }}>No orders yet</Typography>
             </Stack>
           </Box>
 
           <Box sx={{ ...cardSx, p: 3 }}>
-            <Typography sx={{ color: TEXT, fontWeight: 900, fontSize: '1.08rem', mb: 2 }}>
+            <Typography sx={{ color: text, fontWeight: 900, fontSize: '1.08rem', mb: 2 }}>
               Quick Actions
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.2 }}>
@@ -332,8 +338,8 @@ export default function Home() {
                     alignItems: 'center',
                     gap: 1.5,
                     borderRadius: 2,
-                    border: `1px solid ${BORDER}`,
-                    bgcolor: CARD_DARK,
+                    border: `1px solid ${border}`,
+                    bgcolor: nestedCardBg,
                     cursor: 'pointer',
                     '&:hover': { borderColor: alpha(item.color, 0.6), transform: 'translateY(-1px)' },
                     transition: 'all 0.16s ease',
@@ -355,10 +361,10 @@ export default function Home() {
                     {item.icon}
                   </Box>
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography sx={{ color: TEXT, fontWeight: 900, fontSize: '1.02rem' }} noWrap>
+                    <Typography sx={{ color: text, fontWeight: 900, fontSize: '1.02rem' }} noWrap>
                       {item.title}
                     </Typography>
-                    <Typography sx={{ color: MUTED, fontSize: '0.84rem' }} noWrap>
+                    <Typography sx={{ color: muted, fontSize: '0.84rem' }} noWrap>
                       {item.text}
                     </Typography>
                   </Box>
@@ -370,7 +376,7 @@ export default function Home() {
 
         <Box sx={{ ...cardSx, minHeight: 386, p: 3 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography sx={{ color: TEXT, fontWeight: 900, fontSize: '1.08rem' }}>
+            <Typography sx={{ color: text, fontWeight: 900, fontSize: '1.08rem' }}>
               Recent Orders
             </Typography>
             <Typography onClick={() => navigate('/orders/list')} sx={{ color: PURPLE, fontWeight: 800, cursor: 'pointer' }}>
@@ -379,10 +385,10 @@ export default function Home() {
           </Stack>
           <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 300 }}>
             <TbCube size={32} color={PURPLE} />
-            <Typography sx={{ color: TEXT, mt: 2, fontWeight: 900, fontSize: '1.05rem' }}>
+            <Typography sx={{ color: text, mt: 2, fontWeight: 900, fontSize: '1.05rem' }}>
               No orders yet
             </Typography>
-            <Typography sx={{ color: MUTED, mt: 0.7 }}>Create your first order to start shipping.</Typography>
+            <Typography sx={{ color: muted, mt: 0.7 }}>Create your first order to start shipping.</Typography>
             <Button
               variant="contained"
               startIcon={<TbPlus />}
