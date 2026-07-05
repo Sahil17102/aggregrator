@@ -54,7 +54,7 @@ const dropdownMenus: DropdownMenu[] = [
       {
         label: 'Courier Partners',
         description: 'BlueDart, Delhivery, DTDC & more',
-        to: '/integrations',
+        to: '/integrations/courier-partners',
         icon: <FiTruck />,
       },
     ],

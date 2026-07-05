@@ -21,6 +21,7 @@ const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'))
 const LandingPage = lazy(() => import('../pages/LandingPage'))
 const PlatformPage = lazy(() => import('../pages/PlatformPage'))
 const SalesChannelsPage = lazy(() => import('../pages/SalesChannelsPage'))
+const CourierPartnersPage = lazy(() => import('../pages/CourierPartnersPage'))
 const BlogsPage = lazy(() => import('../pages/BlogsPage'))
 const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'))
 
@@ -209,8 +210,9 @@ function RoutedApp() {
           <Route path="/" element={<RootRoute />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/platform" element={<PlatformPage />} />
-          <Route path="/integrations" element={<Navigate to="/platform#integrations" replace />} />
+          <Route path="/integrations" element={<Navigate to="/integrations/courier-partners" replace />} />
           <Route path="/integrations/sales-channels" element={<SalesChannelsPage />} />
+          <Route path="/integrations/courier-partners" element={<CourierPartnersPage />} />
           <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/about" element={<LandingPage />} />
           <Route path="/careers" element={<LandingPage />} />

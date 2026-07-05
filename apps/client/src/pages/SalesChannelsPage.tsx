@@ -725,7 +725,7 @@ export default function SalesChannelsPage() {
               sx={{ pt: 2, width: { xs: '100%', sm: 'auto' } }}
             >
               <PrimaryButton to="/signup">Start Free Trial</PrimaryButton>
-              <DarkOutlineButton to="/platform#integrations">View Courier Partners</DarkOutlineButton>
+              <DarkOutlineButton to="/integrations/courier-partners">View Courier Partners</DarkOutlineButton>
             </Stack>
           </Stack>
         </Container>
