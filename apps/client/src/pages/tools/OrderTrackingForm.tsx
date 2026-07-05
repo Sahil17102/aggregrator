@@ -13,6 +13,7 @@ import {
   Grid,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -104,45 +105,54 @@ const getTrackingTone = (status?: string | null) => {
   return { bg: alpha(brand.ink, 0.08), fg: brand.ink }
 }
 
-const trackingHeroSx = {
-  position: 'relative',
-  overflow: 'hidden',
-  borderRadius: '10px',
-  border: `1px solid ${alpha(brand.ink, 0.08)}`,
-  background: `
-    radial-gradient(circle at 100% 0%, ${alpha(brand.accent, 0.08)} 0%, transparent 28%),
-    linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,254,0.98) 100%)
-  `,
-  boxShadow: '0 12px 28px rgba(68, 92, 138, 0.09)',
-  p: { xs: 1.25, sm: 1.45, md: 1.6 },
-}
-
-const compactSurfaceSx = {
-  borderRadius: '8px',
-  border: `1px solid ${alpha(brand.ink, 0.08)}`,
-  background: 'rgba(255,255,255,0.92)',
-  boxShadow: '0 10px 22px rgba(68, 92, 138, 0.07)',
-}
-
-const modeButtonSx = (active: boolean) => ({
-  minHeight: 32,
-  px: 1.25,
-  borderRadius: '8px',
-  border: `1px solid ${active ? alpha(brand.accent, 0.38) : alpha(brand.ink, 0.08)}`,
-  bgcolor: active ? alpha(brand.accent, 0.12) : '#FFFFFF',
-  color: active ? brand.ink : brand.inkSoft,
-  boxShadow: active ? '0 10px 20px rgba(255, 122, 21, 0.12)' : 'none',
-  fontSize: '0.8rem',
-  fontWeight: 800,
-  whiteSpace: 'nowrap',
-  textTransform: 'none',
-  '&:hover': {
-    bgcolor: active ? alpha(brand.accent, 0.16) : alpha(brand.ink, 0.04),
-    borderColor: active ? alpha(brand.accent, 0.45) : alpha(brand.ink, 0.12),
-  },
-})
-
 export default function OrderTrackingForm() {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const ink = theme.palette.text.primary
+  const muted = theme.palette.text.secondary
+  const surface = isDark ? '#151b23' : 'rgba(255,255,255,0.92)'
+  const inputSurface = isDark ? '#101720' : '#FFFFFF'
+  const line = isDark ? alpha('#f8fafc', 0.12) : alpha(brand.ink, 0.08)
+  const trackingHeroSx = {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: '10px',
+    border: `1px solid ${line}`,
+    background: isDark
+      ? `
+        radial-gradient(circle at 100% 0%, ${alpha(brand.accent, 0.14)} 0%, transparent 30%),
+        linear-gradient(135deg, #151b23 0%, #111821 100%)
+      `
+      : `
+        radial-gradient(circle at 100% 0%, ${alpha(brand.accent, 0.08)} 0%, transparent 28%),
+        linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,254,0.98) 100%)
+      `,
+    boxShadow: isDark ? '0 14px 34px rgba(0,0,0,0.18)' : '0 12px 28px rgba(68, 92, 138, 0.09)',
+    p: { xs: 1.25, sm: 1.45, md: 1.6 },
+  }
+  const compactSurfaceSx = {
+    borderRadius: '8px',
+    border: `1px solid ${line}`,
+    background: surface,
+    boxShadow: isDark ? '0 14px 34px rgba(0,0,0,0.18)' : '0 10px 22px rgba(68, 92, 138, 0.07)',
+  }
+  const modeButtonSx = (active: boolean) => ({
+    minHeight: 32,
+    px: 1.25,
+    borderRadius: '8px',
+    border: `1px solid ${active ? alpha(brand.accent, 0.42) : line}`,
+    bgcolor: active ? alpha(brand.accent, isDark ? 0.18 : 0.12) : inputSurface,
+    color: active ? ink : muted,
+    boxShadow: active ? '0 10px 20px rgba(255, 122, 21, 0.12)' : 'none',
+    fontSize: '0.8rem',
+    fontWeight: 800,
+    whiteSpace: 'nowrap',
+    textTransform: 'none',
+    '&:hover': {
+      bgcolor: active ? alpha(brand.accent, isDark ? 0.24 : 0.16) : alpha(brand.accent, isDark ? 0.1 : 0.04),
+      borderColor: active ? alpha(brand.accent, 0.5) : alpha(brand.accent, 0.28),
+    },
+  })
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const trackingQuery = searchParams.toString()
@@ -339,7 +349,7 @@ export default function OrderTrackingForm() {
                 <Stack spacing={0.2}>
                   <Typography
                     sx={{
-                      color: brand.inkSoft,
+                      color: muted,
                       fontSize: '0.64rem',
                       fontWeight: 800,
                       letterSpacing: '0.14em',
@@ -350,7 +360,7 @@ export default function OrderTrackingForm() {
                   </Typography>
                   <Typography
                     sx={{
-                      color: brand.ink,
+                      color: ink,
                       fontSize: { xs: '1.35rem', md: '1.55rem' },
                       fontWeight: 900,
                       lineHeight: 1.04,
@@ -362,7 +372,7 @@ export default function OrderTrackingForm() {
               </Stack>
               <Typography
                 sx={{
-                  color: brand.inkSoft,
+                  color: muted,
                   fontSize: { xs: '0.84rem', md: '0.87rem' },
                   lineHeight: 1.48,
                   maxWidth: 430,
@@ -388,7 +398,7 @@ export default function OrderTrackingForm() {
                   alignItems={{ xs: 'flex-start', sm: 'center' }}
                 >
                   <Box>
-                    <Typography sx={{ color: brand.ink, fontSize: '1rem', fontWeight: 800 }}>
+                    <Typography sx={{ color: ink, fontSize: '1rem', fontWeight: 800 }}>
                       Track Your <Box component="span" sx={{ color: brand.accent }}>Order</Box>
                     </Typography>
                     <Typography
@@ -407,8 +417,8 @@ export default function OrderTrackingForm() {
                       borderRadius: '9px',
                       width: { xs: '100%', sm: 'auto' },
                       flexWrap: 'wrap',
-                      bgcolor: alpha(brand.ink, 0.035),
-                      border: `1px solid ${alpha(brand.ink, 0.06)}`,
+                      bgcolor: isDark ? alpha('#ffffff', 0.04) : alpha(brand.ink, 0.035),
+                      border: `1px solid ${isDark ? line : alpha(brand.ink, 0.06)}`,
                       '& .MuiButton-root': {
                         flex: { xs: '1 1 120px', sm: '0 0 auto' },
                       },
@@ -621,8 +631,8 @@ export default function OrderTrackingForm() {
                           gap: { xs: 1.1, sm: 1.4 },
                           p: { xs: 1.6, md: 2 },
                           borderRadius: '18px',
-                          border: `1px solid ${alpha(brand.ink, 0.08)}`,
-                          bgcolor: isLatest ? alpha(brand.accent, 0.04) : '#FFFFFF',
+                          border: `1px solid ${line}`,
+                          bgcolor: isLatest ? alpha(brand.accent, isDark ? 0.1 : 0.04) : surface,
                         }}
                       >
                         <Box
@@ -635,10 +645,10 @@ export default function OrderTrackingForm() {
                             gap: 0.5,
                           }}
                         >
-                          <Typography sx={{ fontWeight: 800, color: brand.ink, fontSize: '0.92rem' }}>
+                          <Typography sx={{ fontWeight: 800, color: ink, fontSize: '0.92rem' }}>
                             {formatTrackingDate(event.event_time)}
                           </Typography>
-                          <Typography sx={{ fontWeight: 700, color: brand.inkSoft, fontSize: '0.78rem' }}>
+                          <Typography sx={{ fontWeight: 700, color: muted, fontSize: '0.78rem' }}>
                             {formatTrackingTime(event.event_time)}
                           </Typography>
                         </Box>
@@ -655,7 +665,7 @@ export default function OrderTrackingForm() {
                               width: 12,
                               height: 12,
                               borderRadius: 999,
-                              bgcolor: isLatest ? brand.accent : alpha(brand.ink, 0.18),
+                              bgcolor: isLatest ? brand.accent : alpha(ink, 0.18),
                               boxShadow: isLatest ? '0 0 0 6px rgba(255,122,21,0.12)' : 'none',
                               position: 'relative',
                             }}
@@ -668,7 +678,7 @@ export default function OrderTrackingForm() {
                                   top: 12,
                                   bottom: -28,
                                   width: 2,
-                                  bgcolor: alpha(brand.ink, 0.08),
+                                  bgcolor: alpha(ink, 0.12),
                                 }}
                               />
                             )}
@@ -690,7 +700,7 @@ export default function OrderTrackingForm() {
                               Exact Status
                             </Typography>
                           </Stack>
-                          <Typography fontWeight={700} sx={{ mt: 0.8, color: brand.ink }}>
+                          <Typography fontWeight={700} sx={{ mt: 0.8, color: ink }}>
                             {event.message || exactStatus}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.7 }}>
