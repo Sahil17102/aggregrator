@@ -1,91 +1,164 @@
+import { Box, Flex, HStack, IconButton, Switch, Text } from "@chakra-ui/react";
+import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
 import {
-  Box,
-  Flex,
-  Heading,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  Text,
-  useColorModeValue,
-  VStack,
-} from '@chakra-ui/react'
-import { IconCoinRupee, IconFileSpreadsheet } from '@tabler/icons-react'
-import { lazy, Suspense, useState } from 'react'
-import ZonesManagement from '../Zones/ZonesManagement'
+  AdminCard,
+  AdminSelect,
+  AdminStack,
+  DataTable,
+  PrimaryButton,
+  SearchInput,
+  adminUi,
+} from "components/AdminUI/AdminPage";
+import { useState } from "react";
 
-// Lazy load pricing content component
-const B2BPricingContent = lazy(() => import('./B2B/B2BPricingContent'))
+const tabs = [
+  "Zones",
+  "Pincodes",
+  "Rate Matrix",
+  "Additional Charges",
+  "Quote Calculator",
+];
+
+const zoneRows = [
+  {
+    code: "A",
+    name: "Zone A - Metro / Direct",
+    description: "Direct delivery, metros and major hubs",
+  },
+  {
+    code: "B",
+    name: "Zone B - EDL1 / Tier 1",
+    description: "Extra delivery level 1 - Tier 1 cities",
+  },
+  {
+    code: "C",
+    name: "Zone C - EDL2 / Tier 2",
+    description: "Extra delivery level 2 - Tier 2 cities",
+  },
+  { code: "CRG_AMD", name: "Ahmedabad", description: "Ahmedabad / Gujarat" },
+  { code: "CRG_BLR", name: "Bangalore", description: "Bangalore / Karnataka" },
+  { code: "CRG_BOM", name: "Mumbai", description: "Mumbai" },
+  { code: "CRG_CCU", name: "Kolkata", description: "Kolkata / West Bengal" },
+  { code: "CRG_CHD", name: "Chandigarh", description: "Chandigarh / Punjab" },
+];
 
 const B2BPricingManagement = () => {
-  const bgColor = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
-  const [subTabIndex, setSubTabIndex] = useState(0) // 0 = Zones, 1 = Pricing
+  const [activeTab, setActiveTab] = useState("Zones");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+
+  const columns = [
+    { key: "code", label: "Code", w: "190px" },
+    { key: "name", label: "Name", w: "220px" },
+    { key: "description", label: "Description" },
+    {
+      key: "active",
+      label: "Active",
+      align: "center",
+      render: () => <Switch colorScheme="purple" isChecked />,
+    },
+  ];
 
   return (
-    <Box pt={{ base: '130px', md: '80px', xl: '80px' }} px={{ base: 4, md: 6 }}>
-      <VStack spacing={6} align="stretch">
-        {/* Header Section */}
-        <Flex justify="space-between" align="flex-start" flexWrap="wrap" gap={4}>
-          <Box>
-            <Heading size="lg" mb={2}>
-              B2B Pricing & Zones
-            </Heading>
-            <Text color="gray.600" fontSize="sm">
-              Manage zones and pricing configurations for enterprise customers
-            </Text>
-          </Box>
-        </Flex>
+    <AdminStack spacing="20px">
+      <AdminCard p="25px">
+        <Text fontSize="26px" fontWeight="800" color={adminUi.text} mb="28px">
+          B2B Pricing Management
+        </Text>
 
-        {/* Main Content Tabs */}
-        <Box bg={bgColor} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="md">
-          <Tabs index={subTabIndex} onChange={setSubTabIndex} colorScheme="blue" variant="enclosed">
-            <Box px={6} pt={4} borderBottomWidth="1px" borderColor={borderColor}>
-              <TabList>
-                <Tab
-                  _selected={{
-                    color: 'blue.600',
-                    borderColor: 'blue.500',
-                    borderBottomColor: 'transparent',
-                  }}
-                  fontWeight="medium"
-                >
-                  <IconFileSpreadsheet size={18} style={{ marginRight: '8px' }} />
-                  Zones
-                </Tab>
-                <Tab
-                  _selected={{
-                    color: 'blue.600',
-                    borderColor: 'blue.500',
-                    borderBottomColor: 'transparent',
-                  }}
-                  fontWeight="medium"
-                >
-                  <IconCoinRupee size={18} style={{ marginRight: '8px' }} />
-                  Pricing
-                </Tab>
-              </TabList>
+        <HStack
+          spacing="22px"
+          borderBottom="1px solid"
+          borderColor={adminUi.border}
+          mb="26px"
+          wrap="wrap"
+        >
+          {tabs.map((tab) => (
+            <Box
+              key={tab}
+              pb="11px"
+              borderBottom="3px solid"
+              borderColor={activeTab === tab ? adminUi.purple : "transparent"}
+              color={activeTab === tab ? adminUi.purple : "#333333"}
+              cursor="pointer"
+              onClick={() => setActiveTab(tab)}
+            >
+              <Text fontSize="19px" fontWeight="500">
+                {tab}
+              </Text>
             </Box>
+          ))}
+        </HStack>
 
-            <TabPanels>
-              {/* Zones Tab */}
-              <TabPanel px={6} py={4}>
-                <ZonesManagement defaultBusinessType="B2B" />
-              </TabPanel>
+        {activeTab === "Zones" ? (
+          <>
+            <Flex
+              justify="space-between"
+              align="center"
+              mb="20px"
+              gap="14px"
+              wrap="wrap"
+            >
+              <HStack spacing="14px" wrap="wrap">
+                <SearchInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search code, name or descriptio..."
+                  maxW="360px"
+                />
+                <AdminSelect value={status} onChange={setStatus} maxW="160px">
+                  <option value="">Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </AdminSelect>
+              </HStack>
+              <PrimaryButton leftIcon={<IconPlus size={18} />}>
+                Add Zone
+              </PrimaryButton>
+            </Flex>
 
-              {/* Pricing Tab */}
-              <TabPanel px={0} py={0}>
-                <Suspense fallback={<Box p={6}>Loading pricing configuration...</Box>}>
-                  <B2BPricingContent />
-                </Suspense>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </Box>
-      </VStack>
-    </Box>
-  )
-}
+            <DataTable
+              columns={columns}
+              rows={zoneRows}
+              rowKey="code"
+              minW="1040px"
+              actions={() => (
+                <HStack spacing="10px" justify="flex-end">
+                  <IconButton
+                    aria-label="Edit zone"
+                    icon={<IconEdit size={18} />}
+                    size="sm"
+                    variant="outline"
+                    borderColor="#D6DEE9"
+                    bg="#FFFFFF"
+                  />
+                  <IconButton
+                    aria-label="Delete zone"
+                    icon={<IconTrash size={18} />}
+                    size="sm"
+                    variant="outline"
+                    borderColor="#FFB5B5"
+                    color="#FF3D3D"
+                    bg="#FFFFFF"
+                  />
+                </HStack>
+              )}
+            />
+          </>
+        ) : (
+          <Flex
+            minH="420px"
+            align="center"
+            justify="center"
+            color={adminUi.muted}
+            fontSize="18px"
+          >
+            {activeTab} configuration will appear here.
+          </Flex>
+        )}
+      </AdminCard>
+    </AdminStack>
+  );
+};
 
-export default B2BPricingManagement
+export default B2BPricingManagement;

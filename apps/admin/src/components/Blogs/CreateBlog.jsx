@@ -1,536 +1,556 @@
-// src/pages/CreateBlog.js
 import {
   Box,
   Button,
-  Divider,
   Flex,
   FormControl,
   FormErrorMessage,
-  FormLabel,
-  Heading,
   HStack,
   Icon,
   IconButton,
-  Image,
   Input,
+  Select,
+  SimpleGrid,
   Spinner,
   Switch,
   Text,
   Textarea,
-  useColorModeValue,
-  useToast,
   VStack,
-} from '@chakra-ui/react'
-import Card from 'components/Card/Card'
-import CardBody from 'components/Card/CardBody'
-import FileUploader from 'components/upload/FileUploader'
-import { ContentState, convertFromHTML, convertToRaw, EditorState } from 'draft-js'
-import draftToHtml from 'draftjs-to-html'
-import { useCreateBlog, useSingleBlog, useUpdateBlog } from 'hooks/useBlog'
-import { usePresignedDownloadUrls } from 'hooks/usePresignedUrls'
-import { useEffect, useState } from 'react'
-import { Editor } from 'react-draft-wysiwyg'
-import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css'
-import { FiArrowLeft, FiCheck, FiImage, FiX } from 'react-icons/fi'
-import { useParams } from 'react-router-dom'
-import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
+  useToast,
+} from "@chakra-ui/react";
+import {
+  IconArrowLeft,
+  IconBold,
+  IconDeviceFloppy,
+  IconEye,
+  IconH1,
+  IconH2,
+  IconH3,
+  IconItalic,
+  IconLink,
+  IconList,
+  IconListNumbers,
+  IconPhoto,
+  IconPlus,
+  IconQuote,
+  IconStrikethrough,
+  IconUnderline,
+} from "@tabler/icons-react";
+import {
+  AdminCard,
+  AdminStack,
+  PrimaryButton,
+  adminUi,
+} from "components/AdminUI/AdminPage";
+import { useCreateBlog, useSingleBlog, useUpdateBlog } from "hooks/useBlog";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
+
+const makeSlug = (title) =>
+  title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+
+function Field({ label, children, error }) {
+  return (
+    <FormControl isInvalid={!!error}>
+      <Text fontSize="18px" color={adminUi.text} mb="10px">
+        {label}
+      </Text>
+      {children}
+      <FormErrorMessage>{error}</FormErrorMessage>
+    </FormControl>
+  );
+}
+
+function ToolbarButton({ icon, label, active }) {
+  return (
+    <IconButton
+      aria-label={label}
+      icon={<Icon as={icon} boxSize="18px" />}
+      size="sm"
+      variant="ghost"
+      borderRadius="8px"
+      bg={active ? "#F0F2F6" : "transparent"}
+      color={active ? adminUi.text : "#596B86"}
+    />
+  );
+}
 
 const CreateBlog = () => {
-  const { id } = useParams()
-  const toast = useToast()
-  const history = useHistory()
-  const textColor = useColorModeValue('gray.700', 'white')
-  const bgColor = useColorModeValue('gray.50', 'gray.800')
-
+  const { id } = useParams();
+  const toast = useToast();
+  const history = useHistory();
   const [form, setForm] = useState({
-    title: '',
-    slug: '',
-    excerpt: '',
-    tags: '',
-    featured_image: '',
-    featured_image_alt: '',
+    title: "",
+    slug: "",
+    excerpt: "",
+    tags: "Shipping Tips",
+    author: "Arjun Patel",
+    read_time: "",
+    accent_color: "#6C5CE7",
+    status: "draft",
     is_featured: false,
-    published_at: '',
-    content: '',
-    og_image: '',
-    meta_description: '',
-  })
+    content: "",
+    meta_title: "",
+    meta_description: "",
+    og_image: "",
+  });
+  const [errors, setErrors] = useState({});
+  const createBlogMutation = useCreateBlog();
+  const updateBlogMutation = useUpdateBlog();
+  const { data: blogData, isLoading } = useSingleBlog(id);
+  const blog = blogData?.data;
 
-  const [errors, setErrors] = useState({})
-  const [editorState, setEditorState] = useState(EditorState.createEmpty())
-  const createBlogMutation = useCreateBlog()
-  const updateBlogMutation = useUpdateBlog()
-
-  // Fetch single blog if editing
-  const { data: blogData, isLoading } = useSingleBlog(id)
-  const blog = blogData?.data
-
-  // Get presigned URL for featured image preview
-  const imageKey = form.og_image ? [form.og_image] : []
-  const { data: imageUrls } = usePresignedDownloadUrls({ keys: imageKey })
-  const imagePreviewUrl = imageUrls?.urls?.[0]
-
-  // Populate form when blog data is fetched
   useEffect(() => {
-    if (blog) {
-      setForm({
-        title: blog.title || '',
-        slug: blog.slug || '',
-        excerpt: blog.excerpt || '',
-        tags: blog.tags || '',
-        featured_image: blog.featured_image || '',
-        featured_image_alt: blog.featured_image_alt || '',
-        is_featured: blog.is_featured || false,
-        published_at: blog.published_at || '',
-        content: blog.content || '',
-        og_image: blog.og_image || '',
-        meta_description: blog.meta_description || blog.excerpt || '',
-      })
+    if (!blog) return;
+    setForm({
+      title: blog.title || "",
+      slug: blog.slug || "",
+      excerpt: blog.excerpt || "",
+      tags: blog.tags || "Shipping Tips",
+      author: blog.author || "Arjun Patel",
+      read_time: blog.read_time || "",
+      accent_color: blog.accent_color || "#6C5CE7",
+      status: blog.status || "draft",
+      is_featured: Boolean(blog.is_featured),
+      content: blog.content || "",
+      meta_title: blog.meta_title || "",
+      meta_description: blog.meta_description || blog.excerpt || "",
+      og_image: blog.og_image || "",
+    });
+  }, [blog]);
 
-      if (blog.content) {
-        const blocksFromHTML = convertFromHTML(blog.content)
-        const contentState = ContentState.createFromBlockArray(
-          blocksFromHTML.contentBlocks,
-          blocksFromHTML.entityMap,
-        )
-        setEditorState(EditorState.createWithContent(contentState))
-      }
-    }
-  }, [blog])
-
-  const handleChange = (key, value) => setForm((f) => ({ ...f, [key]: value }))
-
-  const handleImageUploaded = (files) => {
-    if (files.length) {
-      const f = files[0]
-      setForm((prev) => ({
-        ...prev,
-        featured_image: f.originalName,
-        featured_image_alt: f.originalName,
-        og_image: f?.key,
-      }))
-    }
-  }
-
-  const handleContentChange = (state) => {
-    setEditorState(state)
-    const html = draftToHtml(convertToRaw(state.getCurrentContent()))
-    setForm((f) => ({ ...f, content: html }))
-  }
-
-  // Auto-generate slug and tags only for new blogs
   useEffect(() => {
-    if (!blog && form.title) {
-      const slug = form.title
-        .trim()
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-
-      const stopWords = ['the', 'and', 'for', 'with', 'a', 'an', 'of', 'in', 'on', 'at', 'to']
-      const tagsArray = form.title
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((word) => word.length > 2 && !stopWords.includes(word))
-      const tags = [...new Set(tagsArray)].slice(0, 10).join(', ')
-
-      setForm((f) => ({ ...f, slug, tags }))
+    if (!id && form.title) {
+      setForm((previous) => ({ ...previous, slug: makeSlug(form.title) }));
     }
-  }, [form.title, blog])
+  }, [form.title, id]);
 
-  const validateForm = () => {
-    const newErrors = {}
-    if (!form.title.trim()) newErrors.title = 'Title is required'
-    if (!form.slug.trim()) newErrors.slug = 'Slug is required'
-    if (!form.excerpt.trim()) newErrors.excerpt = 'Excerpt is required'
-    if (!form.content.trim()) newErrors.content = 'Content is required'
-    if (form.excerpt.length > 200) newErrors.excerpt = 'Excerpt must be under 200 characters'
+  const updateForm = (key, value) =>
+    setForm((previous) => ({ ...previous, [key]: value }));
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+  const validateForm = (status) => {
+    const nextErrors = {};
+    if (!form.title.trim()) nextErrors.title = "Title is required";
+    if (!form.slug.trim()) nextErrors.slug = "Slug is required";
+    if (status !== "draft" && !form.excerpt.trim())
+      nextErrors.excerpt = "Excerpt is required";
+    if (status !== "draft" && !form.content.trim())
+      nextErrors.content = "Content is required";
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    if (!validateForm()) {
+  const handleSubmit = async (status = "published") => {
+    if (!validateForm(status)) {
       toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields',
-        status: 'error',
-        duration: 3000,
+        title: "Please fill in required fields",
+        status: "error",
+        duration: 2500,
         isClosable: true,
-      })
-      return
+      });
+      return;
     }
 
     const payload = {
       ...form,
-      published_at: form.published_at || new Date().toISOString(),
-    }
-
-    console.log('Blog payload:', payload)
+      tags: form.tags,
+      status,
+      published_at:
+        status === "published" ? new Date().toISOString() : form.published_at,
+      meta_description: form.meta_description,
+    };
 
     try {
       if (id) {
-        await updateBlogMutation.mutateAsync({ id, data: payload })
-        toast({
-          title: 'Blog updated successfully!',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        })
+        await updateBlogMutation.mutateAsync({ id, data: payload });
       } else {
-        const result = await createBlogMutation.mutateAsync(payload)
-        console.log('Blog created:', result)
-        toast({
-          title: 'Blog published successfully!',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        })
+        await createBlogMutation.mutateAsync(payload);
       }
 
-      history.push('/admin/blogs')
-    } catch (err) {
       toast({
-        title: `Error ${id ? 'updating' : 'creating'} blog!`,
-        description: err.message,
-        status: 'error',
+        title: status === "draft" ? "Draft saved" : "Blog published",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+      history.push("/admin/blogs");
+    } catch (error) {
+      toast({
+        title: `Error ${id ? "updating" : "creating"} blog`,
+        description: error?.message,
+        status: "error",
         duration: 3000,
         isClosable: true,
-      })
+      });
     }
-  }
+  };
 
   if (isLoading) {
     return (
-      <Flex pt={{ base: '120px', md: '75px' }} justify="center" align="center" minH="60vh">
-        <VStack spacing={4}>
-          <Spinner size="xl" thickness="4px" color="blue.500" />
-          <Text color="gray.500">Loading blog...</Text>
-        </VStack>
+      <Flex
+        pt={{ base: "120px", md: "75px" }}
+        justify="center"
+        align="center"
+        minH="60vh"
+      >
+        <Spinner size="xl" color="purple.500" />
       </Flex>
-    )
+    );
   }
 
   return (
-    <Box pt={{ base: '120px', md: '75px' }} bg={bgColor} minH="100vh" pb={10}>
-      {/* Sticky Header */}
-      <Box
-        bg={useColorModeValue('white', 'gray.800')}
-        borderBottom="1px"
-        borderColor={useColorModeValue('gray.200', 'gray.700')}
-        position="sticky"
-        top="0"
-        zIndex="10"
-        py={4}
-        mb={6}
-      >
-        <Flex
-          justify="space-between"
-          align="center"
-          maxW="1400px"
-          mx="auto"
-          px={{ base: 4, md: 6 }}
-        >
-          <HStack spacing={3}>
+    <AdminStack spacing="20px">
+      <AdminCard px="26px" py="20px">
+        <Flex justify="space-between" align="center" gap="16px" wrap="wrap">
+          <HStack spacing="14px">
             <IconButton
-              icon={<FiArrowLeft />}
-              onClick={() => history.push('/admin/blogs')}
-              variant="ghost"
-              aria-label="Back to blogs"
-              size="md"
+              aria-label="Back"
+              icon={<IconArrowLeft size={21} />}
+              variant="outline"
+              bg="#FFFFFF"
+              borderColor="#D6DEE9"
+              borderRadius="9px"
+              onClick={() => history.push("/admin/blogs")}
             />
-            <Box>
-              <Heading size="md" color={textColor}>
-                {id ? 'Edit Blog Post' : 'Create New Blog'}
-              </Heading>
-              <Text fontSize="sm" color="gray.500">
-                {id ? 'Update your blog post' : 'Write and publish a new article'}
-              </Text>
-            </Box>
+            <Text fontSize="26px" fontWeight="800" color={adminUi.text}>
+              {id ? "Edit Blog Post" : "New Blog Post"}
+            </Text>
           </HStack>
-
-          <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
-            <Button variant="ghost" leftIcon={<FiX />} onClick={() => history.push('/admin/blogs')}>
-              Cancel
-            </Button>
+          <HStack spacing="10px">
             <Button
-              colorScheme="blue"
-              leftIcon={<FiCheck />}
-              type="submit"
-              onClick={handleSubmit}
-              isLoading={createBlogMutation.isLoading || updateBlogMutation.isLoading}
+              leftIcon={<IconDeviceFloppy size={18} />}
+              variant="outline"
+              h="50px"
+              px="20px"
+              borderColor="#D6DEE9"
+              borderRadius="9px"
+              fontSize="18px"
+              bg="#FFFFFF"
+              isLoading={
+                createBlogMutation.isLoading || updateBlogMutation.isLoading
+              }
+              onClick={() => handleSubmit("draft")}
             >
-              {id ? 'Update Blog' : 'Publish Blog'}
+              Save Draft
             </Button>
+            <PrimaryButton
+              leftIcon={<IconEye size={18} />}
+              isLoading={
+                createBlogMutation.isLoading || updateBlogMutation.isLoading
+              }
+              onClick={() => handleSubmit("published")}
+            >
+              Publish
+            </PrimaryButton>
           </HStack>
         </Flex>
-      </Box>
+      </AdminCard>
 
-      {/* Main Content */}
-      <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }}>
-        <form onSubmit={handleSubmit}>
-          <VStack spacing={6} align="stretch">
-            {/* Title Input - Full Width, Prominent */}
-            <FormControl isRequired isInvalid={errors.title}>
-              <Input
-                value={form.title}
-                onChange={(e) => handleChange('title', e.target.value)}
-                placeholder="Enter your blog title..."
-                size="lg"
-                fontSize="2xl"
-                fontWeight="bold"
-                border="none"
-                _focus={{ border: 'none', boxShadow: 'none' }}
-                _placeholder={{ color: 'gray.400' }}
-                bg="transparent"
-              />
-              {errors.title && <FormErrorMessage ml={0}>{errors.title}</FormErrorMessage>}
-            </FormControl>
+      <SimpleGrid
+        columns={{ base: 1, xl: 2 }}
+        templateColumns={{ xl: "2fr 1fr" }}
+        spacing="20px"
+      >
+        <VStack spacing="20px" align="stretch">
+          <AdminCard p="26px">
+            <VStack spacing="26px" align="stretch">
+              <Field label="Title" error={errors.title}>
+                <Input
+                  value={form.title}
+                  onChange={(event) => updateForm("title", event.target.value)}
+                  placeholder="10 Strategies to Reduce RTO"
+                  h="49px"
+                  fontSize="18px"
+                  borderColor="#D6DEE9"
+                  _placeholder={{ color: "#B5BBC5" }}
+                />
+              </Field>
+              <Field label="Slug (optional)" error={errors.slug}>
+                <Input
+                  value={form.slug}
+                  onChange={(event) => updateForm("slug", event.target.value)}
+                  placeholder="reduce-rto-strategies"
+                  h="39px"
+                  fontSize="18px"
+                  borderColor="#D6DEE9"
+                  _placeholder={{ color: "#B5BBC5" }}
+                />
+              </Field>
+              <Field label="Excerpt" error={errors.excerpt}>
+                <Textarea
+                  value={form.excerpt}
+                  onChange={(event) =>
+                    updateForm("excerpt", event.target.value)
+                  }
+                  placeholder="A short summary of what this post is about..."
+                  minH="94px"
+                  fontSize="18px"
+                  borderColor="#D6DEE9"
+                  resize="vertical"
+                  _placeholder={{ color: "#B5BBC5" }}
+                />
+                <Text
+                  textAlign="right"
+                  color="#8C94A3"
+                  fontSize="18px"
+                  mt="2px"
+                >
+                  {form.excerpt.length} / 500
+                </Text>
+              </Field>
+            </VStack>
+          </AdminCard>
 
-            {/* Two Column Layout */}
-            <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
-              {/* Main Content Area */}
-              <VStack flex="1" spacing={6} align="stretch">
-                {/* Excerpt */}
-                <Card boxShadow="sm">
-                  <CardBody p={5}>
-                    <FormControl isRequired isInvalid={errors.excerpt}>
-                      <FormLabel fontSize="sm" fontWeight="600">
-                        Excerpt
-                      </FormLabel>
-                      <Textarea
-                        value={form.excerpt}
-                        onChange={(e) => handleChange('excerpt', e.target.value)}
-                        placeholder="A brief summary that will appear in blog previews and search results..."
-                        rows={3}
-                        resize="vertical"
-                      />
-                      {errors.excerpt && <FormErrorMessage>{errors.excerpt}</FormErrorMessage>}
-                      <Text fontSize="xs" color="gray.500" mt={1}>
-                        {form.excerpt.length}/200 characters
-                      </Text>
-                    </FormControl>
-                  </CardBody>
-                </Card>
-
-                {/* Content Editor */}
-                <Card boxShadow="sm">
-                  <CardBody p={5}>
-                    <FormControl isRequired isInvalid={errors.content}>
-                      <FormLabel fontSize="sm" fontWeight="600" mb={3}>
-                        Content
-                      </FormLabel>
-                      <Box
-                        border="1px solid"
-                        borderColor={useColorModeValue('gray.200', 'gray.600')}
-                        borderRadius="md"
-                        overflow="hidden"
-                        bg="white"
-                      >
-                        <Editor
-                          editorState={editorState}
-                          onEditorStateChange={handleContentChange}
-                          wrapperClassName="editor-wrapper"
-                          editorClassName="editor"
-                          toolbarClassName="editor-toolbar"
-                          toolbar={{
-                            options: [
-                              'inline',
-                              'blockType',
-                              'list',
-                              'textAlign',
-                              'link',
-                              'history',
-                            ],
-                            inline: { inDropdown: false },
-                            list: { inDropdown: true },
-                            textAlign: { inDropdown: true },
-                            link: { inDropdown: true },
-                            history: { inDropdown: false },
-                          }}
-                          editorStyle={{ minHeight: '400px', padding: '16px' }}
-                          placeholder="Start writing your blog content here..."
-                        />
-                      </Box>
-                      {errors.content && <FormErrorMessage>{errors.content}</FormErrorMessage>}
-                    </FormControl>
-                  </CardBody>
-                </Card>
-              </VStack>
-
-              {/* Sidebar */}
-              <VStack w={{ base: 'full', md: '320px' }} spacing={6} align="stretch">
-                {/* Settings Card */}
-                <Card boxShadow="sm">
-                  <CardBody p={5}>
-                    <VStack spacing={4} align="stretch">
-                      <Box>
-                        <Text fontSize="sm" fontWeight="600" mb={2}>
-                          URL Slug
-                        </Text>
-                        <Input
-                          value={form.slug}
-                          onChange={(e) => handleChange('slug', e.target.value)}
-                          placeholder="url-slug"
-                          size="sm"
-                          fontFamily="monospace"
-                          fontSize="xs"
-                        />
-                        <Text fontSize="xs" color="gray.500" mt={1}>
-                          Auto-generated from title
-                        </Text>
-                      </Box>
-
-                      <Divider />
-
-                      <Box>
-                        <Text fontSize="sm" fontWeight="600" mb={2}>
-                          Tags
-                        </Text>
-                        <Input
-                          value={form.tags}
-                          onChange={(e) => handleChange('tags', e.target.value)}
-                          placeholder="tech, tutorial, news"
-                          size="sm"
-                        />
-                        <Text fontSize="xs" color="gray.500" mt={1}>
-                          Comma-separated
-                        </Text>
-                      </Box>
-
-                      <Divider />
-
-                      <Flex justify="space-between" align="center">
-                        <VStack align="start" spacing={0}>
-                          <Text fontSize="sm" fontWeight="600">
-                            Featured
-                          </Text>
-                          <Text fontSize="xs" color="gray.500">
-                            Show on homepage
-                          </Text>
-                        </VStack>
-                        <Switch
-                          colorScheme="yellow"
-                          isChecked={form.is_featured}
-                          onChange={(e) => handleChange('is_featured', e.target.checked)}
-                        />
-                      </Flex>
-                    </VStack>
-                  </CardBody>
-                </Card>
-
-                {/* Featured Image */}
-                <Card boxShadow="sm">
-                  <CardBody p={5}>
-                    <HStack justify="space-between" mb={3}>
-                      {imagePreviewUrl && (
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          colorScheme="red"
-                          leftIcon={<FiX />}
-                          onClick={() => handleChange('og_image', '')}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </HStack>
-
-                    {imagePreviewUrl ? (
-                      <Box
-                        borderRadius="lg"
-                        overflow="hidden"
-                        border="2px solid"
-                        borderColor={useColorModeValue('gray.200', 'gray.600')}
-                      >
-                        <Image
-                          src={imagePreviewUrl}
-                          alt="Featured"
-                          w="full"
-                          h="200px"
-                          objectFit="cover"
-                        />
-                      </Box>
-                    ) : (
-                      <Box
-                        border="2px dashed"
-                        borderColor={useColorModeValue('gray.300', 'gray.600')}
-                        borderRadius="lg"
-                        p={6}
-                        textAlign="center"
-                        bg={useColorModeValue('gray.50', 'gray.700')}
-                        transition="all 0.2s"
-                        _hover={{
-                          borderColor: useColorModeValue('blue.400', 'blue.300'),
-                          bg: useColorModeValue('blue.50', 'gray.600'),
-                        }}
-                      >
-                        <VStack spacing={2}>
-                          <Box
-                            w={12}
-                            h={12}
-                            borderRadius="full"
-                            bg={useColorModeValue('blue.100', 'blue.900')}
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            mb={2}
-                          >
-                            <Icon as={FiImage} w={6} h={6} color="blue.500" />
-                          </Box>
-                          <Text fontSize="sm" fontWeight="500" color={textColor}>
-                            Upload Featured Image
-                          </Text>
-                          <Text fontSize="xs" color="gray.500">
-                            PNG, JPG, WEBP up to 5MB
-                          </Text>
-                          <Box pt={2}>
-                            <FileUploader
-                              folderKey="blogs"
-                              getUrl
-                              showUploadButton={false}
-                              onUploaded={handleImageUploaded}
-                              multiple={false}
-                            />
-                          </Box>
-                        </VStack>
-                      </Box>
-                    )}
-                  </CardBody>
-                </Card>
-
-                {/* Mobile Action Buttons */}
-                <VStack spacing={3} display={{ base: 'flex', md: 'none' }}>
-                  <Button
-                    colorScheme="blue"
-                    size="lg"
-                    leftIcon={<FiCheck />}
-                    type="submit"
-                    isLoading={createBlogMutation.isLoading || updateBlogMutation.isLoading}
-                    w="full"
-                  >
-                    {id ? 'Update Blog' : 'Publish Blog'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    leftIcon={<FiX />}
-                    onClick={() => history.push('/admin/blogs')}
-                    w="full"
-                  >
-                    Cancel
-                  </Button>
-                </VStack>
-              </VStack>
+          <AdminCard overflow="hidden">
+            <Box p="26px" pb="12px">
+              <Text fontSize="16px" fontWeight="700" color={adminUi.text}>
+                Content *
+              </Text>
+            </Box>
+            <Flex
+              px="20px"
+              py="11px"
+              gap="8px"
+              align="center"
+              borderTop="1px solid"
+              borderBottom="1px solid"
+              borderColor={adminUi.border}
+              bg="#FAFBFE"
+              wrap="wrap"
+            >
+              <ToolbarButton icon={IconArrowLeft} label="Undo" />
+              <ToolbarButton icon={IconArrowLeft} label="Redo" />
+              <Box h="24px" w="1px" bg={adminUi.border} />
+              <ToolbarButton icon={IconBold} label="Bold" />
+              <ToolbarButton icon={IconItalic} label="Italic" />
+              <ToolbarButton icon={IconUnderline} label="Underline" />
+              <ToolbarButton icon={IconStrikethrough} label="Strike" />
+              <ToolbarButton icon={IconH1} label="Heading 1" active />
+              <ToolbarButton icon={IconH2} label="Heading 2" />
+              <ToolbarButton icon={IconH3} label="Heading 3" />
+              <ToolbarButton icon={IconList} label="List" />
+              <ToolbarButton icon={IconListNumbers} label="Numbered list" />
+              <ToolbarButton icon={IconQuote} label="Quote" />
+              <ToolbarButton icon={IconLink} label="Link" />
+              <ToolbarButton icon={IconPhoto} label="Image" />
             </Flex>
-          </VStack>
-        </form>
-      </Box>
-    </Box>
-  )
-}
+            <Textarea
+              value={form.content}
+              onChange={(event) => updateForm("content", event.target.value)}
+              placeholder="Start writing your post here..."
+              minH="270px"
+              border="0"
+              borderRadius="0"
+              px="22px"
+              py="48px"
+              fontSize="22px"
+              color={adminUi.text}
+              resize="vertical"
+              _placeholder={{ color: "#607397" }}
+              _focus={{ boxShadow: "none" }}
+            />
+            {errors.content ? (
+              <Text color="red.500" px="22px" pb="16px">
+                {errors.content}
+              </Text>
+            ) : null}
+          </AdminCard>
 
-export default CreateBlog
+          <AdminCard p="26px">
+            <Text
+              fontSize="20px"
+              fontWeight="800"
+              color={adminUi.text}
+              mb="18px"
+            >
+              SEO
+            </Text>
+            <VStack spacing="26px" align="stretch">
+              <Field label="SEO Title ? (optional)">
+                <Input
+                  value={form.meta_title}
+                  onChange={(event) =>
+                    updateForm("meta_title", event.target.value)
+                  }
+                  h="40px"
+                  borderColor="#D6DEE9"
+                />
+                <Text
+                  textAlign="right"
+                  color="#8C94A3"
+                  fontSize="18px"
+                  mt="-25px"
+                  pr="12px"
+                >
+                  {form.meta_title.length} / 200
+                </Text>
+              </Field>
+              <Field label="SEO Description ? (optional)">
+                <Textarea
+                  value={form.meta_description}
+                  onChange={(event) =>
+                    updateForm("meta_description", event.target.value)
+                  }
+                  minH="93px"
+                  borderColor="#D6DEE9"
+                />
+                <Text
+                  textAlign="right"
+                  color="#8C94A3"
+                  fontSize="18px"
+                  mt="2px"
+                >
+                  {form.meta_description.length} / 500
+                </Text>
+              </Field>
+            </VStack>
+          </AdminCard>
+        </VStack>
+
+        <VStack spacing="20px" align="stretch">
+          <AdminCard p="25px">
+            <Text
+              fontSize="20px"
+              fontWeight="800"
+              color={adminUi.text}
+              mb="16px"
+            >
+              Cover Image
+            </Text>
+            <Flex
+              h="252px"
+              align="center"
+              justify="center"
+              direction="column"
+              border="1px dashed"
+              borderColor={adminUi.border}
+              borderRadius="14px"
+              bg="#FAFBFE"
+              color={adminUi.muted}
+            >
+              <Icon as={IconPhoto} boxSize="40px" strokeWidth={1.7} />
+              <Text fontSize="16px" mt="12px">
+                No cover image
+              </Text>
+            </Flex>
+            <Button
+              leftIcon={<IconPhoto size={18} />}
+              variant="outline"
+              mt="16px"
+              h="50px"
+              borderColor="#D6DEE9"
+              borderRadius="9px"
+              bg="#FFFFFF"
+              fontSize="18px"
+            >
+              Upload Image
+            </Button>
+            <Text fontSize="15px" color={adminUi.muted} mt="12px">
+              JPEG, PNG or WebP. Max 5MB. Recommended 1200x630.
+            </Text>
+          </AdminCard>
+
+          <AdminCard p="25px">
+            <VStack spacing="24px" align="stretch">
+              <Field label="Category">
+                <Select
+                  value={form.tags}
+                  onChange={(event) => updateForm("tags", event.target.value)}
+                  h="40px"
+                  borderColor="#D6DEE9"
+                  fontSize="17px"
+                >
+                  <option value="Shipping Tips">Shipping Tips</option>
+                  <option value="Ecommerce">Ecommerce</option>
+                  <option value="Courier">Courier</option>
+                </Select>
+              </Field>
+              <Field label="Author">
+                <Input
+                  value={form.author}
+                  onChange={(event) => updateForm("author", event.target.value)}
+                  placeholder="Arjun Patel"
+                  h="40px"
+                  borderColor="#D6DEE9"
+                  fontSize="17px"
+                />
+              </Field>
+              <Field label="Read Time ? (optional)">
+                <Input
+                  value={form.read_time}
+                  onChange={(event) =>
+                    updateForm("read_time", event.target.value)
+                  }
+                  placeholder="5 min read"
+                  h="40px"
+                  borderColor="#D6DEE9"
+                  fontSize="17px"
+                />
+              </Field>
+              <Field label="Accent Color ? (optional)">
+                <HStack
+                  w="138px"
+                  h="40px"
+                  px="6px"
+                  border="1px solid"
+                  borderColor="#D6DEE9"
+                  borderRadius="9px"
+                >
+                  <Box
+                    w="29px"
+                    h="29px"
+                    borderRadius="7px"
+                    bg={form.accent_color}
+                  />
+                  <Input
+                    value={form.accent_color}
+                    onChange={(event) =>
+                      updateForm("accent_color", event.target.value)
+                    }
+                    border="0"
+                    p="0"
+                    fontSize="17px"
+                    _focus={{ boxShadow: "none" }}
+                  />
+                </HStack>
+              </Field>
+            </VStack>
+          </AdminCard>
+
+          <AdminCard p="25px">
+            <Field label="Status">
+              <Select
+                value={form.status}
+                onChange={(event) => updateForm("status", event.target.value)}
+                h="40px"
+                borderColor="#D6DEE9"
+                fontSize="17px"
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </Select>
+            </Field>
+            <Flex justify="space-between" align="center" mt="18px">
+              <Text fontSize="20px" color={adminUi.text}>
+                Featured ? (optional)
+              </Text>
+              <Switch
+                colorScheme="purple"
+                isChecked={form.is_featured}
+                onChange={(event) =>
+                  updateForm("is_featured", event.target.checked)
+                }
+              />
+            </Flex>
+          </AdminCard>
+        </VStack>
+      </SimpleGrid>
+    </AdminStack>
+  );
+};
+
+export default CreateBlog;

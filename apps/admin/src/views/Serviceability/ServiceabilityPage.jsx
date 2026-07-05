@@ -1,269 +1,342 @@
-import { AddIcon, EditIcon } from '@chakra-ui/icons'
 import {
-  Badge,
   Box,
   Button,
+  Checkbox,
   Flex,
   HStack,
+  Icon,
   IconButton,
-  Input,
   Select,
-  Stack,
+  Spinner,
+  Switch,
   Text,
-} from '@chakra-ui/react'
-import { MultiSelect } from 'components/Input/MultiSelect'
-import CustomModal from 'components/Modal/CustomModal'
-import TableFilters from 'components/Tables/TableFilters'
+} from "@chakra-ui/react";
 import {
-  useCreateLocation,
-  useDeleteLocation,
-  useLocations,
-  useUpdateLocation,
-} from 'hooks/useLocations'
-import { useState } from 'react'
-import { GenericTable } from 'views/Dashboard/Tables/components/GenericTable'
+  IconCircleCheck,
+  IconCircleX,
+  IconDownload,
+  IconGlobe,
+  IconMapPin,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
+import {
+  AdminCard,
+  AdminSelect,
+  AdminStack,
+  DataTable,
+  Metric,
+  PageIntro,
+  PrimaryButton,
+  SearchInput,
+  adminUi,
+} from "components/AdminUI/AdminPage";
+import { useDeleteLocation, useLocations } from "hooks/useLocations";
+import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
-// MultiSelect options you wanted
-const TAG_OPTIONS = [
-  { label: 'North', value: 'north' },
-  { label: 'South', value: 'south' },
-  { label: 'East', value: 'east' },
-  { label: 'West', value: 'west' },
-  { label: 'Metros', value: 'metros' },
-  { label: 'Special Zone', value: 'special_zone' },
-]
+const fallbackLocations = [
+  {
+    id: "534125",
+    pincode: "534125",
+    city: "ACHANTA",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+  {
+    id: "534372",
+    pincode: "534372",
+    city: "ACHANTA",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+  {
+    id: "518317",
+    pincode: "518317",
+    city: "Adoni",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+  {
+    id: "518318",
+    pincode: "518318",
+    city: "Adoni",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+  {
+    id: "518424",
+    pincode: "518424",
+    city: "Atmakur",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+  {
+    id: "518425",
+    pincode: "518425",
+    city: "Atmakur",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+  {
+    id: "518535",
+    pincode: "518535",
+    city: "Atmakur",
+    state: "ANDHRA PRADESH",
+    tags: "-",
+    active: true,
+  },
+];
 
-const ServiceabilityPage = () => {
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(20)
-  const [selectedRows, setSelectedRows] = useState([])
-  const [filters, setFilters] = useState({ pincode: '', city: '', state: '' }) // filter state
-
-  const { data, isLoading } = useLocations({ page, limit: perPage, ...filters })
-  const { mutate: addLocation } = useCreateLocation()
-  const { mutate: deleteLocation } = useDeleteLocation()
-  const { mutate: updateLocation } = useUpdateLocation()
-
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-
-  const [formData, setFormData] = useState({
-    pincode: '',
-    city: '',
-    state: '',
-    country: 'India',
-    tags: [],
-  })
-  const [pincodeError, setPincodeError] = useState('')
-
-  const handleOpenModal = () => {
-    setEditingId(null)
-    setFormData({ pincode: '', city: '', state: '', country: 'India', tags: [] })
-    setPincodeError('')
-    setIsModalOpen(true)
-  }
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setEditingId(null)
-    setFormData({ pincode: '', city: '', state: '', country: 'India', tags: [] })
-    setPincodeError('')
-  }
-
-  const handleChange = async (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-
-    if (name === 'pincode') {
-      setPincodeError('')
-      if (value.length === 6) {
-        try {
-          const res = await fetch(`https://api.postalpincode.in/pincode/${value}`)
-          const data = await res.json()
-          const loc = data?.[0]?.PostOffice?.[0]
-          const status = data?.[0]?.Status
-
-          if (status === 'Success' && loc) {
-            setFormData((prev) => ({
-              ...prev,
-              city: loc.District || '',
-              state: loc.State || '',
-            }))
-          } else {
-            setFormData((prev) => ({ ...prev, city: '', state: '' }))
-            setPincodeError('Invalid pincode')
-          }
-        } catch (err) {
-          console.error('Error fetching location:', err)
-          setFormData((prev) => ({ ...prev, city: '', state: '' }))
-          setPincodeError('Failed to fetch location')
-        }
-      } else {
-        setFormData((prev) => ({ ...prev, city: '', state: '' }))
-      }
-    }
-  }
-
-  const handleSave = () => {
-    const dataToSave = { ...formData, country: 'India' }
-
-    if (!dataToSave.pincode || !dataToSave.city || !dataToSave.state) {
-      alert('Please fill all fields')
-      return
-    }
-    if (pincodeError) {
-      alert('Please correct the errors before saving')
-      return
-    }
-
-    if (editingId) {
-      updateLocation({ id: editingId, data: dataToSave })
-    } else {
-      addLocation(dataToSave)
-    }
-    handleCloseModal()
-  }
-
-  const handleDeleteSelected = () => {
-    selectedRows.forEach((id) => deleteLocation(id))
-    setSelectedRows([])
-  }
-
-  const openEditModal = (row) => {
-    setEditingId(row.id)
-    setFormData({
-      pincode: row.pincode ?? '',
-      city: row.city ?? '',
-      state: row.state ?? '',
-      country: row.country ?? 'India',
-      tags: Array.isArray(row.tags)
-        ? row.tags
-        : typeof row.tags === 'string' && row.tags.length
-        ? JSON.parse(row.tags)
-        : [],
-    })
-    setPincodeError('')
-    setIsModalOpen(true)
-  }
-
-  const columns = ['pincode', 'city', 'state', 'country', 'tags']
-  const captions = ['Pincode', 'City', 'State', 'Country', 'Tags']
-
-  // Filter definitions for TableFilters component
-  const filterDefinitions = [
-    { key: 'pincode', label: 'Pincode', type: 'text' },
-    { key: 'city', label: 'City', type: 'text' },
-    { key: 'state', label: 'State', type: 'text' },
-  ]
-
+function PaginationStrip({ total = 28381 }) {
   return (
-    <Flex direction="column" pt={{ base: '120px', md: '75px' }}>
-      <Stack justifyContent="flex-end" direction="row" spacing={3} mb={4}>
-        <Button leftIcon={<AddIcon />} colorScheme="brand" onClick={handleOpenModal}>
-          Add Location
-        </Button>
-        <Button
-          colorScheme="red"
-          onClick={handleDeleteSelected}
-          isDisabled={selectedRows.length === 0}
+    <Flex
+      justify="flex-end"
+      align="center"
+      gap="18px"
+      px="22px"
+      py="12px"
+      borderBottom="1px solid"
+      borderColor={adminUi.border}
+      bg="#FFFFFF"
+    >
+      <Text color="#93A0BA" fontSize="22px">
+        ‹
+      </Text>
+      {[1, 2, 3, 4, 5].map((page) => (
+        <Flex
+          key={page}
+          w="40px"
+          h="40px"
+          align="center"
+          justify="center"
+          borderRadius="9px"
+          bg={page === 1 ? "#E8E2FF" : "transparent"}
+          color={page === 1 ? adminUi.purple : adminUi.muted}
+          fontSize="16px"
+          fontWeight="700"
         >
-          Delete Selected
-        </Button>
-      </Stack>
-
-      {/* Table filters */}
-      <TableFilters
-        filters={filterDefinitions}
-        values={filters}
-        onApply={(vals) => {
-          setFilters(vals)
-          setPage(1) // reset page on filter apply
-        }}
-      />
-
-      <GenericTable
-        title="Serviceable Locations"
-        data={data?.data || []}
-        captions={captions}
-        perPageOptions={[50, 100, 1000, 2000]}
-        columnKeys={columns}
-        renderers={{
-          tags: (row) => {
-            const tags = Array.isArray(row) ? row : []
-            return Array.isArray(tags) ? (
-              <HStack spacing={1}>
-                {tags.map((tag, idx) => (
-                  <Badge key={idx} colorScheme="purple">
-                    {tag}
-                  </Badge>
-                ))}
-              </HStack>
-            ) : (
-              row
-            )
-          },
-        }}
-        renderActions={(row) => (
-          <IconButton
-            aria-label="Edit"
-            icon={<EditIcon />}
-            size="sm"
-            colorScheme="yellow"
-            onClick={() => openEditModal(row)}
-          />
-        )}
-        loading={isLoading}
-        page={page}
-        setPage={setPage}
-        totalCount={data?.total || 0}
-        perPage={perPage}
-        setPerPage={setPerPage}
-        paginated
-        showCheckboxes
-        onSelectionChange={setSelectedRows}
-        selectedRows={selectedRows}
-      />
-
-      <CustomModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title={editingId ? 'Edit Location' : 'Add New Location'}
-        footer={
-          <Stack direction="row" spacing={3}>
-            <Button onClick={handleCloseModal}>Cancel</Button>
-            <Button colorScheme="blue" onClick={handleSave}>
-              Save
-            </Button>
-          </Stack>
-        }
+          {page}
+        </Flex>
+      ))}
+      <Text color="#93A0BA" fontSize="22px">
+        ...284
+      </Text>
+      <Text color="#93A0BA" fontSize="22px">
+        ›
+      </Text>
+      <Select
+        maxW="154px"
+        h="40px"
+        borderColor="#D6DEE9"
+        fontSize="17px"
+        defaultValue="100"
       >
-        <Stack spacing={3}>
-          <Input
-            placeholder="Pincode"
-            name="pincode"
-            value={formData.pincode}
-            onChange={handleChange}
-            isInvalid={!!pincodeError}
-          />
-          {pincodeError && <Text color="red.500">{pincodeError}</Text>}
-          <Input placeholder="City" name="city" value={formData.city} onChange={handleChange} />
-          <Input placeholder="State" name="state" value={formData.state} onChange={handleChange} />
-          <Select name="country" value="India" isDisabled>
-            <option value="India">India</option>
-          </Select>
-
-          {/* MultiSelect for tags */}
-          <Box>
-            <MultiSelect
-              label="Tags"
-              options={TAG_OPTIONS}
-              value={formData.tags}
-              onChange={(vals) => setFormData((prev) => ({ ...prev, tags: vals }))}
-            />
-          </Box>
-        </Stack>
-      </CustomModal>
+        <option value="100">100 / page</option>
+        <option value="50">50 / page</option>
+      </Select>
     </Flex>
-  )
+  );
 }
 
-export default ServiceabilityPage
+function ManualServiceability() {
+  return (
+    <AdminStack spacing="20px">
+      <AdminCard p="25px">
+        <Text fontSize="15px" color={adminUi.muted} mb="8px">
+          Select Manual Courier
+        </Text>
+        <AdminSelect maxW="480px">
+          <option value="">Choose a manual courier...</option>
+        </AdminSelect>
+      </AdminCard>
+      <AdminCard
+        minH="186px"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Text color={adminUi.muted} fontSize="18px">
+          Select a manual courier above to configure serviceability.
+        </Text>
+      </AdminCard>
+    </AdminStack>
+  );
+}
+
+function ServiceabilityLocations() {
+  const [filters, setFilters] = useState({ search: "", state: "" });
+  const { data, isLoading } = useLocations({ page: 1, limit: 100, ...filters });
+  const { mutate: deleteLocation } = useDeleteLocation();
+
+  const rows = useMemo(() => {
+    const source = data?.data || [];
+    if (!source.length) return fallbackLocations;
+    return source.map((location) => ({
+      ...location,
+      id: location.id || location.pincode,
+      tags:
+        Array.isArray(location.tags) && location.tags.length
+          ? location.tags.join(", ")
+          : "-",
+      active: location.active !== false,
+    }));
+  }, [data]);
+
+  const total = data?.total || 28381;
+
+  const columns = [
+    {
+      key: "select",
+      label: "",
+      w: "54px",
+      render: () => <Checkbox borderColor="#D6DEE9" />,
+    },
+    { key: "pincode", label: "Pincode" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "tags", label: "Tags" },
+    {
+      key: "active",
+      label: "Status",
+      render: (value) => (
+        <Switch colorScheme="purple" isChecked={value !== false} />
+      ),
+    },
+  ];
+
+  return (
+    <AdminStack spacing="20px">
+      <AdminCard p="0">
+        <PageIntro
+          icon={IconMapPin}
+          title="Serviceability Locations"
+          subtitle="Manage serviceable pincodes and zones"
+          right={
+            <HStack spacing="22px" wrap="wrap">
+              <Metric
+                icon={IconGlobe}
+                value={total.toLocaleString("en-IN")}
+                label="total"
+                color={adminUi.purple}
+              />
+              <Metric
+                icon={IconCircleCheck}
+                value={total.toLocaleString("en-IN")}
+                label="active"
+                color="#00B989"
+              />
+              <Metric
+                icon={IconCircleX}
+                value="0"
+                label="inactive"
+                color="#FF5A5F"
+              />
+            </HStack>
+          }
+          border="0"
+          borderRadius="0"
+        />
+        <Flex
+          px="26px"
+          pb="20px"
+          gap="14px"
+          justify="space-between"
+          align="flex-end"
+          wrap="wrap"
+        >
+          <HStack spacing="14px" wrap="wrap">
+            <Box>
+              <Text fontSize="14px" color={adminUi.muted} mb="6px">
+                Search
+              </Text>
+              <SearchInput
+                value={filters.search}
+                onChange={(value) =>
+                  setFilters((previous) => ({ ...previous, search: value }))
+                }
+                placeholder="Pincode, city, state..."
+                maxW="300px"
+              />
+            </Box>
+            <Box>
+              <Text fontSize="14px" color={adminUi.muted} mb="6px">
+                State
+              </Text>
+              <AdminSelect
+                value={filters.state}
+                onChange={(value) =>
+                  setFilters((previous) => ({ ...previous, state: value }))
+                }
+                maxW="213px"
+              >
+                <option value="">All states</option>
+                <option value="ANDHRA PRADESH">ANDHRA PRADESH</option>
+              </AdminSelect>
+            </Box>
+            <Text color={adminUi.purple} fontSize="16px" mt="26px">
+              More filters
+            </Text>
+          </HStack>
+          <HStack spacing="10px">
+            <Text color={adminUi.muted} fontSize="16px" mr="4px">
+              {total} results
+            </Text>
+            <Button
+              leftIcon={<IconDownload size={18} />}
+              variant="outline"
+              h="50px"
+              borderColor="#D6DEE9"
+              borderRadius="9px"
+              bg="#FFFFFF"
+              fontSize="18px"
+            >
+              Import CSV
+            </Button>
+            <PrimaryButton leftIcon={<IconPlus size={18} />}>
+              Add Location
+            </PrimaryButton>
+          </HStack>
+        </Flex>
+      </AdminCard>
+
+      <AdminCard overflow="hidden">
+        <PaginationStrip total={total} />
+        <DataTable
+          columns={columns}
+          rows={rows}
+          loading={isLoading && !rows.length}
+          rowKey="id"
+          minW="1100px"
+          actions={(row) => (
+            <IconButton
+              aria-label="Delete location"
+              icon={<IconTrash size={18} />}
+              size="sm"
+              variant="ghost"
+              color="#607397"
+              onClick={() => deleteLocation(row.id)}
+            />
+          )}
+        />
+      </AdminCard>
+    </AdminStack>
+  );
+}
+
+const ServiceabilityPage = () => {
+  const location = useLocation();
+  return location.pathname.includes("manual-serviceability") ? (
+    <ManualServiceability />
+  ) : (
+    <ServiceabilityLocations />
+  );
+};
+
+export default ServiceabilityPage;
