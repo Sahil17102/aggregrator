@@ -91,7 +91,7 @@ export default function NotificationMenu({ themeStyles }) {
             justify="center"
             boxShadow="0 0 0 2px white"
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount}
           </Flex>
         )}
       </MenuButton>

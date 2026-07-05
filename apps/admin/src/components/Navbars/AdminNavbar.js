@@ -25,15 +25,21 @@ import {
   IconSettings,
   IconSun,
 } from '@tabler/icons-react'
+import { useSocket } from 'hooks/useSocket'
 import PropTypes from 'prop-types'
+import { useEffect } from 'react'
 import { useHistory } from 'react-router-dom'
+import { getNotifications } from 'services/notification.service'
 import { useAuthStore } from 'store/useAuthStore'
+import { useNotificationsStore } from 'store/useNotificationsStore'
 
 export default function AdminNavbar(props) {
   const { onOpen, onToggleSidebar, isSidebarCollapsed = false, sidebarWidth = 300, brandText } = props
   const { colorMode, toggleColorMode } = useColorMode()
   const history = useHistory()
   const logout = useAuthStore((state) => state.logout)
+  const { unreadCount, setNotifications } = useNotificationsStore()
+  useSocket()
 
   const navBg = useColorModeValue('#FFFFFF', '#161B22')
   const borderColor = useColorModeValue('#E2E8F0', '#30363D')
@@ -65,6 +71,22 @@ export default function AdminNavbar(props) {
     logout()
     history.replace('/login')
   }
+
+  useEffect(() => {
+    let mounted = true
+
+    getNotifications()
+      .then((data) => {
+        if (mounted) setNotifications(data?.notifications || [])
+      })
+      .catch(() => {
+        if (mounted) setNotifications([])
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [setNotifications])
 
   return (
     <Flex
@@ -144,18 +166,25 @@ export default function AdminNavbar(props) {
             _hover={{ bg: notificationHoverBg }}
             onClick={() => history.push('/admin/notifications')}
           />
-          <Badge
-            position="absolute"
-            top="-3px"
-            right="-7px"
-            bg="#f97316"
-            color="white"
-            borderRadius="999px"
-            fontSize="10px"
-            px="5px"
-          >
-            9+
-          </Badge>
+          {unreadCount > 0 ? (
+            <Badge
+              position="absolute"
+              top="-3px"
+              right="-7px"
+              bg="#f97316"
+              color="white"
+              borderRadius="999px"
+              fontSize="10px"
+              minW="18px"
+              h="18px"
+              px="5px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              {unreadCount}
+            </Badge>
+          ) : null}
         </Box>
 
         <Menu placement="bottom-end">
