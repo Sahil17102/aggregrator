@@ -192,15 +192,19 @@ export default function Sidebar({
   const isDark = theme.palette.mode === 'dark'
   const DARK_BG = isDark ? '#151b23' : '#ffffff'
   const BORDER = isDark ? '#2a313a' : 'rgba(15, 23, 42, 0.1)'
-  const TEXT = isDark ? '#9db0c8' : '#586b8a'
-  const MUTED = isDark ? '#73849c' : '#8492aa'
+  const TEXT = isDark ? '#a9b8cc' : '#586b8a'
+  const MUTED = isDark ? '#8798ad' : '#8492aa'
   const WHITE = isDark ? '#f8fafc' : '#11182d'
   const itemHoverBg = isDark ? alpha('#ffffff', 0.035) : alpha('#11182d', 0.045)
   const childHoverBg = isDark ? alpha('#ffffff', 0.045) : alpha(ACTIVE, 0.08)
-  const activeBg = isDark ? alpha(ACTIVE, 0.08) : alpha(ACTIVE, 0.1)
+  const activeBg = isDark ? alpha(ACTIVE, 0.16) : alpha(ACTIVE, 0.1)
   const childActiveBg = isDark ? alpha(ACTIVE, 0.14) : alpha(ACTIVE, 0.12)
   const iconMuted = isDark ? '#8190a5' : '#76849a'
   const scrollbarThumb = isDark ? '#3a4350' : '#cbd5e1'
+  const activeText = isDark ? '#bdb5ff' : ACTIVE
+  const initialsBg = isDark ? '#2b2760' : alpha(ACTIVE, 0.1)
+  const initialsBorder = isDark ? alpha('#ffffff', 0.1) : alpha(ACTIVE, 0.16)
+  const initialsColor = isDark ? '#f8fafc' : ACTIVE
 
   useEffect(() => {
     if (!isSidebarExpanded) setExpandedItems({})
@@ -241,8 +245,8 @@ export default function Sidebar({
 
   const activeItemSx = {
     bgcolor: activeBg,
-    color: ACTIVE,
-    '& .MuiListItemIcon-root': { color: ACTIVE },
+    color: activeText,
+    '& .MuiListItemIcon-root': { color: activeText },
     '& .MuiListItemText-primary': { fontWeight: 800 },
     '&::before': {
       content: '""',
@@ -252,7 +256,7 @@ export default function Sidebar({
       bottom: 11,
       width: 4,
       borderRadius: '0 8px 8px 0',
-      bgcolor: ACTIVE,
+      bgcolor: activeText,
     },
   }
 
@@ -279,7 +283,7 @@ export default function Sidebar({
           sx={{
             minWidth: isSidebarExpanded ? 38 : 0,
             justifyContent: 'center',
-            color: active ? ACTIVE : iconMuted,
+            color: active ? activeText : iconMuted,
             transition: 'color 160ms ease',
           }}
         >
@@ -301,7 +305,7 @@ export default function Sidebar({
             style={{
               transform: showExpanded ? 'rotate(180deg)' : 'rotate(-90deg)',
               transition: 'transform 0.2s',
-              color: active ? ACTIVE : iconMuted,
+              color: active ? activeText : iconMuted,
             }}
           />
         ) : null}
@@ -489,7 +493,9 @@ export default function Sidebar({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: ACTIVE,
+                color: initialsColor,
+                bgcolor: initialsBg,
+                border: `1px solid ${initialsBorder}`,
                 fontSize: '0.9rem',
                 fontWeight: 900,
                 flexShrink: 0,

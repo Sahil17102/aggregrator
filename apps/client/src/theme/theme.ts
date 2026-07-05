@@ -79,7 +79,7 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
     fontFamily: brandFonts.body,
     h1: {
       fontFamily: brandFonts.display,
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 700,
       fontSize: '3rem',
       lineHeight: 1.04,
@@ -87,7 +87,7 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
     },
     h2: {
       fontFamily: brandFonts.display,
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 700,
       fontSize: '2.35rem',
       lineHeight: 1.08,
@@ -95,7 +95,7 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
     },
     h3: {
       fontFamily: brandFonts.display,
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 700,
       fontSize: '1.85rem',
       lineHeight: 1.12,
@@ -103,44 +103,44 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
     },
     h4: {
       fontFamily: brandFonts.display,
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 600,
       fontSize: '1.55rem',
       lineHeight: 1.12,
     },
     h5: {
       fontFamily: brandFonts.display,
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 600,
       fontSize: '1.24rem',
       lineHeight: 1.16,
     },
     h6: {
       fontFamily: brandFonts.display,
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 600,
       fontSize: '1.04rem',
       lineHeight: 1.2,
     },
     subtitle1: {
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 500,
       fontSize: '1rem',
     },
     subtitle2: {
-      color: brand.inkSoft,
+      color: textSecondary,
       fontWeight: 500,
       fontSize: '0.84rem',
       letterSpacing: 0,
     },
     body1: {
-      color: brand.ink,
+      color: textPrimary,
       fontWeight: 400,
       fontSize: '1rem',
       lineHeight: 1.62,
     },
     body2: {
-      color: brand.inkSoft,
+      color: textSecondary,
       fontWeight: 400,
       fontSize: '0.92rem',
       lineHeight: 1.58,
@@ -163,11 +163,19 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
             backgroundAttachment: 'scroll',
           },
           color: textPrimary,
+          colorScheme: mode,
           fontFamily: brandFonts.body,
           fontWeight: 400,
+          scrollbarColor: `${isDark ? '#3a4350' : '#94a3b8'} ${backgroundDefault}`,
+        },
+        html: {
+          backgroundColor: backgroundDefault,
+          colorScheme: mode,
         },
         '#root': {
           minHeight: '100vh',
+          backgroundColor: backgroundDefault,
+          color: textPrimary,
         },
         '::selection': {
           backgroundColor: isDark ? alpha(brand.accent, 0.44) : alpha(brand.sky, 0.92),
@@ -187,6 +195,17 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
         },
         '.MuiIconButton-root': {
           borderRadius: '8px',
+        },
+        'option, optgroup': {
+          backgroundColor: backgroundPaper,
+          color: textPrimary,
+        },
+        '*::-webkit-scrollbar-track': {
+          backgroundColor: backgroundDefault,
+        },
+        '*::-webkit-scrollbar-thumb': {
+          backgroundColor: isDark ? '#3a4350' : '#94a3b8',
+          borderColor: backgroundDefault,
         },
       },
     },
@@ -221,6 +240,7 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
       styleOverrides: {
         root: {
           background: isDark ? backgroundPaper : brandGradients.surface,
+          color: textPrimary,
           borderRadius: 14,
         },
         elevation1: {

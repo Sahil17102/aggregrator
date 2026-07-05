@@ -116,6 +116,44 @@ const componentOverrides = {
         fontWeight: "800",
         color: "gray.600",
         mb: "10px",
+        _dark: {
+          color: "#8B949E",
+        },
+      },
+    },
+    Menu: {
+      baseStyle: {
+        list: {
+          bg: "#FFFFFF",
+          color: "#0F172A",
+          borderColor: "#E2E8F0",
+          boxShadow: "0 18px 42px rgba(15, 23, 42, 0.14)",
+          _dark: {
+            bg: "#161B22",
+            color: "#E6EDF3",
+            borderColor: "#30363D",
+            boxShadow: "0 24px 54px rgba(0, 0, 0, 0.34)",
+          },
+        },
+        item: {
+          bg: "transparent",
+          color: "#0F172A",
+          _hover: {
+            bg: "#F9FAFB",
+          },
+          _focus: {
+            bg: "#F9FAFB",
+          },
+          _dark: {
+            color: "#E6EDF3",
+            _hover: {
+              bg: "#21262D",
+            },
+            _focus: {
+              bg: "#21262D",
+            },
+          },
+        },
       },
     },
     Table: {
@@ -171,10 +209,18 @@ const componentOverrides = {
           py: "10px",
           fontWeight: "700",
           color: "gray.600",
+          _dark: {
+            color: "#8B949E",
+          },
           _selected: {
             color: "gray.900",
             bg: "rgba(255,255,255,0.78)",
             boxShadow: "0 12px 28px rgba(68,92,138,0.1)",
+            _dark: {
+              color: "#E6EDF3",
+              bg: "#21262D",
+              boxShadow: "none",
+            },
           },
         },
         tablist: {
@@ -183,6 +229,11 @@ const componentOverrides = {
           bg: "rgba(255,255,255,0.72)",
           border: "1px solid rgba(13,27,77,0.08)",
           boxShadow: "0 14px 28px rgba(68,92,138,0.06)",
+          _dark: {
+            bg: "#161B22",
+            borderColor: "#30363D",
+            boxShadow: "none",
+          },
         },
       },
     },
@@ -196,19 +247,34 @@ const componentOverrides = {
           bg: brandGradients.surface,
           overflow: "hidden",
           backdropFilter: "blur(16px)",
+          _dark: {
+            bg: "#161B22",
+            borderColor: "#30363D",
+            boxShadow: "0 34px 72px rgba(0, 0, 0, 0.42)",
+          },
         },
         header: {
           fontWeight: "800",
           fontFamily: brandFonts.display,
           borderBottom: "1px solid rgba(13,27,77,0.08)",
           pb: "18px",
+          _dark: {
+            borderColor: "#30363D",
+            color: "#E6EDF3",
+          },
         },
         body: {
           py: "20px",
+          _dark: {
+            color: "#E6EDF3",
+          },
         },
         footer: {
           borderTop: "1px solid rgba(13,27,77,0.08)",
           pt: "18px",
+          _dark: {
+            borderColor: "#30363D",
+          },
         },
         overlay: {
           bg: "rgba(20, 25, 35, 0.5)",

@@ -1,6 +1,6 @@
 import { CssBaseline } from '@mui/material'
 import { ThemeProvider, type PaletteMode } from '@mui/material/styles'
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createAppTheme } from '../../theme/theme'
 
 interface ClientThemeContextValue {
@@ -40,6 +40,10 @@ export function ClientThemeProvider({ children }: { children: ReactNode }) {
   )
 
   const theme = useMemo(() => createAppTheme(mode), [mode])
+
+  useEffect(() => {
+    document.documentElement.dataset.clientTheme = mode
+  }, [mode])
 
   return (
     <ClientThemeContext.Provider value={value}>

@@ -154,11 +154,11 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
   const itemHoverBg = useColorModeValue("#F9FAFB", "#21262D");
   const itemHoverColor = useColorModeValue("#0F172A", "#E6EDF3");
   const itemActiveBg = useColorModeValue("#EDE9FE", "#242349");
-  const itemActiveColor = useColorModeValue("#6C5CE7", "#6C5CE7");
+  const itemActiveColor = useColorModeValue("#5A4BD1", "#B7AEFF");
   const iconColor = useColorModeValue("#94A3B8", "#8B949E");
   const childColor = useColorModeValue("#586B8A", "#8B949E");
   const childActiveBg = useColorModeValue("#EDE9FE", "#242349");
-  const childActiveColor = useColorModeValue("#6C5CE7", "#6C5CE7");
+  const childActiveColor = useColorModeValue("#5A4BD1", "#B7AEFF");
   const scrollbarThumb = useColorModeValue("#CBD5E1", "#6E7681");
 
   React.useEffect(() => {

@@ -10,6 +10,7 @@ import {
   ListItemText,
   Popover,
   Typography,
+  useTheme,
 } from '@mui/material'
 import { useState } from 'react'
 import { BsKeyboardFill } from 'react-icons/bs'
@@ -43,8 +44,17 @@ interface UserMenuProps {
 const UserMenu = ({ compact = false }: UserMenuProps) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const theme = useTheme()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
+  const isDark = theme.palette.mode === 'dark'
+  const panelBg = isDark ? '#151b23' : '#ffffff'
+  const panelMutedBg = isDark ? '#101720' : alpha(INK, 0.02)
+  const borderColor = isDark ? alpha('#f8fafc', 0.1) : alpha(INK, 0.08)
+  const textColor = isDark ? '#f8fafc' : TEXT
+  const mutedColor = isDark ? '#93a4ba' : TEXT_SECONDARY
+  const avatarBg = compact ? (isDark ? '#2b2760' : alpha('#7657ff', 0.1)) : INK
+  const avatarColor = compact ? (isDark ? '#f8fafc' : '#7657ff') : '#ffffff'
 
   const { data: avatarUrl } = usePresignedDownloadUrls({
     keys: user?.companyInfo?.profilePicture,
@@ -117,12 +127,12 @@ const UserMenu = ({ compact = false }: UserMenuProps) => {
           minWidth: compact ? 42 : 'auto',
           height: compact ? 38 : 'auto',
           borderRadius: compact ? 1.5 : 2,
-          border: compact ? '1px solid transparent' : `1px solid ${alpha(INK, 0.08)}`,
-          bgcolor: compact ? 'transparent' : alpha('#FFFFFF', 0.84),
-          color: compact ? '#7657ff' : 'inherit',
+          border: compact ? `1px solid ${isDark ? alpha('#fff', 0.08) : 'transparent'}` : `1px solid ${borderColor}`,
+          bgcolor: compact ? (isDark ? alpha('#ffffff', 0.03) : 'transparent') : alpha('#FFFFFF', 0.84),
+          color: avatarColor,
           boxShadow: compact ? 'none' : `0 8px 18px ${alpha(INK, 0.05)}`,
           '&:hover': {
-            bgcolor: compact ? alpha('#ffffff', 0.05) : alpha(INK, 0.04),
+            bgcolor: compact ? (isDark ? alpha('#ffffff', 0.08) : alpha('#7657ff', 0.08)) : alpha(INK, 0.04),
           },
         }}
       >
@@ -131,8 +141,8 @@ const UserMenu = ({ compact = false }: UserMenuProps) => {
           sx={{
             width: compact ? 38 : 32,
             height: compact ? 38 : 32,
-            bgcolor: compact ? 'transparent' : INK,
-            color: compact ? '#7657ff' : '#ffffff',
+            bgcolor: avatarBg,
+            color: avatarColor,
             fontSize: compact ? '0.94rem' : '0.82rem',
             fontWeight: 900,
             borderRadius: compact ? 1.5 : 2,
@@ -154,34 +164,35 @@ const UserMenu = ({ compact = false }: UserMenuProps) => {
             mt: 1.15,
             width: 280,
             borderRadius: 2,
-            border: `1px solid ${alpha(INK, 0.08)}`,
-            boxShadow: `0 18px 36px ${alpha(INK, 0.12)}`,
+            border: `1px solid ${borderColor}`,
+            boxShadow: isDark ? '0 24px 54px rgba(0,0,0,0.36)' : `0 18px 36px ${alpha(INK, 0.12)}`,
             overflow: 'hidden',
-            background:
-              'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)',
+            background: panelBg,
+            color: textColor,
           },
         }}
       >
         <Box
           sx={{
             p: 1.4,
-            borderBottom: `1px solid ${alpha(INK, 0.06)}`,
-            bgcolor: alpha(INK, 0.02),
+            borderBottom: `1px solid ${borderColor}`,
+            bgcolor: panelMutedBg,
           }}
         >
-          <Typography sx={{ fontSize: '0.92rem', fontWeight: 900, color: TEXT }} noWrap>
+          <Typography sx={{ fontSize: '0.92rem', fontWeight: 900, color: textColor }} noWrap>
             {user?.companyInfo?.contactPerson || user?.name || 'Ship Aggregator User'}
           </Typography>
-          <Typography sx={{ mt: 0.3, fontSize: '0.76rem', fontWeight: 600, color: TEXT_SECONDARY }} noWrap>
+          <Typography sx={{ mt: 0.3, fontSize: '0.76rem', fontWeight: 600, color: mutedColor }} noWrap>
             {user?.companyInfo?.contactEmail || user?.email}
           </Typography>
         </Box>
 
         <List sx={{ p: 1 }}>
           {menuItems.map((item, index) => {
-            if (item.key === 'divider') return <Divider key={index} sx={{ my: 0.8, opacity: 0.6 }} />
+            if (item.key === 'divider') return <Divider key={index} sx={{ my: 0.8, borderColor, opacity: 1 }} />
 
             const Icon = item.icon!
+            const itemColor = isDark && item.color === INK ? '#9b8cff' : item.color ?? INK
             return (
               <ListItemButton
                 key={item.key}
@@ -191,11 +202,11 @@ const UserMenu = ({ compact = false }: UserMenuProps) => {
                   py: 0.95,
                   px: 1.1,
                   '&:hover': {
-                    bgcolor: alpha(item.color ?? INK, 0.08),
+                    bgcolor: alpha(itemColor, isDark ? 0.16 : 0.08),
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40, color: item.color ?? INK }}>
+                <ListItemIcon sx={{ minWidth: 40, color: itemColor }}>
                   <Box
                     sx={{
                       width: 32,
@@ -204,7 +215,7 @@ const UserMenu = ({ compact = false }: UserMenuProps) => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: alpha(item.color ?? INK, 0.1),
+                      bgcolor: alpha(itemColor, isDark ? 0.18 : 0.1),
                     }}
                   >
                     <Icon size={17} />
@@ -215,7 +226,7 @@ const UserMenu = ({ compact = false }: UserMenuProps) => {
                   primaryTypographyProps={{
                     fontSize: '0.84rem',
                     fontWeight: 800,
-                    color: TEXT,
+                    color: textColor,
                   }}
                 />
               </ListItemButton>

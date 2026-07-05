@@ -35,6 +35,10 @@ export default function NotificationMenu({ themeStyles }) {
   const menuHoverBg = useColorModeValue('gray.100', 'gray.700')
   const unreadBg = useColorModeValue('rgba(23,138,104,0.08)', 'rgba(23,138,104,0.16)')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
+  const menuBg = useColorModeValue('#FFFFFF', '#161B22')
+  const menuText = useColorModeValue('#0F172A', '#E6EDF3')
+  const mutedText = useColorModeValue('gray.500', '#8B949E')
+  const badgeRing = useColorModeValue('#FFFFFF', '#161B22')
   useSocket()
 
   useEffect(() => {
@@ -89,18 +93,18 @@ export default function NotificationMenu({ themeStyles }) {
             borderRadius="full"
             align="center"
             justify="center"
-            boxShadow="0 0 0 2px white"
+            boxShadow={`0 0 0 2px ${badgeRing}`}
           >
             {unreadCount}
           </Flex>
         )}
       </MenuButton>
 
-      <MenuList p="8px" minW="360px">
+      <MenuList p="8px" minW="360px" bg={menuBg} color={menuText} borderColor={borderColor}>
         <Flex align="center" px="8px" py="8px" borderBottomWidth="1px" borderColor={borderColor}>
           <Box>
             <Text fontWeight="700">Notifications</Text>
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color={mutedText}>
               {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
             </Text>
           </Box>

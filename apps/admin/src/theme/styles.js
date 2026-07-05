@@ -11,6 +11,7 @@ export const globalStyles = {
       body: {
         bg: mode("#FAFBFE", "#0D1117")(props),
         color: mode("#0F172A", "#E6EDF3")(props),
+        colorScheme: props.colorMode,
         fontFamily: brandFonts.body,
         fontSize: "16px",
         backgroundImage: "none",
@@ -44,6 +45,10 @@ export const globalStyles = {
       },
       ".chakra-input, .chakra-select, .chakra-textarea": {
         borderRadius: "8px !important",
+      },
+      ".chakra-select option": {
+        background: mode("#FFFFFF", "#161B22")(props),
+        color: mode("#0F172A", "#E6EDF3")(props),
       },
       "::selection": {
         background: mode("brand.100", "accent.600")(props),

@@ -17,6 +17,18 @@ body,
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html[data-client-theme='dark'] {
+  color-scheme: dark;
+}
+
+html[data-client-theme='dark'],
+html[data-client-theme='dark'] body,
+html[data-client-theme='dark'] #root {
+  background: #0f141b;
+  color: #f8fafc;
 }
 
 body {
@@ -98,4 +110,21 @@ textarea {
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: #94a3b8 rgba(250, 251, 254, 0.9);
+}
+
+html[data-client-theme='dark'] ::-webkit-scrollbar-track {
+  background-color: #0f141b;
+}
+
+html[data-client-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #3a4350;
+  border-color: #0f141b;
+}
+
+html[data-client-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #586579;
+}
+
+html[data-client-theme='dark'] * {
+  scrollbar-color: #3a4350 #0f141b;
 }
