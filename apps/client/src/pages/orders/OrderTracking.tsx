@@ -529,7 +529,7 @@ export default function TrackingPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff', color: ink }}>
-      <PublicNavbar solid />
+      <PublicNavbar solid primaryLabel="Go to Dashboard" primaryTo="/login" />
 
       <Box
         component="main"
