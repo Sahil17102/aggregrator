@@ -1,6 +1,7 @@
 import {
   alpha,
   Box,
+  Button,
   Chip,
   Container,
   Grid,
@@ -9,16 +10,36 @@ import {
   StepConnector,
   StepLabel,
   Stepper,
+  TextField,
   Typography,
   styled,
 } from '@mui/material'
-import { FaBoxOpen, FaBuilding, FaExclamationTriangle, FaShippingFast, FaStore, FaTruck } from 'react-icons/fa'
-import { useSearchParams } from 'react-router-dom'
-import BrandSurface from '../../components/brand/BrandSurface'
+import { motion } from 'framer-motion'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { FaBoxOpen, FaBuilding, FaShippingFast, FaStore, FaTruck } from 'react-icons/fa'
+import { FiArrowRight, FiBox, FiChevronDown, FiHelpCircle, FiSearch } from 'react-icons/fi'
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom'
 import PublicFooter from '../../components/public/PublicFooter'
 import PublicNavbar from '../../components/public/PublicNavbar'
 import { useTracking } from '../../hooks/Orders/useTracking'
 import { brand, brandGradients } from '../../theme/brand'
+
+const navy = '#0b1028'
+const navy2 = '#19154d'
+const ink = '#11182d'
+const muted = '#667795'
+const border = '#e6ebf3'
+const page = '#f8fafc'
+const purple = '#7867f3'
+const orange = '#ff6b16'
+const amber = '#f5a313'
+
+const fadeUp = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.16 },
+  transition: { duration: 0.42 },
+}
 
 const stages = [
   { label: 'Booked', icon: <FaStore /> },
@@ -26,6 +47,13 @@ const stages = [
   { label: 'In Transit', icon: <FaTruck /> },
   { label: 'Out for Delivery', icon: <FaShippingFast /> },
   { label: 'Delivered', icon: <FaBoxOpen /> },
+]
+
+const faqItems = [
+  'Where do I find my AWB / tracking number?',
+  'How often is tracking information updated?',
+  'What if my tracking shows no updates?',
+  'Can I track multiple shipments at once?',
 ]
 
 const statusLabels: Record<string, string> = {
@@ -112,360 +140,517 @@ const TrackingConnector = styled(StepConnector)(() => ({
   },
 }))
 
+function DottedBand({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      sx={{
+        color: '#fff',
+        backgroundColor: navy,
+        backgroundImage: `
+          radial-gradient(circle at 90% 14%, rgba(124, 92, 255, 0.24), transparent 25%),
+          radial-gradient(circle at 12px 12px, rgba(124, 92, 255, 0.35) 1px, transparent 1px),
+          linear-gradient(120deg, ${navy} 0%, #101633 45%, ${navy2} 100%)
+        `,
+        backgroundSize: 'auto, 35px 35px, auto',
+      }}
+    >
+      {children}
+    </Box>
+  )
+}
+
+function EmptyTrackingState() {
+  return (
+    <Box component="section" sx={{ bgcolor: '#fff', py: { xs: 10, md: 14 } }}>
+      <Container maxWidth="md" sx={{ px: { xs: 2.5, sm: 4 } }}>
+        <Stack component={motion.div} {...fadeUp} spacing={2} alignItems="center" textAlign="center">
+          <Box sx={{ color: ink, fontSize: 48, display: 'grid', placeItems: 'center' }}>
+            <FiBox />
+          </Box>
+          <Typography component="h2" sx={{ color: ink, fontSize: { xs: '1.65rem', md: '2rem' }, fontWeight: 900 }}>
+            Enter a tracking number
+          </Typography>
+          <Typography sx={{ color: muted, fontSize: { xs: '1rem', md: '1.08rem' }, lineHeight: 1.6, maxWidth: 560 }}>
+            Type your AWB number or order ID in the search box above to see real-time shipment updates from any courier partner.
+          </Typography>
+        </Stack>
+      </Container>
+    </Box>
+  )
+}
+
+function LoadingPanel() {
+  return (
+    <Box component="section" sx={{ bgcolor: '#fff', py: { xs: 10, md: 14 } }}>
+      <Container maxWidth="md" sx={{ px: { xs: 2.5, sm: 4 } }}>
+        <Stack spacing={2} alignItems="center" textAlign="center">
+          <Box
+            sx={{
+              width: 70,
+              height: 70,
+              borderRadius: 999,
+              border: `6px solid ${alpha(orange, 0.14)}`,
+              borderTopColor: orange,
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+          <Typography sx={{ color: ink, fontWeight: 900, fontSize: '1.3rem' }}>
+            Fetching tracking details...
+          </Typography>
+          <style>{'@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }'}</style>
+        </Stack>
+      </Container>
+    </Box>
+  )
+}
+
+function NotFoundPanel({ awb }: { awb: string | null }) {
+  return (
+    <Box component="section" sx={{ bgcolor: '#fff', py: { xs: 10, md: 14 } }}>
+      <Container maxWidth="md" sx={{ px: { xs: 2.5, sm: 4 } }}>
+        <Stack
+          component={motion.div}
+          {...fadeUp}
+          spacing={2}
+          alignItems="center"
+          textAlign="center"
+          sx={{ p: { xs: 3, md: 4 }, borderRadius: '18px', border: `1px solid ${border}`, bgcolor: '#fff' }}
+        >
+          <Box sx={{ color: orange, fontSize: 48, display: 'grid', placeItems: 'center' }}>
+            <FiHelpCircle />
+          </Box>
+          <Typography component="h2" sx={{ color: ink, fontSize: { xs: '1.7rem', md: '2.25rem' }, fontWeight: 900 }}>
+            No Shipment Data Found
+          </Typography>
+          <Typography sx={{ color: muted, lineHeight: 1.7, maxWidth: 540 }}>
+            We could not locate any shipment with AWB <strong>{awb || 'provided number'}</strong>. Please check the tracking number and try again.
+          </Typography>
+        </Stack>
+      </Container>
+    </Box>
+  )
+}
+
+function FaqSection() {
+  return (
+    <Box component="section" sx={{ bgcolor: page, py: { xs: 10, md: 13 } }}>
+      <Container maxWidth="md" sx={{ px: { xs: 2.5, sm: 4 } }}>
+        <Stack component={motion.div} {...fadeUp} spacing={4.5} alignItems="center" textAlign="center">
+          <Stack spacing={1.8} alignItems="center">
+            <Typography
+              sx={{
+                px: 1.8,
+                py: 0.55,
+                borderRadius: 999,
+                bgcolor: alpha(purple, 0.1),
+                color: purple,
+                fontWeight: 900,
+                fontSize: '0.84rem',
+              }}
+            >
+              FAQs
+            </Typography>
+            <Typography
+              component="h2"
+              sx={{
+                color: ink,
+                fontWeight: 900,
+                lineHeight: 1.08,
+                fontSize: { xs: '2.35rem', md: '3.15rem' },
+              }}
+            >
+              Common{' '}
+              <Box component="span" sx={{ color: purple }}>
+                tracking questions
+              </Box>
+            </Typography>
+          </Stack>
+
+          <Stack spacing={1.6} sx={{ width: '100%' }}>
+            {faqItems.map((item) => (
+              <Stack
+                key={item}
+                direction="row"
+                alignItems="center"
+                spacing={1.8}
+                sx={{
+                  minHeight: 72,
+                  px: { xs: 2, md: 3 },
+                  borderRadius: '18px',
+                  bgcolor: '#fff',
+                  border: `1px solid ${border}`,
+                  textAlign: 'left',
+                }}
+              >
+                <Box sx={{ color: purple, fontSize: 28, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <FiHelpCircle />
+                </Box>
+                <Typography sx={{ color: ink, fontWeight: 850, fontSize: { xs: '0.98rem', md: '1.05rem' }, flex: 1 }}>
+                  {item}
+                </Typography>
+                <Box sx={{ color: '#53657e', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <FiChevronDown />
+                </Box>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
+      </Container>
+    </Box>
+  )
+}
+
+function CtaSection() {
+  return (
+    <DottedBand>
+      <Container maxWidth="md" sx={{ px: { xs: 2.5, sm: 4 }, py: { xs: 9, md: 11 } }}>
+        <Stack component={motion.section} {...fadeUp} spacing={2.5} alignItems="center" textAlign="center">
+          <Typography component="h2" sx={{ color: '#fff', fontSize: { xs: '2.35rem', md: '3.7rem' }, lineHeight: 1.05, fontWeight: 900 }}>
+            Want to track all
+            <Box component="span" sx={{ display: 'block' }}>
+              shipments in one place?
+            </Box>
+          </Typography>
+          <Typography sx={{ color: alpha('#fff', 0.62), fontSize: { xs: '1.05rem', md: '1.18rem' }, lineHeight: 1.6, maxWidth: 660 }}>
+            Sign up for the Ship Aggregator dashboard and get a unified tracking view for every order, every courier.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4} sx={{ width: { xs: '100%', sm: 'auto' }, pt: 1 }}>
+            <Button component={RouterLink} to="/signup" variant="contained" endIcon={<FiArrowRight />} sx={{ minHeight: 64, px: 4.6, borderRadius: '12px', bgcolor: orange, fontSize: '1rem', fontWeight: 900, boxShadow: '0 16px 34px rgba(249, 115, 22, 0.32)', '&:hover': { bgcolor: '#ea580c' } }}>
+              Start Free Trial
+            </Button>
+            <Button component={RouterLink} to="/platform" variant="outlined" sx={{ minHeight: 64, px: 4.6, borderRadius: '12px', borderColor: alpha('#fff', 0.22), color: '#fff', fontSize: '1rem', fontWeight: 900, '&:hover': { bgcolor: alpha('#fff', 0.08), borderColor: alpha('#fff', 0.38) } }}>
+              Explore Platform
+            </Button>
+          </Stack>
+        </Stack>
+      </Container>
+    </DottedBand>
+  )
+}
+
 export default function TrackingPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const awb = searchParams.get('awb')?.trim() || null
   const order = searchParams.get('orderNumber')?.trim() || null
   const contact = searchParams.get('contact')?.trim() || null
+  const hasTrackingQuery = Boolean(awb || (order && contact))
+  const [trackingInput, setTrackingInput] = useState(awb || order || '')
   const { data: trackingData, isLoading, error } = useTracking(awb, order, contact)
-  const trackingMeta = trackingData as typeof trackingData & {
-    consignee?: { name?: string; city?: string; pincode?: string }
-    weight?: string | number
-    dimensions?: string
-  }
-  const displayAwb = trackingData?.awb_number || awb || 'N/A'
-  const displayOrderNumber = trackingData?.order_number || order || 'N/A'
 
-  const currentStage =
-    Math.max(
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
+  useEffect(() => {
+    setTrackingInput(awb || order || '')
+  }, [awb, order])
+
+  const handleTrack = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const value = trackingInput.trim()
+    if (!value) return
+    navigate(`/track?awb=${encodeURIComponent(value)}`)
+  }
+
+  const renderTrackingDetails = () => {
+    if (!hasTrackingQuery) return <EmptyTrackingState />
+    if (isLoading) return <LoadingPanel />
+    if (error || !trackingData) return <NotFoundPanel awb={awb || order} />
+
+    const trackingMeta = trackingData as typeof trackingData & {
+      consignee?: { name?: string; city?: string; pincode?: string }
+      weight?: string | number
+      dimensions?: string
+    }
+    const displayAwb = trackingData.awb_number || awb || 'N/A'
+    const displayOrderNumber = trackingData.order_number || order || 'N/A'
+    const currentStage = Math.max(
       0,
-      trackingData?.history?.findIndex((h) => {
-      const timelineStatus = formatTrackingStatus(h.status_code)
-      return normalizeTrackingStatus(timelineStatus) === normalizeTrackingStatus(trackingData.status)
+      trackingData.history?.findIndex((h) => {
+        const timelineStatus = formatTrackingStatus(h.status_code)
+        return normalizeTrackingStatus(timelineStatus) === normalizeTrackingStatus(trackingData.status)
       }) ?? 0,
     )
+    const isCancelled = trackingData.status === 'Cancelled'
+    const isRTO = trackingData.status?.includes('RTO')
 
-  if (isLoading) {
     return (
-      <Box sx={{ minHeight: '100vh' }}>
-        <PublicNavbar />
-        <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 }, py: 6 }}>
-          <BrandSurface variant="hero" sx={{ minHeight: 420, alignItems: 'center', justifyContent: 'center' }}>
-            <Stack spacing={2} alignItems="center">
-              <Box
-                sx={{
-                  width: 82,
-                  height: 82,
-                  borderRadius: 999,
-                  border: `6px solid ${alpha(brand.accent, 0.14)}`,
-                  borderTopColor: brand.accent,
-                  animation: 'spin 1s linear infinite',
-                }}
-              />
-              <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.3rem' }}>
-                Fetching tracking details...
-              </Typography>
-              <style>{'@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }'}</style>
-            </Stack>
-          </BrandSurface>
-        </Container>
-        <PublicFooter />
-      </Box>
-    )
-  }
-
-  if (error || !trackingData) {
-    return (
-      <Box sx={{ minHeight: '100vh' }}>
-        <PublicNavbar />
-        <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 }, py: 6 }}>
-          <BrandSurface variant="card" sx={{ p: { xs: 2.8, md: 4 }, textAlign: 'center', alignItems: 'center' }}>
-            <FaExclamationTriangle size={60} color={brand.accent} />
-            <Typography sx={{ mt: 2, color: brand.ink, fontWeight: 800, fontSize: { xs: '1.7rem', md: '2.4rem' } }}>
-              No Shipment Data Found
-            </Typography>
-            <Typography sx={{ mt: 1.2, color: brand.inkSoft, lineHeight: 1.8, maxWidth: 520 }}>
-              We could not locate any shipment with AWB <strong>{awb}</strong>. Please check the tracking number and try again.
-            </Typography>
-            <Chip
-              label="Back to previous page"
-              onClick={() => window.history.back()}
-              sx={{
-                mt: 2.2,
-                px: 1.8,
-                py: 2.1,
-                borderRadius: 999,
-                background: brandGradients.button,
-                color: '#FFFFFF',
-                fontWeight: 800,
-              }}
-            />
-          </BrandSurface>
-        </Container>
-        <PublicFooter />
-      </Box>
-    )
-  }
-
-  const isCancelled = trackingData.status === 'Cancelled'
-  const isRTO = trackingData.status?.includes('RTO')
-
-  return (
-    <Box sx={{ minHeight: '100vh' }}>
-      <PublicNavbar />
-
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, pb: 8 }}>
-        <Stack spacing={3.2} sx={{ pt: { xs: 1.5, md: 3 } }}>
-          <BrandSurface
-            variant="hero"
-            sx={{
-              p: { xs: 2.5, md: 3.4 },
-              background: `
-                radial-gradient(circle at 100% 0%, rgba(255, 156, 75, 0.18), transparent 24%),
-                ${brandGradients.analytics}
-              `,
-            }}
-          >
-            <Grid container spacing={{ xs: 2.2, md: 3 }} alignItems="center">
-              <Grid size={{ xs: 12, lg: 8 }}>
-                <Typography sx={{ color: brand.accent, fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
-                  Shipment status
-                </Typography>
-                <Typography sx={{ mt: 1, color: brand.ink, fontWeight: 900, fontSize: { xs: '2.2rem', md: '3.4rem' }, lineHeight: 0.98, letterSpacing: '-0.05em' }}>
-                  {formatTrackingStatus(trackingData.status)}
-                </Typography>
-                <Typography sx={{ mt: 1.1, color: brand.inkSoft, lineHeight: 1.8 }}>
-                  Track every parcel with a clearer public timeline while reusing the current tracking API and history data.
-                </Typography>
-              </Grid>
-
-              <Grid size={{ xs: 12, lg: 4 }}>
-                <Stack spacing={1.2}>
-                  <BrandSurface variant="glass" sx={{ p: 1.8, borderRadius: '24px' }}>
-                    <Typography sx={{ color: brand.inkSoft, fontSize: '0.8rem', fontWeight: 700 }}>AWB</Typography>
-                    <Typography sx={{ mt: 0.5, color: brand.ink, fontWeight: 800 }}>{displayAwb}</Typography>
-                  </BrandSurface>
-                  <BrandSurface variant="glass" sx={{ p: 1.8, borderRadius: '24px' }}>
-                    <Typography sx={{ color: brand.inkSoft, fontSize: '0.8rem', fontWeight: 700 }}>Order Number</Typography>
-                    <Typography sx={{ mt: 0.5, color: brand.ink, fontWeight: 800 }}>{displayOrderNumber}</Typography>
-                  </BrandSurface>
-                  <BrandSurface variant="glass" sx={{ p: 1.8, borderRadius: '24px' }}>
-                    <Typography sx={{ color: brand.inkSoft, fontSize: '0.8rem', fontWeight: 700 }}>Estimated Delivery</Typography>
-                    <Typography sx={{ mt: 0.5, color: brand.ink, fontWeight: 800 }}>{trackingData.edd || 'To be updated'}</Typography>
-                  </BrandSurface>
-                </Stack>
-              </Grid>
-            </Grid>
-          </BrandSurface>
-
-          <Grid container spacing={2.2}>
+      <Box component="section" sx={{ bgcolor: '#fff', py: { xs: 8, md: 11 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+          <Grid container spacing={3}>
             <Grid size={{ xs: 12, lg: 8 }}>
-              <BrandSurface variant="card" sx={{ p: { xs: 2.2, md: 3 }, borderRadius: '32px' }}>
-                <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.25rem', mb: 3 }}>
-                  Tracking Timeline
-                </Typography>
+              <Stack spacing={3}>
+                <Stack
+                  component={motion.div}
+                  {...fadeUp}
+                  spacing={1.2}
+                  sx={{
+                    p: { xs: 3, md: 4 },
+                    borderRadius: '18px',
+                    bgcolor: page,
+                    border: `1px solid ${border}`,
+                  }}
+                >
+                  <Typography sx={{ color: orange, fontSize: '0.78rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                    Shipment status
+                  </Typography>
+                  <Typography sx={{ color: ink, fontWeight: 900, fontSize: { xs: '2rem', md: '3rem' }, lineHeight: 1.05 }}>
+                    {formatTrackingStatus(trackingData.status)}
+                  </Typography>
+                  <Typography sx={{ color: muted, lineHeight: 1.7 }}>
+                    Live shipment details for AWB {displayAwb}.
+                  </Typography>
+                </Stack>
 
-                {!isCancelled && !isRTO ? (
-                  <Stepper alternativeLabel activeStep={currentStage} connector={<TrackingConnector />} sx={{ mb: 5 }}>
-                    {stages.map((stage, index) => (
-                      <Step key={stage.label}>
-                        <StepLabel
-                          StepIconComponent={() => (
-                            <Box
-                              sx={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: '16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                bgcolor: index <= currentStage ? brand.accent : alpha(brand.ink, 0.12),
-                                color: index <= currentStage ? '#FFFFFF' : brand.inkSoft,
-                                boxShadow: index <= currentStage ? '0 16px 28px rgba(255,122,21,0.22)' : 'none',
-                              }}
-                            >
-                              {stage.icon}
-                            </Box>
-                          )}
-                        >
-                          <Typography
-                            sx={{
-                              fontWeight: 800,
-                              mt: 1.5,
-                              color: index <= currentStage ? brand.ink : brand.inkSoft,
-                              fontSize: '0.82rem',
-                            }}
-                          >
-                            {stage.label}
-                          </Typography>
-                        </StepLabel>
-                      </Step>
-                    ))}
-                  </Stepper>
-                ) : (
-                  <BrandSurface
-                    variant="soft"
-                    sx={{
-                      p: 2.4,
-                      borderRadius: '24px',
-                      mb: 4,
-                      background: alpha(brand.accent, 0.08),
-                      border: `1px solid ${alpha(brand.accent, 0.22)}`,
-                    }}
-                  >
-                    <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.05rem' }}>
-                      {isCancelled ? 'Order Cancelled' : 'RTO Initiated'}
-                    </Typography>
-                  </BrandSurface>
-                )}
+                <Stack
+                  component={motion.div}
+                  {...fadeUp}
+                  spacing={3}
+                  sx={{
+                    p: { xs: 2.5, md: 3.5 },
+                    borderRadius: '18px',
+                    bgcolor: '#fff',
+                    border: `1px solid ${border}`,
+                  }}
+                >
+                  <Typography sx={{ color: ink, fontWeight: 900, fontSize: '1.25rem' }}>
+                    Tracking Timeline
+                  </Typography>
 
-                <Stack spacing={1.8}>
-                  {trackingData.history?.map((event, index) => {
-                    const exactStatus = formatTrackingStatus(event.status_code)
-                    const tone = getTrackingTone(event.status_code)
-                    const isLatest = index === 0
-
-                    return (
-                      <Box
-                        key={`${event.event_time}-${index}`}
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: { xs: '1fr', sm: '150px 24px 1fr' },
-                          gap: { xs: 1.2, sm: 1.6 },
-                          p: { xs: 1.8, md: 2.2 },
-                          borderRadius: '24px',
-                          border: `1px solid ${alpha(brand.ink, 0.08)}`,
-                          bgcolor: isLatest ? alpha(brand.accent, 0.04) : '#FFFFFF',
-                          boxShadow: '0 10px 22px rgba(68, 92, 138, 0.06)',
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            minWidth: 0,
-                            display: 'flex',
-                            flexDirection: { xs: 'row', sm: 'column' },
-                            alignItems: { xs: 'center', sm: 'flex-end' },
-                            justifyContent: { xs: 'space-between', sm: 'center' },
-                            gap: 0.6,
-                          }}
-                        >
-                          <Typography sx={{ color: brand.ink, fontWeight: 900, fontSize: '0.95rem', textAlign: { xs: 'left', sm: 'right' } }}>
-                            {formatTrackingDate(event.event_time)}
-                          </Typography>
-                          <Typography sx={{ color: brand.inkSoft, fontSize: '0.82rem', fontWeight: 700, textAlign: { xs: 'right', sm: 'right' } }}>
-                            {formatTrackingTime(event.event_time)}
-                          </Typography>
-                        </Box>
-
-                        <Box
-                          sx={{
-                            display: { xs: 'none', sm: 'flex' },
-                            justifyContent: 'center',
-                            pt: 0.8,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: 999,
-                              bgcolor: isLatest ? brand.accent : alpha(brand.ink, 0.2),
-                              boxShadow: isLatest ? '0 0 0 6px rgba(255,122,21,0.12)' : 'none',
-                              position: 'relative',
-                            }}
-                          >
-                            {index < (trackingData.history?.length ?? 0) - 1 ? (
+                  {!isCancelled && !isRTO ? (
+                    <Stepper alternativeLabel activeStep={currentStage} connector={<TrackingConnector />} sx={{ mb: 2 }}>
+                      {stages.map((stage, index) => (
+                        <Step key={stage.label}>
+                          <StepLabel
+                            StepIconComponent={() => (
                               <Box
                                 sx={{
-                                  position: 'absolute',
-                                  left: 5,
-                                  top: 12,
-                                  bottom: -28,
-                                  width: 2,
-                                  bgcolor: alpha(brand.ink, 0.08),
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: '14px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  bgcolor: index <= currentStage ? orange : alpha(ink, 0.1),
+                                  color: index <= currentStage ? '#fff' : muted,
                                 }}
-                              />
-                            ) : null}
-                          </Box>
-                        </Box>
+                              >
+                                {stage.icon}
+                              </Box>
+                            )}
+                          >
+                            <Typography sx={{ fontWeight: 800, mt: 1, color: index <= currentStage ? ink : muted, fontSize: '0.8rem' }}>
+                              {stage.label}
+                            </Typography>
+                          </StepLabel>
+                        </Step>
+                      ))}
+                    </Stepper>
+                  ) : null}
 
-                        <Box sx={{ pb: 0.5 }}>
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Stack spacing={1.6}>
+                    {trackingData.history?.map((event, index) => {
+                      const exactStatus = formatTrackingStatus(event.status_code)
+                      const tone = getTrackingTone(event.status_code)
+                      const isLatest = index === 0
+
+                      return (
+                        <Box
+                          key={`${event.event_time}-${index}`}
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: { xs: '1fr', sm: '150px 1fr' },
+                            gap: 1.7,
+                            p: { xs: 1.8, md: 2.2 },
+                            borderRadius: '16px',
+                            border: `1px solid ${alpha(ink, 0.08)}`,
+                            bgcolor: isLatest ? alpha(orange, 0.04) : '#fff',
+                          }}
+                        >
+                          <Box>
+                            <Typography sx={{ color: ink, fontWeight: 900 }}>{formatTrackingDate(event.event_time)}</Typography>
+                            <Typography sx={{ color: muted, fontSize: '0.84rem', fontWeight: 700 }}>{formatTrackingTime(event.event_time)}</Typography>
+                          </Box>
+                          <Box>
                             <Chip
                               label={exactStatus}
                               size="small"
-                              sx={{
-                                bgcolor: tone.bg,
-                                color: tone.fg,
-                                fontWeight: 800,
-                                '& .MuiChip-label': { px: 1 },
-                              }}
+                              sx={{ bgcolor: tone.bg, color: tone.fg, fontWeight: 800, mb: 1 }}
                             />
-                            <Typography sx={{ color: brand.inkSoft, fontSize: '0.78rem', fontWeight: 700 }}>
-                              Exact Status
+                            <Typography sx={{ color: ink, fontWeight: 800, lineHeight: 1.55 }}>
+                              {event.message || exactStatus}
                             </Typography>
-                          </Stack>
-
-                          <Typography sx={{ color: brand.ink, fontWeight: 800, mt: 0.8, lineHeight: 1.6 }}>
-                            {event.message || exactStatus}
-                          </Typography>
-
-                          <Typography sx={{ color: brand.inkSoft, mt: 0.8, lineHeight: 1.6 }}>
-                            <strong style={{ color: brand.ink }}>Location:</strong> {event.location || 'N/A'}
-                          </Typography>
+                            <Typography sx={{ color: muted, mt: 0.7 }}>
+                              Location: {event.location || 'N/A'}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                    )
-                  })}
+                      )
+                    })}
+                  </Stack>
                 </Stack>
-              </BrandSurface>
+              </Stack>
             </Grid>
 
             <Grid size={{ xs: 12, lg: 4 }}>
               <Stack spacing={2.2}>
-                <BrandSurface variant="card" sx={{ p: 2.4, borderRadius: '30px' }}>
-                  <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.05rem', mb: 2 }}>
-                    Consignee Info
-                  </Typography>
-                  <Stack spacing={1.4}>
-                    <Box>
-                      <Typography sx={{ color: brand.inkSoft, fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                        Recipient
-                      </Typography>
-                      <Typography sx={{ color: brand.ink, fontWeight: 700, mt: 0.45 }}>
-                        {trackingMeta?.consignee?.name || 'Customer'}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ color: brand.inkSoft, fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                        Destination
-                      </Typography>
-                      <Typography sx={{ color: brand.ink, mt: 0.45 }}>
-                        {trackingMeta?.consignee?.city || 'N/A'}, {trackingMeta?.consignee?.pincode || 'N/A'}
-                      </Typography>
-                    </Box>
+                {[
+                  ['AWB', displayAwb],
+                  ['Order Number', displayOrderNumber],
+                  ['Estimated Delivery', trackingData.edd || 'To be updated'],
+                  ['Recipient', trackingMeta?.consignee?.name || 'Customer'],
+                  ['Destination', `${trackingMeta?.consignee?.city || 'N/A'}, ${trackingMeta?.consignee?.pincode || 'N/A'}`],
+                  ['Weight', `${trackingMeta?.weight || '0.5'} kg`],
+                ].map(([label, value]) => (
+                  <Stack
+                    key={label}
+                    spacing={0.6}
+                    sx={{
+                      p: 2.3,
+                      borderRadius: '16px',
+                      bgcolor: '#fff',
+                      border: `1px solid ${border}`,
+                    }}
+                  >
+                    <Typography sx={{ color: muted, fontSize: '0.76rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                      {label}
+                    </Typography>
+                    <Typography sx={{ color: ink, fontWeight: 800 }}>{value}</Typography>
                   </Stack>
-                </BrandSurface>
-
-                <BrandSurface variant="card" sx={{ p: 2.4, borderRadius: '30px' }}>
-                  <Typography sx={{ color: brand.ink, fontWeight: 800, fontSize: '1.05rem', mb: 2 }}>
-                    Shipment Content
-                  </Typography>
-                  <Stack spacing={1.4}>
-                    <Box>
-                      <Typography sx={{ color: brand.inkSoft, fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                        Weight
-                      </Typography>
-                      <Typography sx={{ color: brand.ink, fontWeight: 700, mt: 0.45 }}>
-                        {trackingMeta?.weight || '0.5'} kg
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ color: brand.inkSoft, fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                        Dimensions
-                      </Typography>
-                      <Typography sx={{ color: brand.ink, mt: 0.45 }}>
-                        {trackingMeta?.dimensions || trackingData.shipment_info || 'N/A'}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </BrandSurface>
+                ))}
               </Stack>
             </Grid>
           </Grid>
-        </Stack>
-      </Container>
+        </Container>
+      </Box>
+    )
+  }
 
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#fff', color: ink }}>
+      <PublicNavbar solid />
+
+      <Box
+        component="main"
+        sx={{
+          pt: { xs: 15, md: 17 },
+          pb: { xs: 10, md: 13 },
+          backgroundImage: 'radial-gradient(circle at 12px 12px, rgba(120, 103, 243, 0.08) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }}
+      >
+        <Container maxWidth="lg" sx={{ px: { xs: 2.5, sm: 4 } }}>
+          <Stack component={motion.section} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }} spacing={3} alignItems="center" textAlign="center">
+            <Typography
+              sx={{
+                px: 1.9,
+                py: 0.62,
+                borderRadius: 999,
+                bgcolor: alpha(orange, 0.1),
+                color: orange,
+                fontWeight: 900,
+                fontSize: '0.84rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: orange }} />
+              Track Shipment
+            </Typography>
+
+            <Typography
+              component="h1"
+              sx={{
+                color: ink,
+                maxWidth: 940,
+                fontWeight: 900,
+                lineHeight: 1.02,
+                letterSpacing: 0,
+                fontSize: { xs: '3rem', sm: '4.2rem', lg: '5rem' },
+              }}
+            >
+              Track Your Shipment in{' '}
+              <Box
+                component="span"
+                sx={{
+                  background: `linear-gradient(135deg, ${orange}, ${amber})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                Real-Time
+              </Box>
+            </Typography>
+
+            <Typography sx={{ color: muted, maxWidth: 760, fontSize: { xs: '1.08rem', md: '1.32rem' }, lineHeight: 1.5 }}>
+              Enter your AWB number or order ID to get instant tracking updates from any courier partner.
+            </Typography>
+
+            <Box
+              component="form"
+              onSubmit={handleTrack}
+              sx={{
+                width: '100%',
+                maxWidth: 720,
+                mt: 2.5,
+                p: 1,
+                borderRadius: '18px',
+                bgcolor: '#fff',
+                border: `1px solid ${border}`,
+                boxShadow: '0 18px 48px rgba(17, 24, 45, 0.12)',
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 136px' },
+                gap: 1,
+              }}
+            >
+              <TextField
+                value={trackingInput}
+                onChange={(event) => setTrackingInput(event.target.value)}
+                placeholder="Enter AWB number or Order ID"
+                fullWidth
+                InputProps={{
+                  startAdornment: <FiSearch style={{ marginRight: 10, color: '#667795', fontSize: 24 }} />,
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: 62,
+                    borderRadius: '14px',
+                    color: ink,
+                    '& fieldset': { border: 'none' },
+                  },
+                  '& input': { fontSize: '1rem', fontWeight: 650 },
+                }}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                endIcon={<FiArrowRight />}
+                sx={{
+                  minHeight: 60,
+                  borderRadius: '14px',
+                  bgcolor: orange,
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: '#ea580c', boxShadow: 'none' },
+                }}
+              >
+                Track
+              </Button>
+            </Box>
+
+            <Typography sx={{ color: muted, fontSize: '0.92rem', fontWeight: 650 }}>
+              Supports all major couriers: BlueDart, Delhivery, DTDC, XpressBees & more
+            </Typography>
+          </Stack>
+        </Container>
+      </Box>
+
+      {renderTrackingDetails()}
+      <FaqSection />
+      <CtaSection />
       <PublicFooter />
     </Box>
   )
