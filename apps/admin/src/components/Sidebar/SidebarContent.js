@@ -186,7 +186,12 @@ const isItemActive = (pathname, item) => {
   return item.children?.some((child) => pathname.startsWith(child.path));
 };
 
-const SidebarContent = ({ logoText, sidebarWidth }) => {
+const SidebarContent = ({
+  logoText,
+  sidebarWidth,
+  position = "fixed",
+  onNavigate,
+}) => {
   const location = useLocation();
   const [openGroups, setOpenGroups] = React.useState({});
   const sidebarBg = useColorModeValue("#ffffff", "#161B22");
@@ -237,9 +242,9 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
       bg={sidebarBg}
       borderRight="1px solid"
       borderColor={borderColor}
-      position="fixed"
-      left="0"
-      top="0"
+      position={position}
+      left={position === "fixed" ? "0" : undefined}
+      top={position === "fixed" ? "0" : undefined}
       overflowY="auto"
       overflowX="hidden"
       css={{
@@ -287,7 +292,7 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
 
           if (!item.children) {
             return (
-              <NavLink key={item.label} to={item.path}>
+              <NavLink key={item.label} to={item.path} onClick={onNavigate}>
                 <Flex
                   h="44px"
                   px="16px"
@@ -371,7 +376,11 @@ const SidebarContent = ({ logoText, sidebarWidth }) => {
                     );
                     const ChildIcon = child.icon || IconClipboardList;
                     return (
-                      <NavLink key={child.path} to={child.path}>
+                      <NavLink
+                        key={child.path}
+                        to={child.path}
+                        onClick={onNavigate}
+                      >
                         <Flex
                           align="center"
                           gap="10px"

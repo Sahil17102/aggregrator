@@ -1,7 +1,16 @@
-import { Portal, useColorModeValue, useDisclosure } from '@chakra-ui/react'
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerOverlay,
+  Portal,
+  useColorModeValue,
+  useDisclosure,
+} from '@chakra-ui/react'
 import AdminNavbar from 'components/Navbars/AdminNavbar.js'
 import { RouteAssetRecovery, RouteErrorBoundary } from 'components/RouteRecovery/RouteErrorBoundary'
 import Sidebar from 'components/Sidebar'
+import SidebarContent from 'components/Sidebar/SidebarContent'
 import { useState } from 'react'
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom'
 import routes from 'routes.js'
@@ -73,6 +82,19 @@ export default function Dashboard(props) {
         sidebarWidth={sidebarWidth}
         {...rest}
       />
+      <Drawer isOpen={isOpen} onClose={onClose} placement="left">
+        <DrawerOverlay bg="blackAlpha.500" />
+        <DrawerContent maxW={`${expandedSidebarWidth}px`} w={`${expandedSidebarWidth}px`}>
+          <DrawerBody p="0">
+            <SidebarContent
+              logoText="Admin Panel"
+              sidebarWidth={expandedSidebarWidth}
+              position="relative"
+              onNavigate={onClose}
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
 
       <MainPanel
         w={{

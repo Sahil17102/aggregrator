@@ -9,7 +9,7 @@ function Sidebar(props) {
 
   return (
     <Box ref={mainPanel}>
-      <Box display={{ sm: 'none', xl: 'block' }} position="fixed" top="0" left="0" h="100vh" pointerEvents="none">
+      <Box display={{ base: 'none', xl: 'block' }} position="fixed" top="0" left="0" h="100vh" pointerEvents="none">
         <Box
           pointerEvents="auto"
           w={`${sidebarWidth}px`}
