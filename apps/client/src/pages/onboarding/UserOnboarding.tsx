@@ -33,9 +33,9 @@ type UserContactFallback = {
 }
 
 const steps = [
-  { key: 1, title: 'Account Details', helper: 'Primary contact and company information' },
-  { key: 2, title: 'Shipping Profile', helper: 'Business model and shipment volume' },
-  { key: 3, title: 'Channel Setup', helper: 'Website and channel preferences' },
+  { key: 1, title: 'Personal Info', helper: 'Your contact details' },
+  { key: 2, title: 'Business Details', helper: 'About your business' },
+  { key: 3, title: 'Integrations', helper: 'Connect your store' },
 ]
 
 export default function UserOnboarding() {
@@ -375,7 +375,7 @@ export default function UserOnboarding() {
               loading={isPending}
               onClick={handleNext}
               endIcon={step < steps.length ? <MdArrowForward /> : <FiCheckCircle />}
-              text={step < steps.length ? 'Continue Setup' : 'Finish Panel Setup'}
+              text={step < steps.length ? 'Continue Setup' : 'Complete Setup'}
               styles={{
                 flex: 1,
                 background: brandGradients.button,

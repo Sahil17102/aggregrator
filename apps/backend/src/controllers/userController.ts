@@ -134,6 +134,7 @@ export const completeRegistration = async (req: any, res: Response): Promise<any
           onboardingStep: -1,
           onboardingComplete: true,
           profileComplete: true,
+          salesChannels: data?.platformIntegration ?? {},
           companyInfo: {
             ...userProfile?.companyInfo,
             website: data?.basicInfo?.personalWebsite,
