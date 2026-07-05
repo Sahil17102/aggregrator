@@ -11,13 +11,18 @@ import {
   Typography,
 } from '@mui/material'
 import { useMemo, useState, type ReactNode } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
+import { FormProvider, useForm, type RegisterOptions } from 'react-hook-form'
 import { FaPlane, FaTruck } from 'react-icons/fa'
 import {
   FiArrowRight,
   FiBox,
   FiBriefcase,
+  FiCreditCard,
+  FiEye,
+  FiGrid,
+  FiMapPin,
   FiPackage,
+  FiTruck,
   FiZap,
 } from 'react-icons/fi'
 import { TbRulerMeasure, TbScale } from 'react-icons/tb'
@@ -335,7 +340,7 @@ function CalculatorInput({
   icon,
   register,
 }: {
-  label: string
+  label?: string
   name: keyof Pick<RateCalculatorFormValues, 'length' | 'breadth' | 'height' | 'weight'>
   placeholder: string
   endLabel: string
@@ -344,7 +349,7 @@ function CalculatorInput({
 }) {
   return (
     <Box sx={{ minWidth: 0 }}>
-      <Typography sx={estimatorLabelSx}>{label}</Typography>
+      {label ? <Typography sx={estimatorLabelSx}>{label}</Typography> : null}
       <TextField
         type="number"
         placeholder={placeholder}
@@ -437,6 +442,209 @@ function TipCard({
           {text}
         </Typography>
       </Box>
+    </Stack>
+  )
+}
+
+const rateInputSx = {
+  '& .MuiOutlinedInput-root': {
+    height: 60,
+    borderRadius: '18px',
+    bgcolor: '#f8fafc',
+    color: publicColors.ink,
+    fontSize: '1rem',
+    fontWeight: 700,
+    '& fieldset': {
+      borderColor: '#e3e8f2',
+      borderWidth: 1.5,
+    },
+    '&:hover fieldset': {
+      borderColor: alpha(publicColors.orange, 0.38),
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: publicColors.orange,
+      borderWidth: 1.5,
+    },
+  },
+  '& input::placeholder': {
+    color: '#8797b4',
+    opacity: 1,
+    fontWeight: 600,
+  },
+  '& .MuiFormHelperText-root': {
+    ml: 0,
+    mt: 0.7,
+    fontSize: '0.76rem',
+    fontWeight: 700,
+  },
+}
+
+function RateTextInput({
+  label,
+  name,
+  placeholder,
+  icon,
+  endLabel,
+  type = 'text',
+  register,
+  rules,
+  error,
+}: {
+  label: string
+  name: keyof RateCalculatorFormValues
+  placeholder: string
+  icon: ReactNode
+  endLabel?: string
+  type?: 'text' | 'number'
+  register: ReturnType<typeof useForm<RateCalculatorFormValues>>['register']
+  rules?: RegisterOptions<RateCalculatorFormValues, keyof RateCalculatorFormValues>
+  error?: string
+}) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={estimatorLabelSx}>{label}</Typography>
+      <TextField
+        type={type}
+        placeholder={placeholder}
+        {...register(name, rules)}
+        fullWidth
+        error={Boolean(error)}
+        helperText={error || ''}
+        inputProps={{
+          min: type === 'number' ? 0 : undefined,
+          step: name === 'weight' ? 0.1 : 1,
+        }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Box sx={{ color: '#70809b', display: 'flex', fontSize: 21 }}>{icon}</Box>
+            </InputAdornment>
+          ),
+          endAdornment: endLabel ? (
+            <InputAdornment position="end">
+              <Typography sx={{ color: '#52627d', fontSize: '0.9rem', fontWeight: 700 }}>
+                {endLabel}
+              </Typography>
+            </InputAdornment>
+          ) : undefined,
+        }}
+        sx={rateInputSx}
+      />
+    </Box>
+  )
+}
+
+function RateSectionTitle({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <Stack direction="row" alignItems="center" spacing={1.3} sx={{ mt: 3.2, mb: 2 }}>
+      <Box sx={{ width: 5, height: 21, borderRadius: '999px', bgcolor: color }} />
+      <Typography sx={{ color: '#020617', fontSize: '1rem', fontWeight: 900, textTransform: 'uppercase' }}>
+        {children}
+      </Typography>
+    </Stack>
+  )
+}
+
+function PublicRateResultRow({ courier }: { courier: Courier }) {
+  const displayName = getCompactCourierName(courier)
+  const mode = getCompactCourierMode(courier)
+  const zoneLabel = getZoneChipLabel(courier)
+  const logo = getCourierLogo(courier, defaultLogo)
+  const hasLogo = Boolean(logo && logo !== defaultLogo)
+  const freight = getCompactFreight(courier)
+  const cod = getCompactCod(courier)
+
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(180px, 1.6fr) 90px 110px 110px 110px' },
+        gap: { xs: 1.2, md: 2 },
+        alignItems: 'center',
+        p: 1.5,
+        borderRadius: '16px',
+        border: `1px solid ${publicColors.line}`,
+        bgcolor: '#ffffff',
+      }}
+    >
+      <Stack direction="row" spacing={1.3} alignItems="center" sx={{ minWidth: 0 }}>
+        <Box
+          sx={{
+            width: 42,
+            height: 42,
+            borderRadius: '12px',
+            bgcolor: '#f8fafc',
+            border: `1px solid ${publicColors.line}`,
+            display: 'grid',
+            placeItems: 'center',
+            overflow: 'hidden',
+            color: publicColors.muted,
+            fontSize: '0.72rem',
+            fontWeight: 900,
+            flexShrink: 0,
+          }}
+        >
+          {hasLogo ? (
+            <Box component="img" src={logo} alt={displayName} sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.4 }} />
+          ) : (
+            'DEL'
+          )}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography noWrap sx={{ color: publicColors.ink, fontSize: '0.95rem', fontWeight: 900 }}>
+            {displayName}
+          </Typography>
+          <Typography sx={{ mt: 0.2, color: publicColors.muted, fontSize: '0.78rem', fontWeight: 700 }}>
+            {mode === 'air' ? 'Air' : 'Surface'}
+          </Typography>
+        </Box>
+      </Stack>
+      <Typography sx={{ color: publicColors.muted, fontWeight: 800 }}>{formatWeightKg(courier.chargeable_weight)}</Typography>
+      <Typography sx={{ color: publicColors.purple, fontWeight: 900 }}>{zoneLabel}</Typography>
+      <Typography sx={{ color: '#16a34a', fontWeight: 900 }}>
+        <Box component="span">&#8377;</Box>
+        {formatAmount(freight)}
+      </Typography>
+      <Typography sx={{ color: publicColors.muted, fontWeight: 800 }}>
+        COD: <Box component="span">&#8377;</Box>
+        {formatAmount(cod)}
+      </Typography>
+    </Box>
+  )
+}
+
+function RateFeatureCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode
+  title: string
+  text: string
+}) {
+  return (
+    <Stack alignItems="center" textAlign="center" sx={{ minWidth: 0 }}>
+      <Box
+        sx={{
+          width: 70,
+          height: 70,
+          borderRadius: '18px',
+          bgcolor: alpha(publicColors.purple, 0.1),
+          color: publicColors.purple,
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 30,
+          mb: 3,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography sx={{ color: '#020617', fontSize: '1.3rem', fontWeight: 900, lineHeight: 1.2 }}>
+        {title}
+      </Typography>
+      <Typography sx={{ mt: 1.7, color: publicColors.muted, fontSize: '1rem', lineHeight: 1.55, maxWidth: 390 }}>
+        {text}
+      </Typography>
     </Stack>
   )
 }
@@ -640,6 +848,448 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
   const chargeableWeightKg = hasEstimatorCalculation
     ? Math.max(actualWeightKg, volumetricWeightKg, 0.5)
     : 0
+
+  const publicRateCalculator = (
+    <FormProvider {...methods}>
+      <Box sx={{ bgcolor: publicColors.page, minHeight: '100vh', overflowX: 'hidden' }}>
+        <PublicNavbar solid primaryLabel="Go to Dashboard" primaryTo="/dashboard" />
+        <Box component="main">
+          <Box
+            component="section"
+            sx={{
+              pt: { xs: 14, md: 18.5, lg: 23 },
+              pb: { xs: 8, md: 13, lg: 17 },
+              textAlign: 'center',
+              backgroundColor: '#ffffff',
+              backgroundImage: dottedLightBackground,
+              backgroundSize: '34px 34px, auto',
+            }}
+          >
+            <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+              <PublicSectionBadge label="Rate Calculator" dotColor={publicColors.orange} />
+              <Typography
+                component="h1"
+                sx={{
+                  mt: 3.5,
+                  mx: 'auto',
+                  maxWidth: 920,
+                  color: publicColors.ink,
+                  fontSize: { xs: '1.9rem', sm: '3.45rem', lg: '4rem' },
+                  fontWeight: 900,
+                  lineHeight: 1.08,
+                  letterSpacing: 0,
+                }}
+              >
+                Compare{' '}
+                <Box component="span" sx={{ color: publicColors.orange, display: { xs: 'block', sm: 'inline' } }}>
+                  Shipping Rates
+                </Box>
+                <Box component="span" sx={{ display: 'block' }}>
+                  Instantly
+                </Box>
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 2.7,
+                  mx: 'auto',
+                  maxWidth: { xs: 300, sm: 820 },
+                  color: publicColors.muted,
+                  fontSize: { xs: '0.98rem', md: '1.28rem' },
+                  lineHeight: 1.5,
+                  fontWeight: 500,
+                }}
+              >
+                Enter your shipment details to compare real-time rates across all courier
+                partners. Find the cheapest, fastest option in seconds.
+              </Typography>
+            </Container>
+          </Box>
+
+          <Box
+            component="section"
+            sx={{
+              bgcolor: '#f7f8fc',
+              pt: { xs: 6, md: 10, lg: 15.5 },
+              pb: { xs: 10, md: 15, lg: 17 },
+            }}
+          >
+            <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+              <Box
+                sx={{
+                  ...publicCardSx,
+                  maxWidth: 1220,
+                  mx: 'auto',
+                  p: { xs: 3, md: 5 },
+                  boxShadow: '0 24px 52px rgba(15, 23, 42, 0.14)',
+                }}
+              >
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: '16px',
+                      bgcolor: alpha(publicColors.orange, 0.09),
+                      color: publicColors.orange,
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: 24,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FiGrid />
+                  </Box>
+                  <Box>
+                    <Typography sx={{ color: '#020617', fontSize: '1.35rem', fontWeight: 900 }}>
+                      Shipment Details
+                    </Typography>
+                    <Typography sx={{ mt: 0.25, color: publicColors.muted, fontWeight: 600 }}>
+                      Fill in your package info to see rates
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <RateSectionTitle color={publicColors.purple}>Route</RateSectionTitle>
+                <Grid container spacing={{ xs: 2, md: 3 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <RateTextInput
+                      label="Origin Pincode"
+                      name="pickupPincode"
+                      placeholder="e.g. 110001"
+                      icon={<FiMapPin />}
+                      register={register}
+                      rules={{
+                        required: 'Origin pincode is required',
+                        pattern: {
+                          value: /^[1-9][0-9]{5}$/,
+                          message: 'Enter a valid 6-digit pincode',
+                        },
+                      }}
+                      error={errors.pickupPincode?.message}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <RateTextInput
+                      label="Destination Pincode"
+                      name="deliveryPincode"
+                      placeholder="e.g. 400001"
+                      icon={<FiMapPin />}
+                      register={register}
+                      rules={{
+                        required: 'Destination pincode is required',
+                        pattern: {
+                          value: /^[1-9][0-9]{5}$/,
+                          message: 'Enter a valid 6-digit pincode',
+                        },
+                      }}
+                      error={errors.deliveryPincode?.message}
+                    />
+                  </Grid>
+                </Grid>
+
+                <RateSectionTitle color={publicColors.orange}>Package</RateSectionTitle>
+                <Grid container spacing={{ xs: 2, md: 3 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <RateTextInput
+                      label="Package Weight"
+                      name="weight"
+                      placeholder="e.g. 0.5"
+                      icon={<FiBriefcase />}
+                      endLabel="kg"
+                      type="number"
+                      register={register}
+                      rules={{
+                        required: 'Package weight is required',
+                        min: { value: 0.1, message: 'Weight must be greater than 0' },
+                      }}
+                      error={errors.weight?.message}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography sx={estimatorLabelSx}>Dimensions - optional</Typography>
+                    <Grid container spacing={1.4}>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <RateTextInput
+                          label=""
+                          name="length"
+                          placeholder="L"
+                          icon={<TbRulerMeasure />}
+                          type="number"
+                          register={register}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <RateTextInput
+                          label=""
+                          name="breadth"
+                          placeholder="W"
+                          icon={<TbRulerMeasure />}
+                          type="number"
+                          register={register}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <RateTextInput
+                          label=""
+                          name="height"
+                          placeholder="H"
+                          icon={<TbRulerMeasure />}
+                          type="number"
+                          register={register}
+                        />
+                      </Grid>
+                    </Grid>
+                  </Grid>
+                </Grid>
+
+                <RateSectionTitle color="#10b981">Payment</RateSectionTitle>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4} sx={{ maxWidth: 390 }}>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setValue('paymentType', 'prepaid')
+                      clearErrors('orderAmount')
+                    }}
+                    startIcon={<FiCreditCard />}
+                    sx={{
+                      minHeight: 58,
+                      px: 2.2,
+                      borderRadius: '18px',
+                      border: `2px solid ${watchedPaymentType === 'prepaid' ? publicColors.purple : publicColors.line}`,
+                      bgcolor: '#ffffff',
+                      color: watchedPaymentType === 'prepaid' ? publicColors.purple : publicColors.ink,
+                      fontSize: '1rem',
+                      fontWeight: 800,
+                      justifyContent: 'flex-start',
+                      textTransform: 'none',
+                      '&:hover': { borderColor: publicColors.purple, bgcolor: alpha(publicColors.purple, 0.04) },
+                    }}
+                  >
+                    Prepaid
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setValue('paymentType', 'cod')}
+                    startIcon={<FiCreditCard />}
+                    sx={{
+                      minHeight: 58,
+                      px: 2.2,
+                      borderRadius: '18px',
+                      border: `2px solid ${watchedPaymentType === 'cod' ? publicColors.purple : publicColors.line}`,
+                      bgcolor: '#ffffff',
+                      color: watchedPaymentType === 'cod' ? publicColors.purple : publicColors.ink,
+                      fontSize: '1rem',
+                      fontWeight: 800,
+                      justifyContent: 'flex-start',
+                      textTransform: 'none',
+                      '&:hover': { borderColor: publicColors.purple, bgcolor: alpha(publicColors.purple, 0.04) },
+                    }}
+                  >
+                    Cash on Delivery
+                  </Button>
+                </Stack>
+
+                <Button
+                  variant="contained"
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isPending}
+                  endIcon={isPending ? undefined : <FiArrowRight />}
+                  sx={{
+                    mt: 4,
+                    minWidth: { xs: '100%', sm: 242 },
+                    minHeight: 60,
+                    px: 3.4,
+                    borderRadius: '18px',
+                    bgcolor: publicColors.orange,
+                    color: '#ffffff',
+                    fontSize: '1rem',
+                    fontWeight: 900,
+                    boxShadow: '0 16px 32px rgba(249, 115, 22, 0.28)',
+                    '&:hover': { bgcolor: '#ea580c', boxShadow: '0 16px 32px rgba(249, 115, 22, 0.28)' },
+                  }}
+                >
+                  {isPending ? 'Calculating...' : 'Calculate Rates'}
+                </Button>
+
+                {isPending || hasCalculated ? (
+                  <Box sx={{ mt: 4.5 }}>
+                    <Typography sx={{ color: publicColors.ink, fontSize: '1.15rem', fontWeight: 900 }}>
+                      Available Rates
+                    </Typography>
+                    <Typography sx={{ mt: 0.4, color: publicColors.muted, fontWeight: 600 }}>
+                      {isPending
+                        ? 'Fetching live courier prices...'
+                        : availableCouriers.length
+                          ? 'Compare courier prices for this route.'
+                          : 'No rates were returned for these details. Please recheck the pincodes or try another route.'}
+                    </Typography>
+
+                    <Stack spacing={1.2} sx={{ mt: 2 }}>
+                      {isPending ? (
+                        <Stack direction="row" spacing={1.4} alignItems="center" sx={{ color: publicColors.muted }}>
+                          <CircularProgress size={22} />
+                          <Typography sx={{ fontWeight: 700 }}>Loading available couriers...</Typography>
+                        </Stack>
+                      ) : (
+                        availableCouriers.slice(0, 6).map((courier, index) => (
+                          <PublicRateResultRow key={courier.id || `${getCompactCourierName(courier)}-${index}`} courier={courier} />
+                        ))
+                      )}
+                    </Stack>
+
+                    {isError ? (
+                      <Typography sx={{ mt: 2, color: brand.danger, fontSize: '0.9rem', fontWeight: 700 }}>
+                        Failed to fetch couriers: {error?.message ?? 'Unknown error'}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                ) : null}
+              </Box>
+            </Container>
+          </Box>
+
+          <Box component="section" sx={{ bgcolor: '#ffffff', pt: { xs: 9, md: 13 }, pb: { xs: 10, md: 15 } }}>
+            <Container maxWidth="xl" sx={{ px: { xs: 2.5, sm: 4, lg: 10 } }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography
+                  component="h2"
+                  sx={{
+                    color: publicColors.ink,
+                    fontSize: { xs: '2rem', md: '2.8rem' },
+                    fontWeight: 900,
+                    lineHeight: 1.15,
+                    letterSpacing: 0,
+                  }}
+                >
+                  Why use our{' '}
+                  <Box component="span" sx={{ color: publicColors.purple }}>
+                    rate calculator
+                  </Box>
+                </Typography>
+                <Typography sx={{ mt: 2.3, color: publicColors.muted, fontSize: { xs: '1rem', md: '1.18rem' } }}>
+                  Stop visiting individual courier websites. Compare all rates in one go.
+                </Typography>
+              </Box>
+
+              <Grid container spacing={{ xs: 6, md: 8 }} sx={{ mt: { xs: 7, md: 9 }, maxWidth: 1360, mx: 'auto' }}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <RateFeatureCard
+                    icon={<Box component="span" sx={{ fontSize: 34, lineHeight: 1 }}>&#8377;</Box>}
+                    title="Real-Time Rates"
+                    text="Live pricing from all courier partners - no stale data or hidden surcharges."
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <RateFeatureCard
+                    icon={<FiTruck />}
+                    title="All Couriers at Once"
+                    text="Compare rates from 25+ couriers side-by-side in a single view."
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <RateFeatureCard
+                    icon={<FiEye />}
+                    title="Transparent Pricing"
+                    text="See base rate, fuel surcharge, COD fee, and total cost - no surprises."
+                  />
+                </Grid>
+              </Grid>
+            </Container>
+          </Box>
+
+          <Box
+            component="section"
+            sx={{
+              color: '#ffffff',
+              backgroundColor: publicColors.navy,
+              backgroundImage: dottedDarkBackground,
+              backgroundSize: '35px 35px, auto',
+              pt: { xs: 9, md: 13.5 },
+              pb: { xs: 9, md: 12 },
+              textAlign: 'center',
+            }}
+          >
+            <Container maxWidth="md">
+              <Typography
+                component="h2"
+                sx={{
+                  color: '#ffffff',
+                  fontSize: { xs: '2.4rem', md: '3.8rem' },
+                  fontWeight: 900,
+                  lineHeight: 1.08,
+                  letterSpacing: 0,
+                }}
+              >
+                Get the cheapest rates
+                <br />
+                on every shipment
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 3,
+                  color: alpha('#ffffff', 0.62),
+                  fontSize: { xs: '1.05rem', md: '1.25rem' },
+                  lineHeight: 1.55,
+                  fontWeight: 500,
+                }}
+              >
+                Sign up for free and access pre-negotiated rates that save
+                you up to 50% on shipping costs.
+              </Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.4}
+                justifyContent="center"
+                sx={{ mt: 5.5 }}
+              >
+                <Button
+                  component={RouterLink}
+                  to="/signup"
+                  variant="contained"
+                  endIcon={<FiArrowRight />}
+                  sx={{
+                    minHeight: 66,
+                    px: 4,
+                    borderRadius: '14px',
+                    bgcolor: publicColors.orange,
+                    color: '#ffffff',
+                    fontSize: '1rem',
+                    fontWeight: 900,
+                    boxShadow: '0 18px 34px rgba(249, 115, 22, 0.28)',
+                    '&:hover': { bgcolor: '#ea580c', boxShadow: '0 18px 34px rgba(249, 115, 22, 0.28)' },
+                  }}
+                >
+                  Start Shipping Free
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/platform"
+                  variant="outlined"
+                  sx={{
+                    minHeight: 66,
+                    px: 4,
+                    borderRadius: '14px',
+                    color: '#ffffff',
+                    borderColor: alpha('#ffffff', 0.18),
+                    bgcolor: 'transparent',
+                    fontSize: '1rem',
+                    fontWeight: 900,
+                    '&:hover': {
+                      borderColor: alpha('#ffffff', 0.32),
+                      bgcolor: alpha('#ffffff', 0.06),
+                    },
+                  }}
+                >
+                  Explore Platform
+                </Button>
+              </Stack>
+            </Container>
+          </Box>
+        </Box>
+        <PublicFooter />
+      </Box>
+    </FormProvider>
+  )
 
   const publicWeightEstimator = (
     <Box sx={{ bgcolor: publicColors.page, minHeight: '100vh', overflowX: 'hidden' }}>
@@ -1009,6 +1659,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
     </Box>
   )
 
+  if (isPublic && publicView === 'rate') return publicRateCalculator
   if (isPublic && publicView === 'weight') return publicWeightEstimator
 
   const calculatorPanel = (
