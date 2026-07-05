@@ -15,6 +15,8 @@ export interface Stores {
   currency: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  settings: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }

@@ -32,7 +32,7 @@ import {
   SoftBadge,
   ToolbarCard,
 } from "components/AdminUI/AdminPage";
-import { useDeleteUser, useUsersWithRoleUser } from "hooks/useUsers";
+import { useUpdateUserApproval, useUsersWithRoleUser } from "hooks/useUsers";
 import { useMemo, useState } from "react";
 import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
 
@@ -69,7 +69,7 @@ export default function UsersManagementPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [plan, setPlan] = useState("");
-  const deleteUserMutation = useDeleteUser();
+  const updateUserApprovalMutation = useUpdateUserApproval();
 
   const { data: usersResponse, isLoading } = useUsersWithRoleUser({
     page,
@@ -110,10 +110,13 @@ export default function UsersManagementPage() {
     history.push(`/admin/users-management/${id}/overview`);
   };
 
-  const handleDelete = async (id) => {
+  const handleApprovalChange = async (id, approved) => {
     try {
-      await deleteUserMutation.mutateAsync(id);
-      toast({ status: "success", title: "Seller updated" });
+      await updateUserApprovalMutation.mutateAsync({ userId: id, approved });
+      toast({
+        status: "success",
+        title: approved ? "Seller activated" : "Seller deactivated",
+      });
     } catch (error) {
       toast({
         status: "error",
@@ -394,8 +397,9 @@ export default function UsersManagementPage() {
             />
             <Switch
               colorScheme="purple"
-              defaultChecked={row.approved !== false}
-              onChange={() => handleDelete(row.id)}
+              isChecked={row.approved !== false}
+              isDisabled={updateUserApprovalMutation.isPending}
+              onChange={(event) => handleApprovalChange(row.id, event.target.checked)}
             />
           </HStack>
         )}

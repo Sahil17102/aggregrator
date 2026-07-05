@@ -26,8 +26,11 @@ export async function listUsers(req: any, res: Response) {
         | 'contactPerson'
         | undefined) || 'createdAt'
     const sortOrder = (req.query.sortOrder as 'asc' | 'desc' | undefined) || 'desc'
-    const onboardingComplete = req.query.onboardingComplete ?? ''
-    const approved = req.query.approved ?? ''
+    const onboardingComplete =
+      req.query.onboardingComplete === undefined
+        ? undefined
+        : req.query.onboardingComplete === 'true'
+    const approved = req.query.approved === undefined ? undefined : req.query.approved === 'true'
     // Normalize all status values into a single array
     let businessTypes = []
 
@@ -239,21 +242,26 @@ export async function searchSellers(req: any, res: Response) {
 export async function approveUser(req: any, res: Response) {
   try {
     const userId = req.params.id
-    console.log(userId)
+    const requestedApproved = req.body?.approved
+    const approved = typeof requestedApproved === 'boolean' ? requestedApproved : true
     // Fetch user to verify existence
     const user = await findUserById(userId)
     if (!user) {
       return res.status(200).json({ success: false, message: 'User not found' })
     }
 
-    if (user.approved) {
-      return res.status(400).json({ success: false, message: 'User is already approved' })
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Cannot update admin users' })
     }
 
     // Update approval status
-    await updateUserApprovalStatus(userId, true)
+    await updateUserApprovalStatus(userId, approved)
 
-    return res.status(200).json({ success: true, message: 'User approved successfully' })
+    return res.status(200).json({
+      success: true,
+      message: approved ? 'User activated successfully' : 'User deactivated successfully',
+      approved,
+    })
   } catch (error) {
     console.error('Error approving user:', error)
     return res.status(500).json({ success: false, message: 'Server error approving user' })

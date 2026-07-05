@@ -381,9 +381,20 @@ const ApiIntegration = () => {
                           </VStack>
                         </Td>
                         <Td>
-                          <Badge colorScheme={webhook.is_active ? 'green' : 'red'}>
-                            {webhook.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
+                          <HStack spacing={2}>
+                            <Switch
+                              colorScheme="purple"
+                              isChecked={webhook.is_active}
+                              onChange={(e) =>
+                                handleUpdateWebhook(webhook.id, {
+                                  is_active: e.target.checked,
+                                })
+                              }
+                            />
+                            <Badge colorScheme={webhook.is_active ? 'green' : 'red'}>
+                              {webhook.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </HStack>
                         </Td>
                         <Td>
                           <Text fontSize="xs">

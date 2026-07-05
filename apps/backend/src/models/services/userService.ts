@@ -932,20 +932,12 @@ export async function getAllUsersWithRoleUser({
   }
 
   // Onboarding complete filter (example: step 4 is complete)
-  if (onboardingComplete && typeof onboardingComplete === 'string') {
-    if (onboardingComplete === 'true') {
-      filters.push(eq(schema.userProfiles.onboardingComplete, true))
-    } else {
-      filters.push(eq(schema.userProfiles.onboardingComplete, false))
-    }
+  if (typeof onboardingComplete === 'boolean') {
+    filters.push(eq(schema.userProfiles.onboardingComplete, onboardingComplete))
   }
 
-  if (approved && typeof approved === 'string') {
-    if (approved === 'true') {
-      filters.push(eq(schema.userProfiles.approved, true))
-    } else {
-      filters.push(eq(schema.userProfiles.approved, false))
-    }
+  if (typeof approved === 'boolean') {
+    filters.push(eq(schema.userProfiles.approved, approved))
   }
 
   // Sort mapping

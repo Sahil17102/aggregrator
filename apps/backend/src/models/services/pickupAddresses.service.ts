@@ -328,14 +328,24 @@ export async function updatePickupAddressService(
     }
 
     // ✅ Update pickup record (flags only)
-    const [pickup] = await db
-      .update(pickupAddresses)
-      .set({
-        isPrimary: data.isPrimary,
-        isPickupEnabled: data.isPickupEnabled ?? true,
-      })
-      .where(and(eq(pickupAddresses.id, targetPickupId), eq(pickupAddresses.userId, userId)))
-      .returning()
+    const flagUpdates: Record<string, boolean> = {}
+    if (typeof data.isPrimary === 'boolean') flagUpdates.isPrimary = data.isPrimary
+    if (typeof data.isPickupEnabled === 'boolean') {
+      flagUpdates.isPickupEnabled = data.isPickupEnabled
+    }
+
+    const [pickup] =
+      Object.keys(flagUpdates).length > 0
+        ? await db
+            .update(pickupAddresses)
+            .set(flagUpdates)
+            .where(and(eq(pickupAddresses.id, targetPickupId), eq(pickupAddresses.userId, userId)))
+            .returning()
+        : await db
+            .select()
+            .from(pickupAddresses)
+            .where(and(eq(pickupAddresses.id, targetPickupId), eq(pickupAddresses.userId, userId)))
+            .limit(1)
 
     if (!pickup) return null
 

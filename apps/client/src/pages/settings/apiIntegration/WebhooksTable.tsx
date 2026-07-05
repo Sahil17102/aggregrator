@@ -1,4 +1,4 @@
-import { Chip, IconButton, Stack, Typography } from '@mui/material'
+import { Chip, IconButton, Stack, Switch, Typography } from '@mui/material'
 import { MdDelete, MdEdit, MdRefresh } from 'react-icons/md'
 import type { WebhookSubscription } from '../../../api/apiIntegration'
 import DataTable, { type Column } from '../../../components/UI/table/DataTable'
@@ -7,6 +7,7 @@ interface WebhooksTableProps {
   webhooks: WebhookSubscription[]
   isLoading: boolean
   onEdit: (webhook: WebhookSubscription) => void
+  onUpdate: (id: string, data: { is_active?: boolean }) => void
   onDelete: (id: string) => void
   onRegenerateSecret: (id: string) => void
 }
@@ -15,6 +16,7 @@ export const WebhooksTable = ({
   webhooks,
   isLoading,
   onEdit,
+  onUpdate,
   onDelete,
   onRegenerateSecret,
 }: WebhooksTableProps) => {
@@ -54,12 +56,19 @@ export const WebhooksTable = ({
       label: 'Status',
       align: 'center',
       minWidth: 100,
-      render: (value) => (
-        <Chip
-          label={value ? 'Active' : 'Inactive'}
-          color={value ? 'success' : 'default'}
-          size="small"
-        />
+      render: (value, row) => (
+        <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+          <Switch
+            checked={Boolean(value)}
+            onChange={(event) => onUpdate(row.id, { is_active: event.target.checked })}
+            size="small"
+          />
+          <Chip
+            label={value ? 'Active' : 'Inactive'}
+            color={value ? 'success' : 'default'}
+            size="small"
+          />
+        </Stack>
       ),
     },
     {

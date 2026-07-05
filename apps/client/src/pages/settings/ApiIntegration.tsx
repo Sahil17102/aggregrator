@@ -344,6 +344,22 @@ const ApiIntegration = () => {
                 webhooks={webhooks}
                 isLoading={webhooksLoading}
                 onEdit={handleEditWebhook}
+                onUpdate={(id, data) => {
+                  updateWebhook.mutate(
+                    { id, data },
+                    {
+                      onSuccess: () => {
+                        toast.open({ message: 'Webhook updated successfully', severity: 'success' })
+                      },
+                      onError: (error: unknown) => {
+                        const errorMessage =
+                          (error as { response?: { data?: { message?: string } } })?.response
+                            ?.data?.message || 'Failed to update webhook'
+                        toast.open({ message: errorMessage, severity: 'error' })
+                      },
+                    },
+                  )
+                }}
                 onDelete={handleDeleteWebhook}
                 onRegenerateSecret={handleRegenerateWebhookSecret}
               />

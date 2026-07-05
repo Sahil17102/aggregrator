@@ -231,16 +231,32 @@ const settingsGroups = [
   },
 ];
 
-function PurpleSwitch({ checked = true, ...props }) {
+function PurpleSwitch({ checked = true, storageKey, ...props }) {
+  const [localChecked, setLocalChecked] = useState(() => {
+    if (!storageKey || typeof window === "undefined") return checked;
+    const stored = window.localStorage.getItem(storageKey);
+    return stored === null ? checked : stored === "true";
+  });
+
+  const handleChange = (event) => {
+    const nextChecked = event.target.checked;
+    setLocalChecked(nextChecked);
+    if (storageKey && typeof window !== "undefined") {
+      window.localStorage.setItem(storageKey, String(nextChecked));
+    }
+    props.onChange?.(event);
+  };
+
   return (
     <Switch
+      {...props}
       colorScheme="purple"
-      isChecked={checked}
+      isChecked={localChecked}
+      onChange={handleChange}
       size="md"
       sx={{
-        ".chakra-switch__track": { bg: checked ? adminUi.purple : "#B8BDC3" },
+        ".chakra-switch__track": { bg: localChecked ? adminUi.purple : "#B8BDC3" },
       }}
-      {...props}
     />
   );
 }
@@ -278,13 +294,14 @@ function ChannelControl({ icon, label }) {
           {label}
         </Text>
       </HStack>
-      <PurpleSwitch />
+      <PurpleSwitch storageKey={`admin-notifications-channel-${label}`} />
     </Flex>
   );
 }
 
 function SettingRow({ row, isLast }) {
   const [title, subtitle, email, sms, bell, required] = row;
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
     <Flex
       align="center"
@@ -321,7 +338,10 @@ function SettingRow({ row, isLast }) {
               color="#607397"
               strokeWidth={1.8}
             />
-            <PurpleSwitch checked={email} />
+            <PurpleSwitch
+              checked={email}
+              storageKey={`admin-notifications-${slug}-email`}
+            />
           </>
         ) : null}
         {typeof bell === "boolean" ? (
@@ -332,7 +352,10 @@ function SettingRow({ row, isLast }) {
               color="#607397"
               strokeWidth={1.8}
             />
-            <PurpleSwitch checked={bell} />
+            <PurpleSwitch
+              checked={bell}
+              storageKey={`admin-notifications-${slug}-in-app`}
+            />
           </>
         ) : null}
       </HStack>

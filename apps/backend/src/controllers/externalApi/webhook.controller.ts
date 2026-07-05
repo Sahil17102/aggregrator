@@ -12,7 +12,7 @@ import { generateApiSecret } from '../../utils/apiKeyGenerator'
 export const createWebhookController = async (req: any, res: Response) => {
   try {
     const userId = req.userId
-    const { url, name, events } = req.body
+    const { url, name, events, is_active } = req.body
 
     // Validate required fields
     if (!url || !events || !Array.isArray(events) || events.length === 0) {
@@ -73,7 +73,7 @@ export const createWebhookController = async (req: any, res: Response) => {
         name: name || `Webhook ${new Date().toISOString()}`,
         events: events as WebhookEventType[],
         secret,
-        is_active: true,
+        is_active: typeof is_active === 'boolean' ? is_active : true,
       })
       .returning()
 

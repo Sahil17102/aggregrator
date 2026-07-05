@@ -19,7 +19,12 @@ export async function fetchUsersWithRoleUser({
       businessTypes: businessTypes.length ? businessTypes : undefined,
       onboardingComplete:
         typeof onboardingComplete === 'string' ? onboardingComplete === 'true' : undefined,
-      approved: typeof approved === 'string' ? approved === 'true' : undefined,
+      approved:
+        typeof approved === 'boolean'
+          ? approved
+          : typeof approved === 'string' && approved !== ''
+          ? approved === 'true'
+          : undefined,
       sortBy,
       sortOrder,
     },
@@ -42,6 +47,11 @@ export const getUserInfo = async (id) => {
 
 export const approveUser = async (userId) => {
   const response = await api.patch(`/admin/users/${userId}/approve`)
+  return response.data
+}
+
+export const updateUserApproval = async (userId, approved) => {
+  const response = await api.patch(`/admin/users/${userId}/approve`, { approved })
   return response.data
 }
 
