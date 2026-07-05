@@ -14,6 +14,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
+import { alpha, useTheme } from '@mui/material/styles'
 import React, { useState } from 'react'
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa'
 import { FilterBar, type FilterField } from '../../components/FilterBar'
@@ -39,6 +40,8 @@ const WALLET_DEBIT_FILTER_OPTIONS = [
 ]
 
 const WalletTransactions = () => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<WalletFilter>({})
 
@@ -54,6 +57,9 @@ const WalletTransactions = () => {
   const transactions = data?.transactions ?? []
   const totalCount = data?.totalCount ?? 0
   const hasNextPage = page * 10 < totalCount
+  const surface = isDark ? '#151b23' : '#FFFFFF'
+  const borderColor = isDark ? alpha('#f8fafc', 0.1) : '#E2E8F0'
+  const cardShadow = isDark ? '0 14px 34px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.06)'
 
   const filterFields: FilterField[] = [
     {
@@ -94,20 +100,20 @@ const WalletTransactions = () => {
       <Card
         sx={{
           mb: 3,
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          backgroundColor: surface,
+          border: `1px solid ${borderColor}`,
           borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          boxShadow: cardShadow,
         }}
       >
         <CardContent>
-          <Typography variant="subtitle2" color="#333369" sx={{ fontWeight: 600 }}>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
             Current Wallet Balance
           </Typography>
           {isLoading ? (
             <Skeleton variant="text" width={120} height={48} />
           ) : (
-            <Typography variant="h4" fontWeight="bold" color="#1A1A1A">
+            <Typography variant="h4" fontWeight="bold" color="text.primary">
               ₹{Number(data?.wallet?.balance)?.toFixed(2)}
             </Typography>
           )}
@@ -131,9 +137,9 @@ const WalletTransactions = () => {
         sx={{
           borderRadius: 2,
           overflow: 'hidden',
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          backgroundColor: surface,
+          border: `1px solid ${borderColor}`,
+          boxShadow: cardShadow,
         }}
       >
         {isLoading ? (
@@ -165,7 +171,7 @@ const WalletTransactions = () => {
                   <ListItemText
                     primary={
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography fontWeight="medium" fontSize={15} color="#1A1A1A">
+                        <Typography fontWeight="medium" fontSize={15} color="text.primary">
                           {txn.reason || 'Transaction'}
                         </Typography>
                         <Chip
@@ -189,18 +195,18 @@ const WalletTransactions = () => {
                     secondary={
                       <Stack mt={0.5} gap={0.5}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="body2" color="#6B7280">
+                          <Typography variant="body2" color="text.secondary">
                             {txn.meta?.order_number
                               ? `Order: ${txn.meta.order_number}`
                               : txn.ref
                                 ? `Ref: ${txn.ref}`
                                 : '—'}
                           </Typography>
-                          <Typography variant="caption" color="#6B7280">
+                          <Typography variant="caption" color="text.secondary">
                             {new Date(txn.created_at).toLocaleString()}
                           </Typography>
                         </Stack>
-                        <Typography variant="caption" color="#6B7280">
+                        <Typography variant="caption" color="text.secondary">
                           {txn.meta?.order_number
                             ? `Breakdown: Freight ₹${Number(txn.meta?.freight_charges || 0).toFixed(2)} | Other ₹${Number(txn.meta?.other_charges || 0).toFixed(2)} | COD ₹${Number(txn.meta?.cod_charges || 0).toFixed(2)}`
                             : ' '}
@@ -214,7 +220,7 @@ const WalletTransactions = () => {
             ))}
           </List>
         ) : (
-          <Typography textAlign="center" p={4} color="#6B7280">
+          <Typography textAlign="center" p={4} color="text.secondary">
             No transactions found.
           </Typography>
         )}
