@@ -50,6 +50,60 @@ export const globalStyles = {
         background: mode("#FFFFFF", "#161B22")(props),
         color: mode("#0F172A", "#E6EDF3")(props),
       },
+      ".chakra-ui-dark .admin-card, .chakra-ui-dark .chakra-card, .chakra-ui-dark .chakra-modal__content, .chakra-ui-dark .chakra-popover__content, .chakra-ui-dark .chakra-menu__menu-list, .chakra-ui-dark .chakra-drawer__content": {
+        background: "#161B22 !important",
+        backgroundColor: "#161B22 !important",
+        color: "#E6EDF3 !important",
+        borderColor: "#30363D !important",
+        boxShadow: "none !important",
+      },
+      ".chakra-ui-dark .chakra-table, .chakra-ui-dark .chakra-table__container": {
+        background: "#0D1117 !important",
+        color: "#E6EDF3 !important",
+        borderColor: "#30363D !important",
+      },
+      ".chakra-ui-dark .chakra-table th": {
+        background: "#1A2234 !important",
+        color: "#B7C2D0 !important",
+        borderColor: "#30363D !important",
+      },
+      ".chakra-ui-dark .chakra-table td, .chakra-ui-dark .chakra-table tr": {
+        background: "#161B22 !important",
+        color: "#E6EDF3 !important",
+        borderColor: "#30363D !important",
+      },
+      ".chakra-ui-dark .chakra-input, .chakra-ui-dark .chakra-select, .chakra-ui-dark .chakra-textarea": {
+        background: "#161B22 !important",
+        color: "#E6EDF3 !important",
+        borderColor: "#30363D !important",
+      },
+      ".chakra-ui-dark .chakra-input::placeholder, .chakra-ui-dark .chakra-textarea::placeholder": {
+        color: "#6E7681 !important",
+      },
+      ".chakra-ui-dark .chakra-form__label, .chakra-ui-dark .chakra-form__helper-text": {
+        color: "#8B949E !important",
+      },
+      ".chakra-ui-dark .chakra-tabs__tablist": {
+        background: "#161B22 !important",
+        borderColor: "#30363D !important",
+        boxShadow: "none !important",
+      },
+      ".chakra-ui-dark .chakra-tabs__tab": {
+        color: "#8B949E !important",
+      },
+      ".chakra-ui-dark .chakra-tabs__tab[aria-selected=true]": {
+        background: "#21262D !important",
+        color: "#E6EDF3 !important",
+      },
+      ".chakra-ui-dark .chakra-divider": {
+        borderColor: "#30363D !important",
+      },
+      ".chakra-ui-dark .chakra-button:not([data-theme-keep])": {
+        borderColor: "#30363D",
+      },
+      ".chakra-ui-dark .chakra-button[data-variant=outline], .chakra-ui-dark .chakra-button[data-variant=ghost]": {
+        color: "#E6EDF3 !important",
+      },
       "::selection": {
         background: mode("brand.100", "accent.600")(props),
       },

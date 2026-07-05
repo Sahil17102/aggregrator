@@ -13,6 +13,7 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
   const isDark = mode === 'dark'
   const backgroundDefault = isDark ? '#0f141b' : brand.page
   const backgroundPaper = isDark ? '#151b23' : brand.surface
+  const backgroundRaised = isDark ? '#1b2430' : '#FFFFFF'
   const textPrimary = isDark ? '#f8fafc' : brand.ink
   const textSecondary = isDark ? '#93a4ba' : brand.inkSoft
   const divider = isDark ? alpha('#f8fafc', 0.1) : alpha(brand.ink, 0.08)
@@ -177,6 +178,60 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
           backgroundColor: backgroundDefault,
           color: textPrimary,
         },
+        ...(isDark
+          ? {
+              '[data-client-theme="dark"] .MuiCard-root, [data-client-theme="dark"] .MuiPaper-root, [data-client-theme="dark"] .MuiAccordion-root': {
+                backgroundColor: `${backgroundPaper} !important`,
+                backgroundImage: 'none !important',
+                color: `${textPrimary} !important`,
+                borderColor: `${divider} !important`,
+              },
+              '[data-client-theme="dark"] .MuiCardContent-root, [data-client-theme="dark"] .MuiDialogContent-root, [data-client-theme="dark"] .MuiDrawer-paper, [data-client-theme="dark"] .MuiPopover-paper, [data-client-theme="dark"] .MuiMenu-paper': {
+                backgroundColor: `${backgroundPaper} !important`,
+                backgroundImage: 'none !important',
+                color: `${textPrimary} !important`,
+              },
+              '[data-client-theme="dark"] .MuiTableContainer-root, [data-client-theme="dark"] .MuiTable-root': {
+                backgroundColor: `${backgroundDefault} !important`,
+                color: `${textPrimary} !important`,
+              },
+              '[data-client-theme="dark"] .MuiTableHead-root .MuiTableCell-root': {
+                backgroundColor: `${backgroundRaised} !important`,
+                color: `${textPrimary} !important`,
+                borderColor: `${divider} !important`,
+              },
+              '[data-client-theme="dark"] .MuiTableBody-root .MuiTableRow-root, [data-client-theme="dark"] .MuiTableBody-root .MuiTableCell-root': {
+                backgroundColor: `${backgroundPaper} !important`,
+                color: `${textPrimary} !important`,
+                borderColor: `${divider} !important`,
+              },
+              '[data-client-theme="dark"] .MuiTableBody-root .MuiTableRow-root:nth-of-type(even), [data-client-theme="dark"] .MuiTableBody-root .MuiTableRow-root:nth-of-type(even) .MuiTableCell-root': {
+                backgroundColor: `${backgroundRaised} !important`,
+              },
+              '[data-client-theme="dark"] .MuiTablePagination-root': {
+                backgroundColor: `${backgroundPaper} !important`,
+                color: `${textPrimary} !important`,
+                borderColor: `${divider} !important`,
+              },
+              '[data-client-theme="dark"] .MuiOutlinedInput-root, [data-client-theme="dark"] .MuiInputBase-root': {
+                backgroundColor: `${backgroundDefault} !important`,
+                backgroundImage: 'none !important',
+                color: `${textPrimary} !important`,
+              },
+              '[data-client-theme="dark"] .MuiOutlinedInput-notchedOutline': {
+                borderColor: `${divider} !important`,
+              },
+              '[data-client-theme="dark"] .MuiInputBase-input, [data-client-theme="dark"] .MuiSelect-select': {
+                color: `${textPrimary} !important`,
+              },
+              '[data-client-theme="dark"] .MuiFormLabel-root, [data-client-theme="dark"] .MuiFormHelperText-root, [data-client-theme="dark"] .MuiTypography-colorTextSecondary': {
+                color: `${textSecondary} !important`,
+              },
+              '[data-client-theme="dark"] .MuiDivider-root': {
+                borderColor: `${divider} !important`,
+              },
+            }
+          : {}),
         '::selection': {
           backgroundColor: isDark ? alpha(brand.accent, 0.44) : alpha(brand.sky, 0.92),
           color: textPrimary,
@@ -233,6 +288,8 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
       styleOverrides: {
         root: {
           flexGrow: 1,
+          backgroundColor: isDark ? backgroundPaper : undefined,
+          color: textPrimary,
         },
       },
     },
@@ -241,6 +298,7 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
         root: {
           background: isDark ? backgroundPaper : brandGradients.surface,
           color: textPrimary,
+          borderColor: divider,
           borderRadius: 14,
         },
         elevation1: {
@@ -320,6 +378,94 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
           '& .MuiOutlinedInput-input': {
             color: textPrimary,
           },
+        },
+      },
+    },
+    MuiAccordion: {
+      styleOverrides: {
+        root: {
+          backgroundColor: backgroundPaper,
+          color: textPrimary,
+          border: `1px solid ${divider}`,
+          boxShadow: 'none',
+          '&:before': {
+            display: 'none',
+          },
+        },
+      },
+    },
+    MuiAccordionSummary: {
+      styleOverrides: {
+        root: {
+          color: textPrimary,
+        },
+        expandIconWrapper: {
+          color: textSecondary,
+        },
+      },
+    },
+    MuiAccordionDetails: {
+      styleOverrides: {
+        root: {
+          color: textSecondary,
+          backgroundColor: isDark ? backgroundPaper : undefined,
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: backgroundPaper,
+          color: textPrimary,
+          border: `1px solid ${divider}`,
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          color: textPrimary,
+          '&:hover': {
+            backgroundColor: isDark ? alpha('#ffffff', 0.08) : alpha(brand.ink, 0.06),
+          },
+          '&.Mui-selected': {
+            backgroundColor: isDark ? alpha(brand.accent, 0.18) : alpha(brand.accent, 0.1),
+          },
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: backgroundPaper,
+          color: textPrimary,
+          border: `1px solid ${divider}`,
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: backgroundPaper,
+          color: textPrimary,
+          borderColor: divider,
+        },
+      },
+    },
+    MuiTableContainer: {
+      styleOverrides: {
+        root: {
+          backgroundColor: isDark ? backgroundDefault : undefined,
+          color: textPrimary,
+        },
+      },
+    },
+    MuiTablePagination: {
+      styleOverrides: {
+        root: {
+          backgroundColor: isDark ? backgroundPaper : undefined,
+          color: textPrimary,
+          borderColor: divider,
         },
       },
     },
