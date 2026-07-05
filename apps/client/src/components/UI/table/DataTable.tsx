@@ -93,20 +93,27 @@ export default function DataTable<T extends { id: string | number }>(props: Data
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isDark = theme.palette.mode === 'dark'
   const primary = theme.palette.primary.main
   const textPrimary = theme.palette.text.primary
   const textSecondary = theme.palette.text.secondary
-  const borderColor = alpha(textPrimary, 0.1)
-  const softBorderColor = alpha(textPrimary, 0.06)
+  const borderColor = isDark ? alpha('#f8fafc', 0.12) : alpha(textPrimary, 0.1)
+  const softBorderColor = isDark ? alpha('#f8fafc', 0.08) : alpha(textPrimary, 0.06)
+  const surface = isDark ? '#151b23' : '#FFFFFF'
+  const surfaceMuted = isDark ? '#101720' : '#F5F6F8'
   const isShipmentVariant = tableVariant === 'shipment'
   const shipmentAccent = theme.palette.primary.main
   const shipmentHeader = '#05BD7E'
   const headerBg = isShipmentVariant
     ? shipmentHeader
-    : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)'
-  const tableBg = isShipmentVariant ? '#F5F6F8' : '#FFFCF8'
+    : isDark
+      ? '#1b2430'
+      : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)'
+  const tableBg = isDark ? '#101720' : isShipmentVariant ? '#F5F6F8' : '#FFFCF8'
   const rowHover = alpha(primary, 0.045)
-  const mobileCardBg = 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,244,238,0.96) 100%)'
+  const mobileCardBg = isDark
+    ? 'linear-gradient(180deg, #151b23 0%, #101720 100%)'
+    : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,244,238,0.96) 100%)'
   const isCompact = density === 'compact'
 
   const [localPage, setLocalPage] = React.useState(0)
@@ -202,7 +209,9 @@ export default function DataTable<T extends { id: string | number }>(props: Data
         borderRadius: isShipmentVariant || isCompact ? '8px' : '14px',
         border: `1px solid ${isShipmentVariant ? alpha(textPrimary, 0.08) : borderColor}`,
         background: isShipmentVariant
-          ? '#F5F6F8'
+          ? tableBg
+          : isDark
+            ? surfaceMuted
           : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(252,247,241,0.98) 100%)',
         boxShadow: isShipmentVariant
           ? `0 8px 18px ${alpha(textPrimary, 0.04)}`
@@ -289,7 +298,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                 sx={{
                   borderRadius: '10px',
                   px: isShipmentVariant ? 0.2 : isCompact ? 0.4 : 1.2,
-                  backgroundColor: alpha('#ffffff', 0.92),
+                  backgroundColor: isDark ? alpha(surface, 0.96) : alpha('#ffffff', 0.92),
                   border: `1px solid ${borderColor}`,
                   boxShadow: isCompact ? 'none' : `0 10px 24px ${alpha(textPrimary, 0.05)}`,
                   '& .MuiToolbar-root': {
@@ -327,7 +336,9 @@ export default function DataTable<T extends { id: string | number }>(props: Data
               py: isCompact ? 3 : 5,
               borderRadius: isCompact ? '8px' : '12px',
               border: `1px dashed ${alpha(primary, 0.16)}`,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(247,241,235,0.92) 100%)',
+              background: isDark
+                ? 'linear-gradient(180deg, #151b23 0%, #101720 100%)'
+                : 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(247,241,235,0.92) 100%)',
             }}
           >
             <Box
@@ -599,12 +610,12 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                           onClick={onRowClick ? () => onRowClick(row) : undefined}
                           sx={{
                             borderBottom: isShipmentVariant ? 'none' : `1px solid ${softBorderColor}`,
-                            backgroundColor: isShipmentVariant ? '#FFFFFF' : '#fffdfa',
+                            backgroundColor: isDark ? surface : isShipmentVariant ? '#FFFFFF' : '#fffdfa',
                             transition: 'background-color .18s ease, box-shadow .18s ease',
                             '&:nth-of-type(even)': isShipmentVariant
                               ? undefined
                               : {
-                              backgroundColor: alpha('#F7F1EB', 0.5),
+                              backgroundColor: isDark ? '#18212c' : alpha('#F7F1EB', 0.5),
                             },
                             ...(isShipmentVariant
                               ? {
@@ -682,7 +693,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                                   py: isShipmentVariant ? 1.05 : isCompact ? 0.85 : 1.45,
                                   px: isShipmentVariant ? 0.85 : isCompact ? 1 : 2,
                                   borderBottom: 'none',
-                                  backgroundColor: col.sticky || isShipmentVariant ? '#FFFFFF' : undefined,
+                                  backgroundColor: col.sticky || isShipmentVariant ? (isDark ? surface : '#FFFFFF') : undefined,
                                   zIndex: col.sticky ? 2 : 1,
                                   ...(col.sticky === 'right'
                                     ? {
@@ -736,7 +747,7 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                               colSpan={columns.length + (selectable ? 2 : 1)}
                               sx={{
                                 p: 0,
-                                backgroundColor: alpha(primary, 0.03),
+                                backgroundColor: isDark ? alpha(primary, 0.08) : alpha(primary, 0.03),
                                 borderTop: `1px solid ${borderColor}`,
                               }}
                             >
@@ -745,7 +756,9 @@ export default function DataTable<T extends { id: string | number }>(props: Data
                                   ref={expandedRef}
                                   p={isCompact ? 1.75 : 2.8}
                                   sx={{
-                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)',
+                                    background: isDark
+                                      ? 'linear-gradient(180deg, #151b23 0%, #101720 100%)'
+                                      : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,242,236,0.98) 100%)',
                                   }}
                                 >
                                   {renderExpandedRow(row)}

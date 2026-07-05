@@ -59,16 +59,18 @@ const StyledTab = styled(Tab)(({ theme }) => ({
   fontSize: '0.92rem',
   color: theme.palette.text.secondary,
   border: `1px solid ${alpha(theme.palette.primary.main, 0.08)}`,
-  backgroundColor: alpha('#ffffff', 0.72),
+  backgroundColor: theme.palette.mode === 'dark' ? '#151b23' : alpha('#ffffff', 0.72),
   boxShadow: `0 10px 24px ${alpha(theme.palette.text.primary, 0.04)}`,
   transition: 'all 0.2s ease',
   '&:hover': {
-    backgroundColor: alpha(theme.palette.secondary.main, 0.12),
+    backgroundColor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.08) : alpha(theme.palette.secondary.main, 0.12),
     color: theme.palette.text.primary,
   },
   '&.Mui-selected': {
     color: theme.palette.text.primary,
-    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.2)} 0%, ${alpha(theme.palette.secondary.main, 0.14)} 100%)`,
+    background: theme.palette.mode === 'dark'
+      ? alpha(theme.palette.primary.main, 0.18)
+      : `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.2)} 0%, ${alpha(theme.palette.secondary.main, 0.14)} 100%)`,
     borderColor: alpha(theme.palette.primary.main, 0.18),
     boxShadow: `0 16px 30px ${alpha(theme.palette.text.primary, 0.08)}`,
   },
@@ -94,6 +96,7 @@ export function SmartTabs<T extends string = string>({
 }: SmartTabsProps<T>) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isDark = theme.palette.mode === 'dark'
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
 
   const open = Boolean(anchorEl)
@@ -137,7 +140,7 @@ export function SmartTabs<T extends string = string>({
           borderRadius: '14px',
           overflow: 'hidden',
           border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-          background: alpha('#fff9f3', 0.92),
+          background: isDark ? alpha('#151b23', 0.96) : alpha('#fff9f3', 0.92),
           boxShadow: `0 24px 48px ${alpha(theme.palette.text.primary, 0.16)}`,
           backdropFilter: 'blur(18px)',
         }}
@@ -204,7 +207,7 @@ export function SmartTabs<T extends string = string>({
                     mt: -1,
                     borderRadius: 3,
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                    background: alpha('#fffaf4', 0.96),
+                    background: isDark ? '#151b23' : alpha('#fffaf4', 0.96),
                     boxShadow: `0 20px 42px ${alpha(theme.palette.text.primary, 0.12)}`,
                     minWidth: 200,
                   },
@@ -240,8 +243,8 @@ export function SmartTabs<T extends string = string>({
           borderRadius: compact ? '8px' : '12px',
           display: 'inline-flex',
           alignItems: 'center',
-          background: alpha('#fff9f3', 0.86),
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          background: isDark ? '#101720' : alpha('#fff9f3', 0.86),
+          border: `1px solid ${isDark ? alpha('#f8fafc', 0.12) : alpha(theme.palette.primary.main, 0.1)}`,
           boxShadow: compact
             ? `0 5px 12px ${alpha(theme.palette.text.primary, 0.045)}`
             : `0 18px 32px ${alpha(theme.palette.text.primary, 0.06)}`,
@@ -344,7 +347,7 @@ export function SmartTabs<T extends string = string>({
                     mt: 1,
                     borderRadius: 3,
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                    background: alpha('#fffaf4', 0.96),
+                    background: isDark ? '#151b23' : alpha('#fffaf4', 0.96),
                     boxShadow: `0 24px 48px ${alpha(theme.palette.text.primary, 0.12)}`,
                     minWidth: 220,
                   },

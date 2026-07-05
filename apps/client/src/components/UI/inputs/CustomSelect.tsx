@@ -10,6 +10,7 @@ import {
   Popper,
   Typography,
   alpha,
+  useTheme,
 } from '@mui/material'
 import React, { useMemo, useRef, useState } from 'react'
 import { MdArrowDropDown } from 'react-icons/md'
@@ -40,9 +41,6 @@ interface DropdownMenuProps {
 
 const NAVY = '#0C3B80'
 const ORANGE = '#F57C00'
-const TEXT = '#241A1B'
-const MUTED = '#6A5E59'
-
 export default function CustomSelect({
   label,
   items = [],
@@ -55,6 +53,8 @@ export default function CustomSelect({
   error,
   searchable = true,
 }: DropdownMenuProps) {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const anchorRef = useRef<HTMLDivElement | null>(null)
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -87,7 +87,7 @@ export default function CustomSelect({
               if (!open) setOpen(true)
             }
           }}
-          postfix={<MdArrowDropDown color={NAVY} size={20} />}
+          postfix={<MdArrowDropDown color={isDark ? theme.palette.text.secondary : NAVY} size={20} />}
         />
       </div>
 
@@ -106,10 +106,10 @@ export default function CustomSelect({
                   <Paper
                     elevation={8}
                     sx={{
-                      bgcolor: '#ffffff',
+                      bgcolor: isDark ? '#151b23' : '#ffffff',
                       borderRadius: 2,
-                      border: '1px solid rgba(12,59,128,0.12)',
-                      boxShadow: '0 12px 24px rgba(12,59,128,0.12)',
+                      border: `1px solid ${isDark ? alpha('#f8fafc', 0.12) : 'rgba(12,59,128,0.12)'}`,
+                      boxShadow: isDark ? '0 18px 36px rgba(0,0,0,0.34)' : '0 12px 24px rgba(12,59,128,0.12)',
                       width: anchorRef.current
                         ? anchorRef.current.getBoundingClientRect().width
                         : '100%',
@@ -138,14 +138,14 @@ export default function CustomSelect({
                               borderRadius: 2,
                               transition: 'all 0.2s ease',
                               '&:hover': {
-                                bgcolor: alpha(item.key === value ? NAVY : ORANGE, 0.06),
+                                bgcolor: alpha(item.key === value ? NAVY : ORANGE, isDark ? 0.14 : 0.06),
                                 transform: 'translateX(2px)',
                               },
                               '&.Mui-selected': {
-                                bgcolor: alpha(NAVY, 0.08),
-                                border: '1px solid rgba(12,59,128,0.12)',
+                                bgcolor: alpha(isDark ? '#8b7cf6' : NAVY, isDark ? 0.18 : 0.08),
+                                border: `1px solid ${isDark ? alpha('#8b7cf6', 0.24) : 'rgba(12,59,128,0.12)'}`,
                                 '&:hover': {
-                                  bgcolor: alpha(NAVY, 0.1),
+                                  bgcolor: alpha(isDark ? '#8b7cf6' : NAVY, isDark ? 0.24 : 0.1),
                                 },
                               },
                             }}
@@ -154,7 +154,7 @@ export default function CustomSelect({
                               <ListItemIcon
                                 sx={{
                                   minWidth: 40,
-                                  color: value === item.key ? NAVY : ORANGE,
+                                  color: value === item.key ? (isDark ? '#bdb5ff' : NAVY) : ORANGE,
                                 }}
                               >
                                 {React.createElement(item.icon, { size: 18 })}
@@ -166,7 +166,7 @@ export default function CustomSelect({
                                   variant="body2"
                                   sx={{
                                     fontWeight: 700,
-                                    color: TEXT,
+                                    color: theme.palette.text.primary,
                                   }}
                                 >
                                   {item.label}
@@ -177,7 +177,7 @@ export default function CustomSelect({
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      color: MUTED,
+                                      color: theme.palette.text.secondary,
                                       fontSize: '0.76rem',
                                       display: 'block',
                                       mt: 0.3,
@@ -195,7 +195,7 @@ export default function CustomSelect({
                           <Typography
                             variant="body2"
                             sx={{
-                              color: MUTED,
+                              color: theme.palette.text.secondary,
                               fontWeight: 600,
                             }}
                           >

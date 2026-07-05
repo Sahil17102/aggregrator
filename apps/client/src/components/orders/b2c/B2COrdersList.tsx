@@ -232,6 +232,7 @@ const shippingStatusMap: Record<string, string> = {
 
 const B2COrdersList = () => {
   const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const location = useLocation()
   const navigate = useNavigate()
   const isXs = useMediaQuery(theme.breakpoints.down('sm')) // mobile
@@ -1430,9 +1431,12 @@ const B2COrdersList = () => {
                     mt: 0.75,
                     minWidth: 238,
                     borderRadius: '8px',
-                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.12)}`,
-                    background: '#FFFFFF',
-                    boxShadow: `0 18px 38px ${alpha(theme.palette.secondary.main, 0.18)}`,
+                    border: `1px solid ${isDark ? alpha('#f8fafc', 0.12) : alpha(theme.palette.secondary.main, 0.12)}`,
+                    background: isDark ? '#151b23' : '#FFFFFF',
+                    color: theme.palette.text.primary,
+                    boxShadow: isDark
+                      ? '0 20px 42px rgba(0,0,0,0.36)'
+                      : `0 18px 38px ${alpha(theme.palette.secondary.main, 0.18)}`,
                     overflow: 'hidden',
                   },
                 },
@@ -1644,8 +1648,8 @@ const B2COrdersList = () => {
           sx={{
             p: 0.95,
             borderRadius: '8px',
-            border: '1px solid rgba(51, 51, 105, 0.14)',
-            backgroundColor: 'rgba(51, 51, 105, 0.04)',
+            border: `1px solid ${isDark ? alpha('#f8fafc', 0.12) : 'rgba(51, 51, 105, 0.14)'}`,
+            backgroundColor: isDark ? '#151b23' : 'rgba(51, 51, 105, 0.04)',
           }}
         >
           <Stack
@@ -1655,10 +1659,10 @@ const B2COrdersList = () => {
             gap={0.9}
           >
             <Box>
-              <Typography sx={{ fontWeight: 600, color: '#333369', fontSize: '14px' }}>
+              <Typography sx={{ fontWeight: 600, color: theme.palette.text.primary, fontSize: '14px' }}>
                 {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
               </Typography>
-              <Typography sx={{ color: '#6B7280', fontSize: '11.5px', mt: 0.15 }}>
+              <Typography sx={{ color: theme.palette.text.secondary, fontSize: '11.5px', mt: 0.15 }}>
                 Manifest up to {BULK_MANIFEST_LIMIT} eligible orders at once. Bulk label, invoice,
                 and manifest downloads have no selection limit.
               </Typography>
