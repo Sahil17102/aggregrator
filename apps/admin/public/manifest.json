@@ -3,9 +3,9 @@
   "name": "Ship Aggregator",
   "icons": [
     {
-      "src": "brand/choiceme-logo.png",
-      "sizes": "788x546",
-      "type": "image/png"
+      "src": "favicon.jpg",
+      "sizes": "640x640",
+      "type": "image/jpeg"
     }
   ],
   "start_url": "./index.html",
