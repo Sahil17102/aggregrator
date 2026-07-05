@@ -623,7 +623,15 @@ export default function LandingPage() {
                   >
                     {String(index + 1).padStart(2, '0')}
                   </Typography>
-                  <Typography sx={{ flex: 1, fontWeight: 850, fontSize: { xs: '1rem', sm: '1.05rem' } }}>
+                  <Typography
+                    sx={{
+                      flex: 1,
+                      color: ink,
+                      fontWeight: 850,
+                      fontSize: { xs: '1rem', sm: '1.05rem' },
+                      lineHeight: 1.35,
+                    }}
+                  >
                     {faq.question}
                   </Typography>
                   <IconButton
@@ -650,7 +658,7 @@ export default function LandingPage() {
                 <Collapse in={openFaqIndex === index} timeout={220} unmountOnExit>
                   <Typography
                     sx={{
-                      color: muted,
+                      color: alpha(ink, 0.72),
                       pl: { xs: 8.9, sm: 10.6 },
                       pr: { xs: 2.4, sm: 5.5 },
                       pb: { xs: 2.4, sm: 3 },
