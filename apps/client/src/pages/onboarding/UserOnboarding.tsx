@@ -305,25 +305,47 @@ export default function UserOnboarding() {
             background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.98) 100%)',
           }}
         >
-          <Box sx={{ mb: 3.2 }}>
-            <Typography
+          {step === 3 ? (
+            <Button
+              onClick={() => setStep((p) => p - 1)}
+              startIcon={<MdArrowBack />}
               sx={{
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: alpha(DE_BLUE, 0.6),
-                mb: 0.75,
+                color: alpha(DE_BLUE, 0.72),
+                fontWeight: 700,
+                textTransform: 'none',
+                px: 0,
+                mb: 3.2,
+                justifyContent: 'flex-start',
+                '&:hover': { bgcolor: 'transparent', color: DE_BLUE },
               }}
             >
-              Ship Aggregator onboarding
-            </Typography>
-            <Typography
-              sx={{ fontSize: { xs: '1.35rem', md: '1.8rem' }, fontWeight: 900, color: DE_BLUE }}
-            >
-              Complete your seller workspace setup
-            </Typography>
-          </Box>
+              Back
+            </Button>
+          ) : (
+            <Box sx={{ mb: 3.2 }}>
+              <Typography
+                sx={{
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: alpha(DE_BLUE, 0.6),
+                  mb: 0.75,
+                }}
+              >
+                Ship Aggregator onboarding
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: { xs: '1.35rem', md: '1.8rem' },
+                  fontWeight: 900,
+                  color: DE_BLUE,
+                }}
+              >
+                Complete your seller workspace setup
+              </Typography>
+            </Box>
+          )}
 
           {step === 1 && (
             <StepOneForm
@@ -348,11 +370,12 @@ export default function UserOnboarding() {
           )}
 
           <Stack
-            direction="row"
-            spacing={2}
-            sx={{ mt: 5, pt: 3, borderTop: `1px solid ${alpha(DE_BLUE, 0.06)}` }}
+            direction={step === 3 ? 'column' : 'row'}
+            spacing={step === 3 ? 1.6 : 2}
+            alignItems={step === 3 ? 'center' : 'stretch'}
+            sx={{ mt: 4, pt: step === 3 ? 0 : 3, borderTop: step === 3 ? 'none' : `1px solid ${alpha(DE_BLUE, 0.06)}` }}
           >
-            {step > 1 && (
+            {step > 1 && step !== 3 && (
               <Button
                 onClick={() => setStep((p) => p - 1)}
                 startIcon={<MdArrowBack />}
@@ -378,15 +401,32 @@ export default function UserOnboarding() {
               text={step < steps.length ? 'Continue Setup' : 'Complete Setup'}
               styles={{
                 flex: 1,
-                background: brandGradients.button,
-                color: brand.ink,
-                borderRadius: 999,
+                background: step === 3 ? 'linear-gradient(135deg, #FF6B13 0%, #F35A00 100%)' : brandGradients.button,
+                color: step === 3 ? '#FFFFFF' : brand.ink,
+                borderRadius: step === 3 ? 2.2 : 999,
                 fontWeight: 800,
                 fontSize: '1rem',
-                py: 1.2,
-                boxShadow: '0 16px 32px rgba(130,194,255,0.24)',
+                py: step === 3 ? 1.45 : 1.2,
+                boxShadow: step === 3 ? '0 18px 34px rgba(255,107,19,0.26)' : '0 16px 32px rgba(130,194,255,0.24)',
               }}
             />
+
+            {step === 3 && (
+              <Button
+                onClick={handleNext}
+                disabled={isPending}
+                endIcon={<MdArrowForward />}
+                sx={{
+                  color: alpha(DE_BLUE, 0.72),
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  px: 2,
+                  '&:hover': { bgcolor: alpha(DE_BLUE, 0.04), color: DE_BLUE },
+                }}
+              >
+                Skip for now
+              </Button>
+            )}
           </Stack>
         </Box>
       </Paper>

@@ -21,7 +21,6 @@ interface IStepThree {
 
 const DE_BLUE = '#071D49'
 const BRAND_PURPLE = '#7357FF'
-const BRAND_ORANGE = '#FF6B13'
 
 type ChannelOption = {
   key: string
@@ -227,19 +226,6 @@ export default function StepThree({ formData, onChange }: IStepThree) {
         })}
       </Grid>
 
-      <Box
-        sx={{
-          p: { xs: 1.7, md: 2 },
-          borderRadius: 2,
-          bgcolor: alpha(BRAND_ORANGE, 0.08),
-          border: `1px solid ${alpha(BRAND_ORANGE, 0.18)}`,
-        }}
-      >
-        <Typography variant="body2" sx={{ color: '#93420C', fontWeight: 700, lineHeight: 1.55 }}>
-          Pick one or more channels now, or leave all unselected and finish setup. Store
-          connection details can be added later from the Integrations panel.
-        </Typography>
-      </Box>
     </Stack>
   )
 }
