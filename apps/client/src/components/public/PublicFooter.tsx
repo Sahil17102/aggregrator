@@ -1,6 +1,6 @@
 import { Box, Container, IconButton, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa6'
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaXTwitter, FaYoutube } from 'react-icons/fa6'
 import { FiMail, FiMapPin, FiPhone } from 'react-icons/fi'
 import { Link as RouterLink } from 'react-router-dom'
 import { brandIdentity } from '../../theme/brand'
@@ -96,8 +96,10 @@ export default function PublicFooter() {
             </Stack>
             <Stack direction="row" spacing={1}>
               {[
+                { href: '#', icon: <FaXTwitter size={14} /> },
                 { href: '#', icon: <FaLinkedinIn size={14} /> },
                 { href: '#', icon: <FaInstagram size={14} /> },
+                { href: '#', icon: <FaYoutube size={14} /> },
                 { href: '#', icon: <FaFacebookF size={14} /> },
               ].map((item, index) => (
                 <IconButton
