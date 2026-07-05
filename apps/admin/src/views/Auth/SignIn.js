@@ -186,7 +186,7 @@ function SignIn() {
                 lineHeight="1"
                 whiteSpace="nowrap"
               >
-                Admin Panel
+                {brandIdentity.name} Admin
               </Text>
             </HStack>
 
@@ -200,14 +200,14 @@ function SignIn() {
                 letterSpacing="0"
                 mb="16px"
               >
-                Admin
+                Ship Aggregator
                 <Text
                   as="span"
                   display="block"
                   bgGradient="linear(to-r, #FF7A1A, #FF8F34)"
                   bgClip="text"
                 >
-                  Control Panel
+                  Admin Panel
                 </Text>
               </Heading>
               <Text
@@ -301,7 +301,7 @@ function SignIn() {
               lineHeight="1"
               whiteSpace="nowrap"
             >
-              Admin Panel
+              {brandIdentity.name} Admin
             </Text>
           </HStack>
 
@@ -331,10 +331,10 @@ function SignIn() {
                     letterSpacing="0"
                     mb="8px"
                   >
-                    Admin Login
+                    {brandIdentity.name} Admin Login
                   </Heading>
                   <Text color="#8A95A3" fontSize="14px">
-                    Sign in with your admin credentials
+                    Sign in with your Ship Aggregator admin credentials
                   </Text>
                 </Box>
 
@@ -352,7 +352,7 @@ function SignIn() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter admin email"
+                      placeholder="admin@shipaggregator.com"
                       autoComplete="username"
                       required
                       h="48px"

@@ -1,12 +1,6 @@
 import axios from "axios";
 
-const isLocalhost =
-  typeof window !== "undefined" &&
-  ["localhost", "127.0.0.1"].includes(window.location.hostname);
-
-const DEFAULT_API_BASE_URL = isLocalhost
-  ? "http://127.0.0.1:5002/api"
-  : "https://aggregator-backend-7gmk.onrender.com/api";
+const DEFAULT_API_BASE_URL = "https://aggregator-backend-7gmk.onrender.com/api";
 const LEGACY_RAILWAY_API_HOST = ["choice", "me-backend-production.up.railway.app"].join("");
 const PLACEHOLDER_API_HOST = "your-backend-url.onrender.com";
 

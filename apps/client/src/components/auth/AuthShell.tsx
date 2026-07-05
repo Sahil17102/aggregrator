@@ -170,7 +170,7 @@ export default function AuthShell({
                         boxShadow: `0 0 0 4px ${alpha(authPalette.orange, 0.12)}`,
                       }}
                     />
-                    Courier Command Login
+                    Ship Aggregator Login
                   </Box>
 
                   <Typography

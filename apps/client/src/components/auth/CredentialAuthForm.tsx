@@ -281,10 +281,10 @@ export default function CredentialAuthForm({
           ) : null}
 
           <CustomInput
-            label={compactLogin ? 'Username' : 'Email'}
+            label="Email"
             name="email"
             type="email"
-            placeholder={compactLogin ? 'e.g., yourname@choice.mee' : ''}
+            placeholder={compactLogin ? 'e.g., yourname@shipaggregator.com' : ''}
             value={email}
             onChange={(event) => {
               setEmail(event.target.value)

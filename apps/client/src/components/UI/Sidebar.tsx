@@ -19,13 +19,15 @@ import {
   MdApps,
   MdDashboard,
   MdExpandMore,
+  MdHome,
   MdKeyboardReturn,
   MdLocalShipping,
   MdOutlineAddBusiness,
   MdShoppingCart,
+  MdSupportAgent,
   MdSyncProblem,
 } from 'react-icons/md'
-import { RiSettings2Fill } from 'react-icons/ri'
+import { RiScales3Line, RiSettings2Fill } from 'react-icons/ri'
 import { TbInvoice, TbReportAnalytics, TbTransactionRupee } from 'react-icons/tb'
 import { NavLink, useLocation } from 'react-router-dom'
 
@@ -77,6 +79,12 @@ const navSections: NavSection[] = [
     title: 'Main',
     items: [
       {
+        text: 'Home',
+        icon: <MdHome size={STANDARD_ICON_SIZE} />,
+        path: '/home',
+        roles: ['customer', 'admin'],
+      },
+      {
         text: 'Dashboard',
         icon: <MdDashboard size={STANDARD_ICON_SIZE} />,
         path: '/dashboard',
@@ -93,6 +101,17 @@ const navSections: NavSection[] = [
           { text: 'B2C Orders', path: '/orders/b2c/list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
           { text: 'B2B Orders', path: '/orders/b2b/list', icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} /> },
         ],
+      },
+    ],
+  },
+  {
+    title: 'Analytics',
+    items: [
+      {
+        text: 'Reports',
+        icon: <TbReportAnalytics size={STANDARD_ICON_SIZE} />,
+        path: '/reports',
+        roles: ['customer', 'admin'],
       },
     ],
   },
@@ -132,6 +151,12 @@ const navSections: NavSection[] = [
           { text: 'RTO', path: '/ops/rto', icon: <MdKeyboardReturn size={STANDARD_ICON_SIZE} /> },
         ],
       },
+      {
+        text: 'Reconciliation',
+        icon: <RiScales3Line size={STANDARD_ICON_SIZE} />,
+        path: '/reconciliation/weight',
+        roles: ['customer', 'admin'],
+      },
     ],
   },
   {
@@ -161,6 +186,17 @@ const navSections: NavSection[] = [
           { text: 'Rate Calculator', path: '/tools/rate_calculator', icon: <TbReportAnalytics size={STANDARD_ICON_SIZE} /> },
           { text: 'Order Tracking', path: '/tools/order_tracking', icon: <CgTrack size={STANDARD_ICON_SIZE} /> },
         ],
+      },
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      {
+        text: 'Support',
+        icon: <MdSupportAgent size={STANDARD_ICON_SIZE} />,
+        path: '/support/tickets',
+        roles: ['customer', 'admin'],
       },
     ],
   },

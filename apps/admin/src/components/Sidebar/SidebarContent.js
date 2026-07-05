@@ -14,13 +14,16 @@ import {
   IconChartBar,
   IconClipboardList,
   IconDashboard,
+  IconDatabase,
   IconFileInvoice,
   IconHelpCircle,
   IconHistory,
+  IconKey,
   IconPackage,
   IconPackageExport,
   IconReceipt,
   IconReportAnalytics,
+  IconScale,
   IconSettings,
   IconSpeakerphone,
   IconStar,
@@ -70,7 +73,7 @@ const sidebarItems = [
   {
     label: "Support",
     icon: IconHelpCircle,
-    path: "/admin/support-tickets",
+    path: "/admin/support",
   },
   {
     label: "Finance",
@@ -80,6 +83,11 @@ const sidebarItems = [
         label: "Invoices",
         path: "/admin/billing-invoices",
         icon: IconFileInvoice,
+      },
+      {
+        label: "Billing Preferences",
+        path: "/admin/billing-preferences",
+        icon: IconSettings,
       },
       {
         label: "COD Remittance",
@@ -98,6 +106,22 @@ const sidebarItems = [
     ],
   },
   {
+    label: "Reconciliation",
+    icon: IconScale,
+    children: [
+      {
+        label: "Weight Discrepancies",
+        path: "/admin/weight-reconciliation",
+        icon: IconScale,
+      },
+      {
+        label: "Dispute Management",
+        path: "/admin/dispute-management",
+        icon: IconClipboardList,
+      },
+    ],
+  },
+  {
     label: "Tools",
     icon: IconCalculator,
     children: [
@@ -106,6 +130,16 @@ const sidebarItems = [
         path: "/admin/rate-calculator",
         icon: IconCalculator,
       },
+      {
+        label: "Order Tracking",
+        path: "/admin/order-tracking",
+        icon: IconTruck,
+      },
+      {
+        label: "API Integration",
+        path: "/admin/api-integration",
+        icon: IconKey,
+      },
     ],
   },
   {
@@ -113,6 +147,11 @@ const sidebarItems = [
     icon: IconSettings,
     children: [
       { label: "Couriers", path: "/admin/couriers" },
+      {
+        label: "Courier Credentials",
+        path: "/admin/courier-credentials",
+        icon: IconKey,
+      },
       { label: "Service Providers", path: "/admin/service-providers" },
       { label: "Serviceability", path: "/admin/serviceability" },
       { label: "Manual Serviceability", path: "/admin/manual-serviceability" },
@@ -133,8 +172,11 @@ const sidebarItems = [
     icon: IconUserCircle,
     children: [
       { label: "My Account", path: "/admin/account" },
+      { label: "Payment Options", path: "/admin/settings/payment-options" },
+      { label: "Change Password", path: "/admin/settings/change-password" },
       { label: "Notifications", path: "/admin/notifications" },
       { label: "Notification Settings", path: "/admin/notifications/settings" },
+      { label: "Developer", path: "/admin/developer", icon: IconDatabase },
     ],
   },
 ];

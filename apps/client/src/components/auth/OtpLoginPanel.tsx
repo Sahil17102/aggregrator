@@ -164,8 +164,8 @@ export default function OtpLoginPanel({
         <Box component="form" onSubmit={handleRequest}>
           <CustomInput
             type="email"
-            label={compactLogin ? 'Username' : 'Work Email'}
-            placeholder={compactLogin ? 'e.g., yourname@choice.mee' : ''}
+            label={compactLogin ? 'Email' : 'Work Email'}
+            placeholder={compactLogin ? 'e.g., yourname@shipaggregator.com' : ''}
             value={email}
             name="email"
             id="otp-email"
