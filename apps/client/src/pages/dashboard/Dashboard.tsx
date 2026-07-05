@@ -28,7 +28,12 @@ import TopDestinationsCard from '../../components/dashboard/TopDestinationsCard'
 import { useMerchantDashboardStats } from '../../hooks/useDashboard'
 import { useDashboardPreferences } from '../../hooks/useDashboardPreferences'
 import { brand, brandGradients } from '../../theme/brand'
-import { dashboardButtonSx, dashboardCardSx, dashboardPalette } from '../../components/dashboard/dashboardStyles'
+import {
+  dashboardButtonSx,
+  dashboardCardSx,
+  dashboardPalette,
+  getDashboardCssVars,
+} from '../../components/dashboard/dashboardStyles'
 
 // Widget mapping
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,7 +95,7 @@ export default function Dashboard() {
         }}
       >
         <Box textAlign="center">
-          <CircularProgress size={44} sx={{ color: brand.ink }} />
+          <CircularProgress size={44} sx={{ color: dashboardPalette.orange }} />
           <Typography color="text.secondary" sx={{ mt: 1.2, fontWeight: 600 }}>
             Optimizing your command center...
           </Typography>
@@ -315,6 +320,7 @@ export default function Dashboard() {
         minHeight: '100%',
         pb: 2.5,
         bgcolor: dashboardPalette.page,
+        ...getDashboardCssVars(theme.palette.mode),
       }}
     >
       <Container

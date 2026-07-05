@@ -75,7 +75,7 @@ export default function DashboardHeader({
                 ...dashboardButtonSx,
                 borderColor: alpha(dashboardPalette.orange, 0.32),
                 color: dashboardPalette.orangeDark,
-                backgroundColor: alpha('#FFFFFF', 0.86),
+                backgroundColor: dashboardPalette.tile,
                 '&:hover': {
                   borderColor: dashboardPalette.orange,
                   backgroundColor: alpha(dashboardPalette.orange, 0.08),

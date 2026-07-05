@@ -70,7 +70,7 @@ export default function FinancialHealthCard({
             sx={{
               height: 7,
               borderRadius: 999,
-              bgcolor: '#EEF2F7',
+              bgcolor: dashboardPalette.track,
               '& .MuiLinearProgress-bar': {
                 borderRadius: 999,
                 bgcolor: statusColor,

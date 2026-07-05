@@ -1,13 +1,13 @@
-import { alpha, type SxProps, type Theme } from '@mui/material/styles'
+import { alpha, type PaletteMode, type SxProps, type Theme } from '@mui/material/styles'
 import { brand, brandFonts } from '../../theme/brand'
 
 export const dashboardPalette = {
-  page: '#0f141b',
-  surface: '#151b23',
-  tile: '#0f141b',
-  ink: '#f8fafc',
-  muted: '#9badc3',
-  line: '#2a313a',
+  page: 'var(--dashboard-page)',
+  surface: 'var(--dashboard-surface)',
+  tile: 'var(--dashboard-tile)',
+  ink: 'var(--dashboard-ink)',
+  muted: 'var(--dashboard-muted)',
+  line: 'var(--dashboard-line)',
   orange: '#ff7a17',
   orangeDark: '#E67213',
   orangeSoft: '#2b2118',
@@ -16,7 +16,21 @@ export const dashboardPalette = {
   green: '#35d27f',
   amber: '#F59E0B',
   red: '#ef4444',
-  track: '#2a313a',
+  track: 'var(--dashboard-track)',
+}
+
+export const getDashboardCssVars = (mode: PaletteMode) => {
+  const isDark = mode === 'dark'
+
+  return {
+    '--dashboard-page': isDark ? '#0f141b' : '#f6f8fc',
+    '--dashboard-surface': isDark ? '#151b23' : '#ffffff',
+    '--dashboard-tile': isDark ? '#0f141b' : '#f8fafc',
+    '--dashboard-ink': isDark ? '#f8fafc' : '#11182d',
+    '--dashboard-muted': isDark ? '#9badc3' : '#64748b',
+    '--dashboard-line': isDark ? '#2a313a' : 'rgba(15, 23, 42, 0.1)',
+    '--dashboard-track': isDark ? '#2a313a' : '#e8edf5',
+  } satisfies SxProps<Theme>
 }
 
 export const dashboardCardSx = {

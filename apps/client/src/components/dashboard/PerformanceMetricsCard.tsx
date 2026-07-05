@@ -56,7 +56,7 @@ export default function PerformanceMetricsCard({
                 sx={{
                   height: 7,
                   borderRadius: 999,
-                  bgcolor: '#EEF2F7',
+                  bgcolor: dashboardPalette.track,
                   '& .MuiLinearProgress-bar': {
                     borderRadius: 999,
                     bgcolor: row.color,
