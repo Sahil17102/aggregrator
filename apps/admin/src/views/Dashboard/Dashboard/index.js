@@ -17,6 +17,7 @@ import {
   Th,
   Thead,
   Tr,
+  useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
 import {
@@ -41,25 +42,31 @@ import { useDashboardStats } from "hooks/useDashboardStats";
 import { useHistory } from "react-router-dom";
 
 const ui = {
-  page: "#F8FAFD",
-  surface: "#FFFFFF",
-  surfaceMuted: "#F7F9FC",
-  border: "#E5EAF3",
-  borderSoft: "#E5EAF3",
-  headerBg: "#F4F1FF",
-  text: "#0F172A",
-  muted: "#607397",
-  tertiary: "#93A0BA",
-  primary: "#6C5CE7",
-  primaryBg: "#F0EDFF",
-  accent: "#F97316",
-  accentBg: "#FFF3E8",
-  success: "#00A881",
-  successBg: "#E9FBF4",
-  danger: "#FF3D3D",
-  dangerBg: "#FFF0F0",
-  blue: "#407BFF",
-  blueBg: "#EEF5FF",
+  page: "var(--dash-page)",
+  surface: "var(--dash-surface)",
+  surfaceMuted: "var(--dash-surface-muted)",
+  border: "var(--dash-border)",
+  borderSoft: "var(--dash-border-soft)",
+  headerBg: "var(--dash-header-bg)",
+  progressBg: "var(--dash-progress-bg)",
+  text: "var(--dash-text)",
+  muted: "var(--dash-muted)",
+  tertiary: "var(--dash-tertiary)",
+  primary: "var(--dash-primary)",
+  primaryBg: "var(--dash-primary-bg)",
+  accent: "var(--dash-accent)",
+  accentBg: "var(--dash-accent-bg)",
+  success: "var(--dash-success)",
+  successBg: "var(--dash-success-bg)",
+  danger: "var(--dash-danger)",
+  dangerBg: "var(--dash-danger-bg)",
+  blue: "var(--dash-blue)",
+  blueBg: "var(--dash-blue-bg)",
+  amberActionBg: "var(--dash-amber-action-bg)",
+  amberActionBorder: "var(--dash-amber-action-border)",
+  greenActionBg: "var(--dash-green-action-bg)",
+  greenActionBorder: "var(--dash-green-action-border)",
+  badgeBg: "var(--dash-badge-bg)",
 };
 
 const formatCurrency = (amount) =>
@@ -228,7 +235,7 @@ function StatusBars({ items }) {
           <Box
             flex="1"
             h="22px"
-            bg="#EEF2F7"
+            bg={ui.progressBg}
             borderRadius="6px"
             overflow="hidden"
           >
@@ -258,8 +265,16 @@ function ActionRow({ icon, label, count, route, tone = "amber" }) {
   const history = useHistory();
   const toneStyle =
     tone === "green"
-      ? { bg: "#DDFBEC", border: "#B8F0D5", color: ui.success }
-      : { bg: "#FFF7EA", border: "#FFE0AD", color: ui.accent };
+      ? {
+          bg: ui.greenActionBg,
+          border: ui.greenActionBorder,
+          color: ui.success,
+        }
+      : {
+          bg: ui.amberActionBg,
+          border: ui.amberActionBorder,
+          color: ui.accent,
+        };
 
   return (
     <Flex
@@ -287,7 +302,7 @@ function ActionRow({ icon, label, count, route, tone = "amber" }) {
       <HStack spacing={3}>
         <Badge
           color={toneStyle.color}
-          bg="#FFF3E8"
+          bg={ui.badgeBg}
           border="1px solid"
           borderColor={toneStyle.border}
         >
@@ -388,6 +403,60 @@ function RevenueTable({ rows }) {
 }
 
 export default function Dashboard() {
+  const dashboardVars = {
+    "--dash-page": useColorModeValue("#F8FAFD", "#0D1117"),
+    "--dash-surface": useColorModeValue("#FFFFFF", "#161B22"),
+    "--dash-surface-muted": useColorModeValue("#F7F9FC", "#21262D"),
+    "--dash-border": useColorModeValue("#E5EAF3", "#30363D"),
+    "--dash-border-soft": useColorModeValue(
+      "#E5EAF3",
+      "rgba(48, 54, 61, 0.72)"
+    ),
+    "--dash-header-bg": useColorModeValue("#F4F1FF", "#1A2234"),
+    "--dash-progress-bg": useColorModeValue(
+      "#EEF2F7",
+      "rgba(48, 54, 61, 0.42)"
+    ),
+    "--dash-text": useColorModeValue("#0F172A", "#E6EDF3"),
+    "--dash-muted": useColorModeValue("#607397", "#8B949E"),
+    "--dash-tertiary": useColorModeValue("#93A0BA", "#6E7681"),
+    "--dash-primary": useColorModeValue("#6C5CE7", "#8B7CF6"),
+    "--dash-primary-bg": useColorModeValue("#F0EDFF", "#242349"),
+    "--dash-accent": useColorModeValue("#F97316", "#F97316"),
+    "--dash-accent-bg": useColorModeValue(
+      "#FFF3E8",
+      "rgba(249, 115, 22, 0.14)"
+    ),
+    "--dash-success": useColorModeValue("#00A881", "#4ADE80"),
+    "--dash-success-bg": useColorModeValue(
+      "#E9FBF4",
+      "rgba(74, 222, 128, 0.14)"
+    ),
+    "--dash-danger": useColorModeValue("#FF3D3D", "#F87171"),
+    "--dash-danger-bg": useColorModeValue(
+      "#FFF0F0",
+      "rgba(248, 113, 113, 0.14)"
+    ),
+    "--dash-blue": useColorModeValue("#407BFF", "#3B82F6"),
+    "--dash-blue-bg": useColorModeValue("#EEF5FF", "rgba(59, 130, 246, 0.14)"),
+    "--dash-amber-action-bg": useColorModeValue(
+      "#FFF7EA",
+      "rgba(249, 115, 22, 0.12)"
+    ),
+    "--dash-amber-action-border": useColorModeValue(
+      "#FFE0AD",
+      "rgba(249, 115, 22, 0.18)"
+    ),
+    "--dash-green-action-bg": useColorModeValue(
+      "#DDFBEC",
+      "rgba(74, 222, 128, 0.13)"
+    ),
+    "--dash-green-action-border": useColorModeValue(
+      "#B8F0D5",
+      "rgba(74, 222, 128, 0.16)"
+    ),
+    "--dash-badge-bg": useColorModeValue("#FFF3E8", "rgba(249, 115, 22, 0.16)"),
+  };
   const {
     data: statsData,
     isLoading,
@@ -499,7 +568,13 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <Flex minH="70vh" align="center" justify="center" bg={ui.page}>
+      <Flex
+        minH="70vh"
+        align="center"
+        justify="center"
+        bg={ui.page}
+        sx={dashboardVars}
+      >
         <VStack spacing={4}>
           <Spinner size="xl" color={ui.primary} thickness="4px" />
           <Text color={ui.muted}>Loading dashboard...</Text>
@@ -509,7 +584,7 @@ export default function Dashboard() {
   }
 
   return (
-    <Box minH="100vh" bg={ui.page} color={ui.text} pb={8}>
+    <Box minH="100vh" bg={ui.page} color={ui.text} pb={8} sx={dashboardVars}>
       <Container
         maxW="full"
         pt={{ base: "120px", md: "75px" }}
@@ -541,7 +616,7 @@ export default function Dashboard() {
               h="30px"
               w="124px"
               bg={ui.surface}
-              borderColor="#D6DEE9"
+              borderColor={ui.border}
               color={ui.text}
               borderRadius="7px"
               fontSize="18px"
@@ -553,8 +628,8 @@ export default function Dashboard() {
               h="30px"
               w="150px"
               bg={ui.surface}
-              borderColor="#D6DEE9"
-              color="#A7B0BE"
+              borderColor={ui.border}
+              color={ui.tertiary}
               borderRadius="7px"
               fontSize="17px"
             >
@@ -565,8 +640,8 @@ export default function Dashboard() {
               h="30px"
               w="126px"
               bg={ui.surface}
-              borderColor="#D6DEE9"
-              color="#A7B0BE"
+              borderColor={ui.border}
+              color={ui.tertiary}
               borderRadius="7px"
               fontSize="17px"
             >
