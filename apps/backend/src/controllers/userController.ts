@@ -99,12 +99,17 @@ export const completeRegistration = async (req: any, res: Response): Promise<any
             contactPerson: `${data?.basicInfo?.firstName} ${data?.basicInfo?.lastName}`,
             contactEmail: emailLower || user.email,
             contactNumber: phoneDigits || user.phone,
+            companyEmail: emailLower || user.email,
+            companyContactNumber: phoneDigits || user.phone,
             pincode: data?.basicInfo?.pincode,
             state: data?.basicInfo?.state,
             POCEmailVerified: user?.emailVerified,
             POCPhoneVerified: user?.phoneVerified,
             businessName: data?.basicInfo?.companyName,
             city: data?.basicInfo?.city,
+            companyAddress: [data?.basicInfo?.city, data?.basicInfo?.state, data?.basicInfo?.pincode]
+              .filter(Boolean)
+              .join(', '),
             profilePicture: user?.profilePicture,
           },
           onboardingStep: 1,

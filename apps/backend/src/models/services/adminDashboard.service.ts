@@ -49,6 +49,13 @@ const getCourierName = (order: any) =>
 
 const getOrderUserId = (order: any) => String(order.user_id || order.userId || '')
 
+const getOrderPaymentType = (order: any) => {
+  const orderType = String(order.order_type || order.orderType || order.payment_type || '').toLowerCase()
+  const paymentMethod = String(order.payment_method || order.paymentMethod || '').toLowerCase()
+  if (orderType === 'cod' || paymentMethod === 'cod') return 'cod'
+  return 'prepaid'
+}
+
 const getPlatformRevenue = (order: any) => {
   const freightCharge = numberValue(order.freight_charges || order.freightCharges)
   const courierCost = numberValue(order.courier_cost || order.courierCost)
@@ -58,7 +65,9 @@ const getPlatformRevenue = (order: any) => {
 const getShippingCharge = (order: any) =>
   numberValue(order.shipping_charges || order.shippingCharge || order.shipping_charge)
 
-export const getAdminDashboardStats = async () => {
+export const getAdminDashboardStats = async (
+  filters: { range?: string; courier?: string; paymentType?: string } = {},
+) => {
   const [
     b2cOrders,
     b2bOrders,
@@ -94,12 +103,36 @@ export const getAdminDashboardStats = async () => {
     db.select().from(weight_discrepancies),
   ])
 
-  const orders: any[] = [...b2cOrders, ...b2bOrders]
+  const allOrders: any[] = [...b2cOrders, ...b2bOrders]
+  const allCourierOptions = Array.from(new Set(allOrders.map(getCourierName))).filter(Boolean).sort()
   const now = new Date()
   const todayKey = formatBusinessDateKey(now) || getBusinessDateKey(now) || ''
   const yesterdayKey = todayKey ? addDaysToBusinessDateKey(todayKey, -1) || '' : ''
   const lastWeekKey = todayKey ? addDaysToBusinessDateKey(todayKey, -7) || '' : ''
   const lastMonthKey = todayKey ? addDaysToBusinessDateKey(todayKey, -30) || '' : ''
+  const rangeDaysByKey: Record<string, number> = {
+    '7d': 7,
+    '15d': 15,
+    '30d': 30,
+    '90d': 90,
+  }
+  const selectedRange = String(filters.range || '30d')
+  const rangeStartKey =
+    selectedRange !== 'all' && rangeDaysByKey[selectedRange]
+      ? addDaysToBusinessDateKey(todayKey, -rangeDaysByKey[selectedRange]) || ''
+      : ''
+  const selectedCourier = String(filters.courier || 'all')
+  const selectedPaymentType = String(filters.paymentType || 'all').toLowerCase()
+
+  const orders = allOrders.filter((order) => {
+    const orderDateKey = getOrderBusinessDateKey(order)
+    const matchesRange = !rangeStartKey || Boolean(orderDateKey && orderDateKey >= rangeStartKey)
+    const matchesCourier = selectedCourier === 'all' || getCourierName(order) === selectedCourier
+    const matchesPayment =
+      selectedPaymentType === 'all' || getOrderPaymentType(order) === selectedPaymentType
+
+    return matchesRange && matchesCourier && matchesPayment
+  })
 
   const customerUsers = userRows.filter((user) => user.role !== 'admin')
   const kycByUser = new Map(kycRows.map((row) => [String(row.userId), row.status]))
@@ -452,6 +485,9 @@ export const getAdminDashboardStats = async () => {
       orderStatusCounts,
       recentOrders,
       recentTickets,
+      filterOptions: {
+        couriers: allCourierOptions,
+      },
     },
   }
 }

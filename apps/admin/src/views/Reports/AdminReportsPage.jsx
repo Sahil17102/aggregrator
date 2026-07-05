@@ -187,6 +187,7 @@ export default function AdminReportsPage() {
                 {[
                   "Today",
                   "Last 7 days",
+                  "Last 15 days",
                   "Last 30 days",
                   "Last 90 days",
                   "Last 6 months",
@@ -201,6 +202,22 @@ export default function AdminReportsPage() {
                   </SoftBadge>
                 ))}
               </HStack>
+            </Box>
+            <Box>
+              <Text fontSize="14px" color="#41557A" mb="9px">
+                Payment Type
+              </Text>
+              <SimpleGrid columns={3} spacing="8px">
+                {["All", "Prepaid", "COD"].map((item) => (
+                  <SoftBadge
+                    key={item}
+                    colorScheme={item === "All" ? "purple" : "gray"}
+                    textAlign="center"
+                  >
+                    {item}
+                  </SoftBadge>
+                ))}
+              </SimpleGrid>
             </Box>
             <Box>
               <Text fontSize="14px" color="#41557A" mb="9px">

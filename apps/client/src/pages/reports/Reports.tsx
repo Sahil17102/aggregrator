@@ -10,6 +10,7 @@ import {
   FormControlLabel,
   FormGroup,
   Grid,
+  MenuItem,
   Stack,
   TextField,
   Typography,
@@ -88,15 +89,28 @@ const formatUiDate = (value: string) => {
 }
 
 const getToday = () => new Date().toISOString().slice(0, 10)
+const getPastDate = (days: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return d.toISOString().slice(0, 10)
+}
 const getMonthStart = () => {
   const d = new Date()
   d.setDate(1)
   return d.toISOString().slice(0, 10)
 }
 
+const DATE_PRESETS = [
+  { label: 'Today', days: 0 },
+  { label: 'Last 7 days', days: 7 },
+  { label: 'Last 15 days', days: 15 },
+  { label: 'Last 30 days', days: 30 },
+]
+
 export default function Reports() {
   const [fromDate, setFromDate] = useState<string>(getMonthStart())
   const [toDate, setToDate] = useState<string>(getToday())
+  const [paymentType, setPaymentType] = useState<'all' | 'prepaid' | 'cod'>('all')
   const [selectedFields, setSelectedFields] = useState<string[]>(ALL_FIELD_KEYS)
   const [downloading, setDownloading] = useState(false)
 
@@ -132,7 +146,7 @@ export default function Reports() {
     }
     setDownloading(true)
     try {
-      const blob = await downloadCustomReportCsv({ fromDate, toDate, selectedFields })
+      const blob = await downloadCustomReportCsv({ fromDate, toDate, selectedFields, paymentType })
       const fileName = `custom_report_${fromDate}_to_${toDate}.csv`
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -191,6 +205,22 @@ export default function Reports() {
               gap={2}
             >
               <Typography fontWeight={600}>Date Range:</Typography>
+              <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
+                {DATE_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.label}
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setFromDate(preset.days === 0 ? getToday() : getPastDate(preset.days))
+                      setToDate(getToday())
+                    }}
+                    sx={{ textTransform: 'none', borderRadius: 99 }}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </Stack>
               <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5}>
                 <TextField
                   type="date"
@@ -208,6 +238,25 @@ export default function Reports() {
               <Typography color="text.secondary">
                 {formatUiDate(fromDate)} - {formatUiDate(toDate)}
               </Typography>
+            </Stack>
+
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              gap={2}
+            >
+              <Typography fontWeight={600}>Payment Type:</Typography>
+              <TextField
+                select
+                size="small"
+                value={paymentType}
+                onChange={(event) => setPaymentType(event.target.value as 'all' | 'prepaid' | 'cod')}
+                sx={{ minWidth: 180 }}
+              >
+                <MenuItem value="all">All Payments</MenuItem>
+                <MenuItem value="prepaid">Prepaid</MenuItem>
+                <MenuItem value="cod">COD</MenuItem>
+              </TextField>
             </Stack>
 
             <Divider />

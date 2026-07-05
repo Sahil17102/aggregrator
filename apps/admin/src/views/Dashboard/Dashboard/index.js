@@ -39,6 +39,7 @@ import CourierDistributionChart from "components/Charts/CourierDistributionChart
 import OrdersLineChart from "components/Charts/OrdersLineChart";
 import RevenueBarChart from "components/Charts/RevenueBarChart";
 import { useDashboardStats } from "hooks/useDashboardStats";
+import { useState } from "react";
 import { useHistory } from "react-router-dom";
 
 const ui = {
@@ -403,6 +404,11 @@ function RevenueTable({ rows }) {
 }
 
 export default function Dashboard() {
+  const [dashboardFilters, setDashboardFilters] = useState({
+    range: "30d",
+    courier: "all",
+    paymentType: "all",
+  });
   const dashboardVars = {
     "--dash-page": useColorModeValue("#F8FAFD", "#0D1117"),
     "--dash-surface": useColorModeValue("#FFFFFF", "#161B22"),
@@ -463,7 +469,7 @@ export default function Dashboard() {
     error,
     refetch,
     isRefetching,
-  } = useDashboardStats();
+  } = useDashboardStats(dashboardFilters);
 
   const stats = statsData?.data || {};
   const todayOps = stats.todayOperations || {};
@@ -475,6 +481,7 @@ export default function Dashboard() {
   const geographic = stats.geographic || {};
   const charts = stats.charts || {};
   const sellers = stats.sellers || {};
+  const courierOptions = stats.filterOptions?.couriers || Object.keys(couriers.performance || {});
 
   const totalOrders = toNum(operational.totalOrders);
   const activeSellers = toNum(
@@ -612,7 +619,13 @@ export default function Dashboard() {
           </Box>
           <HStack spacing={2} flexWrap="wrap">
             <Select
-              value="30d"
+              value={dashboardFilters.range}
+              onChange={(e) =>
+                setDashboardFilters((prev) => ({
+                  ...prev,
+                  range: e.target.value,
+                }))
+              }
               h="30px"
               w="124px"
               bg={ui.surface}
@@ -621,10 +634,20 @@ export default function Dashboard() {
               borderRadius="7px"
               fontSize="18px"
             >
+              <option value="7d">7 days</option>
+              <option value="15d">15 days</option>
               <option value="30d">30 days</option>
+              <option value="90d">90 days</option>
+              <option value="all">All time</option>
             </Select>
             <Select
-              value="all"
+              value={dashboardFilters.courier}
+              onChange={(e) =>
+                setDashboardFilters((prev) => ({
+                  ...prev,
+                  courier: e.target.value,
+                }))
+              }
               h="30px"
               w="150px"
               bg={ui.surface}
@@ -634,9 +657,20 @@ export default function Dashboard() {
               fontSize="17px"
             >
               <option value="all">All couriers</option>
+              {courierOptions.map((courier) => (
+                <option key={courier} value={courier}>
+                  {courier}
+                </option>
+              ))}
             </Select>
             <Select
-              value="all"
+              value={dashboardFilters.paymentType}
+              onChange={(e) =>
+                setDashboardFilters((prev) => ({
+                  ...prev,
+                  paymentType: e.target.value,
+                }))
+              }
               h="30px"
               w="126px"
               bg={ui.surface}
@@ -645,7 +679,9 @@ export default function Dashboard() {
               borderRadius="7px"
               fontSize="17px"
             >
-              <option value="all">Payment</option>
+              <option value="all">All payments</option>
+              <option value="prepaid">Prepaid</option>
+              <option value="cod">COD</option>
             </Select>
           </HStack>
         </Flex>

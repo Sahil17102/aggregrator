@@ -98,11 +98,13 @@ export const exportCustomReportCsvController = async (req: any, res: Response) =
       fromDate,
       toDate: toDateStr,
       selectedFields,
+      paymentType = 'all',
     }: {
       fromDate?: string
       toDate?: string
       sections?: SectionKey[]
       selectedFields?: string[]
+      paymentType?: 'all' | 'prepaid' | 'cod'
     } = req.body || {}
 
     const from = parseDate(fromDate)
@@ -189,7 +191,12 @@ export const exportCustomReportCsvController = async (req: any, res: Response) =
     const unifiedRows = [
       ...b2cRows.map((o) => ({ ...o, _type: 'b2c' as const })),
       ...b2bRows.map((o) => ({ ...o, _type: 'b2b' as const })),
-    ].sort((a, b) => new Date(a.created_at as any).getTime() - new Date(b.created_at as any).getTime())
+    ]
+      .filter((order: any) => {
+        if (!paymentType || paymentType === 'all') return true
+        return String(order.order_type || order.payment_type || '').toLowerCase() === paymentType
+      })
+      .sort((a, b) => new Date(a.created_at as any).getTime() - new Date(b.created_at as any).getTime())
 
     const headers = fields.map((f) => FIELD_LABELS[f])
     const rows = unifiedRows.map((order: any) => {

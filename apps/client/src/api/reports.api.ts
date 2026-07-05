@@ -4,6 +4,7 @@ export interface CustomReportPayload {
   fromDate: string
   toDate: string
   selectedFields: string[]
+  paymentType?: 'all' | 'prepaid' | 'cod'
 }
 
 export const downloadCustomReportCsv = async (payload: CustomReportPayload): Promise<Blob> => {

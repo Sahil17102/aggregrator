@@ -186,6 +186,7 @@ const PickupAddresses = () => {
 
   const handleFilterApply = (filters: Partial<HydratedPickup>) => {
     setFilters({ ...filters })
+    setPage(0)
   }
   const handleOpenAddDrawer = () => {
     setDrawerType('add')
