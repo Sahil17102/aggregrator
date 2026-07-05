@@ -21,6 +21,7 @@ const UserOnboarding = lazy(() => import('../pages/onboarding/UserOnboarding'))
 const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'))
 const LandingPage = lazy(() => import('../pages/LandingPage'))
 const PlatformPage = lazy(() => import('../pages/PlatformPage'))
+const BlogsPage = lazy(() => import('../pages/BlogsPage'))
 const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'))
 
 // Orders
@@ -223,7 +224,7 @@ function RoutedApp() {
           <Route path="/platform" element={<PlatformPage />} />
           <Route path="/integrations" element={<Navigate to="/platform#integrations" replace />} />
           <Route path="/integrations/sales-channels" element={<Navigate to="/platform#integrations" replace />} />
-          <Route path="/blogs" element={<LandingPage />} />
+          <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/about" element={<LandingPage />} />
           <Route path="/careers" element={<LandingPage />} />
           <Route path="/contact" element={<LandingPage />} />

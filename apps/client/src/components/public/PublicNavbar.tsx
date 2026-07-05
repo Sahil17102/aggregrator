@@ -32,6 +32,7 @@ interface PublicNavbarProps {
   links?: NavItem[]
   primaryLabel?: string
   primaryTo?: string
+  solid?: boolean
 }
 
 const desktopLinks: NavItem[] = [
@@ -89,6 +90,7 @@ export default function PublicNavbar({
   links = desktopLinks,
   primaryLabel = 'Sign Up',
   primaryTo = '/signup',
+  solid = false,
 }: PublicNavbarProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -107,8 +109,9 @@ export default function PublicNavbar({
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const foreground = scrolled ? '#11182d' : '#FFFFFF'
-  const muted = scrolled ? alpha('#11182d', 0.86) : alpha('#FFFFFF', 0.78)
+  const isSolid = solid || scrolled
+  const foreground = isSolid ? '#11182d' : '#FFFFFF'
+  const muted = isSolid ? alpha('#11182d', 0.86) : alpha('#FFFFFF', 0.78)
 
   const navLinkSx = {
     px: 1.5,
@@ -121,7 +124,7 @@ export default function PublicNavbar({
     textDecoration: 'none',
     transition: 'background-color 0.18s ease, color 0.18s ease',
     '&:hover': {
-      bgcolor: scrolled ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
+      bgcolor: isSolid ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
       color: foreground,
     },
   } as const
@@ -134,9 +137,9 @@ export default function PublicNavbar({
       px: 1.7,
       textTransform: 'none',
       color: open ? foreground : muted,
-      bgcolor: open ? (scrolled ? alpha('#7867f3', 0.12) : alpha('#FFFFFF', 0.14)) : 'transparent',
+      bgcolor: open ? (isSolid ? alpha('#7867f3', 0.12) : alpha('#FFFFFF', 0.14)) : 'transparent',
       '&:hover': {
-        bgcolor: scrolled ? alpha('#7867f3', 0.12) : alpha('#FFFFFF', 0.14),
+        bgcolor: isSolid ? alpha('#7867f3', 0.12) : alpha('#FFFFFF', 0.14),
         color: foreground,
       },
       '& .MuiButton-endIcon': { ml: 0.35 },
@@ -151,9 +154,9 @@ export default function PublicNavbar({
         left: 0,
         right: 0,
         zIndex: 1300,
-        bgcolor: scrolled ? '#FFFFFF' : 'transparent',
-        borderBottom: scrolled ? `1px solid ${alpha('#11182d', 0.08)}` : '1px solid transparent',
-        boxShadow: scrolled ? '0 8px 26px rgba(17, 24, 45, 0.06)' : 'none',
+        bgcolor: isSolid ? '#FFFFFF' : 'transparent',
+        borderBottom: isSolid ? `1px solid ${alpha('#11182d', 0.08)}` : '1px solid transparent',
+        boxShadow: isSolid ? '0 8px 26px rgba(17, 24, 45, 0.06)' : 'none',
         transition: 'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
       }}
     >
@@ -339,7 +342,7 @@ export default function PublicNavbar({
               color: foreground,
               borderRadius: '8px',
               '&:hover': {
-                bgcolor: scrolled ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
+                bgcolor: isSolid ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
               },
             }}
           >
@@ -354,8 +357,8 @@ export default function PublicNavbar({
             mx: 2,
             mb: 1.4,
             borderRadius: '12px',
-            border: `1px solid ${scrolled ? alpha('#11182d', 0.1) : alpha('#FFFFFF', 0.14)}`,
-            bgcolor: scrolled ? '#FFFFFF' : alpha('#11183F', 0.96),
+            border: `1px solid ${isSolid ? alpha('#11182d', 0.1) : alpha('#FFFFFF', 0.14)}`,
+            bgcolor: isSolid ? '#FFFFFF' : alpha('#11183F', 0.96),
             boxShadow: '0 22px 54px rgba(0,0,0,0.22)',
             p: 1,
             display: { xs: 'block', lg: 'none' },
@@ -376,7 +379,7 @@ export default function PublicNavbar({
                   fontWeight: 800,
                   textDecoration: 'none',
                   '&:hover': {
-                    bgcolor: scrolled ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
+                    bgcolor: isSolid ? alpha('#11182d', 0.05) : alpha('#FFFFFF', 0.08),
                     color: foreground,
                   },
                 }}
