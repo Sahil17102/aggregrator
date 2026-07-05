@@ -8,13 +8,13 @@ const TermsOfService = () => {
     <Box sx={{ maxWidth: 980, mx: 'auto', px: { xs: 1, sm: 2 }, py: 2 }}>
       <PageHeading
         title="Terms and Conditions"
-        subtitle="Clear operating terms for ChoiceMee account access, shipping, billing, COD, restricted goods, refunds, and privacy."
+        subtitle="Clear operating terms for Ship Aggregator account access, shipping, billing, COD, restricted goods, refunds, and privacy."
         eyebrow="Legal"
       />
 
       <Typography sx={{ mt: 3, color: '#607397', lineHeight: 1.75 }}>
         Please read these terms before creating an account, booking shipments, using wallet or COD
-        features, or sharing customer shipment data through ChoiceMee Logistics.{' '}
+        features, or sharing customer shipment data through Ship Aggregator.{' '}
         For any terms or account question, contact{' '}
         <Link href={`mailto:${brandIdentity.supportEmail}`}>{brandIdentity.supportEmail}</Link> or call{' '}
         <Link href={`tel:${brandIdentity.supportPhone}`}>{brandIdentity.supportPhone}</Link>.

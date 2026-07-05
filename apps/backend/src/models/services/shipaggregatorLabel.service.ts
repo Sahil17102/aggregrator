@@ -96,7 +96,7 @@ const downloadImageBuffer = async (source: string): Promise<Buffer | null> => {
     const buffer = Buffer.from(response.data)
     return buffer.length > 0 ? buffer : null
   } catch (err) {
-    console.warn('ChoiceMee label image download failed:', err)
+    console.warn('Ship Aggregator label image download failed:', err)
     return null
   }
 }
@@ -116,7 +116,7 @@ const normalizeImageToDataUrl = async (buffer: Buffer): Promise<string | null> =
     if (!png.length) return null
     return `data:image/png;base64,${png.toString('base64')}`
   } catch (err) {
-    console.warn('ChoiceMee label image normalization failed:', err)
+    console.warn('Ship Aggregator label image normalization failed:', err)
     return null
   }
 }
@@ -248,7 +248,7 @@ const resolveOrderCandidate = async (tx: any, order: any): Promise<LabelSnapshot
       const result = await candidate()
       if (result) return result
     } catch (err) {
-      console.warn('ChoiceMee label snapshot lookup failed:', err)
+      console.warn('Ship Aggregator label snapshot lookup failed:', err)
     }
   }
 
@@ -385,7 +385,7 @@ const buildBarcodeDataUrl = async (awb: string) => {
     })
     return barcodeBuffer.length > 0 ? `data:image/png;base64,${barcodeBuffer.toString('base64')}` : null
   } catch (err) {
-    console.warn('ChoiceMee label barcode generation failed:', err)
+    console.warn('Ship Aggregator label barcode generation failed:', err)
     return null
   }
 }
@@ -427,10 +427,10 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
 
   const docDefinition: any = {
     info: {
-      title: 'ChoiceMee Shipment Label',
-      author: 'ChoiceMee',
-      subject: 'ChoiceMee shipment label',
-      creator: 'ChoiceMee Label Generator',
+      title: 'Ship Aggregator Shipment Label',
+      author: 'Ship Aggregator',
+      subject: 'Ship Aggregator shipment label',
+      creator: 'Ship Aggregator Label Generator',
     },
     pageSize: { width: 288, height: 432 },
     pageMargins: [13, 13, 13, 13],
@@ -623,7 +623,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
             width: '*',
             stack: [
               { text: 'NOTE', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 2] },
-              { text: 'Local ChoiceMee label template generated from order and seller details.', fontSize: 6.0, color: '#6b7280' },
+              { text: 'Local Ship Aggregator label template generated from order and seller details.', fontSize: 6.0, color: '#6b7280' },
             ],
           },
           {
@@ -674,7 +674,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   }
 
   if (userId && resolvedOrder?.user_id && userId !== resolvedOrder.user_id) {
-    console.warn('ChoiceMee label generator received a mismatched user id; using the order owner.')
+    console.warn('Ship Aggregator label generator received a mismatched user id; using the order owner.')
   }
 
   const [profileRow, userRow] = await Promise.all([
@@ -704,7 +704,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
       companyInfo?.companyName ||
       userRow?.email?.split('@')?.[0] ||
       resolvedOrder?.merchant_name ||
-      'ChoiceMee',
+      'Ship Aggregator',
   )
   const sellerAddressLines = buildAddressLines(
     pickupDetails?.address || companyInfo?.companyAddress || companyInfo?.address || '',
@@ -743,7 +743,7 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   const paymentMethod =
     paymentRaw === 'cod' ? 'COD' : paymentRaw === 'prepaid' ? 'PREPAID' : paymentRaw ? paymentRaw.toUpperCase() : 'PREPAID'
   const paymentColor = paymentMethod === 'COD' ? '#d97706' : '#059669'
-  const footerUrl = `https://choicemee.in/tax-invoice/${encodeURIComponent(invoiceNo || String(resolvedOrder?.id ?? 'label'))}`
+  const footerUrl = `https://shipaggregator.in/tax-invoice/${encodeURIComponent(invoiceNo || String(resolvedOrder?.id ?? 'label'))}`
 
   const pdfBuffer = await buildShipmentLabelPdfBuffer({
     order: resolvedOrder,
@@ -797,6 +797,6 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
     throw new Error('Label key is invalid or empty after upload')
   }
 
-  console.log(`ChoiceMee label generated for ${resolvedOrder?.order_number || resolvedOrder?.id}: ${finalKey}`)
+  console.log(`Ship Aggregator label generated for ${resolvedOrder?.order_number || resolvedOrder?.id}: ${finalKey}`)
   return finalKey
 }

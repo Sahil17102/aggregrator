@@ -17,7 +17,7 @@ var users_1 = require('./users')
 var createTable = (0, pg_core_1.pgTableCreator)(function (name) {
   return 'meracourierwala_'.concat(name)
 })
-var PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+var PLATFORM_BRAND_NAME = 'Ship Aggregator'
 exports.labelPreferences = createTable('label_preferences', {
   id: (0, pg_core_1.uuid)('id').defaultRandom().primaryKey(),
   user_id: (0, pg_core_1.uuid)('user_id')

@@ -78,7 +78,7 @@ const AddMoneyDialog: React.FC<AddMoneyDialogProps> = ({ open, setOpen }) => {
             user?.companyInfo?.businessName ||
             user?.companyInfo?.contactPerson ||
             user?.name ||
-            'ChoiceMee Customer',
+            'Ship Aggregator Customer',
           email: user?.companyInfo?.contactEmail ?? '',
           contact: user?.companyInfo?.contactNumber ?? '',
         },

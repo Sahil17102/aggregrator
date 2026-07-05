@@ -1,13 +1,13 @@
-﻿/**
- * Branding Configuration for ChoiceMee
+/**
+ * Branding Configuration for Ship Aggregator
  */
 
 export const BRAND = {
-  name: "ChoiceMee",
+  name: "Ship Aggregator",
   tagline: "Your trust, Our Commitment",
   phone: "9906690088",
   address: "Baramulla, Jammu & Kashmir, 193123",
-  email: "info@choicemee.com",
+  email: "cs@shipaggregator.com",
   shortDescription: "Premium logistics platform for reliable and fast shipping across India",
 };
 
@@ -56,37 +56,37 @@ export const FEATURES = [
     id: 1,
     title: "Fast Delivery",
     description: "Fastest courier services across India with real-time tracking and updates",
-    icon: "ðŸšš",
+    icon: "🚚",
   },
   {
     id: 2,
     title: "Secure Packaging",
     description: "Professional packaging ensures your goods reach safely and on time",
-    icon: "ðŸ“¦",
+    icon: "📦",
   },
   {
     id: 3,
     title: "Real-time Tracking",
     description: "Track your shipments in real-time with comprehensive delivery updates",
-    icon: "ðŸ“",
+    icon: "📍",
   },
   {
     id: 4,
     title: "Affordable Rates",
     description: "Competitive pricing with transparent billing and no hidden charges",
-    icon: "ðŸ’°",
+    icon: "💰",
   },
   {
     id: 5,
     title: "Expert Support",
     description: "24/7 dedicated customer support for all your shipping needs",
-    icon: "ðŸ‘¥",
+    icon: "👥",
   },
   {
     id: 6,
     title: "Wide Coverage",
     description: "Delivery services available to all major cities and pincode areas in India",
-    icon: "ðŸ—ºï¸",
+    icon: "🗺️",
   },
 ];
 
@@ -95,7 +95,7 @@ export const TESTIMONIALS = [
     id: 1,
     name: "Rajesh Kumar",
     company: "TechStart India",
-    text: "ChoiceMee has been incredibly reliable for our e-commerce operations. Highly recommended!",
+    text: "Ship Aggregator has been incredibly reliable for our e-commerce operations. Highly recommended!",
     rating: 5,
   },
   {
@@ -124,10 +124,10 @@ export const COURIER_PARTNERS = [
 ];
 
 export const STATS = [
-  { label: "Shipments Delivered", value: "500K+", icon: "ðŸ“¦" },
-  { label: "Cities Covered", value: "1000+", icon: "ðŸ—ºï¸" },
-  { label: "Happy Customers", value: "50K+", icon: "ðŸ˜Š" },
-  { label: "On-time Delivery", value: "99%", icon: "âœ…" },
+  { label: "Shipments Delivered", value: "500K+", icon: "📦" },
+  { label: "Cities Covered", value: "1000+", icon: "🗺️" },
+  { label: "Happy Customers", value: "50K+", icon: "😊" },
+  { label: "On-time Delivery", value: "99%", icon: "✅" },
 ];
 
 export const HOW_IT_WORKS = [
@@ -135,25 +135,25 @@ export const HOW_IT_WORKS = [
     step: 1,
     title: "Enter Details",
     description: "Provide shipment details such as origin, destination, and package size",
-    icon: "ðŸ“",
+    icon: "📝",
   },
   {
     step: 2,
     title: "Get Quote",
     description: "Instantly receive multiple courier options with transparent pricing",
-    icon: "ðŸ’¡",
+    icon: "💡",
   },
   {
     step: 3,
     title: "Book Shipment",
     description: "Select your preferred courier and book your shipment in seconds",
-    icon: "âœ…",
+    icon: "✅",
   },
   {
     step: 4,
     title: "Track Delivery",
     description: "Monitor your shipment in real-time until it reaches the destination",
-    icon: "ðŸš€",
+    icon: "🚀",
   },
 ];
 

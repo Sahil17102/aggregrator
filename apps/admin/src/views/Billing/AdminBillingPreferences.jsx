@@ -1,4 +1,4 @@
-﻿import {
+import {
   Box,
   Button,
   Flex,
@@ -113,12 +113,12 @@ export default function AdminBillingPreferences() {
       }
 
       try {
-        console.log('ðŸ” Fetching presigned URL for signature:', fileKey)
+        console.log('🔍 Fetching presigned URL for signature:', fileKey)
         const urls = await getPresignedDownloadUrls([fileKey])
-        console.log('ðŸ“¦ Presigned URLs response:', urls)
+        console.log('📦 Presigned URLs response:', urls)
 
         if (!Array.isArray(urls) || urls.length === 0) {
-          console.warn('âš ï¸ No URLs returned or invalid response format')
+          console.warn('⚠️ No URLs returned or invalid response format')
           setSignatureUrl(null)
           return
         }
@@ -129,14 +129,14 @@ export default function AdminBillingPreferences() {
         const firstUrl = typeof urls[0] === 'string' ? urls[0] : urls[0]?.url
 
         if (firstUrl) {
-          console.log('âœ… Setting signature URL:', firstUrl)
+          console.log('✅ Setting signature URL:', firstUrl)
           setSignatureUrl(firstUrl)
         } else {
-          console.warn('âš ï¸ No valid URL found in response')
+          console.warn('⚠️ No valid URL found in response')
           setSignatureUrl(null)
         }
       } catch (err) {
-        console.error('âŒ Failed to fetch presigned URLs:', err)
+        console.error('❌ Failed to fetch presigned URLs:', err)
         setSignatureUrl(null)
       }
     }
@@ -497,7 +497,7 @@ export default function AdminBillingPreferences() {
               <Box>
                 <FormLabel>Issuer Name</FormLabel>
                 <Input
-                  placeholder="ChoiceMee Logistics"
+                  placeholder="Ship Aggregator"
                   value={issuerForm.brandName}
                   onChange={(e) => handleIssuerFieldChange('brandName', e.target.value)}
                 />

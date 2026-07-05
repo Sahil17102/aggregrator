@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Alert, Button, Chip, Paper, TextField, Typography } from "@mui/material";
 import MotionFade from "../components/common/MotionFade";
 import PageHero from "../components/common/PageHero";
@@ -7,8 +7,8 @@ import { useAppData } from "../context/AppDataContext";
 export default function LoginPage() {
   const { authLoading, session, signIn, signOut } = useAppData();
   const [credentials, setCredentials] = useState({
-    email: "ops@choicemee.com",
-    password: "ChoiceMee@123",
+    email: "cs@shipaggregator.com",
+    password: "Ship Aggregator@123",
   });
   const [status, setStatus] = useState({ type: "", message: "" });
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
         badge="Portal login"
         caption="JWT-ready auth flow"
         description="A premium login surface for the operations side of the platform, backed by the frontend session context and the Express auth scaffold."
-        title="Access the ChoiceMee operations portal."
+        title="Access the Ship Aggregator operations portal."
       />
 
       <section className="section-block section-block--stats pattern-marble">
@@ -52,11 +52,11 @@ export default function LoginPage() {
               </Typography>
               <div className="login-panel__credential">
                 <span>Email</span>
-                <strong>ops@choicemee.com</strong>
+                <strong>cs@shipaggregator.com</strong>
               </div>
               <div className="login-panel__credential">
                 <span>Password</span>
-                <strong>ChoiceMee@123</strong>
+                <strong>Ship Aggregator@123</strong>
               </div>
             </Paper>
           </MotionFade>
@@ -72,7 +72,7 @@ export default function LoginPage() {
                 <div className="login-session">
                   <Typography variant="body1">{session.user.name}</Typography>
                   <Typography variant="body2">
-                    {session.user.email} â€¢ {session.user.role}
+                    {session.user.email} • {session.user.role}
                   </Typography>
                   <Button className="button-secondary" onClick={signOut} variant="outlined">
                     Sign out

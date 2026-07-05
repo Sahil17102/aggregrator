@@ -1,5 +1,5 @@
-﻿const courierProfiles = [
-  { name: "ChoiceMee Priority", multiplier: 1.18, eta: "1-2 days" },
+const courierProfiles = [
+  { name: "Ship Aggregator Priority", multiplier: 1.18, eta: "1-2 days" },
   { name: "Blue Dart Express", multiplier: 1.3, eta: "1-2 days" },
   { name: "Delhivery Surface", multiplier: 1.04, eta: "3-5 days" },
   { name: "Xpressbees Smart", multiplier: 0.97, eta: "3-4 days" },

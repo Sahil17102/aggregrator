@@ -26,7 +26,7 @@ const content = buildShipmentStatusEmailContent({
   orderNumber: '48010910028534',
   orderLabel: 'Sample Product',
   stage: 'manifested',
-  sellerName: 'ChoiceMee Logistics',
+  sellerName: 'Ship Aggregator',
   orderDetails: sampleOrder,
 })
 

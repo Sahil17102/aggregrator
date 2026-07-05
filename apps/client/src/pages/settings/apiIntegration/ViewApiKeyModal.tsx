@@ -1,4 +1,4 @@
-﻿import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
+import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
 import { MdContentCopy, MdDownload } from 'react-icons/md'
 import CustomInput from '../../../components/UI/inputs/CustomInput'
 import CustomDialog from '../../../components/UI/modal/CustomModal'
@@ -26,7 +26,7 @@ export const ViewApiKeyModal = ({
   if (!apiKey) return null
 
   const handleDownloadCredentials = () => {
-    const content = `ChoiceMee Logistics API Credentials
+    const content = `Ship Aggregator API Credentials
 Generated: ${new Date().toISOString()}
 Key Name: ${apiKey.key_name}
 
@@ -46,7 +46,7 @@ This file contains sensitive credentials. Store it securely and never commit it 
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `choicemee-api-credentials-${apiKey.key_name
+    link.download = `shipaggregator-api-credentials-${apiKey.key_name
       .replace(/\s+/g, '-')
       .toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`
     document.body.appendChild(link)

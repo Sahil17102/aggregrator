@@ -42,7 +42,7 @@ const shipment: any = {
   pickup_location_alias: 'registered_wh_name',
   pickup: {
     warehouse_name: 'registered_wh_name',
-    name: 'ChoiceMe',
+    name: 'ShipAggregator',
     phone: '9999999999',
     address: 'HUDA Market, Gurugram, Haryana',
     address_2: '',

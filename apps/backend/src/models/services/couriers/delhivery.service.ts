@@ -417,7 +417,7 @@ export class DelhiveryService {
           ? pickupAddressParts.join(', ')
           : sanitizeString(pickup.warehouse_name)
 
-      const sellerName = sanitizeString(params.company?.name || pickup.name || 'ChoiceMe')
+      const sellerName = sanitizeString(params.company?.name || pickup.name || 'ShipAggregator')
       const sellerGst = sanitizeString(params.company?.gst || pickup.gst_number || '')
       const productNames = orderItems
         .map((item) => sanitizeString(item?.name))
@@ -937,7 +937,7 @@ export class DelhiveryService {
             shipment_width: Number(params.package_breadth ?? 10),
             shipment_height: Number(params.package_height ?? 10),
             pickup_location: params.pickup?.warehouse_name ?? 'Default Warehouse',
-            seller_name: params.pickup?.name ?? 'ChoiceMe',
+            seller_name: params.pickup?.name ?? 'ShipAggregator',
             seller_add: params.pickup?.address ?? '',
             order_date: new Date().toISOString().split('T')[0],
             return_name: reverseDrop?.name ?? params.pickup?.name ?? 'Return',

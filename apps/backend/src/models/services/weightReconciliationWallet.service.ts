@@ -12,7 +12,7 @@ import { createWalletTransaction } from './wallet.service'
 const env = process.env.NODE_ENV || 'development'
 dotenv.config({ path: path.resolve(__dirname, '../../.env.${env}') })
 
-const EMAIL_FROM = getTransactionalFromAddress() || 'noreply@ChoiceMee.com'
+const EMAIL_FROM = getTransactionalFromAddress() || 'noreply@shipaggregator.com'
 const GOOGLE_SMTP_USER = process.env.GOOGLE_SMTP_USER || EMAIL_FROM
 const GOOGLE_SMTP_PASSWORD = process.env.GOOGLE_SMTP_PASSWORD!
 const SMTP_HOST = process.env.SMTP_HOST
@@ -47,7 +47,7 @@ async function sendEmail(opts: { to: string; subject: string; html: string }) {
       })
 
   const mailOptions = {
-    from: `"ChoiceMee" <${EMAIL_FROM}>`,
+    from: `"Ship Aggregator" <${EMAIL_FROM}>`,
     to: opts.to,
     subject: opts.subject,
     html: opts.html,

@@ -2351,7 +2351,7 @@ export class DeliveryOneService {
       .map((part) => sanitizeString(part))
       .filter(Boolean)
       .join(', ')
-    const sellerName = sanitizeString(params.company?.name || pickup.name || 'ChoiceMee')
+    const sellerName = sanitizeString(params.company?.name || pickup.name || 'Ship Aggregator')
     const sellerGst = sanitizeString(params.company?.gst || pickup.gst_number || '')
     const returnAddress =
       rto && (params.is_rto_different === 'yes' || paymentMode === 'Pickup' || paymentMode === 'REPL')
@@ -2518,7 +2518,7 @@ export class DeliveryOneService {
 
       return {
         name: pickupLocationName,
-        registered_name: sellerName || 'ChoiceMee',
+        registered_name: sellerName || 'Ship Aggregator',
         phone: pickupPhone,
         email: sanitizeString((pickup as any).email || (pickup as any).contact_email),
         address: warehouseAddress,

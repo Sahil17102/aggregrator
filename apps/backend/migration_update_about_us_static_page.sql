@@ -1,9 +1,9 @@
 INSERT INTO static_pages (slug, title, content, created_at, updated_at)
 VALUES (
   'about_us',
-  'About Us - ChoiceMee Logistics',
-  $$<h2>About ChoiceMee Logistics</h2>
-<p><strong>ChoiceMee Logistics</strong> is a modern shipping operations platform built for ecommerce sellers who want faster dispatch, lower courier costs, and a smoother post-purchase experience.</p>
+  'About Us - Ship Aggregator',
+  $$<h2>About Ship Aggregator</h2>
+<p><strong>Ship Aggregator</strong> is a modern shipping operations platform built for ecommerce sellers who want faster dispatch, lower courier costs, and a smoother post-purchase experience.</p>
 
 <h3>What We Do</h3>
 <ul>
@@ -20,8 +20,8 @@ VALUES (
 </ul>
 
 <h3>Contact</h3>
-<p><strong>Email:</strong> ops@choicemee.com</p>
-<p><strong>Website:</strong> www.choicemee.com</p>
+<p><strong>Email:</strong> cs@shipaggregator.com</p>
+<p><strong>Website:</strong> www.shipaggregator.com</p>
 <p><strong>Message:</strong> Ship smarter. Save more on every order.</p>$$,
   NOW(),
   NOW()

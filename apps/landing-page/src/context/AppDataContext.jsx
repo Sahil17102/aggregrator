@@ -1,9 +1,9 @@
-﻿import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { loginUser } from "../services/api";
 
 const AppDataContext = createContext(null);
 
-const STORAGE_KEY = "choicemee-session";
+const STORAGE_KEY = "shipaggregator-session";
 
 export function AppDataProvider({ children }) {
   const [session, setSession] = useState(null);

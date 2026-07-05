@@ -1,4 +1,4 @@
-﻿import {
+import {
   Box,
   Card,
   Grid,
@@ -133,7 +133,7 @@ const ShopifyConnectionModal = ({
                 { primary: '6. Install the app' },
                 {
                   primary: '7. Get your credentials',
-                  secondary: "Youâ€™ll find API key & Admin API token under 'API credentials'",
+                  secondary: "You’ll find API key & Admin API token under 'API credentials'",
                 },
               ].map((step, index) => (
                 <ListItem key={index}>
@@ -388,7 +388,7 @@ const ShopifyConnectionModal = ({
                       },
                     }))
                   }
-                  helperText="Automatically update order statuses in Shopify when they change in the ChoiceMee workspace."
+                  helperText="Automatically update order statuses in Shopify when they change in the Ship Aggregator workspace."
                 />
 
                 {/* Auto cancel orders */}
@@ -404,7 +404,7 @@ const ShopifyConnectionModal = ({
                       },
                     }))
                   }
-                  helperText="Automatically cancel the order in Shopify when it's marked as cancelled in the ChoiceMee workspace."
+                  helperText="Automatically cancel the order in Shopify when it's marked as cancelled in the Ship Aggregator workspace."
                 />
 
                 {/* Mark COD Orders Paid */}

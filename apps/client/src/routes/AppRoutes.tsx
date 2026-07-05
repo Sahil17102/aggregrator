@@ -102,7 +102,7 @@ const RtoList = lazy(() => import('../pages/ops/RtoList'))
 // API Integration
 const ApiIntegration = lazy(() => import('../pages/settings/ApiIntegration'))
 
-const ROUTE_RELOAD_KEY = 'choicemee-route-asset-reload'
+const ROUTE_RELOAD_KEY = 'shipaggregator-route-asset-reload'
 
 const isRouteAssetError = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error ?? '')
@@ -177,14 +177,14 @@ function RouteAssetRecovery() {
   return null
 }
 
-function isAppChoiceMeeHost() {
+function isAppShipAggregatorHost() {
   if (typeof window === 'undefined') return false
 
-  return window.location.hostname.toLowerCase().startsWith('app.choicemee')
+  return window.location.hostname.toLowerCase().startsWith('app.shipaggregator')
 }
 
 function RootRoute() {
-  if (isAppChoiceMeeHost()) return <Navigate to="/login" replace />
+  if (isAppShipAggregatorHost()) return <Navigate to="/login" replace />
 
   return <LandingPage />
 }

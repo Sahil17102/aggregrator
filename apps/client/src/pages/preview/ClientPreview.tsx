@@ -1,4 +1,4 @@
-﻿import { alpha, Box, Button, Chip, Grid, Stack, Typography } from '@mui/material'
+import { alpha, Box, Button, Chip, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { TbBolt, TbChartArcs3, TbMapPinBolt, TbRoute, TbSparkles, TbTruckDelivery } from 'react-icons/tb'
 import BrandLogo from '../../components/brand/BrandLogo'
@@ -30,7 +30,7 @@ const focusCards = [
   },
   {
     title: 'Help Center',
-    text: 'Support tickets, public pages, and policy surfaces now follow the same ChoiceMee visual system.',
+    text: 'Support tickets, public pages, and policy surfaces now follow the same Ship Aggregator visual system.',
   },
 ]
 
@@ -113,7 +113,7 @@ export default function ClientPreview() {
 
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 <Chip
-                  label="ChoiceMee theme"
+                  label="Ship Aggregator theme"
                   icon={<TbBolt size={14} />}
                   sx={{
                     bgcolor: alpha(PLUM, 0.08),
@@ -209,7 +209,7 @@ export default function ClientPreview() {
                   </Typography>
 
                   <Typography sx={{ maxWidth: 620, color: MUTED, lineHeight: 1.65 }}>
-                    This preview skips sign-in so you can review the client UI shell, ChoiceMee color
+                    This preview skips sign-in so you can review the client UI shell, Ship Aggregator color
                     system, logo treatment, sidebar labels, and the overall layout direction first.
                   </Typography>
 

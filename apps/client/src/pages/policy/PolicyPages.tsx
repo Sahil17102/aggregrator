@@ -1,4 +1,4 @@
-﻿import { Box, Container, Divider, Link, Typography } from '@mui/material'
+import { Box, Container, Divider, Link, Typography } from '@mui/material'
 import { FiCreditCard, FiFileText, FiShield } from 'react-icons/fi'
 import TermsOfService from '../../components/terms/TermsOfService'
 import PageHeading from '../../components/UI/heading/PageHeading'
@@ -12,7 +12,7 @@ const PolicyPages = () => {
       <Box display={'flex'} justifyContent={'center'}>
         <PageHeading
           title="Legal & Policy Information"
-          subtitle="All policies, terms, and privacy information for ChoiceMee Logistics"
+          subtitle="All policies, terms, and privacy information for Ship Aggregator"
         />{' '}
       </Box>
 
@@ -23,25 +23,25 @@ const PolicyPages = () => {
           <Typography variant="h4">Refund & Cancellation Policy</Typography>
         </Box>
         <Typography paragraph>
-          â€¢ You may cancel your account at any time by emailing us at{' '}
+          • You may cancel your account at any time by emailing us at{' '}
           <Link href={`mailto:${brandIdentity.supportEmail}`}>{brandIdentity.supportEmail}</Link> or call{' '}
           <Link href={`tel:${brandIdentity.supportPhone}`}>{brandIdentity.supportPhone}</Link>.
         </Typography>
         <Typography paragraph>
-          â€¢ Once your account is cancelled, all of your data and content will be permanently deleted
+          • Once your account is cancelled, all of your data and content will be permanently deleted
           from our Service. Since deletion is final and irreversible, please ensure you truly wish
           to cancel your account before proceeding.
         </Typography>
         <Typography paragraph>
-          â€¢ If you cancel the Service in the middle of a billing cycle, you will receive a final
+          • If you cancel the Service in the middle of a billing cycle, you will receive a final
           invoice via email. Once that invoice has been paid, no further charges will apply.
         </Typography>
         <Typography paragraph>
-          â€¢ ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd) reserves the right to modify, suspend, or terminate
+          • Ship Aggregator (Ship Aggregator) reserves the right to modify, suspend, or terminate
           the Service for any reason, without prior notice at any time.
         </Typography>
         <Typography paragraph>
-          â€¢ Fraud Prevention: Without limiting any other remedies, ChoiceMee Logistics may suspend or
+          • Fraud Prevention: Without limiting any other remedies, Ship Aggregator may suspend or
           terminate your account if we suspect that you (through conviction, settlement,
           investigation, or otherwise) have engaged in fraudulent or unlawful activity in connection
           with the Platform.
@@ -58,7 +58,7 @@ const PolicyPages = () => {
             py: 0.85,
           }}
         >
-          â€¢ {TERMS_REFUND_POLICY_LINE}
+          • {TERMS_REFUND_POLICY_LINE}
         </Typography>
       </Box>
 
@@ -72,8 +72,8 @@ const PolicyPages = () => {
         </Box>
         <Typography paragraph>Last Updated: [Insert Date]</Typography>
         <Typography paragraph>
-          ChoiceMee Logistics (ChoiceMee Logistics Pvt Ltd) ("we," "our," or "us") operates the services offered
-          via our website and related platforms (collectively, the â€œPlatformâ€). Please read this
+          Ship Aggregator (Ship Aggregator) ("we," "our," or "us") operates the services offered
+          via our website and related platforms (collectively, the “Platform”). Please read this
           Privacy Policy carefully before accessing or using our Platform, as continued use
           indicates your acceptance of this Policy.
         </Typography>
@@ -87,8 +87,8 @@ const PolicyPages = () => {
         <Typography paragraph>
           2. Definitions
           <br />
-          â€¢ â€œPersonal Informationâ€: Any information that can identify you, directly or indirectly.
-          <br />â€¢ â€œSensitive Personal Data or Informationâ€: Includes passwords, payment details,
+          • “Personal Information”: Any information that can identify you, directly or indirectly.
+          <br />• “Sensitive Personal Data or Information”: Includes passwords, payment details,
           health data, biometric information, etc., excluding publicly available information or data
           disclosed under legal obligations.
         </Typography>
@@ -97,24 +97,24 @@ const PolicyPages = () => {
           <br />
           When you engage with our Platform, we may collect:
           <br />
-          â€¢ Contact details: name, email address, phone number, postal address.
+          • Contact details: name, email address, phone number, postal address.
           <br />
-          â€¢ Account credentials and profile information.
+          • Account credentials and profile information.
           <br />
-          â€¢ Transactional or usage data including order history or Platform activity.
+          • Transactional or usage data including order history or Platform activity.
           <br />
-          â€¢ Location information via IP address.
+          • Location information via IP address.
           <br />
-          â€¢ Sensitive documents you volunteer (e.g., identity proofs or tax documentation).
-          <br />â€¢ Technical details: browser type, device type, operating system, and usage metrics.
+          • Sensitive documents you volunteer (e.g., identity proofs or tax documentation).
+          <br />• Technical details: browser type, device type, operating system, and usage metrics.
         </Typography>
         <Typography paragraph>
           4. Method of Collection
           <br />
           Information is collected:
           <br />
-          â€¢ Directly from you when you fill out forms or communicate with us.
-          <br />â€¢ Automatically via technology (e.g. cookies, log files) during your use of the
+          • Directly from you when you fill out forms or communicate with us.
+          <br />• Automatically via technology (e.g. cookies, log files) during your use of the
           Platform.
         </Typography>
         <Typography paragraph>
@@ -122,30 +122,30 @@ const PolicyPages = () => {
           <br />
           We use your data to:
           <br />
-          â€¢ Register and manage your account.
+          • Register and manage your account.
           <br />
-          â€¢ Deliver services, process orders, and enable billing.
+          • Deliver services, process orders, and enable billing.
           <br />
-          â€¢ Notify you about updates, changes, or new services.
+          • Notify you about updates, changes, or new services.
           <br />
-          â€¢ Customize and improve the Platform experience.
+          • Customize and improve the Platform experience.
           <br />
-          â€¢ Conduct research, analytics, and business operations.
+          • Conduct research, analytics, and business operations.
           <br />
-          â€¢ Safeguard against fraud and enforce terms.
-          <br />â€¢ Comply with laws and regulatory obligations.
+          • Safeguard against fraud and enforce terms.
+          <br />• Comply with laws and regulatory obligations.
         </Typography>
         <Typography paragraph>
           6. Data Sharing & Disclosure
           <br />
           We may share your information with:
           <br />
-          â€¢ Service providers who help deliver our services (e.g., IT partners, analytics
+          • Service providers who help deliver our services (e.g., IT partners, analytics
           platforms).
           <br />
-          â€¢ Legal or governmental authorities, when required by law, to protect our rights, or to
+          • Legal or governmental authorities, when required by law, to protect our rights, or to
           prevent fraud.
-          <br />â€¢ Corporate transactions, such as mergers or asset transfers, where the acquiring
+          <br />• Corporate transactions, such as mergers or asset transfers, where the acquiring
           entity is bound to this Policy.
         </Typography>
         <Typography paragraph>
@@ -167,9 +167,9 @@ const PolicyPages = () => {
           <br />
           You may:
           <br />
-          â€¢ Review, update, or correct your personal details.
+          • Review, update, or correct your personal details.
           <br />
-          â€¢ Withdraw your consent for data use (upon which we may limit or discontinue certain
+          • Withdraw your consent for data use (upon which we may limit or discontinue certain
           services).
           <br />
           To do so, please contact us at{' '}
@@ -180,7 +180,7 @@ const PolicyPages = () => {
           10. Third-Party Links
           <br />
           Our Platform may contain links to external sites. We are not responsible for their privacy
-          practicesâ€”please review their individual policies separately.
+          practices—please review their individual policies separately.
         </Typography>
         <Typography paragraph>
           11. Changes to this Policy

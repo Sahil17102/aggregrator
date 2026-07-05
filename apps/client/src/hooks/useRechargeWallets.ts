@@ -151,11 +151,11 @@ export const useRechargeWallet = () => {
           key: orderData.key,
           amount: Number(orderData.amount),
           currency: orderData.currency || 'INR',
-          name: orderData.name || 'ChoiceMee Logistics',
+          name: orderData.name || 'Ship Aggregator',
           description: orderData.description || 'Wallet Recharge',
           order_id: orderData.orderId,
           prefill: {
-            name: orderData.prefill?.name || options.prefill.name || 'ChoiceMee Customer',
+            name: orderData.prefill?.name || options.prefill.name || 'Ship Aggregator Customer',
             email: orderData.prefill?.email || options.prefill.email || '',
             contact: orderData.prefill?.contact || options.prefill.contact || '',
           },

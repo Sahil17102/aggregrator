@@ -4,10 +4,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { db, pool } from '../models/client'
 import { users } from '../models/schema/users'
 
-const ADMIN_EMAIL = 'admin@choiceme.com'
+const ADMIN_EMAIL = 'admin@shipaggregator.com'
 const ADMIN_PASSWORD = 'Admin@12345!'
 
-async function ensureChoiceMeAdmin() {
+async function ensureShipAggregatorAdmin() {
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10)
   const [existing] = await db.select().from(users).where(eq(users.email, ADMIN_EMAIL))
 
@@ -41,9 +41,9 @@ async function ensureChoiceMeAdmin() {
   console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`)
 }
 
-ensureChoiceMeAdmin()
+ensureShipAggregatorAdmin()
   .catch((error) => {
-    console.error('Failed to ensure ChoiceMe admin:', error)
+    console.error('Failed to ensure ShipAggregator admin:', error)
     process.exitCode = 1
   })
   .finally(async () => {

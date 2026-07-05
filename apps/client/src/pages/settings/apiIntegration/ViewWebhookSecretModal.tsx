@@ -1,4 +1,4 @@
-﻿import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
+import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
 import { saveAs } from 'file-saver'
 import { MdContentCopy, MdDownload } from 'react-icons/md'
 import CustomInput from '../../../components/UI/inputs/CustomInput'
@@ -28,12 +28,12 @@ export const ViewWebhookSecretModal = ({
 
   const handleDownloadCredentials = () => {
     const timestamp = new Date().toISOString()
-    const fileName = `choicemee-webhook-secret-${(webhook.name || 'webhook').replace(
+    const fileName = `shipaggregator-webhook-secret-${(webhook.name || 'webhook').replace(
       /\s/g,
       '-',
     )}-${timestamp.split('T')[0]}.txt`
     const fileContent = `
-ChoiceMee Logistics Webhook Secret
+Ship Aggregator Webhook Secret
 Generated: ${timestamp}
 Webhook Name: ${webhook.name || 'Unnamed'}
 Webhook URL: ${webhook.url}

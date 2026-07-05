@@ -1,9 +1,9 @@
-﻿import { trackingSamples } from "../data/siteData";
+import { trackingSamples } from "../data/siteData";
 import { buildRateSummary, generateCourierQuotes } from "../utils/calculators";
 
 const validCredentials = {
-  email: "ops@choicemee.com",
-  password: "ChoiceMee@123",
+  email: "cs@shipaggregator.com",
+  password: "Ship Aggregator@123",
 };
 
 function wait(ms = 900) {
@@ -76,7 +76,7 @@ export async function mockSubmitContact(payload) {
 
   return {
     ok: true,
-    message: "Your inquiry has been queued for the ChoiceMee team.",
+    message: "Your inquiry has been queued for the Ship Aggregator team.",
   };
 }
 

@@ -1,4 +1,4 @@
-﻿import cookieParser from 'cookie-parser'
+import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
@@ -77,7 +77,7 @@ const env = resolveRuntimeEnv()
 dotenv.config({ path: path.resolve(__dirname, `../.env.${env}`) })
 
 const app = express()
-const server = http.createServer(app) // Ã¢Å“â€¦ HTTP server for socket.io
+const server = http.createServer(app) // âœ… HTTP server for socket.io
 
 // Init socket.io server
 initSocketServer(server)
@@ -99,16 +99,16 @@ const localOrigins = [
   'http://127.0.0.1:3001',
   'http://localhost:4173',
   'http://127.0.0.1:4173',
-  'https://choicemee.in',
-  'https://www.choicemee.in',
-  'https://app.choicemee.in',
-  'https://admin.choicemee.in',
-  'https://choiceme-admin-production.up.railway.app',
-  'https://choiceme-client-production.up.railway.app',
-  'https://admin.choiceme.com',
-  'https://app.choiceme.com',
-  'https://choiceme.com',
-  'https://www.choicemee.com',
+  'https://shipaggregator.in',
+  'https://www.shipaggregator.in',
+  'https://app.shipaggregator.in',
+  'https://admin.shipaggregator.in',
+  'https://shipaggregator-admin-production.up.railway.app',
+  'https://shipaggregator-client-production.up.railway.app',
+  'https://admin.shipaggregator.com',
+  'https://app.shipaggregator.com',
+  'https://shipaggregator.com',
+  'https://www.shipaggregator.com',
 ]
 const configuredAllowedOrigins = `${process.env.CORS_ALLOWED_ORIGINS || ''},${process.env.CORS_ORIGINS || ''}`
   .split(',')
@@ -125,7 +125,7 @@ const isAllowedOrigin = (origin: string) => {
     return true
   }
 
-  return /^https:\/\/([a-z0-9-]+\.)*choiceme\.com$/.test(normalizedOrigin)
+  return /^https:\/\/([a-z0-9-]+\.)*shipaggregator\.com$/.test(normalizedOrigin)
 }
 
 app.use(
@@ -167,14 +167,14 @@ app.use((req, _res, next) => {
 app.get('/', (_req, res) => {
   res.status(200).json({
     ok: true,
-    service: 'ChoiceMee Logistics backend',
+    service: 'Ship Aggregator backend',
   })
 })
 
 app.get('/health', (_req, res) => {
   res.status(200).json({
     ok: true,
-    service: 'ChoiceMee Logistics backend',
+    service: 'Ship Aggregator backend',
   })
 })
 
@@ -287,6 +287,6 @@ app.post('/api/webhook/delhivery/sorter-image', delhiveryWebhookJson, delhiveryD
 app.post('/api/webhook/delhivery/qc-image', delhiveryWebhookJson, delhiveryDocumentPushHandler)
 // Legacy unified endpoint (auto-detects type) - kept for backward compatibility
 app.post('/api/webhook/delhivery/order', delhiveryWebhookJson, delhiveryWebhookHandler)
-export { app, server } // Ã¢Å“â€¦ named exports
+export { app, server } // âœ… named exports
 
 

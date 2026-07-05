@@ -1,4 +1,4 @@
-﻿import {
+import {
   Box,
   Chip,
   Divider,
@@ -23,7 +23,7 @@ const CompanyDetails = () => {
     <Stack mt={2} gap={5}>
       <PageHeading
         title="Contact Us"
-        subtitle="Weâ€™re here to help with bookings, account support, and courier operations. Reach out to ChoiceMee Logistics whenever you need assistance."
+        subtitle="We’re here to help with bookings, account support, and courier operations. Reach out to Ship Aggregator whenever you need assistance."
       />
 
       <Box
@@ -87,7 +87,7 @@ const CompanyDetails = () => {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
             <FiClock size={22} color={theme.palette.primary.main} />
             <Box>
-              <Typography fontSize="1rem">Monday â€“ Saturday: 10:00 AM â€“ 7:00 PM</Typography>
+              <Typography fontSize="1rem">Monday – Saturday: 10:00 AM – 7:00 PM</Typography>
               <Typography fontSize="1rem">Sunday: Closed</Typography>
             </Box>
           </Box>
@@ -107,7 +107,7 @@ const CompanyDetails = () => {
             width="100%"
             draggable={false}
             zoom={16}
-            popupText="ChoiceMee Logistics"
+            popupText="Ship Aggregator"
             currentLocation={false}
           />
         </Paper>

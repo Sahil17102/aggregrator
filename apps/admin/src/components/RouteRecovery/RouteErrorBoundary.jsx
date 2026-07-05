@@ -1,7 +1,7 @@
 import { Box, Button, Text } from '@chakra-ui/react'
 import React, { useEffect } from 'react'
 
-const ROUTE_RELOAD_KEY = 'choicemee-admin-route-asset-reload'
+const ROUTE_RELOAD_KEY = 'shipaggregator-admin-route-asset-reload'
 
 const isRouteAssetError = (error) => {
   const message = error instanceof Error ? error.message : String(error || '')

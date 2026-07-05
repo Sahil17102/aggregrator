@@ -1,4 +1,4 @@
-﻿import dotenv from "dotenv";
+import dotenv from "dotenv";
 import app from "./app.js";
 import { connectDatabase } from "./config/db.js";
 
@@ -10,7 +10,7 @@ async function startServer() {
   await connectDatabase(process.env.MONGODB_URI);
 
   app.listen(PORT, () => {
-    console.log(`ChoiceMee Courier API listening on port ${PORT}`);
+    console.log(`Ship Aggregator API listening on port ${PORT}`);
   });
 }
 

@@ -171,7 +171,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       const delhivery = new DelhiveryService()
       const delhiveryResp = await delhivery.createWarehouse({
         name: pickupAddr.addressNickname ?? pickupAddr.contactName ?? 'Default Warehouse',
-        registered_name: 'ChoiceMee',
+        registered_name: 'Ship Aggregator',
         phone: pickupAddr.contactPhone,
         email: pickupAddr.contactEmail ?? '',
         address: pickupAddressText || pickupAddr.addressLine1,
@@ -243,7 +243,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       const deliveryOne = new DeliveryOneService()
       await deliveryOne.createWarehouse({
         name: pickupAddr.addressNickname ?? pickupAddr.contactName ?? 'Default Warehouse',
-        registered_name: 'ChoiceMee',
+        registered_name: 'Ship Aggregator',
         phone: pickupAddr.contactPhone,
         email: pickupAddr.contactEmail ?? '',
         address: pickupAddressText || pickupAddr.addressLine1,
@@ -275,7 +275,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
       }
       const payload = {
         alias,
-        contactName: pickupAddr.contactName || 'ChoiceMee',
+        contactName: pickupAddr.contactName || 'Ship Aggregator',
         phone: Number(phoneDigits) || 0,
         email: pickupAddr.contactEmail || '',
         addressLine1: pickupAddr.addressLine1,
@@ -286,7 +286,7 @@ export async function createPickupAddressService(data: CreatePickupDto, userId: 
         country: (pickupAddr.country || 'India').toUpperCase(),
         geo,
         returnAddress: {
-          contactName: pickupAddr.contactName || 'ChoiceMee',
+          contactName: pickupAddr.contactName || 'Ship Aggregator',
           phone: Number(phoneDigits) || 0,
           addressLine1: pickupAddr.addressLine1,
           addressLine2: pickupAddr.addressLine2 || '',
@@ -475,7 +475,7 @@ export async function updatePickupAddressService(
             try {
               await deliveryOne.createWarehouse({
                 name: currentWarehouseName,
-                registered_name: 'ChoiceMee',
+                registered_name: 'Ship Aggregator',
                 phone: updatedPickup?.contactPhone,
                 email: updatedPickup?.contactEmail ?? '',
                 address: pickupAddressText,

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../client'
 import { labelPreferences } from '../schema/labelPreferences'
 
-const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_BRAND_NAME = 'Ship Aggregator'
 
 export const DEFAULT_PREFERENCES = {
   printer_type: 'thermal',

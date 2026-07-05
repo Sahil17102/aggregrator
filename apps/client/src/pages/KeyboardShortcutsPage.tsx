@@ -1,4 +1,4 @@
-﻿import { alpha, Box, Container, Grid, Paper, Stack, styled, Typography } from '@mui/material'
+import { alpha, Box, Container, Grid, Paper, Stack, styled, Typography } from '@mui/material'
 import { FiDollarSign, FiGrid, FiPackage, FiSearch, FiSettings, FiTool } from 'react-icons/fi'
 import PageHeading from '../components/UI/heading/PageHeading'
 import { brand, brandGradients } from '../theme/brand'
@@ -90,7 +90,7 @@ export default function KeyboardShortcutsPage() {
       <PageHeading
         eyebrow="Workspace Tools"
         title="Keyboard Shortcuts"
-        subtitle="Speed up the ChoiceMee workspace with quick navigation and booking shortcuts."
+        subtitle="Speed up the Ship Aggregator workspace with quick navigation and booking shortcuts."
       />
 
       <Grid container spacing={3} sx={{ mt: 1 }}>

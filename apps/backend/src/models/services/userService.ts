@@ -1,4 +1,4 @@
-﻿import { db } from '../client'
+import { db } from '../client'
 import { platforms } from '../schema/platform'
 import { users } from '../schema/users'
 // utils/verifyGoogleToken.ts
@@ -155,7 +155,7 @@ const DEFAULT_PROFILE: Omit<typeof schema.userProfiles.$inferInsert, 'userId' | 
   salesChannels: {},
   profileComplete: false,
 }
-// âœ… Get user by phone
+// ✅ Get user by phone
 
 export const findUserByPhone = async (phone: string, tx: Tx = db) => {
   try {
@@ -252,7 +252,7 @@ export const updateUserPasswordResetToken = async (
     .returning()
   return updatedUser
 }
-// âœ… Update user by phone
+// ✅ Update user by phone
 export const updateUser = async (userId: string, data: UserUpdate) => {
   const [user] = await db.update(users).set(data).where(eq(users.id, userId)).returning()
 
@@ -271,13 +271,13 @@ export const updateUserOtpByEmail = async (email: string, otp: string, otpExpire
 }
 
 /**
- * Mark a user's eâ€‘mail as verified in both `users` and `user_profiles`.
+ * Mark a user's e‑mail as verified in both `users` and `user_profiles`.
  */
 export const markEmailVerified = async (email: string, tx: any = db) => {
   const normalized = email.trim().toLowerCase()
 
   return tx.transaction(async (tx: any) => {
-    /* 1ï¸âƒ£  Update `users.emailVerified` and grab the userId */
+    /* 1️⃣  Update `users.emailVerified` and grab the userId */
     const [updatedUser] = await tx
       .update(users)
       .set({ emailVerified: true })
@@ -289,7 +289,7 @@ export const markEmailVerified = async (email: string, tx: any = db) => {
       return { usersUpdated: 0, profilesUpdated: 0 }
     }
 
-    /* 2ï¸âƒ£  Set POCEmailVerified = true inside companyInfo JSONB */
+    /* 2️⃣  Set POCEmailVerified = true inside companyInfo JSONB */
     const result = await tx
       .update(schema.userProfiles)
       .set({
@@ -309,11 +309,11 @@ export const markEmailVerified = async (email: string, tx: any = db) => {
 }
 
 export const markPhoneVerified = async (phone: string) => {
-  // strip nonâ€‘digits so we always compare the raw 10â€‘digit number
+  // strip non‑digits so we always compare the raw 10‑digit number
   const sanitized = phone.replace(/\D/g, '')
 
   return db.transaction(async (tx) => {
-    /* 1ï¸âƒ£  Update `users.phoneVerified` and grab the userId */
+    /* 1️⃣  Update `users.phoneVerified` and grab the userId */
     const [updatedUser] = await tx
       .update(users)
       .set({ phoneVerified: true })
@@ -325,7 +325,7 @@ export const markPhoneVerified = async (phone: string) => {
       return { usersUpdated: 0, profilesUpdated: 0 }
     }
 
-    /* 2ï¸âƒ£  Update nested JSONB key in `user_profiles` */
+    /* 2️⃣  Update nested JSONB key in `user_profiles` */
     const result = await tx
       .update(schema.userProfiles)
       .set({
@@ -382,7 +382,7 @@ export const updateUserChannelIntegration = async (
   platformId: number,
   tx: any = db,
 ) => {
-  /* 1ï¸âƒ£  Look up the platform slug */
+  /* 1️⃣  Look up the platform slug */
   const [platform] = await tx
     .select({ slug: platforms.slug })
     .from(platforms)
@@ -392,7 +392,7 @@ export const updateUserChannelIntegration = async (
     throw new Error('Invalid platformId: slug not found')
   }
 
-  /* 2ï¸âƒ£  Add slug â†’ true inside salesChannels JSONB */
+  /* 2️⃣  Add slug → true inside salesChannels JSONB */
   return tx
     .update(schema.userProfiles)
     .set({
@@ -405,7 +405,7 @@ export const updateUserChannelIntegration = async (
         )
       `,
     })
-    .where(eq(schema.userProfiles.userId, userId)) // ðŸ”‘ correct column
+    .where(eq(schema.userProfiles.userId, userId)) // 🔑 correct column
     .returning()
 }
 
@@ -477,19 +477,19 @@ export const verifyGoogleToken = async (idToken: string) => {
 }
 
 /**
- * Unified entryâ€‘point for both signâ€‘up and signâ€‘in.
+ * Unified entry‑point for both sign‑up and sign‑in.
  *
- * Behaviour matrix â€“Â all the cornerâ€‘cases in one place:
- * â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
- * â”‚ Email in DB?            â”‚ Verified?    â”‚ googleId â”‚ Result        â”‚
- * â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
- * â”‚ no                      â”‚ n/a          â”‚ yes      â”‚ createÂ accountâ”‚
- * â”‚ no                      â”‚ n/a          â”‚ no       â”‚ createÂ + emailâ”‚
- * â”‚ yes                     â”‚ NO           â”‚ yes      â”‚ markÂ verified â”‚
- * â”‚ yes                     â”‚ NO           â”‚ no       â”‚ refresh token â”‚
- * â”‚ yes                     â”‚ YES          â”‚ yes      â”‚ loginÂ / link  â”‚
- * â”‚ yes                     â”‚ YES          â”‚ no       â”‚ loginÂ / set-pwâ”‚
- * â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+ * Behaviour matrix – all the corner‑cases in one place:
+ * ┌─────────────────────────┬──────────────┬──────────┬───────────────┐
+ * │ Email in DB?            │ Verified?    │ googleId │ Result        │
+ * ├─────────────────────────┼──────────────┼──────────┼───────────────┤
+ * │ no                      │ n/a          │ yes      │ create account│
+ * │ no                      │ n/a          │ no       │ create + email│
+ * │ yes                     │ NO           │ yes      │ mark verified │
+ * │ yes                     │ NO           │ no       │ refresh token │
+ * │ yes                     │ YES          │ yes      │ login / link  │
+ * │ yes                     │ YES          │ no       │ login / set-pw│
+ * └─────────────────────────┴──────────────┴──────────┴───────────────┘
  */
 
 export const handleEmailVerificationRequest = async (
@@ -622,7 +622,7 @@ export const handleEmailVerificationRequest = async (
         )
         return {
           status: 200,
-          data: { message: 'Email verified via Google Signâ€‘In', user },
+          data: { message: 'Email verified via Google Sign‑In', user },
         }
       }
 
@@ -797,7 +797,7 @@ export async function createUserWithWallet(data: CreateUserWithWalletData, txn: 
         is_active: true,
       })
     } else {
-      console.warn(`âš ï¸ Basic plan not found for user ${user.id}. Plan assignment skipped.`)
+      console.warn(`⚠️ Basic plan not found for user ${user.id}. Plan assignment skipped.`)
     }
 
     // 4) create default billing preferences
@@ -814,7 +814,7 @@ export async function createUserWithWallet(data: CreateUserWithWalletData, txn: 
       printer_type: 'thermal',
       char_limit: 25,
       max_items: 3,
-      powered_by: 'ChoiceMee Courier',
+      powered_by: 'Ship Aggregator',
       order_info: {
         orderId: true,
         invoiceNumber: true,
@@ -1003,7 +1003,7 @@ export const updateUserApprovalStatus = async (userId: string, approved: boolean
 }
 
 function generateTempPassword(length = 12) {
-  // Simpler, more userâ€‘friendly temporary password:
+  // Simpler, more user‑friendly temporary password:
   // - Alphanumeric only (no symbols)
   // - Avoid visually confusing characters (0/O, 1/l/I)
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -1070,6 +1070,6 @@ export const deleteUser = async (userId: string) => {
     await tx.delete(users).where(eq(users.id, userId))
   })
 
-  console.log(`âœ… User ${userId} and all related data deleted successfully`)
+  console.log(`✅ User ${userId} and all related data deleted successfully`)
 }
 

@@ -1,4 +1,4 @@
-﻿// utils/emailSender.ts
+// utils/emailSender.ts
 import dotenv from 'dotenv'
 import fs from 'fs'
 import nodemailer from 'nodemailer'
@@ -389,16 +389,16 @@ const sendEmail = async (
         to,
         from: {
           email: config.sendGridFrom,
-          name: 'ChoiceMee Logistics',
+          name: 'Ship Aggregator',
         },
         replyTo: config.sendGridFrom,
         subject,
         text,
         html: htmlContent,
         headers: {
-          'X-ChoiceMee-Message-Type': 'transactional',
-          'X-ChoiceMee-Mailer': 'choiceme-backend',
-          ...(messageId ? { 'X-ChoiceMee-Delivery-Id': messageId } : {}),
+          'X-Ship Aggregator-Message-Type': 'transactional',
+          'X-Ship-Aggregator-Mailer': 'shipaggregator-backend',
+          ...(messageId ? { 'X-Ship Aggregator-Delivery-Id': messageId } : {}),
         },
         attachments: resolvedAttachments?.map((attachment) => ({
           filename: attachment.filename,
@@ -436,7 +436,7 @@ const sendEmail = async (
   }
 
   const mailOptions: any = {
-    from: `"ChoiceMee Logistics" <${config.senderFrom}>`,
+    from: `"Ship Aggregator" <${config.senderFrom}>`,
     sender: config.senderFrom,
     replyTo: config.senderFrom,
     to,
@@ -444,9 +444,9 @@ const sendEmail = async (
     text,
     html: htmlContent,
     headers: {
-      'X-ChoiceMee-Message-Type': 'transactional',
-      'X-ChoiceMee-Mailer': 'choiceme-backend',
-      ...(messageId ? { 'X-ChoiceMee-Delivery-Id': messageId } : {}),
+      'X-Ship Aggregator-Message-Type': 'transactional',
+      'X-Ship-Aggregator-Mailer': 'shipaggregator-backend',
+      ...(messageId ? { 'X-Ship Aggregator-Delivery-Id': messageId } : {}),
     },
     ...(messageId ? { messageId } : {}),
   }
@@ -665,7 +665,7 @@ const formatEmailCurrency = (value?: unknown) => {
   const numeric = Number(value)
   if (!Number.isFinite(numeric)) return String(value).trim()
 
-  return `₹ ${numeric.toFixed(2)}`
+  return `? ${numeric.toFixed(2)}`
 }
 
 const firstText = (...values: Array<unknown>) => {
@@ -747,9 +747,9 @@ const getShipmentStatusPresentation = (stage: ShipmentStatusEmailStage) => {
   }
 }
 
-const getChoiceMeeEmailLogoCid = () => 'choiceme-shipment-logo'
+const getShipAggregatorEmailLogoCid = () => 'shipaggregator-shipment-logo'
 
-const getChoiceMeeEmailLogoPathCandidates = () => {
+const getShipAggregatorEmailLogoPathCandidates = () => {
   const configuredPath = trimEnv(process.env.SHIPMENT_EMAIL_LOGO_PATH)
 
   return [
@@ -761,8 +761,8 @@ const getChoiceMeeEmailLogoPathCandidates = () => {
   ].filter(Boolean)
 }
 
-const resolveChoiceMeeEmailLogoAttachment = (): AttachmentInput | undefined => {
-  for (const candidate of getChoiceMeeEmailLogoPathCandidates()) {
+const resolveShipAggregatorEmailLogoAttachment = (): AttachmentInput | undefined => {
+  for (const candidate of getShipAggregatorEmailLogoPathCandidates()) {
     if (!candidate) continue
 
     if (fs.existsSync(candidate)) {
@@ -770,19 +770,19 @@ const resolveChoiceMeeEmailLogoAttachment = (): AttachmentInput | undefined => {
         path: candidate,
         filename: 'shipment-email-logo.png',
         mimeType: 'image/png',
-        cid: getChoiceMeeEmailLogoCid(),
+        cid: getShipAggregatorEmailLogoCid(),
       }
     }
   }
 
   console.warn('[Email] Shipment logo asset not found on disk; falling back to hosted logo URL', {
-    candidates: getChoiceMeeEmailLogoPathCandidates(),
+    candidates: getShipAggregatorEmailLogoPathCandidates(),
   })
 
   return undefined
 }
 
-const getChoiceMeeEmailLogoSrc = () => {
+const getShipAggregatorEmailLogoSrc = () => {
   const frontendBaseUrl = getFrontendBaseUrl().replace(/\/$/, '')
   const cacheVersion = process.env.SHIPMENT_EMAIL_LOGO_VERSION?.trim() || '20260622-hd2'
   const cacheSuffix = frontendBaseUrl.startsWith('file:')
@@ -792,10 +792,10 @@ const getChoiceMeeEmailLogoSrc = () => {
   return `${frontendBaseUrl}/brand/shipment-email-logo.png${cacheSuffix}`
 }
 
-const buildChoiceMeeEmailLogo = (src: string) => `
+const buildShipAggregatorEmailLogo = (src: string) => `
   <img class="cm-logo" src="${escapeHtml(
     src,
-  )}" width="250" alt="ChoiceMee Logistics" style="display:block;width:250px;max-width:250px;height:auto;margin:0;border:0;outline:none;text-decoration:none;background:transparent;-ms-interpolation-mode:bicubic;" />
+  )}" width="250" alt="Ship Aggregator" style="display:block;width:250px;max-width:250px;height:auto;margin:0;border:0;outline:none;text-decoration:none;background:transparent;-ms-interpolation-mode:bicubic;" />
 `
 
 const buildShipmentProgressMarkup = (accentColor = '#4EA3F1') => {
@@ -977,8 +977,8 @@ export const buildShipmentStatusEmailContent = (opts: {
   const orderNumberDisplay = normalizedOrderNumber ? `#${normalizedOrderNumber.replace(/^#/, '')}` : safeAwb
   const safeOrderNumber = escapeHtml(normalizedOrderNumber)
   const safeOrderLabel = escapeHtml(String(orderLabel || '').trim())
-  const sellerDisplayName = firstText(sellerName, 'ChoiceMee')
-  const logoSrc = firstText(opts.brandLogoSrc, getChoiceMeeEmailLogoSrc())
+  const sellerDisplayName = firstText(sellerName, 'Ship Aggregator')
+  const logoSrc = firstText(opts.brandLogoSrc, getShipAggregatorEmailLogoSrc())
   const stageMeta = getShipmentStatusPresentation(stage)
   const rawStatusLabel = normalizeShipmentStatusText(orderRecord.order_status as string | undefined)
   const orderPlacedOn = formatDisplayDateTime(orderRecord.created_at as string | Date | null | undefined)
@@ -997,7 +997,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     orderRecord.partner_display_name,
     courierName,
   )
-  const footerTeamName = 'ChoiceMee Logistics'
+  const footerTeamName = 'Ship Aggregator'
   const visibleStatus = firstText(rawStatusLabel, stageMeta.badge)
   const trackingLink = `${getFrontendBaseUrl().replace(/\/$/, '')}/tracking?awb=${encodeURIComponent(
     String(awbNumber || '').trim(),
@@ -1080,7 +1080,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     formatDisplayDate(orderRecord.created_at as string | Date | null | undefined),
     orderPlacedOnFallback,
   )
-  const amountLineDiscount = '₹ 0.0'
+  const amountLineDiscount = '? 0.0'
   const headline = `Order ${orderNumberDisplay || safeOrderNumber || safeAwb} is now ${stageMeta.badge}!`
   const productRowsHtml =
     primaryProduct || productName
@@ -1162,7 +1162,7 @@ export const buildShipmentStatusEmailContent = (opts: {
   `
   const mobileHeaderHtml = `
     <div style="padding:0 0 10px;">
-      <div style="line-height:0;margin:0 0 10px;">${buildChoiceMeeEmailLogo(logoSrc)}</div>
+      <div style="line-height:0;margin:0 0 10px;">${buildShipAggregatorEmailLogo(logoSrc)}</div>
       <div style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:10px;line-height:1;padding:8px 12px;border-radius:999px;font-weight:700;white-space:nowrap;margin:0 0 10px;">${escapeHtml(
         stageMeta.badge,
       )}</div>
@@ -1301,7 +1301,7 @@ export const buildShipmentStatusEmailContent = (opts: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td class="cm-logo-wrap" valign="middle" style="width:68%;padding:0;line-height:0;background:transparent;">
-                ${buildChoiceMeeEmailLogo(logoSrc)}
+                ${buildShipAggregatorEmailLogo(logoSrc)}
               </td>
               <td valign="top" align="right" style="width:32%;padding-top:15px;">
                 <span class="cm-badge" style="display:inline-block;background:#ef6a1d;color:#ffffff;font-size:12px;line-height:1;padding:11px 21px;border-radius:999px;font-weight:700;white-space:nowrap;">${escapeHtml(
@@ -1424,7 +1424,7 @@ export const buildShipmentStatusEmailContent = (opts: {
     ...amountLines.map((row) => `${row.label}: ${row.value}`),
     `Courier Name: ${courierName}`,
     `Tracking Link: ${trackingLink}`,
-    'Regards, Team ChoiceMee Logistics!',
+    'Regards, Team Ship Aggregator!',
   ].filter(Boolean)
 
   return {
@@ -1445,10 +1445,10 @@ export const sendShipmentStatusEmail = async (opts: {
   orderDetails?: ShipmentOrderLike | null
   messageId?: string
 }) => {
-  const logoAttachment = resolveChoiceMeeEmailLogoAttachment()
+  const logoAttachment = resolveShipAggregatorEmailLogoAttachment()
   const content = buildShipmentStatusEmailContent({
     ...opts,
-    brandLogoSrc: logoAttachment ? `cid:${getChoiceMeeEmailLogoCid()}` : getChoiceMeeEmailLogoSrc(),
+    brandLogoSrc: logoAttachment ? `cid:${getShipAggregatorEmailLogoCid()}` : getShipAggregatorEmailLogoSrc(),
   })
   await sendEmail(
     opts.to,
@@ -1466,15 +1466,15 @@ export const sendSmtpTestEmail = async (to?: string) => {
 
   await sendEmail(
     recipient,
-    'ChoiceMee Logistics SMTP test',
+    'Ship Aggregator SMTP test',
     `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
         <h2 style="margin:0 0 12px;color:#0D1B4D">SMTP delivery is working</h2>
-        <p>This is a production mailer test from ChoiceMee Logistics.</p>
+        <p>This is a production mailer test from Ship Aggregator.</p>
       </div>
     `,
     undefined,
-    'SMTP delivery is working. This is a production mailer test from ChoiceMee Logistics.',
+    'SMTP delivery is working. This is a production mailer test from Ship Aggregator.',
   )
 }
 
@@ -1517,7 +1517,7 @@ export const sendVerificationEmail = async (to: string, token: string) => {
             letter-spacing:0.08em;
             text-transform:uppercase;
           ">
-            ChoiceMee
+            Ship Aggregator
           </div>
 
           <h1 style="margin:18px 0 8px; font-size:28px; line-height:1.2; font-weight:800;">
@@ -1584,10 +1584,10 @@ export const sendVerificationEmail = async (to: string, token: string) => {
 
           <div style="margin-top:22px; padding-top:18px; border-top:1px solid #eadfd4;">
             <p style="margin:0; font-size:12px; line-height:1.7; color:#8c7b70;">
-              Sent by ChoiceMee Logistics
+              Sent by Ship Aggregator
             </p>
             <p style="margin:4px 0 0; font-size:12px; line-height:1.7; color:#a19185;">
-              Â© ${new Date().getFullYear()} ChoiceMee Logistics. All rights reserved.
+              © ${new Date().getFullYear()} Ship Aggregator. All rights reserved.
             </p>
           </div>
         </div>
@@ -1597,10 +1597,10 @@ export const sendVerificationEmail = async (to: string, token: string) => {
 
   await sendEmail(
     to,
-    'Your ChoiceMee Logistics verification code',
+    'Your Ship Aggregator verification code',
     html,
     undefined,
-    `Your ChoiceMee Logistics verification code is ${token}. It expires in 5 minutes. If you did not request this code, you can ignore this email.`,
+    `Your Ship Aggregator verification code is ${token}. It expires in 5 minutes. If you did not request this code, you can ignore this email.`,
   )
   return { delivered: true }
 }
@@ -1645,7 +1645,7 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
             letter-spacing:0.08em;
             text-transform:uppercase;
           ">
-            ChoiceMee
+            Ship Aggregator
           </div>
 
           <h1 style="margin:18px 0 8px; font-size:28px; line-height:1.2; font-weight:800;">
@@ -1653,7 +1653,7 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
           </h1>
 
           <p style="margin:0; font-size:14px; line-height:1.7; color:rgba(255,255,255,0.82);">
-            We received a request to reset the password for your ChoiceMee account.
+            We received a request to reset the password for your Ship Aggregator account.
           </p>
         </div>
 
@@ -1727,10 +1727,10 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
 
           <div style="margin-top:22px; padding-top:18px; border-top:1px solid #eadfd4;">
             <p style="margin:0; font-size:12px; line-height:1.7; color:#8c7b70;">
-              Sent by ChoiceMee Logistics
+              Sent by Ship Aggregator
             </p>
             <p style="margin:4px 0 0; font-size:12px; line-height:1.7; color:#a19185;">
-              © ${new Date().getFullYear()} ChoiceMee Logistics. All rights reserved.
+              � ${new Date().getFullYear()} Ship Aggregator. All rights reserved.
             </p>
           </div>
         </div>
@@ -1740,10 +1740,10 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
 
   await sendEmail(
     to,
-    'Reset your ChoiceMee password',
+    'Reset your Ship Aggregator password',
     html,
     undefined,
-    `Reset your ChoiceMee password using this code: ${token}. It expires in 15 minutes. Open ${resetUrl} to continue. If you did not request this, ignore this email.`,
+    `Reset your Ship Aggregator password using this code: ${token}. It expires in 15 minutes. Open ${resetUrl} to continue. If you did not request this, ignore this email.`,
   )
   return { delivered: true, resetUrl }
 }
@@ -1758,7 +1758,7 @@ export const sendEmployeeCredentials = async (
   const html = `
     <div style="font-family: 'Segoe UI', Roboto, Arial, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #fafafa;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="color: #1e293b; margin: 0;">Welcome to <span style="color:#2563eb;">ChoiceMee Logistics</span> ðŸš€</h2>
+        <h2 style="color: #1e293b; margin: 0;">Welcome to <span style="color:#2563eb;">Ship Aggregator</span> 🚀</h2>
         <p style="font-size: 15px; color: #64748b; margin-top: 8px;">Your employee account has been created successfully.</p>
       </div>
 
@@ -1780,17 +1780,17 @@ export const sendEmployeeCredentials = async (
       </div>
 
       <p style="font-size: 14px; color: #64748b; margin-top: 28px; text-align: center;">
-        You can now log in to your ChoiceMee Logistics account using these credentials.<br/>
+        You can now log in to your Ship Aggregator account using these credentials.<br/>
         If you face any issues, please contact your administrator.
       </p>
 
       <div style="text-align: center; margin-top: 32px; font-size: 13px; color: #94a3b8;">
-        â€” The ChoiceMee Logistics Team
+        — The Ship Aggregator Team
       </div>
     </div>
   `
 
-  await sendEmail(to, 'Your ChoiceMee Logistics Employee Account', html)
+  await sendEmail(to, 'Your Ship Aggregator Employee Account', html)
 }
 export const sendTempPasswordEmail = async (to: string, tempPassword: string) => {
   const safePassword = escapeHtml(tempPassword)
@@ -1798,7 +1798,7 @@ export const sendTempPasswordEmail = async (to: string, tempPassword: string) =>
   const html = `
     <div style="font-family: 'Segoe UI', Roboto, Arial, sans-serif; max-width:600px; margin:auto; padding:32px; border:1px solid #e5e7eb; border-radius:12px; background-color:#f9fafb;">
       <div style="text-align:center; margin-bottom:24px;">
-        <h2 style="color:#1e293b; margin:0;">ChoiceMee Logistics Account Password Reset</h2>
+        <h2 style="color:#1e293b; margin:0;">Ship Aggregator Account Password Reset</h2>
         <p style="font-size:15px; color:#64748b; margin-top:8px;">
           Your account password has been reset by our team.
         </p>
@@ -1818,12 +1818,12 @@ export const sendTempPasswordEmail = async (to: string, tempPassword: string) =>
 
       <p style="font-size:13px; color:#94a3b8; margin-top:28px; text-align:center;">
         If you did not request this, please contact our support immediately.<br/>
-        â€” The ChoiceMee Logistics Team
+        — The Ship Aggregator Team
       </p>
     </div>
   `
 
-  await sendEmail(to, 'Your Temporary ChoiceMee Logistics Password', html)
+  await sendEmail(to, 'Your Temporary Ship Aggregator Password', html)
 }
 
 export const sendInvoiceReadyEmail = async (opts: {
@@ -1855,9 +1855,9 @@ export const sendInvoiceReadyEmail = async (opts: {
 
   const html = `
   <div style="font-family: Arial, sans-serif; max-width:700px; margin:auto; padding:24px; color:#111">
-    <h2 style="margin-bottom: 8px;">Your invoice is ready â€” ${invoiceNo}</h2>
+    <h2 style="margin-bottom: 8px;">Your invoice is ready — ${invoiceNo}</h2>
     <p style="color:#555; margin-top:0;">Hello ${safeSeller},</p>
-    <p style="color:#555">Your invoice for the period <strong>${periodStart}</strong> â€” <strong>${periodEnd}</strong> has been generated.</p>
+    <p style="color:#555">Your invoice for the period <strong>${periodStart}</strong> — <strong>${periodEnd}</strong> has been generated.</p>
 
     <table style="width:100%; margin-top:12px; border-collapse: collapse;">
       <tr>
@@ -1866,11 +1866,11 @@ export const sendInvoiceReadyEmail = async (opts: {
       </tr>
       <tr>
         <td style="padding:8px; font-weight:600;">Period</td>
-        <td style="padding:8px;">${periodStart} â€” ${periodEnd}</td>
+        <td style="padding:8px;">${periodStart} — ${periodEnd}</td>
       </tr>
       <tr>
         <td style="padding:8px; font-weight:600;">Amount (GST inclusive)</td>
-        <td style="padding:8px;">â‚¹${Number(totalAmount).toFixed(2)}</td>
+        <td style="padding:8px;">₹${Number(totalAmount).toFixed(2)}</td>
       </tr>
     </table>
 
@@ -1885,11 +1885,11 @@ export const sendInvoiceReadyEmail = async (opts: {
     </div>
 
     <p style="color:#777; margin-top:20px; font-size:13px;">
-      If you have any questions or dispute an item on the invoice, please contact support or use the â€œraise disputeâ€ option in your seller dashboard.
+      If you have any questions or dispute an item on the invoice, please contact support or use the “raise dispute” option in your seller dashboard.
     </p>
 
     <div style="margin-top:22px; font-size:12px; color:#999;">
-      â€” ChoiceMee Logistics Team
+      — Ship Aggregator Team
     </div>
   </div>
   `
@@ -1924,14 +1924,14 @@ export const sendInvoiceReminderEmail = async (opts: {
 
   const html = `
   <div style="font-family: Arial, sans-serif; max-width:700px; margin:auto; padding:24px; color:#111">
-    <h2 style="margin-bottom: 8px; color: #dc2626;">Payment Reminder â€” Invoice ${invoiceNo}</h2>
+    <h2 style="margin-bottom: 8px; color: #dc2626;">Payment Reminder — Invoice ${invoiceNo}</h2>
     <p style="color:#555; margin-top:0;">Hello,</p>
-    <p style="color:#555">This is a friendly reminder that your invoice <strong>${invoiceNo}</strong> with an outstanding amount of <strong>â‚¹${Number(
+    <p style="color:#555">This is a friendly reminder that your invoice <strong>${invoiceNo}</strong> with an outstanding amount of <strong>₹${Number(
     amount,
   ).toFixed(2)}</strong> is still pending payment.</p>
 
     <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px;">
-      <p style="margin: 0; font-weight: 600; color: #991b1b;">Outstanding Amount: â‚¹${Number(
+      <p style="margin: 0; font-weight: 600; color: #991b1b;">Outstanding Amount: ₹${Number(
         amount,
       ).toFixed(2)}</p>
     </div>
@@ -1963,7 +1963,7 @@ export const sendInvoiceReminderEmail = async (opts: {
     </p>
 
     <div style="margin-top:22px; font-size:12px; color:#999;">
-      â€” ChoiceMee Logistics Team
+      — Ship Aggregator Team
     </div>
   </div>
   `
@@ -2002,7 +2002,7 @@ export const sendKycStatusEmail = async (opts: {
       <p style="margin: 14px 0 0 0; color: #6b7280; font-size: 13px;">
         If you need help, please contact support from your dashboard.
       </p>
-      <p style="margin: 20px 0 0 0; color: #9ca3af; font-size: 12px;">â€” ChoiceMee Logistics Team</p>
+      <p style="margin: 20px 0 0 0; color: #9ca3af; font-size: 12px;">— Ship Aggregator Team</p>
     </div>
   `
 

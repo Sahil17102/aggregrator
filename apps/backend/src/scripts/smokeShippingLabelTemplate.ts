@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
-import { buildShipmentLabelPdfBuffer } from '../models/services/choicemeLabel.service'
+import { buildShipmentLabelPdfBuffer } from '../models/services/shipaggregatorLabel.service'
 
 const makeLogoDataUrl = async (label: string) => {
   const svg = `
@@ -47,7 +47,7 @@ async function main() {
     normalizedItems: [
       { productId: '45264', productName: 'Garments', unitPrice: 6000, quantity: 1, lineTotal: 6000 },
     ],
-    footerUrl: 'https://choicemee.in/tax-invoice/275596',
+    footerUrl: 'https://shipaggregator.in/tax-invoice/275596',
   })
 
   const pdfPath = path.join(outputDir, 'shipping-label-smoke.pdf')

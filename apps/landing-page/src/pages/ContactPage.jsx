@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Alert, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import PageHero from "../components/common/PageHero";
 import MotionFade from "../components/common/MotionFade";
@@ -46,7 +46,7 @@ export default function ContactPage() {
       <PageHero
         badge="Contact"
         caption="Premium support"
-        description="Talk to the ChoiceMee Logistics team about shipping setup, API integrations, pricing logic, or logistics operations."
+        description="Talk to the Ship Aggregator team about shipping setup, API integrations, pricing logic, or logistics operations."
         title="Let's design a better shipping flow for your business."
       />
 

@@ -215,7 +215,7 @@ const buildShipmentDeliveryMessageId = (params: {
     .digest('hex')
     .slice(0, 40)
 
-  return `<shipment-${digest}@choicemee.in>`
+  return `<shipment-${digest}@shipaggregator.in>`
 }
 
 type ShipmentDeliveryContext = {

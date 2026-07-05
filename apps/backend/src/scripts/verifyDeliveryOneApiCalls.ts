@@ -138,7 +138,7 @@ const baseShipment = {
   courier_id: 99,
   pickup: {
     warehouse_name: 'Verify Warehouse',
-    name: 'ChoiceMe',
+    name: 'ShipAggregator',
     phone: '9999999999',
     address: 'Warehouse address',
     city: 'Gurugram',
@@ -265,7 +265,7 @@ const verifications: Verification[] = [
         address: 'Warehouse address',
         city: 'Gurugram',
         country: 'India',
-        registered_name: 'ChoiceMe',
+        registered_name: 'ShipAggregator',
         return_address: 'Return address',
         return_pin: '122001',
         return_city: 'Gurugram',

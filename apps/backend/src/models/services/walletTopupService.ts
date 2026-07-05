@@ -63,10 +63,10 @@ export async function createWalletOrder(
     amount: razorpayOrder.amount,
     currency: razorpayOrder.currency,
     key: getRazorpayKeyId(),
-    name: 'ChoiceMee Logistics',
+    name: 'Ship Aggregator',
     description: 'Wallet Recharge',
     prefill: {
-      name: details.name || 'ChoiceMee Customer',
+      name: details.name || 'Ship Aggregator Customer',
       email: details.email || '',
       contact: details.phone || '',
     },

@@ -1,9 +1,9 @@
-﻿import { sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { integer, jsonb, pgTableCreator, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { users } from './users'
 
 const createTable = pgTableCreator((name) => `meracourierwala_${name}`)
-const PLATFORM_BRAND_NAME = 'ChoiceMee Courier'
+const PLATFORM_BRAND_NAME = 'Ship Aggregator'
 
 export const labelPreferences = createTable('label_preferences', {
   id: uuid('id').defaultRandom().primaryKey(),

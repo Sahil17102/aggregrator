@@ -624,7 +624,7 @@ function buildPickupFromWarehouse(
     city: warehouse.city,
     state: warehouse.state,
     pincode: warehouse.pincode,
-    name: warehouse.contactName || 'ChoiceMe',
+    name: warehouse.contactName || 'ShipAggregator',
     phone: warehouse.contactPhone || '',
     gst_number: previousPickup?.gst_number ?? warehouse.gstNumber ?? '',
     pickup_date: previousPickup?.pickup_date ?? fallbackDate,
@@ -3649,7 +3649,7 @@ const buildB2CBookingParamsFromOrder = (
     pickup_location_id: order.pickup_location_id ?? courierParams.pickup_location_id,
     pickup: {
       warehouse_name: pickupDetails.warehouse_name || pickupDetails.name || 'Warehouse',
-      name: pickupDetails.name || pickupDetails.warehouse_name || 'ChoiceMe',
+      name: pickupDetails.name || pickupDetails.warehouse_name || 'ShipAggregator',
       address: pickupDetails.address || '',
       city: pickupDetails.city || '',
       state: pickupDetails.state || '',
@@ -4291,7 +4291,7 @@ export const createB2CShipmentService = async (
 
     params.company = {
       ...(params.company || {}),
-      name: resolvedCompanyName || 'ChoiceMe',
+      name: resolvedCompanyName || 'ShipAggregator',
       gst: resolvedCompanyGst || '',
     }
 
@@ -5079,7 +5079,7 @@ export const createB2CShipmentService = async (
       const totalShippingCharges = shippingCharges + otherCharges
       const platformFreightCharge = Number(
         finalSlabbedFreight?.freight ?? params?.freight_charges ?? totalShippingCharges,
-      ) // ChoiceMee configured platform freight from the rate card
+      ) // Ship Aggregator configured platform freight from the rate card
       // Extract courier_cost from shipment response or use estimated from params
       const courierCost =
         shipmentMeta?.courier_cost !== undefined && shipmentMeta?.courier_cost !== null

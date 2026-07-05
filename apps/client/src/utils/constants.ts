@@ -1,7 +1,7 @@
-﻿import type { AdditionalKYCForm } from '../components/user/profile/Kyc/AdditionalInfoStep'
+import type { AdditionalKYCForm } from '../components/user/profile/Kyc/AdditionalInfoStep'
 import type { BusinessStructure, CompanyType } from '../types/generic.types'
 
-export const TERMS_OPERATOR_LINE = 'These terms are issued by ChoiceMee Logistics for use of the ChoiceMee platform.'
+export const TERMS_OPERATOR_LINE = 'These terms are issued by Ship Aggregator for use of the Ship Aggregator platform.'
 export const TERMS_REFUND_POLICY_LINE =
   'Refund policy: approved refunds are credited to the original payment method or verified bank account within 7 business days.'
 export const TERMS_PRIVACY_POLICY_LINE =
@@ -38,7 +38,7 @@ Account Eligibility
 - If any information changes, you must update it promptly so shipments, invoices, remittances, and support communication remain accurate.
 
 Platform Use
-- ChoiceMee Logistics provides tools for shipment booking, rate calculation, label generation, courier allocation, tracking, wallet management, COD visibility, NDR/RTO workflows, reports, and related support.
+- Ship Aggregator provides tools for shipment booking, rate calculation, label generation, courier allocation, tracking, wallet management, COD visibility, NDR/RTO workflows, reports, and related support.
 - You must use the platform only for lawful business shipping activity and in line with applicable Indian laws, courier rules, and these terms.
 - You must not misuse the platform, attempt unauthorized access, upload harmful code, interfere with systems, or use the service for fraudulent or misleading activity.
 - You remain responsible for the accuracy of order details, pickup and delivery addresses, parcel dimensions, parcel weight, product descriptions, invoice values, and payment mode.
@@ -53,7 +53,7 @@ Rates, Wallet, and Payments
 - Rate calculator amounts are estimates until the shipment is validated, manifested, scanned, and billed using the final applicable weight, zone, plan, payment mode, and charges.
 - You must maintain sufficient wallet balance or approved payment terms before shipment processing where payment is required.
 - Applicable charges may include freight, COD charges, fuel surcharge, GST, weight discrepancy charges, RTO charges, address correction fees, remote area charges, and other courier or platform charges.
-- Invoices and statements must be reviewed promptly. Any billing concern should be raised with supporting details within the timeline communicated by ChoiceMee Logistics.
+- Invoices and statements must be reviewed promptly. Any billing concern should be raised with supporting details within the timeline communicated by Ship Aggregator.
 
 COD and Remittance
 - COD collections are handled according to courier confirmations, remittance cycles, reconciliation data, deductions, and platform records.
@@ -70,22 +70,22 @@ Restricted and Prohibited Shipments
 - You must not ship illegal, unsafe, counterfeit, misdeclared, restricted, or prohibited goods.
 - Restricted categories include weapons, explosives, narcotics, psychotropic substances, liquor, tobacco where restricted, hazardous materials, live or dead animals or protected animal products, cash, negotiable instruments, securities, antiques, art treasures, used SIM cards, and any item prohibited by law or courier policy.
 - You are responsible for product declarations, invoices, tax compliance, packaging, and customer communication for every shipment.
-- ChoiceMee Logistics may hold, cancel, reject, or report shipments if the parcel or declaration appears suspicious, unsafe, restricted, unlawful, or non-compliant.
+- Ship Aggregator may hold, cancel, reject, or report shipments if the parcel or declaration appears suspicious, unsafe, restricted, unlawful, or non-compliant.
 
 Data and Privacy
 - ${TERMS_PRIVACY_POLICY_LINE}
 - By using the platform, you consent to this processing and to sharing relevant shipment, customer, KYC, billing, and tracking information with couriers, payment processors, technology providers, auditors, legal authorities, and support teams where necessary.
-- You must provide your customers with appropriate notices and permissions before sharing their personal data with ChoiceMee Logistics for shipment processing, tracking, COD, NDR, RTO, support, and communication.
-- You can request correction, access, or deletion of eligible personal information by contacting ops@choicemee.com or 9906690088, subject to legal, accounting, courier, fraud-prevention, and dispute-retention requirements.
+- You must provide your customers with appropriate notices and permissions before sharing their personal data with Ship Aggregator for shipment processing, tracking, COD, NDR, RTO, support, and communication.
+- You can request correction, access, or deletion of eligible personal information by contacting cs@shipaggregator.com or 9906690088, subject to legal, accounting, courier, fraud-prevention, and dispute-retention requirements.
 
 Service Availability and Liability
 - The platform is provided on an as-is and as-available basis. We work to keep it reliable, but we do not guarantee uninterrupted, error-free, or delay-free operation.
-- ChoiceMee Logistics is not liable for indirect, incidental, special, consequential, or loss-of-profit damages arising from platform use, courier delays, failed pickups, delivery exceptions, third-party outages, or inaccurate information submitted by you.
+- Ship Aggregator is not liable for indirect, incidental, special, consequential, or loss-of-profit damages arising from platform use, courier delays, failed pickups, delivery exceptions, third-party outages, or inaccurate information submitted by you.
 - Nothing in these terms limits liability that cannot legally be limited.
 
 Suspension and Termination
 - We may suspend or restrict access if we detect fraud risk, abusive behavior, unpaid dues, prohibited shipments, policy violations, courier complaints, security concerns, or unlawful activity.
-- You may stop using the platform or request account closure by contacting ops@choicemee.com or 9906690088.
+- You may stop using the platform or request account closure by contacting cs@shipaggregator.com or 9906690088.
 - Outstanding charges, reconciliation items, claims, disputes, and legal obligations survive account closure.
 
 Updates to These Terms
@@ -93,7 +93,7 @@ Updates to These Terms
 - Continued use of the platform after an update means you accept the revised terms.
 
 Contact and Grievance
-- For terms, privacy, billing, shipment, refund, or grievance questions, contact ChoiceMee Logistics at ops@choicemee.com or 9906690088.
+- For terms, privacy, billing, shipment, refund, or grievance questions, contact Ship Aggregator at cs@shipaggregator.com or 9906690088.
 `
 
 // components/layout/constants.ts

@@ -1,7 +1,7 @@
-﻿const PINCODE_REGEX = /^\d{6}$/;
+const PINCODE_REGEX = /^\d{6}$/;
 
 const courierProfiles = [
-  { name: "ChoiceMee Priority", multiplier: 1.18, eta: "1-2 days", accent: "Best for urgent orders" },
+  { name: "Ship Aggregator Priority", multiplier: 1.18, eta: "1-2 days", accent: "Best for urgent orders" },
   { name: "Blue Dart Express", multiplier: 1.3, eta: "1-2 days", accent: "Premium network reach" },
   { name: "Delhivery Surface", multiplier: 1.04, eta: "3-5 days", accent: "Balanced cost and coverage" },
   { name: "Xpressbees Smart", multiplier: 0.97, eta: "3-4 days", accent: "Strong D2C economics" },

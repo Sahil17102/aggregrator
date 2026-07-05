@@ -1,2 +1,2 @@
-export { generateLabelForOrder, resolveLabelOrderSnapshot } from './choicemeLabel.service'
+export { generateLabelForOrder, resolveLabelOrderSnapshot } from './shipaggregatorLabel.service'
 

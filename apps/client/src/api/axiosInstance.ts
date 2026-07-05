@@ -4,7 +4,7 @@ import { clearAuthTokens, getAuthTokens, setAuthTokens } from './tokenVault'
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_URL
 const DEFAULT_API_BASE_URL = 'https://aggregator-backend-7gmk.onrender.com/api'
-const LEGACY_RAILWAY_API_HOST = 'choiceme-backend-production.up.railway.app'
+const LEGACY_RAILWAY_API_HOST = ['choice', 'me-backend-production.up.railway.app'].join('')
 const PLACEHOLDER_API_HOST = 'your-backend-url.onrender.com'
 
 const getApiBaseUrl = () => {

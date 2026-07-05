@@ -113,7 +113,7 @@ const mockOrder = {
   courierId: 99,
   shipping_mode: 'Surface',
   shipper: {
-    name: 'ChoiceMee Courier',
+    name: 'Ship Aggregator',
     phone: '011 4715 2407',
     gst: '9764713698798013',
     address:

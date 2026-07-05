@@ -1,4 +1,4 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { and, between, eq, inArray, sql } from 'drizzle-orm'
@@ -38,9 +38,9 @@ const BILLABLE_ORDER_STATUSES = [
   'rto_in_transit',
   'rto_delivered',
 ] as const
-const PLATFORM_COURIER_BRAND_NAME = 'ChoiceMee Logistics'
-const PLATFORM_LOGISTICS_BRAND_NAME = 'ChoiceMee Logistics'
-const PLATFORM_LOGO_KEY = 'choiceme-logo.png'
+const PLATFORM_COURIER_BRAND_NAME = 'Ship Aggregator'
+const PLATFORM_LOGISTICS_BRAND_NAME = 'Ship Aggregator'
+const PLATFORM_LOGO_KEY = 'favicon.jpg'
 const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
 
 export const generateInvoiceForUser = async (
@@ -48,12 +48,12 @@ export const generateInvoiceForUser = async (
   { startDate, endDate }: GenerateInvoiceParams,
 ) => {
   console.log(
-    `ðŸ§¾ Generating invoice for ${userId} (${dayjs(startDate).format('DD MMM')} â†’ ${dayjs(
+    `🧾 Generating invoice for ${userId} (${dayjs(startDate).format('DD MMM')} → ${dayjs(
       endDate,
     ).format('DD MMM')})`,
   )
 
-  // 1ï¸âƒ£ Fetch billable orders
+  // 1️⃣ Fetch billable orders
   // Bill any shipment that has moved beyond pending/cancelled into an active or completed courier flow.
   const billableStatuses = [...BILLABLE_ORDER_STATUSES]
 
@@ -82,7 +82,7 @@ export const generateInvoiceForUser = async (
   const allOrders = [...b2cOrders, ...b2bOrders]
   if (allOrders.length === 0) {
     console.log(
-      `âš ï¸ No billable orders for user ${userId} between ${dayjs(startDate).format(
+      `⚠️ No billable orders for user ${userId} between ${dayjs(startDate).format(
         'YYYY-MM-DD HH:mm:ss',
       )} and ${dayjs(endDate).format('YYYY-MM-DD HH:mm:ss')} (statuses: ${billableStatuses.join(
         ', ',
@@ -91,7 +91,7 @@ export const generateInvoiceForUser = async (
     return null
   }
 
-  // 2ï¸âƒ£ Totals
+  // 2️⃣ Totals
   let totalShipping = 0
   let totalOtherCharges = 0 // Other charges from serviceability API
   let totalTransaction = 0 // customer-facing, excluded from billing
@@ -157,10 +157,10 @@ export const generateInvoiceForUser = async (
   // Billing subtotal should reflect only costs we bill the seller for
   // Exclude customer-facing charges like transaction fee, gift wrap, discount
   const subtotal = totalShipping + totalCOD
-  // GST calculation (default 18%) â€” compute fully after fetching seller profile
+  // GST calculation (default 18%) — compute fully after fetching seller profile
   const gstRate = 0
 
-  // 3ï¸âƒ£ Invoice info
+  // 3️⃣ Invoice info
   const invoiceId = randomUUID()
 
   // Load seller invoice preferences (prefix/suffix, logo, etc.)
@@ -171,7 +171,7 @@ export const generateInvoiceForUser = async (
   let adminIncludeSignature = adminPrefs?.includeSignature ?? false // Track if admin wants to include signature
   try {
     if (adminIncludeSignature && adminPrefs?.signatureFile) {
-      console.log('ðŸ“ [Billing Invoice] Loading admin signature for billing invoice')
+      console.log('📝 [Billing Invoice] Loading admin signature for billing invoice')
       const signatureUrl = await presignDownload(adminPrefs.signatureFile)
       if (signatureUrl) {
         const finalUrl = Array.isArray(signatureUrl) ? signatureUrl[0] : signatureUrl
@@ -185,20 +185,20 @@ export const generateInvoiceForUser = async (
           const buffer = Buffer.from(response.data)
           if (buffer && buffer.length > 0) {
             adminSignatureBuffer = buffer
-            console.log('âœ… [Billing Invoice] Admin signature loaded successfully')
+            console.log('✅ [Billing Invoice] Admin signature loaded successfully')
           } else {
-            console.warn('âš ï¸ [Billing Invoice] Admin signature buffer is empty')
+            console.warn('⚠️ [Billing Invoice] Admin signature buffer is empty')
           }
         }
       }
     } else if (adminPrefs) {
-      console.log('â„¹ï¸ [Billing Invoice] Admin signature not configured in invoice preferences')
+      console.log('ℹ️ [Billing Invoice] Admin signature not configured in invoice preferences')
     } else {
-      console.log('â„¹ï¸ [Billing Invoice] No admin preferences found, skipping admin signature')
+      console.log('ℹ️ [Billing Invoice] No admin preferences found, skipping admin signature')
     }
   } catch (err: any) {
     console.warn(
-      `âš ï¸ [Billing Invoice] Failed to load admin signature:`,
+      `⚠️ [Billing Invoice] Failed to load admin signature:`,
       err?.message || err,
       err?.code === 'ECONNABORTED' ? '(timeout)' : '',
     )
@@ -218,7 +218,7 @@ export const generateInvoiceForUser = async (
   const pdfPath = path.join(tmpDir, `${invoiceNo}.pdf`)
   const csvPath = path.join(tmpDir, `${invoiceNo}.csv`)
 
-  // 4ï¸âƒ£ Generate CSV
+  // 4️⃣ Generate CSV
   const csvHeader = 'Order ID,Order Type,AWB,Freight Charges,COD Charges,Order Date\n'
   const csvBody = allOrders
     .map((o) => {
@@ -234,7 +234,7 @@ export const generateInvoiceForUser = async (
 
   fs.writeFileSync(csvPath, csvHeader + csvBody, 'utf-8')
 
-  // 5ï¸âƒ£ Get seller info
+  // 5️⃣ Get seller info
   const [sellerRow] = await db
     .select()
     .from(userProfiles)
@@ -256,13 +256,13 @@ export const generateInvoiceForUser = async (
     try {
       // Validate buffer is not empty
       if (!buffer || buffer.length === 0) {
-        console.warn('âš ï¸ Empty buffer provided to bufferToDataUrl')
+        console.warn('⚠️ Empty buffer provided to bufferToDataUrl')
         return null
       }
 
       // Validate buffer has minimum size for an image (at least 4 bytes for signature)
       if (buffer.length < 4) {
-        console.warn('âš ï¸ Buffer too small to be a valid image')
+        console.warn('⚠️ Buffer too small to be a valid image')
         return null
       }
 
@@ -289,34 +289,34 @@ export const generateInvoiceForUser = async (
 
         if (!isValidImage) {
           console.warn(
-            'âš ï¸ Could not detect image type and buffer does not appear to be a valid image format',
+            '⚠️ Could not detect image type and buffer does not appear to be a valid image format',
           )
           return null
         }
 
         console.warn(
-          'âš ï¸ Could not detect image type via file-type, but buffer appears valid, defaulting to PNG',
+          '⚠️ Could not detect image type via file-type, but buffer appears valid, defaulting to PNG',
         )
         const base64 = buffer.toString('base64')
         if (!base64 || base64.length === 0) {
-          console.warn('âš ï¸ Failed to encode buffer to base64')
+          console.warn('⚠️ Failed to encode buffer to base64')
           return null
         }
         return `data:image/png;base64,${base64}`
       }
       // Only allow image types
       if (!type.mime.startsWith('image/')) {
-        console.warn(`âš ï¸ Invalid image type: ${type.mime}, skipping`)
+        console.warn(`⚠️ Invalid image type: ${type.mime}, skipping`)
         return null
       }
       const base64 = buffer.toString('base64')
       if (!base64 || base64.length === 0) {
-        console.warn('âš ï¸ Failed to encode buffer to base64')
+        console.warn('⚠️ Failed to encode buffer to base64')
         return null
       }
       return `data:${type.mime};base64,${base64}`
     } catch (err) {
-      console.warn('âš ï¸ Error converting buffer to data URL:', err)
+      console.warn('⚠️ Error converting buffer to data URL:', err)
       return null
     }
   }
@@ -347,17 +347,17 @@ export const generateInvoiceForUser = async (
       const dataUrl = await bufferToDataUrl(adminSignatureBuffer)
       if (dataUrl) {
         adminSignatureDataUrl = dataUrl
-        console.log('âœ… [Billing Invoice] Admin signature converted to data URL')
+        console.log('✅ [Billing Invoice] Admin signature converted to data URL')
       }
     } catch (err) {
       console.warn(
-        'âš ï¸ [Billing Invoice] Failed to convert admin signature buffer to data URL:',
+        '⚠️ [Billing Invoice] Failed to convert admin signature buffer to data URL:',
         err,
       )
     }
   }
 
-  // Platform (ChoiceMee) logo for footer branding
+  // Platform (Ship Aggregator) logo for footer branding
   let platformLogoDataUrl: string | undefined
   try {
     const logoUrl = await presignDownload(PLATFORM_LOGO_KEY)
@@ -370,7 +370,7 @@ export const generateInvoiceForUser = async (
       }
     }
   } catch (err) {
-    console.warn('âš ï¸ Failed to fetch platform logo for summary invoice from R2:', err)
+    console.warn('⚠️ Failed to fetch platform logo for summary invoice from R2:', err)
   }
 
   // GST disabled: no taxes applied
@@ -380,7 +380,7 @@ export const generateInvoiceForUser = async (
   const igst = 0
   const totalAmount = subtotal
 
-  // 6ï¸âƒ£ PDF
+  // 6️⃣ PDF
   // Get template preference (default to classic for billing invoices)
   const template = (prefs?.template as 'classic' | 'thermal') ?? 'classic'
   const isThermal = template === 'thermal'
@@ -409,19 +409,19 @@ export const generateInvoiceForUser = async (
         const base64Data = base64Match[1].trim()
         if (base64Data.length > 0) {
           images.logo = logoDataUrl
-          console.log('âœ… [Billing Invoice] Logo added to PDF images object')
+          console.log('✅ [Billing Invoice] Logo added to PDF images object')
         } else {
-          console.warn('âš ï¸ [Billing Invoice] Logo data URL has empty base64 data')
+          console.warn('⚠️ [Billing Invoice] Logo data URL has empty base64 data')
         }
       } else {
-        console.warn('âš ï¸ [Billing Invoice] Logo data URL missing base64 data')
+        console.warn('⚠️ [Billing Invoice] Logo data URL missing base64 data')
       }
     } catch (err) {
-      console.warn('âš ï¸ [Billing Invoice] Error validating logo data URL:', err)
+      console.warn('⚠️ [Billing Invoice] Error validating logo data URL:', err)
     }
   } else if (logoDataUrl) {
     console.warn(
-      'âš ï¸ [Billing Invoice] Logo data URL is not in valid format:',
+      '⚠️ [Billing Invoice] Logo data URL is not in valid format:',
       typeof logoDataUrl,
       logoDataUrl?.substring(0, 50),
     )
@@ -440,23 +440,23 @@ export const generateInvoiceForUser = async (
         const base64Data = base64Match[1].trim()
         if (base64Data.length > 0) {
           images.signature = adminSignatureDataUrl
-          console.log('âœ… [Billing Invoice] Admin signature added to PDF images object')
+          console.log('✅ [Billing Invoice] Admin signature added to PDF images object')
         } else {
-          console.warn('âš ï¸ [Billing Invoice] Admin signature data URL has empty base64 data')
+          console.warn('⚠️ [Billing Invoice] Admin signature data URL has empty base64 data')
         }
       } else {
-        console.warn('âš ï¸ [Billing Invoice] Admin signature data URL missing base64 data')
+        console.warn('⚠️ [Billing Invoice] Admin signature data URL missing base64 data')
       }
     } catch (err) {
-      console.warn('âš ï¸ [Billing Invoice] Error validating admin signature data URL:', err)
+      console.warn('⚠️ [Billing Invoice] Error validating admin signature data URL:', err)
     }
   } else if (adminIncludeSignature && !adminSignatureDataUrl) {
     console.log(
-      'â„¹ï¸ [Billing Invoice] Admin signature preference is enabled but signature file not available',
+      'ℹ️ [Billing Invoice] Admin signature preference is enabled but signature file not available',
     )
   } else if (adminSignatureDataUrl) {
     console.warn(
-      'âš ï¸ [Billing Invoice] Admin signature data URL is not in valid format:',
+      '⚠️ [Billing Invoice] Admin signature data URL is not in valid format:',
       typeof adminSignatureDataUrl,
       adminSignatureDataUrl?.substring(0, 50),
     )
@@ -475,19 +475,19 @@ export const generateInvoiceForUser = async (
         const base64Data = base64Match[1].trim()
         if (base64Data.length > 0) {
           images.platformLogo = platformLogoDataUrl
-          console.log('âœ… [Billing Invoice] Platform logo added to PDF images object')
+          console.log('✅ [Billing Invoice] Platform logo added to PDF images object')
         } else {
-          console.warn('âš ï¸ [Billing Invoice] Platform logo data URL has empty base64 data')
+          console.warn('⚠️ [Billing Invoice] Platform logo data URL has empty base64 data')
         }
       } else {
-        console.warn('âš ï¸ [Billing Invoice] Platform logo data URL missing base64 data')
+        console.warn('⚠️ [Billing Invoice] Platform logo data URL missing base64 data')
       }
     } catch (err) {
-      console.warn('âš ï¸ [Billing Invoice] Error validating platform logo data URL:', err)
+      console.warn('⚠️ [Billing Invoice] Error validating platform logo data URL:', err)
     }
   } else if (platformLogoDataUrl) {
     console.warn(
-      'âš ï¸ [Billing Invoice] Platform logo data URL is not in valid format:',
+      '⚠️ [Billing Invoice] Platform logo data URL is not in valid format:',
       typeof platformLogoDataUrl,
       platformLogoDataUrl?.substring(0, 50),
     )
@@ -1063,7 +1063,7 @@ export const generateInvoiceForUser = async (
         attachFiles: false,
         preferSignedUrls: true,
       })
-      console.log(`ðŸ“§ Invoice email sent to ${sellerEmail} for invoice ${invoiceNo}`)
+      console.log(`📧 Invoice email sent to ${sellerEmail} for invoice ${invoiceNo}`)
     } catch (emailErr: any) {
       console.error(`Failed to send invoice email for ${invoiceNo}:`, emailErr?.message || emailErr)
       // Don't fail invoice generation if email fails
@@ -1071,7 +1071,7 @@ export const generateInvoiceForUser = async (
   }
 
   console.log(
-    `âœ… Invoice generated: ${invoiceNo} â†’ ${formatAmount(totalAmount)} (${allOrders.length} orders)`,
+    `✅ Invoice generated: ${invoiceNo} → ${formatAmount(totalAmount)} (${allOrders.length} orders)`,
   )
 
   // Auto-mark as paid if outstanding is already 0 (e.g., already paid via wallet at order time)
@@ -1083,7 +1083,7 @@ export const generateInvoiceForUser = async (
         .update(billingInvoices)
         .set({ status: 'paid', updatedAt: new Date() })
         .where(eq(billingInvoices.id, invoice.id))
-      console.log(`âœ… Auto-marked invoice ${invoiceNo} as paid (outstanding = 0)`)
+      console.log(`✅ Auto-marked invoice ${invoiceNo} as paid (outstanding = 0)`)
       invoice.status = 'paid'
     }
   } catch (err) {
@@ -1096,7 +1096,7 @@ export const generateInvoiceForUser = async (
 
 // Regenerate invoice PDF/CSV with adjustments included
 export const regenerateInvoiceWithAdjustments = async (invoiceId: string) => {
-  console.log(`ðŸ”„ Regenerating invoice ${invoiceId} with adjustments`)
+  console.log(`🔄 Regenerating invoice ${invoiceId} with adjustments`)
 
   // Fetch existing invoice
   const [inv] = await db
@@ -1185,7 +1185,7 @@ export const regenerateInvoiceWithAdjustments = async (invoiceId: string) => {
     .where(eq(billingInvoices.id, invoiceId))
 
   console.log(
-    `âœ… Invoice ${inv.invoiceNo} regenerated (adjusted total: ${formatAmount(
+    `✅ Invoice ${inv.invoiceNo} regenerated (adjusted total: ${formatAmount(
       adjustedTotal,
     )}, base: ${formatAmount(stmt.totals.netPayable)})`,
   )
@@ -1222,7 +1222,7 @@ export const regenerateInvoiceWithAdjustments = async (invoiceId: string) => {
         csvUrl: csvSignedUrl || undefined,
         preferSignedUrls: true,
       })
-      console.log(`ðŸ“§ Email notification sent to ${user.email} for invoice ${inv.invoiceNo}`)
+      console.log(`📧 Email notification sent to ${user.email} for invoice ${inv.invoiceNo}`)
     }
   } catch (emailErr: any) {
     console.error(`Failed to send email notification for invoice ${inv.invoiceNo}:`, emailErr)

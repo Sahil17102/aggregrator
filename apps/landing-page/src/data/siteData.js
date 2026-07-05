@@ -1,13 +1,13 @@
-﻿export const brand = {
-  name: "ChoiceMee Logistics",
-  logoSrc: "/brand/choicemee-logistics-logo.png",
-  logoAlt: "ChoiceMee Logistics logo",
+export const brand = {
+  name: "Ship Aggregator",
+  logoSrc: "/brand/favicon.jpg",
+  logoAlt: "Ship Aggregator logo",
   phone: "9906690088",
   address: "Baramulla, Jammu & Kashmir, 193123",
-  email: "ops@choicemee.com",
+  email: "cs@shipaggregator.com",
   headline: "Fastest Shipping Across India",
   subheadline: "Your Trust, Our Commitment",
-  heroBadge: "ChoiceMee Logistics for modern shipping teams",
+  heroBadge: "Ship Aggregator for modern shipping teams",
 };
 
 export const navLinks = [
@@ -122,7 +122,7 @@ export const dashboardPoints = [
 export const testimonials = [
   {
     quote:
-      "ChoiceMee gave us a premium control tower feel without operational complexity. Our shipping team now books faster and escalates less.",
+      "Ship Aggregator gave us a premium control tower feel without operational complexity. Our shipping team now books faster and escalates less.",
     name: "Aaliya Khan",
     role: "Head of Operations, NorthGrid Commerce",
   },
@@ -154,7 +154,7 @@ export const trackingSamples = [
       {
         key: "placed",
         title: "Order placed",
-        note: "Shipment booked on the ChoiceMee dashboard",
+        note: "Shipment booked on the Ship Aggregator dashboard",
         location: "Baramulla Hub",
         time: "09 Apr 2026, 09:12 AM",
       },

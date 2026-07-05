@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: choiceme-backend
+    name: shipaggregator-backend
     runtime: node
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
