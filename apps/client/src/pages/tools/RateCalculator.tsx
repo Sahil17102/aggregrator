@@ -9,6 +9,7 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material'
 import { useMemo, useState, type ReactNode } from 'react'
 import { FormProvider, useForm, type RegisterOptions } from 'react-hook-form'
@@ -75,7 +76,7 @@ const defaultFormValues: RateCalculatorFormValues = {
   orderAmount: '',
 }
 
-const ui = {
+const baseUi = {
   ink: brand.ink,
   muted: brand.inkSoft,
   accent: brand.accent,
@@ -177,14 +178,14 @@ export const cardStyles = {
   boxShadow: '0 18px 36px rgba(68, 92, 138, 0.1)',
 }
 
-const panelSx = {
+const basePanelSx = {
   borderRadius: '12px',
-  border: `1px solid ${ui.line}`,
+  border: `1px solid ${baseUi.line}`,
   background: '#FFFFFF',
-  boxShadow: ui.panelShadow,
+  boxShadow: baseUi.panelShadow,
 }
 
-const inputSx = {
+const baseInputSx = {
   '& .MuiOutlinedInput-root': {
     height: 44,
     borderRadius: '8px',
@@ -192,20 +193,20 @@ const inputSx = {
     fontSize: '0.9rem',
     fontWeight: 600,
     '& fieldset': {
-      borderColor: ui.line,
+      borderColor: baseUi.line,
     },
     '&:hover fieldset': {
-      borderColor: alpha(ui.accent, 0.48),
+      borderColor: alpha(baseUi.accent, 0.48),
     },
     '&.Mui-focused fieldset': {
-      borderColor: ui.accent,
+      borderColor: baseUi.accent,
       borderWidth: 1.5,
     },
   },
   '& .MuiInputBase-input': {
     px: 1.45,
     py: 1,
-    color: ui.ink,
+    color: baseUi.ink,
   },
   '& .MuiFormHelperText-root': {
     ml: 0,
@@ -215,10 +216,10 @@ const inputSx = {
   },
 }
 
-const highlightedInputSx = {
-  ...inputSx,
+const baseHighlightedInputSx = {
+  ...baseInputSx,
   '& .MuiOutlinedInput-root': {
-    ...inputSx['& .MuiOutlinedInput-root'],
+    ...baseInputSx['& .MuiOutlinedInput-root'],
     backgroundColor: alpha(brand.sky, 0.46),
   },
 }
@@ -650,7 +651,71 @@ function RateFeatureCard({
 }
 
 export function RateCalculator({ publicView }: RateCalculatorProps) {
+  const theme = useTheme()
   const isPublic = Boolean(publicView)
+  const isDark = theme.palette.mode === 'dark'
+  const ui =
+    isPublic || !isDark
+      ? baseUi
+      : {
+          ...baseUi,
+          ink: theme.palette.text.primary,
+          muted: theme.palette.text.secondary,
+          accentDark: '#ff9a4c',
+          success: theme.palette.success.main,
+          line: alpha('#f8fafc', 0.12),
+          panelShadow: '0 14px 34px rgba(0,0,0,0.18)',
+          softAccent: alpha(baseUi.accent, 0.14),
+          softNavy: alpha('#f8fafc', 0.07),
+        }
+  const panelSx =
+    isPublic || !isDark
+      ? basePanelSx
+      : {
+          ...basePanelSx,
+          border: `1px solid ${ui.line}`,
+          background: '#151b23',
+          boxShadow: ui.panelShadow,
+        }
+  const inputSx =
+    isPublic || !isDark
+      ? baseInputSx
+      : {
+          ...baseInputSx,
+          '& .MuiOutlinedInput-root': {
+            ...baseInputSx['& .MuiOutlinedInput-root'],
+            backgroundColor: '#101720',
+            color: ui.ink,
+            '& fieldset': {
+              borderColor: ui.line,
+            },
+            '&:hover fieldset': {
+              borderColor: alpha(ui.accent, 0.5),
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: ui.accent,
+              borderWidth: 1.5,
+            },
+          },
+          '& .MuiInputBase-input': {
+            ...baseInputSx['& .MuiInputBase-input'],
+            color: ui.ink,
+          },
+          '& .MuiFormHelperText-root': {
+            ...baseInputSx['& .MuiFormHelperText-root'],
+            color: ui.muted,
+          },
+        }
+  const highlightedInputSx =
+    isPublic || !isDark
+      ? baseHighlightedInputSx
+      : {
+          ...inputSx,
+          '& .MuiOutlinedInput-root': {
+            ...inputSx['& .MuiOutlinedInput-root'],
+            backgroundColor: alpha(ui.accent, 0.1),
+          },
+        }
   const navigate = useNavigate()
   const { mutateAsync, isPending, isError, error } = useAvailableCouriersMutation()
   const [availableCouriers, setAvailableCouriers] = useState<Courier[]>([])
@@ -765,7 +830,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
     px: 1.35,
     borderRadius: '8px',
     border: `1.5px solid ${selected ? ui.accent : ui.line}`,
-    bgcolor: selected ? ui.softAccent : '#FFFFFF',
+    bgcolor: selected ? ui.softAccent : isPublic || !isDark ? '#FFFFFF' : alpha('#ffffff', 0.04),
     color: selected ? ui.accentDark : ui.ink,
     fontWeight: 800,
     justifyContent: 'flex-start',
@@ -773,7 +838,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
     boxShadow: selected ? `0 0 0 1px ${alpha(ui.accent, 0.08)}` : 'none',
     '&:hover': {
       borderColor: ui.accent,
-      bgcolor: selected ? ui.softAccent : alpha(ui.accent, 0.055),
+      bgcolor: selected ? ui.softAccent : alpha(ui.accent, isDark && !isPublic ? 0.12 : 0.055),
     },
   })
 
@@ -1700,7 +1765,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                 borderRadius: '8px',
                 color: ui.accentDark,
                 borderColor: alpha(ui.accent, 0.32),
-                bgcolor: '#FFFFFF',
+                bgcolor: isDark ? alpha('#ffffff', 0.04) : '#FFFFFF',
                 textTransform: 'none',
                 fontWeight: 800,
                 '&:hover': {
@@ -1960,7 +2025,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                       fontWeight: 800,
                       color: ui.muted,
                       borderColor: ui.line,
-                      bgcolor: '#FFFFFF',
+                      bgcolor: isDark && !isPublic ? alpha('#ffffff', 0.04) : '#FFFFFF',
                     }}
                   >
                     Reset
@@ -2111,8 +2176,8 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                 alignItems: 'center',
                                 minHeight: 58,
                                 px: 1,
-                                bgcolor: '#F5F6F8',
-                                borderBottom: `1px solid ${alpha(ui.ink, 0.04)}`,
+                                bgcolor: isDark && !isPublic ? alpha('#ffffff', 0.04) : '#F5F6F8',
+                                borderBottom: `1px solid ${isDark && !isPublic ? ui.line : alpha(ui.ink, 0.04)}`,
                               }}
                             >
                               <Stack direction="row" alignItems="center" spacing={1.1} sx={{ minWidth: 0 }}>
@@ -2121,7 +2186,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                     width: 32,
                                     height: 32,
                                     borderRadius: '8px',
-                                    bgcolor: '#FFFFFF',
+                                    bgcolor: isDark && !isPublic ? '#101720' : '#FFFFFF',
                                     color: ui.muted,
                                     display: 'grid',
                                     placeItems: 'center',
@@ -2143,15 +2208,15 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                   )}
                                 </Box>
                                 <Stack spacing={0.35} sx={{ minWidth: 0 }}>
-                                  <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#273044' }}>
+                                  <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: ui.ink }}>
                                     {displayName}
                                   </Typography>
                                 </Stack>
                               </Stack>
-                              <Box sx={{ color: mode === 'air' ? ui.accentDark : '#68707E', display: 'flex' }}>
+                              <Box sx={{ color: mode === 'air' ? ui.accentDark : ui.muted, display: 'flex' }}>
                                 {mode === 'air' ? <FaPlane size={18} /> : <FaTruck size={18} />}
                               </Box>
-                              <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#273044' }}>
+                              <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: ui.ink }}>
                                 {formatWeightKg(courier.chargeable_weight)}
                               </Typography>
                               <Box
@@ -2183,7 +2248,7 @@ export function RateCalculator({ publicView }: RateCalculatorProps) {
                                 {zoneLabel}
                               </Box>
                               {renderMoney(freight)}
-                              {renderMoney(cod, '#606570', true)}
+                              {renderMoney(cod, ui.muted, true)}
                             </Box>
                           )
                         })}
