@@ -16,6 +16,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material'
 import moment from 'moment'
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react'
@@ -170,9 +171,17 @@ const isManifestEligible = (order: Order) => {
 }
 
 const AllOrders = () => {
+  const theme = useTheme()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const isDark = theme.palette.mode === 'dark'
+  const surface = isDark ? '#151b23' : '#FFFFFF'
+  const borderColor = isDark ? alpha('#f8fafc', 0.12) : alpha('#1D2842', 0.1)
+  const textPrimary = isDark ? '#f8fafc' : '#1D2842'
+  const textSecondary = isDark ? '#9badc3' : '#6B7280'
+  const quietSurface = isDark ? alpha('#ffffff', 0.05) : 'rgba(29, 40, 66, 0.04)'
+  const panelShadow = isDark ? 'none' : '0 6px 18px rgba(29, 40, 66, 0.06)'
   const [page, setPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [selectedOrderIds, setSelectedOrderIds] = useState<Array<Order['id']>>([])
@@ -296,10 +305,10 @@ const AllOrders = () => {
           justifyContent: 'center',
           py: 6,
           px: 3,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: surface,
           borderRadius: '12px',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          border: `1px solid ${borderColor}`,
+          boxShadow: panelShadow,
         }}
       >
         <Typography
@@ -311,7 +320,7 @@ const AllOrders = () => {
         >
           Failed to fetch orders
         </Typography>
-        <Typography textAlign="center" fontSize="14px" sx={{ color: '#6B7280', mt: 1 }}>
+        <Typography textAlign="center" fontSize="14px" sx={{ color: textSecondary, mt: 1 }}>
           Please try refreshing the page
         </Typography>
       </Box>
@@ -1172,9 +1181,11 @@ const AllOrders = () => {
                     mt: 0.75,
                     minWidth: 238,
                     borderRadius: '8px',
-                    border: `1px solid ${alpha('#0D1B4D', 0.12)}`,
-                    background: '#FFFFFF',
-                    boxShadow: `0 18px 38px ${alpha('#0D1B4D', 0.18)}`,
+                    border: `1px solid ${isDark ? alpha('#f8fafc', 0.12) : alpha('#0D1B4D', 0.12)}`,
+                    background: surface,
+                    boxShadow: isDark
+                      ? `0 18px 38px ${alpha('#000000', 0.35)}`
+                      : `0 18px 38px ${alpha('#0D1B4D', 0.18)}`,
                     overflow: 'hidden',
                   },
                 },
@@ -1322,10 +1333,10 @@ const AllOrders = () => {
     <Stack gap={1.2}>
       <Box
         sx={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: surface,
           borderRadius: '8px',
-          border: '1px solid rgba(29, 40, 66, 0.1)',
-          boxShadow: '0 6px 18px rgba(29, 40, 66, 0.06)',
+          border: `1px solid ${borderColor}`,
+          boxShadow: panelShadow,
           overflow: 'hidden',
         }}
       >
@@ -1337,15 +1348,15 @@ const AllOrders = () => {
           sx={{
             px: { xs: 1.15, md: 1.5 },
             py: 1,
-            borderBottom: '1px solid rgba(29, 40, 66, 0.08)',
-            bgcolor: '#ffffff',
+            borderBottom: `1px solid ${borderColor}`,
+            bgcolor: surface,
           }}
         >
           <Typography
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: '#1D2842',
+              color: textPrimary,
               fontSize: '17px',
             }}
           >
@@ -1435,8 +1446,8 @@ const AllOrders = () => {
               mx: { xs: 1.15, md: 1.5 },
               p: 1.25,
               borderRadius: '8px',
-              border: '1px solid rgba(29, 40, 66, 0.14)',
-              backgroundColor: 'rgba(29, 40, 66, 0.04)',
+              border: `1px solid ${borderColor}`,
+              backgroundColor: quietSurface,
             }}
           >
             <Stack
@@ -1446,10 +1457,10 @@ const AllOrders = () => {
               gap={1.25}
             >
               <Box>
-                <Typography sx={{ fontWeight: 700, color: '#333369', fontSize: '14px' }}>
+                <Typography sx={{ fontWeight: 700, color: textPrimary, fontSize: '14px' }}>
                   {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
                 </Typography>
-                <Typography sx={{ color: '#6B7280', fontSize: '12px', mt: 0.25 }}>
+                <Typography sx={{ color: textSecondary, fontSize: '12px', mt: 0.25 }}>
                   Manifest up to {BULK_MANIFEST_LIMIT} eligible orders at once. Bulk label, invoice,
                   and manifest downloads have no selection limit.
                 </Typography>
@@ -1511,10 +1522,10 @@ const AllOrders = () => {
 
       <Box
         sx={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: surface,
           borderRadius: '8px',
-          border: '1px solid rgba(29, 40, 66, 0.1)',
-          boxShadow: '0 6px 18px rgba(29, 40, 66, 0.06)',
+          border: `1px solid ${borderColor}`,
+          boxShadow: panelShadow,
           overflow: 'hidden',
         }}
       >

@@ -1,4 +1,4 @@
-import { alpha, Alert, Box, Button, Container, Fade, Popover, Stack, Typography } from '@mui/material'
+import { alpha, Alert, Box, Button, Container, Fade, Popover, Stack, Typography, useTheme } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { MdAdd } from 'react-icons/md'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -12,9 +12,18 @@ export default function Orders() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [orderType, setOrderType] = useState<'b2c' | 'b2b' | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const theme = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const { isReady, progress, firstIncompleteStep } = useMerchantReadiness()
+  const isDark = theme.palette.mode === 'dark'
+  const surface = isDark ? '#151b23' : '#ffffff'
+  const nestedSurface = isDark ? '#0f141b' : '#ffffff'
+  const borderColor = isDark ? alpha('#f8fafc', 0.12) : alpha('#1D2842', 0.1)
+  const strongBorder = isDark ? alpha('#f8fafc', 0.2) : alpha('#1D2842', 0.28)
+  const textPrimary = isDark ? '#f8fafc' : '#1D2842'
+  const activeTabBg = isDark ? '#2f2a63' : '#1D2842'
+  const topStripe = isDark ? '#26314a' : '#1D2842'
 
   useEffect(() => {
     setDrawerOpen(false)
@@ -44,9 +53,9 @@ export default function Orders() {
 
   const glass = {
     backdropFilter: 'blur(16px)',
-    background: 'rgba(255, 255, 255, 0.98)',
-    border: '1px solid rgba(29, 40, 66, 0.12)',
-    boxShadow: '0 14px 32px rgba(29, 40, 66, 0.12)',
+    background: isDark ? alpha('#151b23', 0.98) : 'rgba(255, 255, 255, 0.98)',
+    border: `1px solid ${borderColor}`,
+    boxShadow: isDark ? '0 14px 32px rgba(0, 0, 0, 0.28)' : '0 14px 32px rgba(29, 40, 66, 0.12)',
     borderRadius: '14px',
     p: 3,
     display: 'flex',
@@ -88,9 +97,9 @@ export default function Orders() {
           mb: 2.2,
           borderRadius: 2.5,
           overflow: 'hidden',
-          border: '1px solid rgba(29, 40, 66, 0.1)',
-          boxShadow: '0 12px 28px rgba(29, 40, 66, 0.08)',
-          bgcolor: '#ffffff',
+          border: `1px solid ${borderColor}`,
+          boxShadow: isDark ? 'none' : '0 12px 28px rgba(29, 40, 66, 0.08)',
+          bgcolor: surface,
         }}
       >
         <Stack
@@ -101,7 +110,7 @@ export default function Orders() {
           sx={{
             px: { xs: 1.5, md: 2.2 },
             py: { xs: 1.35, md: 1.6 },
-            borderTop: '14px solid #1D2842',
+            borderTop: `14px solid ${topStripe}`,
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.4}>
@@ -110,12 +119,12 @@ export default function Orders() {
                 width: 18,
                 height: 18,
                 borderRadius: 0.4,
-                border: '2px solid #1D2842',
-                boxShadow: 'inset 0 0 0 2px #ffffff',
-                bgcolor: '#1D2842',
+                border: `2px solid ${textPrimary}`,
+                boxShadow: `inset 0 0 0 2px ${surface}`,
+                bgcolor: textPrimary,
               }}
             />
-            <Typography sx={{ fontSize: { xs: '1.5rem', md: '1.9rem' }, fontWeight: 700, color: '#1D2842' }}>
+            <Typography sx={{ fontSize: { xs: '1.5rem', md: '1.9rem' }, fontWeight: 700, color: textPrimary }}>
               Orders
             </Typography>
           </Stack>
@@ -154,8 +163,8 @@ export default function Orders() {
           sx={{
             px: { xs: 1.25, md: 1.8 },
             py: 1.8,
-            borderTop: '1px solid rgba(29, 40, 66, 0.08)',
-            bgcolor: '#ffffff',
+            borderTop: `1px solid ${borderColor}`,
+            bgcolor: nestedSurface,
           }}
         >
           {orderTabs.map((tab) => {
@@ -172,12 +181,12 @@ export default function Orders() {
                   py: 1.3,
                   mr: -0.5,
                   minWidth: 'unset',
-                  border: '1px solid rgba(29, 40, 66, 0.28)',
-                  color: active ? '#ffffff' : '#1D2842',
-                  bgcolor: active ? '#1D2842' : '#ffffff',
+                  border: `1px solid ${strongBorder}`,
+                  color: active ? '#ffffff' : textPrimary,
+                  bgcolor: active ? activeTabBg : surface,
                   fontWeight: active ? 800 : 700,
                   '&:hover': {
-                    bgcolor: active ? '#1D2842' : alpha('#1D2842', 0.04),
+                    bgcolor: active ? activeTabBg : alpha(textPrimary, isDark ? 0.08 : 0.04),
                   },
                 }}
               >
@@ -207,17 +216,17 @@ export default function Orders() {
           variant="outlined"
           onClick={() => handleSelectOrderType('b2c')}
           sx={{
-            borderColor: '#1D2842',
-            color: '#1D2842',
+            borderColor: strongBorder,
+            color: textPrimary,
             fontWeight: 600,
             textTransform: 'none',
             px: 2.5,
             py: 1,
             borderRadius: '8px',
             '&:hover': {
-              borderColor: '#152038',
-              backgroundColor: 'rgba(29, 40, 66, 0.08)',
-              color: '#152038',
+              borderColor: textPrimary,
+              backgroundColor: alpha(textPrimary, isDark ? 0.12 : 0.08),
+              color: textPrimary,
             },
           }}
         >
@@ -227,17 +236,17 @@ export default function Orders() {
           variant="outlined"
           onClick={() => handleSelectOrderType('b2b')}
           sx={{
-            borderColor: '#1D2842',
-            color: '#1D2842',
+            borderColor: strongBorder,
+            color: textPrimary,
             fontWeight: 600,
             textTransform: 'none',
             px: 2.5,
             py: 1,
             borderRadius: '8px',
             '&:hover': {
-              borderColor: '#152038',
-              backgroundColor: 'rgba(29, 40, 66, 0.08)',
-              color: '#152038',
+              borderColor: textPrimary,
+              backgroundColor: alpha(textPrimary, isDark ? 0.12 : 0.08),
+              color: textPrimary,
             },
           }}
         >
