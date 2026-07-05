@@ -1,4 +1,4 @@
-import { alpha, createTheme } from '@mui/material/styles'
+import { alpha, createTheme, type PaletteMode } from '@mui/material/styles'
 import { brand, brandFonts, brandGradients } from './brand'
 
 export const BRAND_NAVY = brand.ink
@@ -9,7 +9,15 @@ export const TEXT = brand.inkSoft
 export const BRAND_LIGHT_NAVY = alpha(brand.ink, 0.12)
 export const BRAND_PURPLE = brand.ink
 
-const theme = createTheme({
+export const createAppTheme = (mode: PaletteMode = 'light') => {
+  const isDark = mode === 'dark'
+  const backgroundDefault = isDark ? '#0f141b' : brand.page
+  const backgroundPaper = isDark ? '#151b23' : brand.surface
+  const textPrimary = isDark ? '#f8fafc' : brand.ink
+  const textSecondary = isDark ? '#93a4ba' : brand.inkSoft
+  const divider = isDark ? alpha('#f8fafc', 0.1) : alpha(brand.ink, 0.08)
+
+  return createTheme({
   breakpoints: {
     values: {
       xs: 300,
@@ -20,10 +28,10 @@ const theme = createTheme({
     },
   },
   palette: {
-    mode: 'light',
+    mode,
     background: {
-      default: brand.page,
-      paper: brand.surface,
+      default: backgroundDefault,
+      paper: backgroundPaper,
     },
     primary: {
       main: brand.accent,
@@ -58,11 +66,11 @@ const theme = createTheme({
       dark: '#1F7F68',
     },
     text: {
-      primary: brand.ink,
-      secondary: brand.inkSoft,
-      disabled: alpha(brand.inkSoft, 0.58),
+      primary: textPrimary,
+      secondary: textSecondary,
+      disabled: alpha(textSecondary, 0.58),
     },
-    divider: alpha(brand.ink, 0.08),
+    divider,
   },
   shape: {
     borderRadius: 8,
@@ -147,13 +155,14 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundImage: brandGradients.page,
+          backgroundColor: backgroundDefault,
+          backgroundImage: isDark ? 'none' : brandGradients.page,
           backgroundAttachment: 'fixed',
           backgroundRepeat: 'no-repeat',
           '@media (hover: none), (pointer: coarse), (max-width: 899.98px)': {
             backgroundAttachment: 'scroll',
           },
-          color: brand.ink,
+          color: textPrimary,
           fontFamily: brandFonts.body,
           fontWeight: 400,
         },
@@ -161,8 +170,8 @@ const theme = createTheme({
           minHeight: '100vh',
         },
         '::selection': {
-          backgroundColor: alpha(brand.sky, 0.92),
-          color: brand.ink,
+          backgroundColor: isDark ? alpha(brand.accent, 0.44) : alpha(brand.sky, 0.92),
+          color: textPrimary,
         },
         '.MuiButton-root': {
           borderRadius: '8px !important',
@@ -195,9 +204,9 @@ const theme = createTheme({
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 14,
-          boxShadow: '0 14px 34px rgba(15, 23, 42, 0.06)',
-          border: `1px solid ${alpha(brand.ink, 0.08)}`,
-          background: '#FFFFFF',
+          boxShadow: isDark ? '0 14px 34px rgba(0, 0, 0, 0.18)' : '0 14px 34px rgba(15, 23, 42, 0.06)',
+          border: `1px solid ${divider}`,
+          background: backgroundPaper,
         },
       },
     },
@@ -211,7 +220,7 @@ const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          background: brandGradients.surface,
+          background: isDark ? backgroundPaper : brandGradients.surface,
           borderRadius: 14,
         },
         elevation1: {
@@ -250,17 +259,17 @@ const theme = createTheme({
         },
         outlined: {
           borderColor: alpha(brand.ink, 0.14),
-          color: brand.ink,
-          backgroundColor: alpha('#FFFFFF', 0.78),
+          color: textPrimary,
+          backgroundColor: isDark ? alpha('#ffffff', 0.04) : alpha('#FFFFFF', 0.78),
           '&:hover': {
             borderColor: alpha(brand.ink, 0.28),
-            backgroundColor: '#FFFFFF',
+            backgroundColor: isDark ? alpha('#ffffff', 0.08) : '#FFFFFF',
           },
         },
         text: {
-          color: brand.ink,
+          color: textPrimary,
           '&:hover': {
-            backgroundColor: alpha('#FFFFFF', 0.68),
+            backgroundColor: isDark ? alpha('#ffffff', 0.08) : alpha('#FFFFFF', 0.68),
           },
         },
       },
@@ -270,7 +279,7 @@ const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 10,
-            backgroundColor: alpha('#FFFFFF', 0.88),
+            backgroundColor: isDark ? alpha('#0f141b', 0.88) : alpha('#FFFFFF', 0.88),
             '& fieldset': {
               borderColor: alpha(brand.ink, 0.12),
             },
@@ -278,18 +287,18 @@ const theme = createTheme({
               borderColor: alpha(brand.ink, 0.24),
             },
             '&.Mui-focused fieldset': {
-              borderColor: brand.ink,
+              borderColor: isDark ? alpha('#fff', 0.48) : brand.ink,
             },
           },
           '& .MuiInputLabel-root': {
-            color: brand.inkSoft,
+            color: textSecondary,
             fontWeight: 500,
             '&.Mui-focused': {
-              color: brand.ink,
+              color: textPrimary,
             },
           },
           '& .MuiOutlinedInput-input': {
-            color: brand.ink,
+            color: textPrimary,
           },
         },
       },
@@ -305,8 +314,8 @@ const theme = createTheme({
           color: brand.accent,
         },
         outlined: {
-          borderColor: alpha(brand.ink, 0.12),
-          color: brand.ink,
+          borderColor: divider,
+          color: textPrimary,
         },
       },
     },
@@ -314,9 +323,9 @@ const theme = createTheme({
       styleOverrides: {
         paper: {
           borderRadius: 16,
-          border: `1px solid ${alpha(brand.ink, 0.1)}`,
+          border: `1px solid ${divider}`,
           boxShadow: '0 32px 68px rgba(15, 44, 67, 0.16)',
-          background: brandGradients.surface,
+          background: isDark ? backgroundPaper : brandGradients.surface,
           overflow: 'hidden',
         },
       },
@@ -324,12 +333,12 @@ const theme = createTheme({
     MuiDialogTitle: {
       styleOverrides: {
         root: {
-          color: brand.ink,
+          color: textPrimary,
           fontFamily: brandFonts.display,
           fontWeight: 600,
           fontSize: '1.14rem',
           padding: '22px 24px 12px',
-          borderBottom: `1px solid ${alpha(brand.ink, 0.08)}`,
+          borderBottom: `1px solid ${divider}`,
         },
       },
     },
@@ -344,8 +353,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           padding: '14px 20px',
-          borderTop: `1px solid ${alpha(brand.ink, 0.08)}`,
-          backgroundColor: alpha(brand.sky, 0.08),
+          borderTop: `1px solid ${divider}`,
+          backgroundColor: isDark ? alpha('#ffffff', 0.03) : alpha(brand.sky, 0.08),
           gap: 10,
         },
       },
@@ -353,7 +362,7 @@ const theme = createTheme({
     MuiBackdrop: {
       styleOverrides: {
         root: {
-          backgroundColor: alpha(brand.ink, 0.36),
+          backgroundColor: alpha(isDark ? '#000' : brand.ink, 0.36),
           backdropFilter: 'blur(8px)',
         },
       },
@@ -361,21 +370,24 @@ const theme = createTheme({
     MuiTableCell: {
       styleOverrides: {
         head: {
-          backgroundColor: alpha(brand.sky, 0.26),
-          color: brand.ink,
+          backgroundColor: isDark ? alpha('#ffffff', 0.05) : alpha(brand.sky, 0.26),
+          color: textPrimary,
           fontWeight: 600,
           fontSize: '0.8rem',
-          borderBottom: `1px solid ${alpha(brand.ink, 0.08)}`,
+          borderBottom: `1px solid ${divider}`,
         },
         root: {
-          borderBottom: `1px solid ${alpha(brand.ink, 0.08)}`,
-          color: brand.ink,
+          borderBottom: `1px solid ${divider}`,
+          color: textPrimary,
           fontWeight: 400,
           fontSize: '0.86rem',
         },
       },
     },
   },
-})
+  })
+}
+
+const theme = createAppTheme('light')
 
 export default theme

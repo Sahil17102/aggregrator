@@ -1,15 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ThemeProvider } from "@mui/material/styles";
 import App from "./App.tsx";
 import "./index.css";
-import theme from "./theme/theme.ts";
-import { CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "./components/UI/Toast.tsx";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/auth/AuthContext.tsx";
 import ErrorBoundary from "./components/UI/ErrorBoundary.tsx";
+import { ClientThemeProvider } from "./context/theme/ClientThemeContext.tsx";
 
 const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || "";
 
@@ -60,26 +58,24 @@ createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       {clientId ? (
         <GoogleOAuthProvider clientId={clientId}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
+          <ClientThemeProvider>
             <ToastProvider />
             <QueryClientProvider client={queryClient}>
               <AuthProvider>
                 <App />
               </AuthProvider>
             </QueryClientProvider>
-          </ThemeProvider>
+          </ClientThemeProvider>
         </GoogleOAuthProvider>
       ) : (
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
+        <ClientThemeProvider>
           <ToastProvider />
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <App />
             </AuthProvider>
           </QueryClientProvider>
-        </ThemeProvider>
+        </ClientThemeProvider>
       )}
     </ErrorBoundary>
   </StrictMode>

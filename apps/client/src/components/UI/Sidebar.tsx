@@ -70,12 +70,7 @@ interface SidebarProps {
 export const COLLAPSED_WIDTH = 72
 
 const STANDARD_ICON_SIZE = 21
-const DARK_BG = '#151b23'
-const BORDER = '#2a313a'
-const TEXT = '#9db0c8'
-const MUTED = '#73849c'
 const ACTIVE = '#7657ff'
-const WHITE = '#f8fafc'
 
 const navSections: NavSection[] = [
   {
@@ -194,6 +189,18 @@ export default function Sidebar({
   const { user } = useAuth()
   const isSidebarExpanded = temporary || pinned || hovered
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
+  const isDark = theme.palette.mode === 'dark'
+  const DARK_BG = isDark ? '#151b23' : '#ffffff'
+  const BORDER = isDark ? '#2a313a' : 'rgba(15, 23, 42, 0.1)'
+  const TEXT = isDark ? '#9db0c8' : '#586b8a'
+  const MUTED = isDark ? '#73849c' : '#8492aa'
+  const WHITE = isDark ? '#f8fafc' : '#11182d'
+  const itemHoverBg = isDark ? alpha('#ffffff', 0.035) : alpha('#11182d', 0.045)
+  const childHoverBg = isDark ? alpha('#ffffff', 0.045) : alpha(ACTIVE, 0.08)
+  const activeBg = isDark ? alpha(ACTIVE, 0.08) : alpha(ACTIVE, 0.1)
+  const childActiveBg = isDark ? alpha(ACTIVE, 0.14) : alpha(ACTIVE, 0.12)
+  const iconMuted = isDark ? '#8190a5' : '#76849a'
+  const scrollbarThumb = isDark ? '#3a4350' : '#cbd5e1'
 
   useEffect(() => {
     if (!isSidebarExpanded) setExpandedItems({})
@@ -226,14 +233,14 @@ export default function Sidebar({
     position: 'relative',
     transition: 'background-color 160ms ease, color 160ms ease',
     '&:hover': {
-      bgcolor: alpha('#ffffff', 0.035),
+      bgcolor: itemHoverBg,
       color: WHITE,
       '& .MuiListItemIcon-root': { color: WHITE },
     },
   }
 
   const activeItemSx = {
-    bgcolor: alpha(ACTIVE, 0.08),
+    bgcolor: activeBg,
     color: ACTIVE,
     '& .MuiListItemIcon-root': { color: ACTIVE },
     '& .MuiListItemText-primary': { fontWeight: 800 },
@@ -272,7 +279,7 @@ export default function Sidebar({
           sx={{
             minWidth: isSidebarExpanded ? 38 : 0,
             justifyContent: 'center',
-            color: active ? ACTIVE : '#8190a5',
+            color: active ? ACTIVE : iconMuted,
             transition: 'color 160ms ease',
           }}
         >
@@ -294,7 +301,7 @@ export default function Sidebar({
             style={{
               transform: showExpanded ? 'rotate(180deg)' : 'rotate(-90deg)',
               transition: 'transform 0.2s',
-              color: active ? ACTIVE : '#8190a5',
+              color: active ? ACTIVE : iconMuted,
             }}
           />
         ) : null}
@@ -327,10 +334,10 @@ export default function Sidebar({
                       px: 1.2,
                       py: 0.45,
                       borderRadius: 1,
-                      color: subActive ? WHITE : '#8292aa',
-                      bgcolor: subActive ? alpha(ACTIVE, 0.14) : 'transparent',
+                      color: subActive ? WHITE : TEXT,
+                      bgcolor: subActive ? childActiveBg : 'transparent',
                       '&:hover': {
-                        bgcolor: alpha('#ffffff', 0.045),
+                        bgcolor: childHoverBg,
                         color: WHITE,
                       },
                       mb: 0.25,
@@ -434,7 +441,7 @@ export default function Sidebar({
           bgcolor: DARK_BG,
           '&::-webkit-scrollbar': { width: 6 },
           '&::-webkit-scrollbar-track': { background: DARK_BG },
-          '&::-webkit-scrollbar-thumb': { background: '#3a4350', borderRadius: 8 },
+          '&::-webkit-scrollbar-thumb': { background: scrollbarThumb, borderRadius: 8 },
         }}
       >
         {visibleSections.map((section) =>
@@ -494,11 +501,11 @@ export default function Sidebar({
               <Typography sx={{ color: WHITE, fontWeight: 850, fontSize: '0.98rem' }} noWrap>
                 {displayName}
               </Typography>
-              <Typography sx={{ color: '#8292aa', fontWeight: 600, fontSize: '0.85rem' }} noWrap>
+              <Typography sx={{ color: TEXT, fontWeight: 600, fontSize: '0.85rem' }} noWrap>
                 {displayEmail}
               </Typography>
             </Box>
-            <MdExpandMore size={19} color="#8292aa" />
+            <MdExpandMore size={19} color={TEXT} />
           </Box>
         ) : null}
       </Box>

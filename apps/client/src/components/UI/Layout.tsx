@@ -16,6 +16,11 @@ export default function Layout() {
   const [pinned, setPinned] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const isDark = theme.palette.mode === 'dark'
+  const shellBg = isDark ? '#0f141b' : '#f6f8fc'
+  const drawerBg = isDark ? '#151b23' : '#ffffff'
+  const drawerText = isDark ? '#f8fafc' : '#11182d'
+  const drawerBorder = isDark ? '#2a313a' : 'rgba(15, 23, 42, 0.1)'
   const routeContentKey = [location.key, location.pathname, location.search, location.hash]
     .filter(Boolean)
     .join(':')
@@ -45,7 +50,7 @@ export default function Layout() {
         minHeight: '100dvh',
         minWidth: 0,
         overflow: 'hidden',
-        background: '#0f141b',
+        background: shellBg,
       }}
     >
       <KeyboardShortcuts />
@@ -62,9 +67,9 @@ export default function Layout() {
               maxWidth: '86vw',
               top: 'var(--client-navbar-offset, 88px)',
               height: 'calc(100dvh - var(--client-navbar-offset, 88px))',
-              bgcolor: '#151b23',
-              color: '#f8fafc',
-              borderRight: '1px solid #2a313a',
+              bgcolor: drawerBg,
+              color: drawerText,
+              borderRight: `1px solid ${drawerBorder}`,
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
               overflow: 'hidden',
@@ -108,10 +113,10 @@ export default function Layout() {
           height: '100dvh',
           minHeight: 0,
           overflow: 'hidden',
-          bgcolor: '#0f141b',
+          bgcolor: shellBg,
         }}
       >
-        <Stack sx={{ flexGrow: 1, height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: '#0f141b' }}>
+        <Stack sx={{ flexGrow: 1, height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: shellBg }}>
           <Box
             sx={{
               flexShrink: 0,
@@ -128,7 +133,7 @@ export default function Layout() {
             sx={{
               flexGrow: 1,
               overflow: 'auto',
-              bgcolor: '#0f141b',
+              bgcolor: shellBg,
               position: 'relative',
               zIndex: 0,
               px: { xs: 1.5, md: 3 },
