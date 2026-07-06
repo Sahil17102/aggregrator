@@ -47,7 +47,7 @@ export const seedAdmin = async ({
 
 seedAdmin({
   phone: '+916283315911', // valid Indian phone format
-  email: 'admin@shipaggregator.com',
+  email: 'admin@aggregator.com',
   password: 'Admin@12345!', // strong password
   role: 'admin',
 })

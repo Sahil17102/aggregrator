@@ -352,7 +352,7 @@ function SignIn() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@shipaggregator.com"
+                      placeholder="admin@aggregator.com"
                       autoComplete="username"
                       required
                       h="48px"
