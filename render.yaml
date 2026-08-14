@@ -77,6 +77,8 @@ services:
         sync: false
       - key: DELIVERY_ONE_PASSWORD
         sync: false
+      - key: DELIVERY_ONE_B2B_API_BASE
+        value: https://ltl-clients-api.delhivery.com
       - key: R2_ENDPOINT
         sync: false
       - key: R2_ACCESS_KEY_ID
