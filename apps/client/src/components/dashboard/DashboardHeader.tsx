@@ -1,6 +1,6 @@
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { MdDashboardCustomize, MdRefresh } from 'react-icons/md'
+import { TbAdjustmentsHorizontal, TbLayoutDashboard, TbRefresh } from 'react-icons/tb'
 import { dashboardButtonSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
 interface DashboardHeaderProps {
@@ -44,7 +44,7 @@ export default function DashboardHeader({
       >
         <Stack direction="row" spacing={1.4} alignItems="center">
           <Box sx={dashboardIconSx(dashboardPalette.orange)}>
-            <MdDashboardCustomize size={19} />
+            <TbLayoutDashboard size={22} aria-hidden="true" />
           </Box>
           <Box>
             <Typography
@@ -70,7 +70,7 @@ export default function DashboardHeader({
             <Button
               onClick={onCustomize}
               variant="outlined"
-              startIcon={<MdDashboardCustomize size={18} />}
+              startIcon={<TbAdjustmentsHorizontal size={19} aria-hidden="true" />}
               sx={{
                 ...dashboardButtonSx,
                 borderColor: alpha(dashboardPalette.orange, 0.32),
@@ -94,7 +94,7 @@ export default function DashboardHeader({
               isRefetching ? (
                 <CircularProgress size={14} thickness={4} sx={{ color: '#FFFFFF' }} />
               ) : (
-                <MdRefresh size={18} />
+                <TbRefresh size={19} aria-hidden="true" />
               )
             }
             sx={{

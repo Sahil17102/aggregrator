@@ -1,10 +1,5 @@
 import { Box, Card, CardContent, Grid, Stack, Typography } from '@mui/material'
-import {
-  MdAccountBalance,
-  MdAccountBalanceWallet,
-  MdLocalShipping,
-  MdShoppingCart,
-} from 'react-icons/md'
+import { TbBuildingBank, TbPackage, TbTruckDelivery, TbWallet } from 'react-icons/tb'
 import { useNavigate } from 'react-router-dom'
 import { dashboardCardSx, dashboardIconSx, dashboardPalette } from './dashboardStyles'
 
@@ -37,7 +32,7 @@ export default function QuickStatsCards({
       title: 'Active Shipments',
       value: todayOps.orders?.toLocaleString() || '0',
       subtitle: `${todayOps.delivered || 0} delivered today`,
-      icon: <MdShoppingCart size={19} />,
+      icon: <TbPackage size={22} aria-hidden="true" />,
       color: dashboardPalette.blue,
       onClick: () => navigate('/orders/list'),
     },
@@ -45,7 +40,7 @@ export default function QuickStatsCards({
       title: 'In Transit',
       value: todayOps.inTransit?.toLocaleString() || '0',
       subtitle: `${todayOps.pending || 0} pending pickup`,
-      icon: <MdLocalShipping size={19} />,
+      icon: <TbTruckDelivery size={22} aria-hidden="true" />,
       color: '#0F766E',
       onClick: () => navigate('/orders/list'),
     },
@@ -53,7 +48,7 @@ export default function QuickStatsCards({
       title: 'Wallet Funds',
       value: formatCurrency(financial.walletBalance || 0),
       subtitle: financial.walletBalance < 500 ? 'Recharge required' : 'Sufficient funds',
-      icon: <MdAccountBalanceWallet size={19} />,
+      icon: <TbWallet size={22} aria-hidden="true" />,
       color: dashboardPalette.amber,
       onClick: () => navigate('/billing/wallet_transactions'),
     },
@@ -61,7 +56,7 @@ export default function QuickStatsCards({
       title: 'COD Remittance',
       value: formatCurrency(financial.codRemittanceDue || 0),
       subtitle: 'Awaiting bank transfer',
-      icon: <MdAccountBalance size={19} />,
+      icon: <TbBuildingBank size={22} aria-hidden="true" />,
       color: '#475569',
       onClick: () => navigate('/cod-remittance'),
     },
