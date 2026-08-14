@@ -168,14 +168,14 @@ export default function UserOnboarding() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        p: { xs: 2, md: 4 },
+        p: { xs: 1.25, md: 2 },
       }}
     >
       <Stack
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ width: '100%', maxWidth: 840, mb: 3 }}
+        sx={{ width: '100%', maxWidth: 840, mb: { xs: 1.5, md: 2 } }}
       >
         <Typography
           variant="h6"
@@ -209,10 +209,10 @@ export default function UserOnboarding() {
             `,
             borderRight: { md: `1px solid ${alpha(DE_BLUE, 0.08)}` },
             borderBottom: { xs: `1px solid ${alpha(DE_BLUE, 0.08)}`, md: 'none' },
-            p: 3,
+            p: { xs: 2, md: 2.25 },
           }}
         >
-          <Stack spacing={3.5}>
+          <Stack spacing={2.25}>
             {steps.map((s) => {
               const active = step === s.key
               const completed = step > s.key
@@ -266,7 +266,7 @@ export default function UserOnboarding() {
             })}
           </Stack>
 
-          <Box sx={{ mt: 6 }}>
+          <Box sx={{ mt: 3.5 }}>
             <Typography variant="caption" sx={{ color: alpha(DE_BLUE, 0.4), fontWeight: 700 }}>
               WORKSPACE SETUP
             </Typography>
@@ -301,7 +301,7 @@ export default function UserOnboarding() {
         <Box
           sx={{
             flex: 1,
-            p: { xs: 2.5, md: 4 },
+            p: { xs: 1.5, md: 2.5 },
             background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.98) 100%)',
           }}
         >
@@ -322,7 +322,7 @@ export default function UserOnboarding() {
               Back
             </Button>
           ) : (
-            <Box sx={{ mb: 3.2 }}>
+            <Box sx={{ mb: { xs: 1.5, md: 2 } }}>
               <Typography
                 sx={{
                   fontSize: '0.72rem',
@@ -373,7 +373,11 @@ export default function UserOnboarding() {
             direction={step === 3 ? 'column' : 'row'}
             spacing={step === 3 ? 1.6 : 2}
             alignItems={step === 3 ? 'center' : 'stretch'}
-            sx={{ mt: 4, pt: step === 3 ? 0 : 3, borderTop: step === 3 ? 'none' : `1px solid ${alpha(DE_BLUE, 0.06)}` }}
+            sx={{
+              mt: { xs: 1.5, md: 2 },
+              pt: step === 3 ? 0 : { xs: 1.25, md: 1.5 },
+              borderTop: step === 3 ? 'none' : `1px solid ${alpha(DE_BLUE, 0.06)}`,
+            }}
           >
             {step > 1 && step !== 3 && (
               <Button
