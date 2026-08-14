@@ -62,8 +62,15 @@ export const getUserTicketsService = async (
     baseConditions.push(eq(supportTickets.category, filters.category))
   }
 
-  if (filters.subcategory) {
-    baseConditions.push(eq(supportTickets.subcategory, filters.subcategory))
+  if (filters.subcategory?.trim()) {
+    const reasonQuery = filters.subcategory.trim()
+    const normalizedReasonQuery = reasonQuery.toLowerCase().replace(/[^a-z0-9]+/g, '_')
+    baseConditions.push(
+      or(
+        ilike(supportTickets.subcategory, `%${reasonQuery}%`),
+        ilike(supportTickets.subcategory, `%${normalizedReasonQuery}%`),
+      )!,
+    )
   }
 
   if (filters.awbNumber) {
@@ -283,8 +290,15 @@ export const getAllTicketsService = async (
       conditions.push(eq(supportTickets.category, filters.category))
     }
 
-    if (filters.subcategory) {
-      conditions.push(eq(supportTickets.subcategory, filters.subcategory))
+    if (filters.subcategory?.trim()) {
+      const reasonQuery = filters.subcategory.trim()
+      const normalizedReasonQuery = reasonQuery.toLowerCase().replace(/[^a-z0-9]+/g, '_')
+      conditions.push(
+        or(
+          ilike(supportTickets.subcategory, `%${reasonQuery}%`),
+          ilike(supportTickets.subcategory, `%${normalizedReasonQuery}%`),
+        ),
+      )
     }
 
     if (filters.awbNumber) {
@@ -300,7 +314,16 @@ export const getAllTicketsService = async (
     }
 
     if (filters.userName) {
-      conditions.push(sql`up.company_info->>'contactPerson' ILIKE ${'%' + filters.userName + '%'}`)
+      const pattern = `%${filters.userName}%`
+      conditions.push(
+        or(
+          ilike(users.email, pattern),
+          ilike(sql`coalesce(${users.phone}, '')`, pattern),
+          ilike(sql`coalesce(${userProfiles.companyInfo} ->> 'contactPerson', '')`, pattern),
+          ilike(sql`coalesce(${userProfiles.companyInfo} ->> 'businessName', '')`, pattern),
+          ilike(sql`coalesce(${userProfiles.companyInfo} ->> 'brandName', '')`, pattern),
+        ),
+      )
     }
 
     return conditions.length ? and(...conditions) : undefined
@@ -366,6 +389,14 @@ export const getAllTicketsService = async (
       updatedAt: supportTickets.updatedAt,
       userId: supportTickets.userId,
       attachments: supportTickets.attachments,
+      description: supportTickets.description,
+      userEmail: users.email,
+      sellerName: sql<string>`coalesce(
+        ${userProfiles.companyInfo} ->> 'businessName',
+        ${userProfiles.companyInfo} ->> 'brandName',
+        ${userProfiles.companyInfo} ->> 'contactPerson',
+        ${users.email}
+      )`,
     })
     .from(supportTickets)
     .leftJoin(users, eq(supportTickets.userId, users.id))
@@ -386,7 +417,7 @@ export const getAllTicketsService = async (
   const totalCount = Number(totalResult[0]?.count || 0)
 
   // --- 3. Status counts (exclude status filter) ---
-  const statusClause = buildBaseConditions(false)
+  const statusClause = buildBaseConditions(true)
 
   const statusCountsRaw = await db
     .select({
@@ -453,6 +484,7 @@ export const getTicketsForUserService = async (userId: string, page = 1, perPage
       createdAt: supportTickets.createdAt,
       updatedAt: supportTickets.updatedAt,
       attachments: supportTickets.attachments,
+      description: supportTickets.description,
     })
     .from(supportTickets)
     .where(eq(supportTickets.userId, userId))

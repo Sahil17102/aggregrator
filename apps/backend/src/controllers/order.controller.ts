@@ -247,8 +247,9 @@ export const createB2BShipmentController = async (req: any, res: Response) => {
 
     const params: ShipmentParams = req.body
 
-    // Basic validation (you can enhance this with Zod/Yup)
-    if (!params.order_number || !params.consignee || !params?.order_items?.length) {
+    const hasBoxes = Array.isArray(params.boxes) && params.boxes.length > 0
+    const hasInvoices = Array.isArray(params.invoices) && params.invoices.length > 0
+    if (!params.order_number || !params.consignee || !hasBoxes || !hasInvoices) {
       return res.status(400).json({ message: 'Invalid shipment payload' })
     }
 

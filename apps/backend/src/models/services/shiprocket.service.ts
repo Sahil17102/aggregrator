@@ -75,6 +75,10 @@ import {
   DeliveryOneService,
   type DeliveryOneShippingCostResponse,
 } from './couriers/deliveryone.service'
+import {
+  DelhiveryB2BService,
+  type DelhiveryB2BManifestPayload,
+} from './couriers/delhiveryB2B.service'
 import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
@@ -3305,12 +3309,21 @@ export interface ShipmentParams {
     discount: number
     tax_rate: number
   }[]
+  invoices?: Array<{
+    invoiceNumber: string
+    invoiceDate?: string
+    invoiceValue: number
+    invoiceFileUrl?: string
+    ebnNumber?: string
+    ebnExpiry?: string
+    ewaybill?: string
+  }>
   courier_id?: number
   courier_partner?: string
   invoice_number?: string
   invoice_date?: string
   invoice_amount?: string | number
-  is_insurance?: 0 | 1
+  is_insurance?: 0 | 1 | boolean
   gift_wrap?: string
   tags?: string
   original_order_id?: string
@@ -5668,6 +5681,12 @@ export const createB2BShipmentService = async (
 ) => {
   await requireMerchantOrderReadiness(userId)
 
+  const integrationType = normalizeServiceProviderKey(params.integration_type || 'delhivery')
+  if (!['delhivery', 'deliveryone'].includes(integrationType)) {
+    throw new HttpError(400, 'B2B shipment booking is currently available through Delhivery only.')
+  }
+  params.integration_type = 'delhivery'
+
   // Helper function to normalize JSON values (similar to B2C)
   const normalizeJsonValue = (value: unknown) => {
     if (!value) return null
@@ -5699,14 +5718,71 @@ export const createB2BShipmentService = async (
 
   const pickupDetails = normalizeJsonValue(params.pickup) ?? {}
   const rtoDetails = normalizeJsonValue(params.rto)
-  const invoiceValue = Number(params.invoice_amount ?? params.order_amount ?? 0)
+  const b2bBoxes = Array.isArray(params.boxes) ? params.boxes : []
+  if (b2bBoxes.length === 0) {
+    throw new HttpError(400, 'At least one box is required for a B2B shipment.')
+  }
+  if (
+    b2bBoxes.some(
+      (box: any) =>
+        Number(box?.weightKg ?? box?.weight ?? 0) <= 0 ||
+        Number(box?.lengthCm ?? box?.length ?? 0) <= 0 ||
+        Number(box?.breadthCm ?? box?.breadth ?? box?.width ?? 0) <= 0 ||
+        Number(box?.heightCm ?? box?.height ?? 0) <= 0,
+    )
+  ) {
+    throw new HttpError(400, 'Every B2B box requires weight, length, breadth, and height greater than zero.')
+  }
+
+  const b2bInvoices = Array.isArray(params.invoices) ? params.invoices : []
+  if (b2bInvoices.length === 0) {
+    throw new HttpError(400, 'At least one invoice is required for a B2B shipment.')
+  }
+  if (
+    b2bInvoices.some(
+      (invoice: any) =>
+        !String(invoice?.invoiceNumber || '').trim() || Number(invoice?.invoiceValue || 0) <= 0,
+    )
+  ) {
+    throw new HttpError(400, 'Every B2B invoice requires an invoice number and value greater than zero.')
+  }
+  const invoiceValue = b2bInvoices.reduce(
+    (sum: number, invoice: any) => sum + Number(invoice?.invoiceValue || 0),
+    0,
+  )
+  params.invoice_amount = invoiceValue
+  const pickup = params.pickup || ({} as ShipmentParams['pickup'])
+  const requiredPickupFields: Array<keyof ShipmentParams['pickup']> = [
+    'warehouse_name',
+    'address',
+    'city',
+    'state',
+    'pincode',
+    'phone',
+  ]
+  const missingPickupFields = requiredPickupFields.filter(
+    (field) => !String(pickup[field] || '').trim(),
+  )
+  if (missingPickupFields.length > 0) {
+    throw new HttpError(
+      400,
+      `Pickup details incomplete. Missing fields: ${missingPickupFields.join(', ')}.`,
+    )
+  }
+  if (
+    invoiceValue > 50000 &&
+    b2bInvoices.some(
+      (invoice: any) => !String(invoice?.ebnNumber || invoice?.ewaybill || '').trim(),
+    )
+  ) {
+    throw new HttpError(400, 'E-way bill number is required when invoice value exceeds INR 50,000.')
+  }
   const insuranceSettings = await getShipmentInsuranceSettings()
   const insuranceChargeBasis = computeB2BInsuranceChargeBasis(params)
   const insuranceCharge = computeShipmentInsuranceCharge({
     shipmentValue: insuranceChargeBasis,
     settings: insuranceSettings,
   })
-  const b2bBoxes = Array.isArray(params.boxes) ? params.boxes : []
   const packageWeightKg =
     Number(params.package_weight ?? 0) ||
     b2bBoxes.reduce((sum: number, box: any) => sum + Number(box?.weightKg ?? box?.weight ?? 0), 0)
@@ -5742,7 +5818,7 @@ export const createB2BShipmentService = async (
   }
 
   const rovCharge =
-    params.is_insurance === 1
+    Boolean(params.is_insurance)
       ? await computeRovChargeForOrder({
           invoiceValue,
           isInsurance: true,
@@ -5804,6 +5880,17 @@ export const createB2BShipmentService = async (
     calculatedFreightCharges !== null && Number.isFinite(calculatedFreightCharges)
       ? calculatedFreightCharges
       : Number(params.freight_charges ?? params.shipping_charges ?? 0)
+  const expectedWalletDebit = resolvedFreightCharges + insuranceCharge
+  const sellerWallet = await walletOfUser(userId)
+  const sellerWalletBalance = Number(sellerWallet.balance ?? 0)
+  if (expectedWalletDebit > 0 && sellerWalletBalance < expectedWalletDebit) {
+    throw new HttpError(
+      400,
+      `Insufficient wallet balance to create B2B shipment. Required INR ${expectedWalletDebit.toFixed(
+        2,
+      )}, available INR ${sellerWalletBalance.toFixed(2)}.`,
+    )
+  }
 
   // 1️⃣ Insert local B2B order as 'pending'
   const pendingOrder = await db.transaction(async (tx) => {
@@ -5830,15 +5917,26 @@ export const createB2BShipmentService = async (
         state: params.consignee.state,
         country: 'India',
         pincode: params.consignee.pincode,
-        packages: params.boxes ? JSON.stringify(params.boxes) : null,
+        packages: b2bBoxes,
+        weight: packageWeightKg,
+        length: packageLengthCm,
+        breadth: packageBreadthCm,
+        height: packageHeightCm,
         order_type: params.payment_type,
+        prepaid_amount: params.prepaid_amount ?? 0,
         order_status: 'pending',
-        invoice_number: params?.invoice_number,
-        invoice_date: params?.invoice_date,
-        invoice_amount: params?.invoice_amount ? String(params.invoice_amount) : null,
-        is_insurance: params.is_insurance === 1,
-        declared_value: params.is_insurance === 1 ? invoiceValue : null,
-        rov_charge: params.is_insurance === 1 ? rovCharge : null,
+        invoice_number: params?.invoice_number ?? b2bInvoices[0]?.invoiceNumber ?? null,
+        invoice_date: params?.invoice_date ?? b2bInvoices[0]?.invoiceDate ?? null,
+        invoice_amount: String(
+          params?.invoice_amount ??
+            b2bInvoices.reduce(
+              (sum: number, invoice: any) => sum + Number(invoice?.invoiceValue || 0),
+              0,
+            ),
+        ),
+        is_insurance: Boolean(params.is_insurance),
+        declared_value: params.is_insurance ? invoiceValue : null,
+        rov_charge: params.is_insurance ? rovCharge : null,
         charges_breakdown: chargesBreakdown,
         shipping_charges: params.shipping_charges ?? 0,
         freight_charges: resolvedFreightCharges, // What platform charges seller
@@ -5854,30 +5952,14 @@ export const createB2BShipmentService = async (
         pickup_details: pickupDetails,
         rto_details: rtoDetails,
         is_rto_different: params.is_rto_different === 'yes',
+        courier_partner: params.courier_partner || 'Delhivery B2B',
+        courier_id: params.courier_id ? String(params.courier_id) : null,
+        tags: params.tags ?? null,
         is_external_api: is_external_api ?? false,
         created_at: new Date(),
         updated_at: new Date(),
       } as any)
-      .returning({ id: b2b_orders.id })
-
-    if (insuranceCharge > 0) {
-      const wallet = await walletOfUser(userId, tx)
-      await createWalletTransaction({
-        walletId: wallet.id,
-        amount: insuranceCharge,
-        currency: wallet.currency ?? 'INR',
-        type: 'debit',
-        reason: 'B2B Shipment Insurance Charge',
-        ref: newOrder.id?.toString(),
-        meta: {
-          order_number: normalizedOrderNumber,
-          insurance_charge: insuranceCharge,
-          insurance_charge_basis: insuranceChargeBasis,
-          freight_charges: resolvedFreightCharges,
-        },
-        tx: tx as any,
-      })
-    }
+      .returning({ id: b2b_orders.id, orderNumber: b2b_orders.order_number })
 
     return newOrder
   })
@@ -5908,30 +5990,128 @@ export const createB2BShipmentService = async (
   const package_height = Math.max(0, ...boxes.map((b: any) => Number(b.heightCm ?? b.height ?? 0)))
 
   // 3️⃣ Prepare payload for Delhivery
-  const payload: ShipmentParams = {
-    ...params,
-    payment_type: params.payment_type === 'prepaid' ? 'prepaid' : 'cod',
-    request_auto_pickup: params.request_auto_pickup ?? 'no',
-    is_insurance: params.is_insurance ?? 0,
-    is_rto_different: params.is_rto_different ?? 'no',
-    package_weight,
-    package_length,
-    package_breadth,
-    package_height,
-    order_items: boxes?.map((b: any) => ({
-      name: b.box_name,
-      sku: b.sku ?? 'NA',
-      qty: b.quantity ?? 1,
-      price: Number(b.price),
-      hsn: b.hsnCode ?? '',
-      discount: Number(b.discount ?? 0),
-      tax_rate: Number(b.tax_rate ?? 0),
+  const [sellerProfile] = await db
+    .select({
+      businessName: sql<string>`(${userProfiles.companyInfo} ->> 'businessName')`,
+      brandName: sql<string>`(${userProfiles.companyInfo} ->> 'brandName')`,
+      gstNumber: sql<string>`COALESCE((${userProfiles.gstDetails} ->> 'gstNumber'), '')`,
+    })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId))
+    .limit(1)
+
+  const description =
+    (Array.isArray(params.order_items) ? params.order_items : [])
+      .map((item: any) => item?.name || item?.productName || item?.description)
+      .filter(Boolean)
+      .join(', ')
+      .slice(0, 300) || `B2B order ${pendingOrder.orderNumber}`
+  const manifestPayload: DelhiveryB2BManifestPayload = {
+    pickup_location_name: String(pickup.warehouse_name || '').trim(),
+    payment_mode: params.payment_type === 'cod' ? 'cod' : 'prepaid',
+    ...(params.payment_type === 'cod'
+      ? { cod_amount: Number(params.order_amount ?? invoiceValue) }
+      : {}),
+    weight: Math.max(1, Math.ceil(package_weight * 1000)),
+    dropoff_location: {
+      consignee_name: params.consignee.name,
+      address: params.consignee.address,
+      city: params.consignee.city,
+      state: params.consignee.state,
+      zip: String(params.consignee.pincode),
+      phone: String(params.consignee.phone),
+      ...(params.consignee.email ? { email: params.consignee.email } : {}),
+    },
+    ...(params.is_rto_different === 'yes' && params.rto
+      ? {
+          return_address: {
+            name: params.rto.name || params.rto.warehouse_name,
+            address: params.rto.address,
+            city: params.rto.city,
+            state: params.rto.state,
+            zip: String(params.rto.pincode),
+            phone: String(params.rto.phone),
+          },
+        }
+      : {}),
+    shipment_details: [
+      {
+        order_id: String(pendingOrder.orderNumber).slice(0, 50),
+        box_count: b2bBoxes.length,
+        description,
+        weight: Math.max(1, Math.ceil(package_weight * 1000)),
+        waybills: [],
+        master: false,
+      },
+    ],
+    dimensions: b2bBoxes.map((box: any) => ({
+      box_count: 1,
+      length: Number(box.lengthCm ?? box.length),
+      width: Number(box.breadthCm ?? box.breadth ?? box.width),
+      height: Number(box.heightCm ?? box.height),
+    })),
+    rov_insurance: Boolean(params.is_insurance),
+    enable_paperless_movement: false,
+    invoices: b2bInvoices.map((invoice: any) => ({
+      ewaybill: String(invoice.ebnNumber || invoice.ewaybill || '').trim(),
+      inv_num: String(invoice.invoiceNumber).trim(),
+      inv_amt: Number(invoice.invoiceValue),
+      inv_qr_code: '',
     })),
   }
 
-  // console.log('payload', payload)
+  let manifestResult
+  try {
+    manifestResult = await new DelhiveryB2BService().createManifest(manifestPayload)
+  } catch (error) {
+    await db
+      .update(b2b_orders)
+      .set({ order_status: 'failed', updated_at: new Date() })
+      .where(eq(b2b_orders.id, pendingOrder.id))
+    throw error
+  }
 
-  let shipmentData
+  const primaryTrackingNumber = manifestResult.lrn || manifestResult.waybills[0] || null
+  await db.transaction(async (tx) => {
+    await tx
+      .update(b2b_orders)
+      .set({
+        order_status: manifestResult.processing ? 'manifesting' : 'booked',
+        shipment_id: manifestResult.jobId,
+        awb_number: primaryTrackingNumber,
+        courier_partner: params.courier_partner || 'Delhivery B2B',
+        courier_id: params.courier_id ? String(params.courier_id) : null,
+        updated_at: new Date(),
+      })
+      .where(eq(b2b_orders.id, pendingOrder.id))
+
+    if (expectedWalletDebit > 0) {
+      const wallet = await walletOfUser(userId, tx)
+      await createWalletTransaction({
+        walletId: wallet.id,
+        amount: expectedWalletDebit,
+        currency: wallet.currency ?? 'INR',
+        type: 'debit',
+        reason:
+          params.payment_type === 'cod'
+            ? 'B2B COD Service Charges'
+            : 'B2B Prepaid Order Payment',
+        ref: pendingOrder.id?.toString(),
+        meta: {
+          order_number: pendingOrder.orderNumber,
+          delhivery_job_id: manifestResult.jobId,
+          lrn: manifestResult.lrn,
+          waybills: manifestResult.waybills,
+          freight_charges: resolvedFreightCharges,
+          insurance_charge: insuranceCharge,
+          total_wallet_debit: expectedWalletDebit,
+          seller_business_name: sellerProfile?.businessName || sellerProfile?.brandName || null,
+          seller_gst: sellerProfile?.gstNumber || pickup.gst_number || null,
+        },
+        tx: tx as any,
+      })
+    }
+  })
 
   // try {
   //   // 4️⃣ Call courier API
@@ -6007,8 +6187,19 @@ export const createB2BShipmentService = async (
   //     .where(eq(b2b_orders.id, pendingOrder.id))
   // })
 
-  console.log(`B2B Order ${pendingOrder.id} successfully booked with Delhivery shipment.`)
-  return shipmentData
+  console.log(`B2B Order ${pendingOrder.id} submitted to Delhivery.`, {
+    jobId: manifestResult.jobId,
+    lrn: manifestResult.lrn,
+    processing: manifestResult.processing,
+  })
+  return {
+    order_id: pendingOrder.id,
+    order_number: pendingOrder.orderNumber,
+    job_id: manifestResult.jobId,
+    lrn: manifestResult.lrn,
+    awb_numbers: manifestResult.waybills,
+    status: manifestResult.processing ? 'manifesting' : 'booked',
+  }
 }
 
 export const getAllB2COrdersService = async () => {

@@ -14,7 +14,7 @@ const statusColorMap: Record<string, 'success' | 'pending' | 'error' | 'info'> =
   closed: 'error',
 }
 
-// Helper function to get category and subcategory labels
+// Helper function to get category and reason labels
 const getCategoryLabel = (categoryKey: string, subcategoryKey: string): string => {
   const category = supportCategories.find((c) => c.key === categoryKey)
   if (!category) return `${categoryKey} > ${subcategoryKey}`
@@ -54,7 +54,7 @@ const SupportTicketList: React.FC<Props> = ({
       render: (_, row) => getCategoryLabel(row?.category || '', row?.subcategory || ''),
     },
     {
-      label: 'AWB No.',
+      label: 'AWB / Order No.',
       id: 'awbNumber',
     },
     {

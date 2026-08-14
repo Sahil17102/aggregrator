@@ -9,11 +9,12 @@ import {
   PopoverFooter,
   PopoverHeader,
   PopoverTrigger,
-  Textarea,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react'
+import ReasonSelect from 'components/ReasonSelect'
 import { useState } from 'react'
+import { bankRejectionReasons } from 'utils/constants'
 
 function BankAccountRow({ account, onUpdateStatus }) {
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -66,11 +67,13 @@ function BankAccountRow({ account, onUpdateStatus }) {
           <PopoverCloseButton />
           <PopoverHeader fontWeight="bold">Rejection Reason</PopoverHeader>
           <PopoverBody>
-            <Textarea
-              placeholder="Enter internal note here..."
+            <ReasonSelect
+              options={bankRejectionReasons}
               value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              size="sm"
+              onChange={setRejectionReason}
+              placeholder="Select bank rejection reason"
+              customPlaceholder="Enter a custom bank rejection reason"
+              multiline
             />
           </PopoverBody>
           <PopoverFooter display="flex" justifyContent="flex-end" gap={2}>

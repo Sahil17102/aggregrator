@@ -20,6 +20,7 @@ export function useUsersWithRoleUser({
   sortBy = 'createdAt',
   sortOrder = 'desc',
   approved = '',
+  plan = '',
 }) {
   return useQuery({
     queryKey: [
@@ -32,6 +33,7 @@ export function useUsersWithRoleUser({
       sortBy,
       sortOrder,
       approved,
+      plan,
     ],
     queryFn: () =>
       fetchUsersWithRoleUser({
@@ -43,6 +45,7 @@ export function useUsersWithRoleUser({
         sortBy,
         sortOrder,
         approved,
+        plan,
       }),
     staleTime: 5 * 60 * 1000, // cache for 5 minutes
     refetchOnWindowFocus: false,

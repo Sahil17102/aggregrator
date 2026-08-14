@@ -109,7 +109,7 @@ const initialFilterValues = {
 const PickupAddresses = () => {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerType, setDrawerType] = useState<'filter' | 'add' | null>(null)
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [showExportConfirm, setShowExportConfirm] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
@@ -126,7 +126,7 @@ const PickupAddresses = () => {
 
   const { data, isLoading, isError } = usePickupAddresses({
     ...filters,
-    page: page + 1,
+    page,
     limit: rowsPerPage,
   })
 
@@ -186,7 +186,7 @@ const PickupAddresses = () => {
 
   const handleFilterApply = (filters: Partial<HydratedPickup>) => {
     setFilters({ ...filters })
-    setPage(0)
+    setPage(1)
   }
   const handleOpenAddDrawer = () => {
     setDrawerType('add')
@@ -356,7 +356,7 @@ const PickupAddresses = () => {
             onPageChange={setPage}
             onRowsPerPageChange={(limit) => {
               setRowsPerPage(limit)
-              setPage(0)
+              setPage(1)
             }}
           />
         )}

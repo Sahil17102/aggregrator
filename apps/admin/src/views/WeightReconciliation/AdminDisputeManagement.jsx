@@ -26,6 +26,12 @@ const filterOptions = [
     ],
   },
   {
+    key: 'reason',
+    label: 'Reason',
+    type: 'text',
+    placeholder: 'Search dispute reason',
+  },
+  {
     key: 'fromDate',
     label: 'From Date',
     type: 'date',

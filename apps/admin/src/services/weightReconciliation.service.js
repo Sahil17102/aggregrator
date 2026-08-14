@@ -26,9 +26,9 @@ export const getAllWeightDiscrepancies = async (params = {}) => {
  * Get all weight disputes (all users)
  */
 export const getAllWeightDisputes = async (params = {}) => {
-  const { page = 1, limit = 20, status, userId, fromDate, toDate } = params
+  const { page = 1, limit = 20, status, reason, userId, fromDate, toDate } = params
   const response = await apiClient.get('/admin/weight-reconciliation/disputes', {
-    params: { page, limit, status, userId, fromDate, toDate },
+    params: { page, limit, status, reason, userId, fromDate, toDate },
   })
   return response.data
 }

@@ -1,5 +1,5 @@
 import { alpha, type PaletteMode, type SxProps, type Theme } from '@mui/material/styles'
-import { brand, brandFonts } from '../../theme/brand'
+import { brandFonts } from '../../theme/brand'
 
 export const dashboardPalette = {
   page: 'var(--dashboard-page)',
@@ -50,15 +50,19 @@ export const dashboardTileSx = (color = dashboardPalette.orange) => ({
 }) satisfies SxProps<Theme>
 
 export const dashboardIconSx = (color = dashboardPalette.orange) => ({
-  width: 36,
-  height: 36,
-  borderRadius: '10px',
+  width: 40,
+  height: 40,
+  borderRadius: '12px',
   display: 'grid',
   placeItems: 'center',
   color,
-  background: `linear-gradient(135deg, ${alpha(color, 0.18)} 0%, ${alpha(brand.gold, 0.1)} 100%)`,
-  border: `1px solid ${alpha(color, 0.16)}`,
+  background: dashboardPalette.surface,
+  border: `1px solid ${alpha(color, 0.22)}`,
+  boxShadow: `0 6px 16px ${alpha(color, 0.11)}, inset 0 0 0 3px ${alpha(color, 0.055)}`,
   flex: '0 0 auto',
+  '& svg': {
+    display: 'block',
+  },
 }) satisfies SxProps<Theme>
 
 export const dashboardButtonSx = {

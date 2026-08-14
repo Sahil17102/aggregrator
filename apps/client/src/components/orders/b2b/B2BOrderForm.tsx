@@ -30,6 +30,8 @@ export type Invoice = {
   invoiceDate: string
   invoiceValue: number
   invoiceFileUrl?: string
+  ebnNumber?: string
+  ebnExpiry?: string
 }
 
 // Main Form Data
@@ -268,6 +270,8 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
             invoiceDate: invoice.invoiceDate,
             invoiceValue: Number(invoice.invoiceValue || 0),
             invoiceFileUrl: invoice.invoiceFileUrl || undefined,
+            ebnNumber: invoice.ebnNumber || undefined,
+            ebnExpiry: invoice.ebnExpiry || undefined,
           })) ?? [],
         courier_id: Number(data.courierPartnerId),
         courier_partner: data.courierPartner,
@@ -451,11 +455,6 @@ export default function B2BOrderForm({ onClose }: { onClose?: () => void }) {
               {/* Invoices */}
               <FormSectionAccordion title="Invoices" icon={<FaFileInvoice />} defaultExpanded>
                 <B2BInvoicesForm />
-              </FormSectionAccordion>
-
-              {/* Products */}
-              <FormSectionAccordion title="Products & Boxes" icon={<FaBox />} defaultExpanded>
-                <B2BProductsForm />
               </FormSectionAccordion>
 
               <FormSectionAccordion

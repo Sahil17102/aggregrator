@@ -78,6 +78,12 @@ services:
         sync: false
       - key: RAZORPAY_WEBHOOK_SECRET_PROD
         sync: false
+      - key: DELIVERY_ONE_USERNAME
+        sync: false
+      - key: DELIVERY_ONE_PASSWORD
+        sync: false
+      - key: DELIVERY_ONE_B2B_API_BASE
+        value: https://ltl-clients-api.delhivery.com
       - key: R2_ENDPOINT
         sync: false
       - key: R2_ACCESS_KEY_ID

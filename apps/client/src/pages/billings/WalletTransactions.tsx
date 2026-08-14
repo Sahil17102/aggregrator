@@ -28,10 +28,17 @@ interface WalletFilter {
   dateTo?: string
 }
 
-const WALLET_DEBIT_FILTER_OPTIONS = [
-  { label: 'All Debit Types', value: '' },
+const WALLET_REASON_FILTER_OPTIONS = [
+  { label: 'All Reasons', value: '' },
+  { label: 'Wallet Recharge', value: 'Wallet Recharge' },
+  { label: 'Admin Wallet Recharge', value: 'Admin wallet recharge' },
+  { label: 'Shipment Charge Refund', value: 'Shipment charge refund' },
+  { label: 'COD Remittance Adjustment', value: 'COD remittance adjustment' },
+  { label: 'Promotional Credit', value: 'Promotional credit' },
   { label: 'B2C Prepaid Charges', value: 'B2C Prepaid Order Payment' },
   { label: 'B2C COD Charges', value: 'B2C COD Service Charges' },
+  { label: 'B2B Prepaid Charges', value: 'B2B Prepaid Order Payment' },
+  { label: 'B2B COD Charges', value: 'B2B COD Service Charges' },
   { label: 'Reverse Shipment', value: 'reverse_shipment' },
   { label: 'Invoice Payment', value: 'invoice_payment' },
   { label: 'Invoice Credits/Waivers', value: 'invoice_credits_waivers' },
@@ -49,7 +56,7 @@ const WalletTransactions = () => {
     limit: 10,
     page,
     type: filters.type || undefined,
-    reason: filters.type === 'debit' ? filters.reason || undefined : undefined,
+    reason: filters.reason || undefined,
     dateFrom: filters.dateFrom || undefined,
     dateTo: filters.dateTo || undefined,
   })
@@ -74,9 +81,9 @@ const WalletTransactions = () => {
     },
     {
       name: 'reason',
-      label: 'Debit Type',
+      label: 'Reason',
       type: 'select',
-      options: WALLET_DEBIT_FILTER_OPTIONS,
+      options: WALLET_REASON_FILTER_OPTIONS,
     },
     { name: 'dateFrom', label: 'From Date', type: 'date' },
     { name: 'dateTo', label: 'To Date', type: 'date' },

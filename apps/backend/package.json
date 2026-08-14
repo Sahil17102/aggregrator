@@ -33,6 +33,7 @@
     "preview:shipment-status-email": "tsx src/scripts/sendShipmentStatusPreview.ts",
     "verify:shipment-status-email": "tsx src/scripts/verifyShipmentEmailTemplate.ts",
     "verify:delivery-one-api-calls": "tsx src/scripts/verifyDeliveryOneApiCalls.ts",
+    "verify:delhivery-b2b-api-calls": "tsx src/scripts/verifyDelhiveryB2BApiCalls.ts",
     "smoke:delivery-one": "tsx src/scripts/smokeDeliveryOneApis.ts",
     "smoke:delivery-one-booking": "tsx src/scripts/smokeDeliveryOneBookingFlow.ts",
     "sync:xpressbees-couriers": "ts-node src/scripts/syncXpressbeesCouriers.ts"

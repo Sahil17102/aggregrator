@@ -12,13 +12,24 @@ export const createTicket = async (req: any, res: Response) => {
       req.body
     const userId = req.user.sub
 
+    if (
+      !String(subject || '').trim() ||
+      !String(category || '').trim() ||
+      !String(subcategory || '').trim() ||
+      !String(description || '').trim()
+    ) {
+      return res.status(400).json({
+        message: 'Subject, category, reason, and description are required',
+      })
+    }
+
     const ticket = await createTicketService({
       userId,
-      subject,
-      category,
-      subcategory,
-      awbNumber,
-      description,
+      subject: String(subject).trim(),
+      category: String(category).trim(),
+      subcategory: String(subcategory).trim(),
+      awbNumber: String(awbNumber || '').trim() || undefined,
+      description: String(description).trim(),
       dueDate: dueDate ? new Date(dueDate) : undefined,
       attachments,
     })
@@ -40,7 +51,10 @@ export const getMyTickets = async (req: any, res: Response) => {
     const filters = {
       status: req.query.status ?? '',
       category: req.query.category as string | undefined,
+      subcategory: req.query.subcategory as string | undefined,
       awbNumber: req.query.awbNumber as string | undefined,
+      subject: req.query.subject as string | undefined,
+      sortBy: req.query.sortBy as string | undefined,
     }
 
     const { tickets, totalCount, statusCounts } = await getUserTicketsService(userId, limit, offset, filters)

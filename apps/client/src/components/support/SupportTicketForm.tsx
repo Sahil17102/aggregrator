@@ -11,6 +11,7 @@ interface FormValues {
   subject: string
   category: string
   subcategory: string
+  customReason: string
   awbNumber?: string
   description: string
   attachments: UploadedFileInfo[] | null
@@ -20,7 +21,23 @@ interface SupportTicketFormProps {
   onSuccess?: () => void
 }
 
+// Shared with the ticket list and filter UI.
+// eslint-disable-next-line react-refresh/only-export-components
 export const supportCategories = [
+  {
+    key: 'order_booking',
+    label: 'Order & Booking Issues',
+    description: 'Problems creating, booking, cancelling, or manifesting an order',
+    subcategories: [
+      { key: 'order_not_created', label: 'Order Not Created' },
+      { key: 'b2c_booking_failed', label: 'B2C Booking Failed' },
+      { key: 'b2b_booking_failed', label: 'B2B Booking Failed' },
+      { key: 'order_not_manifested', label: 'Order Not Manifested' },
+      { key: 'duplicate_order', label: 'Duplicate Order Created' },
+      { key: 'wrong_order_details', label: 'Wrong Order Details' },
+      { key: 'order_cancellation_issue', label: 'Order Cancellation Issue' },
+    ],
+  },
   {
     key: 'shipment_issues',
     label: 'Shipment Issues',
@@ -113,19 +130,26 @@ export const supportCategories = [
       { key: 'other', label: 'Other (Please Specify)' },
     ],
   },
-]
+].map((category) => ({
+  ...category,
+  subcategories: category.subcategories.some((reason) => reason.key === 'other')
+    ? category.subcategories
+    : [...category.subcategories, { key: 'other', label: 'Other / Custom Reason' }],
+}))
 
 export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess }) => {
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
       subject: '',
       category: '',
       subcategory: '',
+      customReason: '',
       awbNumber: '',
       description: '',
       attachments: null,
@@ -133,6 +157,7 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
   })
 
   const categoryKey = useWatch({ control, name: 'category' })
+  const reasonKey = useWatch({ control, name: 'subcategory' })
   const selectedCategory = supportCategories.find((c) => c.key === categoryKey)
 
   const { mutateAsync: createTicket } = useCreateTicket()
@@ -160,10 +185,13 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
         }
       }
 
+      const resolvedReason =
+        values.subcategory === 'other' ? values.customReason.trim() : values.subcategory
+
       await createTicket({
         subject: values.subject,
         category: values.category,
-        subcategory: values.subcategory,
+        subcategory: resolvedReason,
         awbNumber: values.awbNumber,
         description: values.description,
         attachments: uploadedUrls,
@@ -211,7 +239,6 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
             control={control}
             rules={{ required: 'Category is required' }}
             render={({ field, fieldState }) => {
-              console.log('field', field)
               return (
                 <AutocompleteDropdown
                   label="Category"
@@ -219,7 +246,11 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
                   value={field.value}
                   inputValue={supportCategories?.find((c) => c.key === field.value)?.label ?? ''}
                   onInputChange={() => {}}
-                  onChange={(val) => field.onChange(val || '')}
+                  onChange={(val) => {
+                    field.onChange(val || '')
+                    setValue('subcategory', '')
+                    setValue('customReason', '')
+                  }}
                   options={supportCategories.map((c) => ({
                     key: c.key,
                     label: c.label,
@@ -239,7 +270,7 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
             rules={{ required: 'Subcategory is required' }}
             render={({ field, fieldState }) => (
               <AutocompleteDropdown
-                label="Subcategory"
+                label="Reason"
                 required
                 value={field.value}
                 inputValue={
@@ -253,13 +284,36 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
                     label: s.label,
                   })) ?? []
                 }
-                helperText={
-                  selectedCategory ? fieldState.error?.message : 'Select a category first'
-                }
+                helperText={selectedCategory ? fieldState.error?.message : 'Select a category first'}
               />
             )}
           />
         </Grid>
+
+        {reasonKey === 'other' ? (
+          <Grid size={{ xs: 12 }}>
+            <Controller
+              name="customReason"
+              control={control}
+              rules={{
+                required: 'Custom reason is required',
+                minLength: { value: 5, message: 'Reason must be at least 5 characters' },
+                maxLength: { value: 120, message: 'Reason must be 120 characters or fewer' },
+              }}
+              render={({ field, fieldState }) => (
+                <CustomInput
+                  {...field}
+                  label="Custom Reason"
+                  placeholder="Briefly specify the issue reason"
+                  fullWidth
+                  required
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                />
+              )}
+            />
+          </Grid>
+        ) : null}
 
         <Grid size={{ xs: 12 }}>
           <Controller
@@ -267,14 +321,14 @@ export const SupportTicketForm: React.FC<SupportTicketFormProps> = ({ onSuccess 
             control={control}
             rules={{
               pattern: {
-                value: /^[a-zA-Z0-9-]{5,30}$/,
-                message: 'Invalid AWB format',
+                value: /^[a-zA-Z0-9._/-]{3,50}$/,
+                message: 'Invalid AWB or order number format',
               },
             }}
             render={({ field, fieldState }) => (
               <CustomInput
                 {...field}
-                label="AWB Number (Optional)"
+                label="AWB / Order Number (Optional)"
                 fullWidth
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
