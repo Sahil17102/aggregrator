@@ -132,6 +132,7 @@ export const getWalletTransactionsByUserId = async ({
   page = 1,
   limit = 50,
   type,
+  reason,
   dateFrom,
   dateTo,
 }: {
@@ -139,6 +140,7 @@ export const getWalletTransactionsByUserId = async ({
   page?: number
   limit?: number
   type?: 'credit' | 'debit'
+  reason?: string
   dateFrom?: Date
   dateTo?: Date
 }) => {
@@ -153,6 +155,7 @@ export const getWalletTransactionsByUserId = async ({
   // Build filters
   const conditions: any[] = [eq(walletTransactions.wallet_id, userWallet[0].id)]
   if (type) conditions.push(eq(walletTransactions.type, type))
+  if (reason?.trim()) conditions.push(ilike(walletTransactions.reason, `%${reason.trim()}%`))
   if (dateFrom) conditions.push(gte(walletTransactions.created_at, dateFrom))
   if (dateTo) conditions.push(lte(walletTransactions.created_at, dateTo))
 

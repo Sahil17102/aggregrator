@@ -74,7 +74,7 @@ const initialFilterValues = {
 
 const Couriers = () => {
   const [filters, setFilters] = useState(initialFilterValues)
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const { data, isLoading } = useCouriers({
@@ -111,7 +111,7 @@ const Couriers = () => {
         defaultValues={initialFilterValues}
         onApply={(newFilters) => {
           setFilters(newFilters)
-          setPage(0) // reset to first page on filter change
+          setPage(1)
         }}
         bgOverlayImg="/images/filters-bg.png"
         appliedCount={appliedCount}

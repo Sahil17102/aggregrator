@@ -1,11 +1,25 @@
 import { Box, Button, Flex, HStack, Text } from "@chakra-ui/react";
 import { IconMessageCircle } from "@tabler/icons-react";
-import { AdminStack, DataTable, SoftBadge } from "components/AdminUI/AdminPage";
+import {
+  AdminSelect,
+  AdminStack,
+  DataTable,
+  SearchInput,
+  SoftBadge,
+  ToolbarCard,
+} from "components/AdminUI/AdminPage";
 import { useAdminTickets } from "hooks/useTickets";
 import moment from "moment";
 import { useMemo, useState } from "react";
+import { supportCategories } from "utils/constants";
 
 const statusItems = ["All", "Open", "Pending", "Resolved", "Closed"];
+
+const getReasonLabel = (categoryKey, reasonKey) => {
+  const category = supportCategories.find((item) => item.key === categoryKey);
+  const reason = category?.subcategories.find((item) => item.key === reasonKey);
+  return reason?.label || reasonKey || "—";
+};
 
 const priorityScheme = (value = "") => {
   if (value.toLowerCase() === "urgent" || value.toLowerCase() === "high")
@@ -29,6 +43,13 @@ export default function AdminTicketDashboard() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [status, setStatus] = useState("All");
+  const [filters, setFilters] = useState({
+    subject: "",
+    userName: "",
+    category: "",
+    subcategory: "",
+    awbNumber: "",
+  });
 
   const { data, isLoading } = useAdminTickets({
     page,
@@ -43,6 +64,7 @@ export default function AdminTicketDashboard() {
                 : status.toLowerCase(),
             ],
       sortBy: "latest",
+      ...filters,
     },
   });
 
@@ -61,6 +83,7 @@ export default function AdminTicketDashboard() {
           ticket.user?.companyInfo?.businessName,
         sellerEmail: ticket.userEmail || ticket.user?.email,
         categoryLabel: ticket.category || "General",
+        reasonLabel: getReasonLabel(ticket.category, ticket.subcategory),
         priorityLabel:
           ticket.priority || (ticket.status === "open" ? "MEDIUM" : "URGENT"),
         lastActivity: ticket.updatedAt || ticket.createdAt,
@@ -113,6 +136,87 @@ export default function AdminTicketDashboard() {
         </HStack>
       </Flex>
 
+      <ToolbarCard>
+        <HStack spacing="14px" wrap="wrap" align="flex-end">
+          <Box>
+            <Text color="#41557A" fontSize="14px" mb="7px">
+              Subject
+            </Text>
+            <SearchInput
+              value={filters.subject}
+              onChange={(value) => {
+                setFilters((current) => ({ ...current, subject: value }));
+                setPage(1);
+              }}
+              placeholder="Search ticket subject"
+              maxW="270px"
+            />
+          </Box>
+          <Box>
+            <Text color="#41557A" fontSize="14px" mb="7px">
+              Seller
+            </Text>
+            <SearchInput
+              value={filters.userName}
+              onChange={(value) => {
+                setFilters((current) => ({ ...current, userName: value }));
+                setPage(1);
+              }}
+              placeholder="Name, email or phone"
+              maxW="250px"
+            />
+          </Box>
+          <Box>
+            <Text color="#41557A" fontSize="14px" mb="7px">
+              Category
+            </Text>
+            <AdminSelect
+              value={filters.category}
+              onChange={(value) => {
+                setFilters((current) => ({ ...current, category: value, subcategory: "" }));
+                setPage(1);
+              }}
+              maxW="235px"
+            >
+              <option value="">All categories</option>
+              {supportCategories.map((category) => (
+                <option key={category.key} value={category.key}>
+                  {category.label}
+                </option>
+              ))}
+            </AdminSelect>
+          </Box>
+          <Box>
+            <Text color="#41557A" fontSize="14px" mb="7px">
+              Reason
+            </Text>
+            <SearchInput
+              value={filters.subcategory}
+              onChange={(value) => {
+                setFilters((current) => ({ ...current, subcategory: value }));
+                setPage(1);
+              }}
+              placeholder="Search standard or custom reason"
+              maxW="280px"
+            />
+          </Box>
+          <Box>
+            <Text color="#41557A" fontSize="14px" mb="7px">
+              AWB / Order
+            </Text>
+            <SearchInput
+              value={filters.awbNumber}
+              onChange={(value) => {
+                setFilters((current) => ({ ...current, awbNumber: value }));
+                setPage(1);
+              }}
+              placeholder="Search AWB or order number"
+              maxW="240px"
+            />
+          </Box>
+        </HStack>
+      </ToolbarCard>
+
       <DataTable
         loading={isLoading}
         rows={rows}
@@ -142,6 +246,8 @@ export default function AdminTicketDashboard() {
             ),
           },
           { key: "categoryLabel", label: "Category" },
+          { key: "reasonLabel", label: "Reason" },
+          { key: "awbNumber", label: "AWB / Order" },
           {
             key: "priorityLabel",
             label: "Priority",

@@ -59,6 +59,7 @@ export const getWalletTransactions = async (req: Request, res: Response): Promis
     const page = parseInt((req.query.page as string) || '1')
     const limit = parseInt((req.query.limit as string) || '50')
     const type = req.query.type as 'credit' | 'debit' | undefined
+    const reason = req.query.reason as string | undefined
     const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined
     const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined
 
@@ -67,6 +68,7 @@ export const getWalletTransactions = async (req: Request, res: Response): Promis
       page,
       limit,
       type,
+      reason,
       dateFrom,
       dateTo,
     })
@@ -86,10 +88,19 @@ export const adjustWalletBalance = async (req: Request, res: Response): Promise<
     const { userId } = req.params
     const { type, amount, reason, notes } = req.body
 
-    if (!userId || !type || !amount || !reason) {
+    const normalizedReason = String(reason || '').trim()
+
+    if (!userId || !type || !amount || !normalizedReason) {
       return res.status(400).json({
         success: false,
         message: 'userId, type, amount, and reason are required',
+      })
+    }
+
+    if (normalizedReason.length > 128) {
+      return res.status(400).json({
+        success: false,
+        message: 'reason must be 128 characters or fewer',
       })
     }
 
@@ -116,7 +127,7 @@ export const adjustWalletBalance = async (req: Request, res: Response): Promise<
       walletId: wallet.id,
       amount: amountNum,
       type: type as 'credit' | 'debit',
-      reason: reason,
+      reason: normalizedReason,
       ref: `admin_adjustment_${Date.now()}`,
       allowNegativeBalance: type === 'debit',
       meta: {

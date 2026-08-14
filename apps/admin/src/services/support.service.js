@@ -8,10 +8,11 @@ export const adminGetTickets = async ({ page = 1, limit = 10, filters = {} } = {
       limit,
       status: filters?.status,
       category: filters?.category,
-      subcategory: filters?.subCategory,
+      subcategory: filters?.subcategory,
       awbNumber: filters.awbNumber,
       userId: filters.userId,
       userName: filters?.userName,
+      subject: filters?.subject,
       sortBy: filters?.sortBy,
     },
   })

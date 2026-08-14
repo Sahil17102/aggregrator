@@ -323,6 +323,10 @@ export async function updateUserBankAccountStatus(req: any, res: Response) {
     if (!['verified', 'rejected', 'pending'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status value' })
     }
+    const normalizedRejectionReason = String(rejectionReason || '').trim()
+    if (status === 'rejected' && !normalizedRejectionReason) {
+      return res.status(400).json({ success: false, message: 'Rejection reason required' })
+    }
 
     // Verify user exists
     const user = await findUserById(userId)
@@ -331,7 +335,12 @@ export async function updateUserBankAccountStatus(req: any, res: Response) {
     }
 
     // Call service to update bank account status
-    await updateBankAccountStatusById(userId, accountId, status, rejectionReason)
+    await updateBankAccountStatusById(
+      userId,
+      accountId,
+      status,
+      normalizedRejectionReason || undefined,
+    )
 
     return res
       .status(200)
@@ -383,7 +392,7 @@ export const approveKyc = async (req: any, res: Response) => {
 
 // Reject KYC
 export const rejectKyc = async (req: Request, res: Response) => {
-  const { reason } = req.body
+  const reason = String(req.body?.reason || '').trim()
   if (!reason) return res.status(400).json({ message: 'Rejection reason required' })
 
   try {
@@ -407,7 +416,7 @@ export const rejectKyc = async (req: Request, res: Response) => {
 
 // Revoke KYC (move back to verification in progress)
 export const revokeKyc = async (req: Request, res: Response) => {
-  const { reason } = req.body
+  const reason = String(req.body?.reason || '').trim()
   if (!reason) return res.status(400).json({ message: 'Revocation reason required' })
 
   try {
@@ -443,7 +452,7 @@ export const approveDocument = async (req: Request, res: Response) => {
 // Reject single document
 export const rejectDocument = async (req: Request, res: Response) => {
   const { key } = req.params
-  const { reason } = req.body
+  const reason = String(req.body?.reason || '').trim()
   if (!reason) return res.status(400).json({ message: 'Rejection reason required' })
 
   try {

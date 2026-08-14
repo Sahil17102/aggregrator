@@ -6,7 +6,10 @@ import { FilterBar, type FilterField } from '../../components/FilterBar'
 import CustomDrawer from '../../components/UI/drawer/CustomDrawer'
 import PageHeading from '../../components/UI/heading/PageHeading'
 import TableSkeleton from '../../components/UI/table/TableSkeleton'
-import { SupportTicketForm } from '../../components/support/SupportTicketForm'
+import {
+  SupportTicketForm,
+  supportCategories,
+} from '../../components/support/SupportTicketForm'
 import SupportTicketList from '../../components/support/SupportTicketList'
 import TicketStatusSummaryCard from '../../components/support/TicketStatusSummaryCard'
 import { useMyTickets } from '../../hooks/User/useSupport'
@@ -44,14 +47,10 @@ const supportTicketFilterFields: FilterField[] = [
     type: 'select',
     options: [
       { label: 'All', value: '' },
-      { label: 'Shipment Issues', value: 'shipment_issues' },
-      { label: 'AWB & Label Issues', value: 'awb_issues' },
-      { label: 'Payments & Refunds', value: 'payment_refund' },
-      { label: 'Courier Partner Issues', value: 'courier_partner' },
-      { label: 'Returns & RTOs', value: 'returns_rto' },
-      { label: 'KYC & Onboarding', value: 'kyc_onboarding' },
-      { label: 'Platform Issues', value: 'platform_issue' },
-      { label: 'Other / General Query', value: 'other' },
+      ...supportCategories.map((category) => ({
+        label: category.label,
+        value: category.key,
+      })),
     ],
     placeholder: 'Select category',
   },
@@ -71,10 +70,10 @@ const supportTicketFilterFields: FilterField[] = [
   },
   {
     name: 'subcategory',
-    label: 'Subcategory',
+    label: 'Reason',
     type: 'text',
     isAdvanced: true,
-    placeholder: 'Search by subcategory',
+    placeholder: 'Search by reason',
   },
 ]
 
@@ -126,7 +125,7 @@ export const SupportTicketsPage = () => {
           defaultValues={initialFilterValues}
           onApply={(newFilters) => {
             setFilters(newFilters)
-            setPage(0) // reset to first page on filter change
+            setPage(1)
           }}
           bgOverlayImg="/images/filters-bg.png"
           appliedCount={appliedCount}

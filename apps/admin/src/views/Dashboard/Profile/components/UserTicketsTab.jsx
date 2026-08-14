@@ -135,7 +135,7 @@ export default function UserTicketsPage({ userId }) {
 
               <Box p={3} borderRadius="md" bg="gray.50">
                 <Heading as="h4" size="sm" mb={2}>
-                  Sub Category
+                  Reason
                 </Heading>
                 <Text>{selectedTicket.subcategory || '—'}</Text>
               </Box>

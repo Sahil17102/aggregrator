@@ -50,6 +50,8 @@ import {
   useAdminWallets,
   useAdminWalletTransactions,
 } from "hooks/useWallet";
+import ReasonSelect from "components/ReasonSelect";
+import { walletAdjustmentReasons } from "utils/constants";
 import { useMemo, useState } from "react";
 
 const formatBalance = (balance, currency = "INR") =>
@@ -93,7 +95,7 @@ const getPhone = (row = {}) =>
 const emptyAdjustment = (type) => ({
   type,
   amount: "",
-  reason: type === "credit" ? "Admin wallet recharge" : "Admin wallet debit",
+  reason: walletAdjustmentReasons[type][0],
   notes: "",
 });
 
@@ -105,6 +107,7 @@ export default function AdminWallets() {
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [transactionType, setTransactionType] = useState("");
+  const [transactionReason, setTransactionReason] = useState("");
   const [adjustForm, setAdjustForm] = useState(emptyAdjustment("credit"));
   const transactionsModal = useDisclosure();
   const adjustmentModal = useDisclosure();
@@ -126,6 +129,7 @@ export default function AdminWallets() {
       page: transactionsPage,
       limit: 20,
       type: transactionType || undefined,
+      reason: transactionReason || undefined,
     },
     transactionsModal.isOpen && Boolean(selectedWallet?.userId)
   );
@@ -150,6 +154,7 @@ export default function AdminWallets() {
     setSelectedWallet(wallet);
     setTransactionsPage(1);
     setTransactionType("");
+    setTransactionReason("");
     transactionsModal.onOpen();
   };
 
@@ -409,20 +414,33 @@ export default function AdminWallets() {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <FormControl maxW="240px" mb="18px">
-              <FormLabel>Transaction type</FormLabel>
-              <Select
-                value={transactionType}
-                onChange={(event) => {
-                  setTransactionType(event.target.value);
-                  setTransactionsPage(1);
-                }}
-              >
-                <option value="">All transactions</option>
-                <option value="credit">Credit / Recharge</option>
-                <option value="debit">Debit</option>
-              </Select>
-            </FormControl>
+            <HStack align="flex-end" spacing="14px" mb="18px" wrap="wrap">
+              <FormControl maxW="240px">
+                <FormLabel>Transaction type</FormLabel>
+                <Select
+                  value={transactionType}
+                  onChange={(event) => {
+                    setTransactionType(event.target.value);
+                    setTransactionsPage(1);
+                  }}
+                >
+                  <option value="">All transactions</option>
+                  <option value="credit">Credit / Recharge</option>
+                  <option value="debit">Debit</option>
+                </Select>
+              </FormControl>
+              <FormControl maxW="330px">
+                <FormLabel>Reason contains</FormLabel>
+                <Input
+                  value={transactionReason}
+                  onChange={(event) => {
+                    setTransactionReason(event.target.value);
+                    setTransactionsPage(1);
+                  }}
+                  placeholder="Search any transaction reason"
+                />
+              </FormControl>
+            </HStack>
 
             {transactionsLoading ? (
               <HStack justify="center" py="48px">
@@ -584,15 +602,17 @@ export default function AdminWallets() {
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>Reason</FormLabel>
-                <Input
+                <ReasonSelect
+                  options={walletAdjustmentReasons[adjustForm.type]}
                   value={adjustForm.reason}
-                  onChange={(event) =>
+                  onChange={(reason) =>
                     setAdjustForm((current) => ({
                       ...current,
-                      reason: event.target.value,
+                      reason,
                     }))
                   }
-                  placeholder="Reason for wallet adjustment"
+                  placeholder="Select wallet adjustment reason"
+                  customPlaceholder="Enter the custom wallet reason"
                   isDisabled={adjustMutation.isPending}
                 />
               </FormControl>

@@ -9,9 +9,11 @@ import type { WeightDiscrepancy } from '../../api/weightReconciliation'
 import { FilterBar, type FilterField } from '../../components/FilterBar'
 import StatusChip from '../../components/UI/chip/StatusChip'
 import PageHeading from '../../components/UI/heading/PageHeading'
+import ReasonDialog from '../../components/ReasonDialog'
 import DataTable, { type Column } from '../../components/UI/table/DataTable'
 import { useBulkAcceptDiscrepancies, useBulkRejectDiscrepancies, useWeightDiscrepancies, useWeightReconciliationSummary } from '../../hooks/useWeightReconciliation'
 import { getCourierDisplayName } from '../../utils/courierDisplay'
+import { WEIGHT_DISCREPANCY_REJECTION_REASONS } from '../../constants/reasonOptions'
 
 const statusColorMap: Record<string, 'success' | 'error' | 'info' | 'pending'> = {
     pending: 'pending',
@@ -36,6 +38,7 @@ export default function WeightReconciliation() {
         search: undefined,
     })
     const [selectedDiscrepancies, setSelectedDiscrepancies] = useState<string[]>([])
+    const [bulkRejectDialogOpen, setBulkRejectDialogOpen] = useState(false)
 
     const apiFilters: Record<string, unknown> = { page, limit: rowsPerPage }
     if (filters.status) apiFilters.status = [filters.status]
@@ -125,8 +128,10 @@ export default function WeightReconciliation() {
 
     const handleBulkReject = () => {
         if (selectedDiscrepancies.length === 0) return
-        const reason = prompt('Enter reason for rejecting these discrepancies:')
-        if (!reason) return
+        setBulkRejectDialogOpen(true)
+    }
+
+    const submitBulkRejection = (reason: string) => {
         bulkReject.mutate(
             {
                 discrepancyIds: selectedDiscrepancies,
@@ -134,6 +139,7 @@ export default function WeightReconciliation() {
             },
             {
                 onSuccess: () => {
+                    setBulkRejectDialogOpen(false)
                     setSelectedDiscrepancies([])
                     refetch()
                 },
@@ -269,6 +275,14 @@ export default function WeightReconciliation() {
                         expandable
                     />
                 </Box>
+                <ReasonDialog
+                    open={bulkRejectDialogOpen}
+                    title="Reject Selected Weight Discrepancies"
+                    options={WEIGHT_DISCREPANCY_REJECTION_REASONS}
+                    onClose={() => setBulkRejectDialogOpen(false)}
+                    onSubmit={submitBulkRejection}
+                    loading={bulkReject.isPending}
+                />
             </Stack>
         </Container>
     )

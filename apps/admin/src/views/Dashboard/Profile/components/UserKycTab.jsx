@@ -6,7 +6,6 @@ import {
   Flex,
   Grid,
   Heading,
-  Input,
   Link,
   Popover,
   PopoverArrow,
@@ -24,6 +23,7 @@ import {
 } from '@chakra-ui/react'
 import StatusBadge from 'components/Badge/StatusBadge'
 import Card from 'components/Card/Card'
+import ReasonSelect from 'components/ReasonSelect'
 import { usePresignedDownloadUrls } from 'hooks/usePresignedUrls'
 import {
   useApproveDocument,
@@ -34,6 +34,7 @@ import {
   useUserKyc,
 } from 'hooks/useUser'
 import { useMemo, useState } from 'react'
+import { kycRejectionReasons, kycRevocationReasons } from 'utils/constants'
 
 // StatusChip to map status to badge color
 const StatusChip = ({ status }) => {
@@ -124,10 +125,12 @@ const DocCard = ({
             <PopoverCloseButton />
             <PopoverHeader>Rejection Reason</PopoverHeader>
             <PopoverBody>
-              <Input
-                placeholder="Enter reason"
+              <ReasonSelect
+                options={kycRejectionReasons}
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={setReason}
+                placeholder="Select document rejection reason"
+                customPlaceholder="Enter a custom document rejection reason"
               />
             </PopoverBody>
             <PopoverFooter display="flex" justifyContent="flex-end">
@@ -295,10 +298,12 @@ const UserKycPage = ({ userId }) => {
               <PopoverCloseButton />
               <PopoverHeader>Rejection Reason</PopoverHeader>
               <PopoverBody>
-                <Input
-                  placeholder="Enter reason"
+                <ReasonSelect
+                  options={kycRejectionReasons}
                   value={rejectingReason}
-                  onChange={(e) => setRejectingReason(e.target.value)}
+                  onChange={setRejectingReason}
+                  placeholder="Select KYC rejection reason"
+                  customPlaceholder="Enter a custom KYC rejection reason"
                 />
               </PopoverBody>
               <PopoverFooter display="flex" justifyContent="flex-end">
@@ -330,10 +335,12 @@ const UserKycPage = ({ userId }) => {
               <PopoverCloseButton />
               <PopoverHeader>Revocation Reason</PopoverHeader>
               <PopoverBody>
-                <Input
-                  placeholder="Enter reason for re-verification"
+                <ReasonSelect
+                  options={kycRevocationReasons}
                   value={revokingReason}
-                  onChange={(e) => setRevokingReason(e.target.value)}
+                  onChange={setRevokingReason}
+                  placeholder="Select revocation reason"
+                  customPlaceholder="Enter a custom reason for re-verification"
                 />
               </PopoverBody>
               <PopoverFooter display="flex" justifyContent="flex-end">

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
 import { Request, Response } from 'express'
 import { db } from '../../models/client'
 import { presignDownload } from '../../models/services/upload.service'
@@ -156,11 +156,12 @@ export async function getAllDiscrepancies(req: Request, res: Response) {
  */
 export async function getAllDisputes(req: Request, res: Response) {
   try {
-    const { status, userId, fromDate, toDate, page = 1, limit = 50 } = req.query
+    const { status, reason, userId, fromDate, toDate, page = 1, limit = 50 } = req.query
 
     const conditions: any[] = []
 
     if (status) conditions.push(eq(weight_disputes.status, status as string))
+    if (reason) conditions.push(ilike(weight_disputes.dispute_reason, `%${String(reason).trim()}%`))
     if (userId) conditions.push(eq(weight_disputes.user_id, userId as string))
     if (fromDate) conditions.push(gte(weight_disputes.created_at, new Date(fromDate as string)))
     if (toDate) conditions.push(lte(weight_disputes.created_at, new Date(toDate as string)))

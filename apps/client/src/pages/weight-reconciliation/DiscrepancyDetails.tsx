@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { FiArrowLeft, FiCheckCircle, FiDownload, FiMessageSquare, FiXCircle } from 'react-icons/fi'
 import { RiScales3Line } from 'react-icons/ri'
 import PageHeading from '../../components/UI/heading/PageHeading'
+import ReasonDialog from '../../components/ReasonDialog'
 import { useNavigate, useParams } from 'react-router-dom'
 import FileUploader, { type UploadedFileInfo } from '../../components/UI/uploader/FileUploader'
 import {
@@ -25,13 +26,16 @@ import {
   useRejectDiscrepancy,
 } from '../../hooks/useWeightReconciliation'
 import { getCourierDisplayName } from '../../utils/courierDisplay'
+import { WEIGHT_DISCREPANCY_REJECTION_REASONS } from '../../constants/reasonOptions'
 
 export default function DiscrepancyDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [showDisputeForm, setShowDisputeForm] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [disputeForm, setDisputeForm] = useState({
     reason: '',
+    customReason: '',
     comment: '',
     evidenceUrls: [] as string[],
     proposedWeight: '',
@@ -75,13 +79,17 @@ export default function DiscrepancyDetails() {
   }
 
   const handleReject = () => {
-    const reason = prompt('Please enter a reason for rejection:')
-    if (!reason) return
+    setRejectDialogOpen(true)
+  }
 
+  const submitRejection = (reason: string) => {
     rejectMutation.mutate(
       { id: discrepancy.id, reason },
       {
-        onSuccess: () => refetch(),
+        onSuccess: () => {
+          setRejectDialogOpen(false)
+          refetch()
+        },
       },
     )
   }
@@ -91,11 +99,18 @@ export default function DiscrepancyDetails() {
       alert('Please select a dispute reason')
       return
     }
+    if (disputeForm.reason === 'Other' && !disputeForm.customReason.trim()) {
+      alert('Please enter a custom dispute reason')
+      return
+    }
+
+    const resolvedDisputeReason =
+      disputeForm.reason === 'Other' ? disputeForm.customReason.trim() : disputeForm.reason
 
     createDisputeMutation.mutate(
       {
         discrepancyId: discrepancy.id,
-        disputeReason: disputeForm.reason,
+        disputeReason: resolvedDisputeReason,
         customerComment: disputeForm.comment,
         evidenceUrls: disputeForm.evidenceUrls,
         // Convert KG input to grams for storage
@@ -106,7 +121,13 @@ export default function DiscrepancyDetails() {
       {
         onSuccess: () => {
           setShowDisputeForm(false)
-          setDisputeForm({ reason: '', comment: '', evidenceUrls: [], proposedWeight: '' })
+          setDisputeForm({
+            reason: '',
+            customReason: '',
+            comment: '',
+            evidenceUrls: [],
+            proposedWeight: '',
+          })
           refetch()
         },
       },
@@ -548,6 +569,19 @@ export default function DiscrepancyDetails() {
                     <option value="Other">Other</option>
                   </TextField>
 
+                  {disputeForm.reason === 'Other' ? (
+                    <TextField
+                      fullWidth
+                      required
+                      label="Custom Dispute Reason"
+                      value={disputeForm.customReason}
+                      onChange={(e) =>
+                        setDisputeForm({ ...disputeForm, customReason: e.target.value })
+                      }
+                      placeholder="Enter the reason not listed above"
+                    />
+                  ) : null}
+
                   <TextField
                     fullWidth
                     multiline
@@ -715,6 +749,14 @@ export default function DiscrepancyDetails() {
             </CardContent>
           </Card>
         )}
+        <ReasonDialog
+          open={rejectDialogOpen}
+          title="Reject Weight Discrepancy"
+          options={WEIGHT_DISCREPANCY_REJECTION_REASONS}
+          onClose={() => setRejectDialogOpen(false)}
+          onSubmit={submitRejection}
+          loading={rejectMutation.isPending}
+        />
       </Stack>
     </Container>
   )

@@ -1,5 +1,19 @@
 export const supportCategories = [
   {
+    key: 'order_booking',
+    label: 'Order & Booking Issues',
+    description: 'Problems creating, booking, cancelling, or manifesting an order',
+    subcategories: [
+      { key: 'order_not_created', label: 'Order Not Created' },
+      { key: 'b2c_booking_failed', label: 'B2C Booking Failed' },
+      { key: 'b2b_booking_failed', label: 'B2B Booking Failed' },
+      { key: 'order_not_manifested', label: 'Order Not Manifested' },
+      { key: 'duplicate_order', label: 'Duplicate Order Created' },
+      { key: 'wrong_order_details', label: 'Wrong Order Details' },
+      { key: 'order_cancellation_issue', label: 'Order Cancellation Issue' },
+    ],
+  },
+  {
     key: 'shipment_issues',
     label: 'Shipment Issues',
     description: 'Problems with pickups, delivery, or lost shipments',
@@ -91,4 +105,55 @@ export const supportCategories = [
       { key: 'other', label: 'Other (Please Specify)' },
     ],
   },
+].map((category) => ({
+  ...category,
+  subcategories: category.subcategories.some((reason) => reason.key === 'other')
+    ? category.subcategories
+    : [...category.subcategories, { key: 'other', label: 'Other / Custom Reason' }],
+}))
+
+export const walletAdjustmentReasons = {
+  credit: [
+    'Admin wallet recharge',
+    'Payment gateway recharge correction',
+    'Shipment charge refund',
+    'COD remittance adjustment',
+    'Promotional credit',
+    'Invoice credit / waiver',
+  ],
+  debit: [
+    'Admin wallet debit',
+    'B2C shipment charge adjustment',
+    'B2B shipment charge adjustment',
+    'Weight discrepancy charge',
+    'RTO / reverse shipment charge',
+    'Invoice adjustment',
+    'Incorrect wallet credit reversal',
+  ],
+}
+
+export const kycRejectionReasons = [
+  'Document is unclear or unreadable',
+  'Document has expired',
+  'Name or business details do not match',
+  'Document is incomplete',
+  'Invalid document type',
+  'GST/PAN details could not be verified',
+  'Duplicate or altered document',
+]
+
+export const kycRevocationReasons = [
+  'KYC information has changed',
+  'Periodic re-verification required',
+  'Document has expired',
+  'Verification mismatch detected',
+  'Compliance review required',
+]
+
+export const bankRejectionReasons = [
+  'Account holder name does not match',
+  'Invalid account number or IFSC',
+  'Cancelled cheque is unclear',
+  'Bank proof is incomplete',
+  'Account is inactive or verification failed',
 ]
