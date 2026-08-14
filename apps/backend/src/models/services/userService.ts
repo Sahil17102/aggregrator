@@ -886,6 +886,7 @@ type GetUsersParams = {
   sortBy?: 'createdAt' | 'email' | 'role' | 'companyName' | 'contactPerson'
   sortOrder?: 'asc' | 'desc'
   businessTypes?: string[]
+  plan?: string
   approved?: boolean
   onboardingComplete?: boolean
 }
@@ -897,6 +898,7 @@ export async function getAllUsersWithRoleUser({
   sortBy = 'createdAt',
   sortOrder = 'desc',
   businessTypes = [],
+  plan,
   onboardingComplete,
   approved,
 }: GetUsersParams) {
@@ -913,6 +915,8 @@ export async function getAllUsersWithRoleUser({
         ilike(sql`coalesce(${schema.userProfiles.companyInfo} ->> 'contactEmail', '')`, pattern),
         ilike(sql`coalesce(${schema.userProfiles.companyInfo} ->> 'contactNumber', '')`, pattern),
         ilike(sql`coalesce(${schema.userProfiles.companyInfo} ->> 'businessName', '')`, pattern),
+        ilike(sql`coalesce(${users.email}, '')`, pattern),
+        ilike(sql`coalesce(${users.phone}, '')`, pattern),
       ),
     )
   }
@@ -940,6 +944,10 @@ export async function getAllUsersWithRoleUser({
     filters.push(eq(schema.userProfiles.approved, approved))
   }
 
+  if (plan?.trim()) {
+    filters.push(ilike(schema.plans.name, plan.trim()))
+  }
+
   // Sort mapping
   const sortColumns: Record<string, any> = {
     createdAt: users.createdAt,
@@ -957,15 +965,29 @@ export async function getAllUsersWithRoleUser({
       email: users.email,
       role: users.role,
       createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
       companyName: sql<string>`coalesce(${schema.userProfiles.companyInfo} ->> 'businessName', ${schema.userProfiles.companyInfo} ->> 'brandName', '')`,
+      companyInfo: schema.userProfiles.companyInfo,
       businessType: schema.userProfiles.businessType,
       approved: schema.userProfiles.approved,
       onboardingStep: schema.userProfiles.onboardingStep,
+      onboardingComplete: schema.userProfiles.onboardingComplete,
+      profileComplete: schema.userProfiles.profileComplete,
       contactPerson: sql<string>`${schema.userProfiles.companyInfo} ->> 'contactPerson'`,
-      contactNumber: sql<string>`${schema.userProfiles.companyInfo} ->> 'contactNumber'`,
+      contactNumber: sql<string>`coalesce(${schema.userProfiles.companyInfo} ->> 'contactNumber', ${users.phone}, '')`,
+      profilePicture: sql<string>`coalesce(${users.profilePicture}, ${schema.userProfiles.companyInfo} ->> 'profilePicture')`,
+      kycStatus: schema.kyc.status,
+      kycVerified: sql<boolean>`coalesce(${schema.kyc.status} = 'verified', false)`,
+      planName: schema.plans.name,
     })
     .from(users)
     .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, users.id))
+    .leftJoin(schema.kyc, eq(schema.kyc.userId, users.id))
+    .leftJoin(
+      schema.userPlans,
+      and(eq(schema.userPlans.userId, users.id), eq(schema.userPlans.is_active, true)),
+    )
+    .leftJoin(schema.plans, eq(schema.plans.id, schema.userPlans.plan_id))
     .where(and(...filters))
     .orderBy(sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn))
     .limit(perPage)
@@ -976,6 +998,12 @@ export async function getAllUsersWithRoleUser({
     .select({ count: sql<number>`count(*)` })
     .from(users)
     .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, users.id))
+    .leftJoin(schema.kyc, eq(schema.kyc.userId, users.id))
+    .leftJoin(
+      schema.userPlans,
+      and(eq(schema.userPlans.userId, users.id), eq(schema.userPlans.is_active, true)),
+    )
+    .leftJoin(schema.plans, eq(schema.plans.id, schema.userPlans.plan_id))
     .where(and(...filters))
 
   return {
@@ -1064,4 +1092,3 @@ export const deleteUser = async (userId: string) => {
 
   console.log(`✅ User ${userId} and all related data deleted successfully`)
 }
-

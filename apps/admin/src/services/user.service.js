@@ -10,6 +10,7 @@ export async function fetchUsersWithRoleUser({
   sortBy = 'createdAt',
   sortOrder = 'desc',
   approved,
+  plan,
 }) {
   const response = await api.get('/admin/users/users-management', {
     params: {
@@ -25,6 +26,7 @@ export async function fetchUsersWithRoleUser({
           : typeof approved === 'string' && approved !== ''
           ? approved === 'true'
           : undefined,
+      plan: plan || undefined,
       sortBy,
       sortOrder,
     },

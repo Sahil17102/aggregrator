@@ -31,6 +31,7 @@ export async function listUsers(req: any, res: Response) {
         ? undefined
         : req.query.onboardingComplete === 'true'
     const approved = req.query.approved === undefined ? undefined : req.query.approved === 'true'
+    const plan = typeof req.query.plan === 'string' ? req.query.plan : undefined
     // Normalize all status values into a single array
     let businessTypes = []
 
@@ -50,6 +51,7 @@ export async function listUsers(req: any, res: Response) {
       sortOrder,
       onboardingComplete,
       businessTypes,
+      plan,
       approved,
     })
 

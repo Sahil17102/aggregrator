@@ -275,16 +275,20 @@ export default function UsersManagementPage() {
                 value ||
                 row.name ||
                 row.companyInfo?.contactPerson ||
+                row.companyName ||
                 row.email ||
                 "User";
               const business =
                 row.companyInfo?.brandName ||
                 row.companyInfo?.businessName ||
+                row.companyInfo?.companyName ||
+                row.companyName ||
                 row.businessName;
               return (
                 <HStack spacing="12px">
                   <Avatar
                     name={getInitials(name)}
+                    src={row.profilePicture || row.companyInfo?.profilePicture}
                     size="sm"
                     bg="#F0EDFF"
                     color="#6C5CE7"
@@ -399,7 +403,9 @@ export default function UsersManagementPage() {
               colorScheme="purple"
               isChecked={row.approved !== false}
               isDisabled={updateUserApprovalMutation.isPending}
-              onChange={(event) => handleApprovalChange(row.id, event.target.checked)}
+              onChange={(event) =>
+                handleApprovalChange(row.id, event.target.checked)
+              }
             />
           </HStack>
         )}
