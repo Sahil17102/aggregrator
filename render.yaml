@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: aggregator-backend
+    name: truetransit1
     runtime: node
     rootDir: apps/backend
     buildCommand: npm ci --include=dev && npm run build
@@ -14,15 +14,15 @@ services:
       - key: PGSSLMODE
         value: require
       - key: CORS_ORIGINS
-        value: https://aggregator-client.onrender.com,https://aggregator-admin.onrender.com
+        value: https://truetransit-2.onrender.com,https://truetransitadmin.onrender.com
       - key: CORS_ALLOWED_ORIGINS
-        value: https://aggregator-client.onrender.com,https://aggregator-admin.onrender.com
+        value: https://truetransit-2.onrender.com,https://truetransitadmin.onrender.com
       - key: FRONTEND_URL
-        value: https://aggregator-client.onrender.com
+        value: https://truetransit-2.onrender.com
       - key: ADMIN_URL
-        value: https://aggregator-admin.onrender.com
+        value: https://truetransitadmin.onrender.com
       - key: API_URL
-        value: https://aggregator-backend-7gmk.onrender.com
+        value: https://truetransit1.onrender.com
       - key: EXPOSE_AUTH_CODES
         sync: false
       - key: ALLOW_INLINE_OTP
@@ -105,9 +105,9 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: VITE_API_URL
-        value: https://aggregator-backend-7gmk.onrender.com/api
+        value: https://truetransit1.onrender.com/api
       - key: VITE_APP_SOCKET_URL
-        value: https://aggregator-backend-7gmk.onrender.com
+        value: https://truetransit1.onrender.com
       - key: VITE_PUBLIC_GEOAPIFY_KEY
         sync: false
       - key: VITE_GOOGLE_OAUTH_CLIENT_ID
@@ -128,6 +128,6 @@ services:
       - key: NPM_FLAGS
         value: --legacy-peer-deps
       - key: REACT_APP_API_BASE_URL
-        value: https://aggregator-backend-7gmk.onrender.com/api
+        value: https://truetransit1.onrender.com/api
       - key: REACT_APP_SOCKET_URL
-        value: https://aggregator-backend-7gmk.onrender.com
+        value: https://truetransit1.onrender.com
