@@ -1,14 +1,15 @@
-export const INTEGRATED_SERVICE_PROVIDERS = ['deliveryone', 'delhivery'] as const
+export const INTEGRATED_SERVICE_PROVIDERS = ['deliveryone', 'delhivery', 'shipway'] as const
 
 export type IntegratedServiceProvider = (typeof INTEGRATED_SERVICE_PROVIDERS)[number]
 
-export const VISIBLE_SERVICE_PROVIDERS = ['deliveryone'] as const
+export const VISIBLE_SERVICE_PROVIDERS = ['deliveryone', 'shipway'] as const
 
 export type VisibleServiceProvider = (typeof VISIBLE_SERVICE_PROVIDERS)[number]
 
 export const SERVICE_PROVIDER_LABELS: Record<string, string> = {
   delhivery: 'Delhivery',
   deliveryone: 'Delhivery',
+  shipway: 'Shipway',
   ekart: 'Ekart',
   xpressbees: 'Xpressbees',
 }
@@ -18,6 +19,7 @@ const SERVICE_PROVIDER_ALIASES: Record<string, string> = {
   deliveryone: 'deliveryone',
   delivery1: 'deliveryone',
   delhiveryone: 'deliveryone',
+  shipway: 'shipway',
   ekart: 'ekart',
   ekartlogistics: 'ekart',
   xpressbees: 'xpressbees',

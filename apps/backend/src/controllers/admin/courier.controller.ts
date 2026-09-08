@@ -16,6 +16,11 @@ import {
   type DeliveryOneCourierCatalogItem,
 } from '../../models/services/deliveryOneCourierCatalog.service'
 import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
+import {
+  DEFAULT_SHIPWAY_API_BASE,
+  saveShipwayCredentials,
+  verifyAndSyncShipwayCredentials,
+} from '../../models/services/couriers/shipway.service'
 import { fetchAvailableCouriersWithRatesAdmin } from '../../models/services/shiprocket.service'
 import { courier_credentials } from '../../models/schema/courierCredentials'
 import { couriers } from '../../models/schema/couriers'
@@ -64,7 +69,8 @@ const getCanonicalDelhiveryCouriers = async (filters: {
   businessType?: unknown
 } = {}) => {
   const providerFilter = String(filters.serviceProvider ?? '').trim()
-  if (providerFilter && !isDelhiveryListProvider(providerFilter)) return []
+  const normalizedProviderFilter = normalizeServiceProviderKey(providerFilter)
+  if (providerFilter && !isVisibleServiceProvider(normalizedProviderFilter)) return []
 
   const requestedBusinessType = normalizeCourierListText(filters.businessType)
 
@@ -102,9 +108,15 @@ const getCanonicalDelhiveryCouriers = async (filters: {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }))
-  const sourceRows: DeliveryOneCourierCatalogItem[] = dbCatalogRows.length
-    ? dbCatalogRows
-    : getDeliveryOneCourierCatalog()
+  const deliveryOneRows = dbCatalogRows.filter((row) => isDelhiveryListProvider(row.serviceProvider))
+  const shipwayRows = dbCatalogRows.filter(
+    (row) => normalizeServiceProviderKey(row.serviceProvider) === 'shipway',
+  )
+  const sourceRows: DeliveryOneCourierCatalogItem[] = deliveryOneRows.length
+    ? deliveryOneRows
+    : normalizedProviderFilter === 'shipway'
+      ? []
+      : getDeliveryOneCourierCatalog()
   const legacyIds = new Set<number>(DELHIVERY_ALLOWED_COURIER_IDS)
   const deduped = new Map<string, DeliveryOneCourierCatalogItem>()
 
@@ -133,12 +145,21 @@ const getCanonicalDelhiveryCouriers = async (filters: {
       })
     })
 
-  getDeliveryOneCourierCatalog().forEach((courier) => {
-    const key = normalizeCourierListToken(courier.displayName)
-    if (!deduped.has(key)) deduped.set(key, courier)
-  })
+  if (normalizedProviderFilter !== 'shipway') {
+    getDeliveryOneCourierCatalog().forEach((courier) => {
+      const key = normalizeCourierListToken(courier.displayName)
+      if (!deduped.has(key)) deduped.set(key, courier)
+    })
+  }
 
-  const list = Array.from(deduped.values()).filter((courier) => {
+  const list = [...Array.from(deduped.values()), ...shipwayRows].filter((courier) => {
+    if (
+      normalizedProviderFilter &&
+      normalizeServiceProviderKey(courier.serviceProvider) !== normalizedProviderFilter
+    ) {
+      return false
+    }
+
     const courierBusinessTypes = Array.isArray(courier.businessType)
       ? courier.businessType.map(String)
       : []
@@ -434,7 +455,7 @@ export const updateServiceProviderStatusController = async (req: Request, res: R
       })
     }
 
-    const updated = await db
+    let updated = await db
       .update(couriers)
       .set({
         isEnabled,
@@ -446,6 +467,18 @@ export const updateServiceProviderStatusController = async (req: Request, res: R
         ),
       )
       .returning()
+
+    if (!updated.length && normalizedProvider === 'shipway' && isEnabled) {
+      await verifyAndSyncShipwayCredentials()
+      updated = await db
+        .update(couriers)
+        .set({
+          isEnabled: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(couriers.serviceProvider, normalizedProvider))
+        .returning()
+    }
 
     if (!updated.length) {
       return res.status(404).json({ success: false, message: 'No couriers found for provider' })
@@ -480,7 +513,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
       })
       .from(courier_credentials)
       .where(
-        inArray(courier_credentials.provider, ['delhivery', 'deliveryone']),
+        inArray(courier_credentials.provider, ['delhivery', 'deliveryone', 'shipway']),
       )
 
     const defaults = {
@@ -494,12 +527,24 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
         hasPassword: false,
         hasWebhookSecret: false,
       },
+      shipway: {
+        provider: 'shipway',
+        apiBase: DEFAULT_SHIPWAY_API_BASE,
+        email: '',
+        username: '',
+        hasLicenseKey: false,
+        licenseKeyMasked: '',
+      },
     }
 
     const activeCredential =
       rows.find((row) => String(row.provider || '').toLowerCase() === 'deliveryone') ||
       rows.find((row) => String(row.provider || '').toLowerCase() === 'delhivery')
     const apiKey = activeCredential?.apiKey || ''
+    const shipwayCredential = rows.find(
+      (row) => String(row.provider || '').toLowerCase() === 'shipway',
+    )
+    const shipwaySecret = shipwayCredential?.password || shipwayCredential?.apiKey || ''
     const data = {
       ...defaults,
       ...(activeCredential
@@ -518,6 +563,20 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
             },
           }
         : {}),
+      ...(shipwayCredential
+        ? {
+            shipway: {
+              provider: 'shipway',
+              apiBase: shipwayCredential.apiBase || DEFAULT_SHIPWAY_API_BASE,
+              email: shipwayCredential.username || '',
+              username: shipwayCredential.username || '',
+              hasLicenseKey: Boolean(shipwaySecret.trim()),
+              licenseKeyMasked: shipwaySecret
+                ? `${shipwaySecret.slice(0, 4)}${'*'.repeat(Math.max(shipwaySecret.length - 8, 0))}${shipwaySecret.slice(-4)}`
+                : '',
+            },
+          }
+        : {}),
     }
 
     res.json({
@@ -527,6 +586,46 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
   } catch (err) {
     console.error(err)
     res.status(500).json({ success: false, message: 'Failed to fetch courier credentials' })
+  }
+}
+
+export const updateShipwayCredentialsController = async (req: Request, res: Response) => {
+  try {
+    const result = await saveShipwayCredentials(req.body || {})
+    res.json({
+      success: true,
+      message: 'Shipway credentials verified and saved successfully',
+      data: {
+        provider: 'shipway',
+        apiBase: result.config.apiBase,
+        email: result.config.username,
+        hasLicenseKey: true,
+        carriersSynced: result.carriers.length,
+      },
+    })
+  } catch (err: any) {
+    console.error('Failed to update Shipway credentials:', err?.response?.data || err?.message || err)
+    res.status(err?.response?.status === 401 ? 401 : 400).json({
+      success: false,
+      message: err?.response?.data?.message || err?.message || 'Shipway authentication failed',
+    })
+  }
+}
+
+export const testShipwayCredentialsController = async (req: Request, res: Response) => {
+  try {
+    const result = await verifyAndSyncShipwayCredentials(req.body || {})
+    res.json({
+      success: true,
+      message: 'Shipway authentication successful',
+      data: { carriersSynced: result.carriers.length },
+    })
+  } catch (err: any) {
+    console.error('Shipway authentication failed:', err?.response?.data || err?.message || err)
+    res.status(err?.response?.status === 401 ? 401 : 400).json({
+      success: false,
+      message: err?.response?.data?.message || err?.message || 'Shipway authentication failed',
+    })
   }
 }
 

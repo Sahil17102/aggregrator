@@ -21,7 +21,9 @@ import {
   importShippingRatesController,
   submitDeliveryOneNdrActionController,
   trackDeliveryOneShipmentController,
+  testShipwayCredentialsController,
   updateDeliveryOneCredentialsController,
+  updateShipwayCredentialsController,
   updateDeliveryOneEWaybillController,
   updateDeliveryOneWarehouseController,
   updateShippingRateController,
@@ -55,6 +57,18 @@ router.put(
   requireAuth,
   isAdminMiddleware,
   updateDeliveryOneCredentialsController,
+)
+router.put(
+  '/credentials/shipway',
+  requireAuth,
+  isAdminMiddleware,
+  updateShipwayCredentialsController,
+)
+router.post(
+  '/credentials/shipway/test',
+  requireAuth,
+  isAdminMiddleware,
+  testShipwayCredentialsController,
 )
 router.get(
   '/delivery-one/waybills',
