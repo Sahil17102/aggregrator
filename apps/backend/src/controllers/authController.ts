@@ -256,16 +256,33 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
       }
     }
 
-    if (!user) {
-      return res.status(404).json({
-        error: 'No account found for this email. Please create an account first.',
+    let otpUser = user
+
+    if (!otpUser) {
+      otpUser = await createUserWithWallet({
+        email: normalizedEmail,
+        otp,
+        otpExpiresAt: expiry,
+        emailVerified: false,
+        onboardingStep: 0,
+        onboardingComplete: false,
+      })
+      if (!otpUser) throw new Error('Unable to create onboarding user')
+      console.log('[Auth OTP] Created passwordless onboarding user', {
+        email: maskEmailForLog(normalizedEmail),
+        userId: otpUser.id,
+      })
+    } else {
+      await updateUserOtpByEmail(normalizedEmail, otp, expiry)
+      console.log('[Auth OTP] Updated existing user OTP', {
+        email: maskEmailForLog(normalizedEmail),
+        userId: otpUser.id,
       })
     }
 
-    await updateUserOtpByEmail(normalizedEmail, otp, expiry)
-    console.log('[Auth OTP] Updated existing user OTP', {
+    console.log('[Auth OTP] OTP ready', {
       email: maskEmailForLog(normalizedEmail),
-      userId: user.id,
+      userId: otpUser.id,
     })
 
     if (!exposeOtp) {
