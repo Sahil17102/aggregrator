@@ -4,6 +4,7 @@ import {
   approveDocument,
   approveKyc,
   approveUser,
+  completeMerchantReadiness,
   createTeamMemberForUser,
   deleteTeamMember,
   deleteUserController,
@@ -28,6 +29,7 @@ const router = Router()
 router.get('/users-management', requireAuth, isAdminMiddleware, listUsers)
 router.get('/search-sellers', requireAuth, isAdminMiddleware, searchSellers)
 router.patch('/:id/approve', requireAuth, isAdminMiddleware, approveUser)
+router.post('/:id/complete-readiness', requireAuth, isAdminMiddleware, completeMerchantReadiness)
 router.post('/:id/reset-password', requireAuth, isAdminMiddleware, resetUserPasswordController)
 router.delete('/:id', requireAuth, isAdminMiddleware, deleteUserController)
 router.get('/:id/team-members', requireAuth, isAdminMiddleware, getTeamMembersForUser)

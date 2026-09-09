@@ -9,6 +9,7 @@ import {
   updateKycStatus,
 } from '../../models/services/kyc.service'
 import { deleteEmployeeService, getEmployeesByAdminService, toggleEmployeeStatusService, createEmployeeService } from '../../models/services/employee.service'
+import { completeMerchantOrderAccess } from '../../models/services/adminMerchantReadiness.service'
 import { deleteUser, findUserById, getAllUsersWithRoleUser, resetUserPassword, updateUserApprovalStatus } from '../../models/services/userService'
 import { sendKycStatusEmail } from '../../utils/emailSender'
 
@@ -256,17 +257,43 @@ export async function approveUser(req: any, res: Response) {
       return res.status(403).json({ success: false, message: 'Cannot update admin users' })
     }
 
-    // Update approval status
-    await updateUserApprovalStatus(userId, approved)
+    const readiness = approved
+      ? await completeMerchantOrderAccess(userId, req.body || {})
+      : await updateUserApprovalStatus(userId, false)
 
     return res.status(200).json({
       success: true,
-      message: approved ? 'User activated successfully' : 'User deactivated successfully',
+      message: approved
+        ? 'User activated and order access enabled successfully'
+        : 'User deactivated successfully',
       approved,
+      readiness,
     })
   } catch (error) {
     console.error('Error approving user:', error)
-    return res.status(500).json({ success: false, message: 'Server error approving user' })
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Server error approving user',
+    })
+  }
+}
+
+export async function completeMerchantReadiness(req: any, res: Response) {
+  try {
+    const userId = req.params.id
+    const readiness = await completeMerchantOrderAccess(userId, req.body || {})
+
+    return res.status(200).json({
+      success: true,
+      message: 'Seller order access enabled successfully',
+      data: readiness,
+    })
+  } catch (error) {
+    console.error('Error completing seller readiness:', error)
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Server error enabling seller orders',
+    })
   }
 }
 
