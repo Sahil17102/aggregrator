@@ -289,7 +289,22 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
       console.log('[Auth OTP] Sending OTP email', {
         email: maskEmailForLog(normalizedEmail),
       })
-      await sendVerificationEmail(normalizedEmail, otp)
+      try {
+        await sendVerificationEmail(normalizedEmail, otp)
+      } catch (emailError) {
+        if (!isEmailDeliveryError(emailError)) throw emailError
+
+        logAuthCode({ purpose: 'otp-login-email-fallback', to: normalizedEmail, code: otp })
+        console.warn('[Auth OTP] Email delivery failed; returning OTP inline', {
+          email: maskEmailForLog(normalizedEmail),
+        })
+
+        return res.json({
+          message: 'Verification code generated successfully',
+          otp,
+          emailDelivered: false,
+        })
+      }
     } else {
       logAuthCode({ purpose: 'otp-login', to: normalizedEmail, code: otp })
       console.log('[Auth OTP] Skipping OTP email because auth codes are exposed inline', {
