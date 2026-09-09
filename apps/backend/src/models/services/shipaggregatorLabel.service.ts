@@ -314,6 +314,13 @@ const resolveProviderKey = (order: any) => {
   if (order?.delhivery_label_meta) return 'delhivery'
   if (order?.deliveryone_label_meta) return 'deliveryone'
   if (integration === 'delhivery' || courierPartner.includes('delhivery')) return 'delhivery'
+  if (
+    integration === 'shipway' ||
+    courierPartner.includes('shipway') ||
+    courierPartner.includes('amazon shipping')
+  ) {
+    return 'shipway'
+  }
   if (integration === 'deliveryone' || courierPartner.includes('deliveryone')) return 'deliveryone'
   if (String(order?.shipment_id ?? '').trim()) return 'deliveryone'
   return 'delhivery'
@@ -408,7 +415,9 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
   } = params
 
   const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '-')
-  const providerLabel = resolveProviderKey(order) === 'delhivery' ? 'DELHIVERY' : 'DELIVERYONE'
+  const providerKey = resolveProviderKey(order)
+  const providerLabel =
+    providerKey === 'delhivery' ? 'DELHIVERY' : providerKey === 'shipway' ? 'SHIPWAY' : 'DELIVERYONE'
   const totalAmount = normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0)
   const rows: any[] = normalizedItems.slice(0, 4).map((item) => [
     { text: item.productId || '-', fontSize: 6.3, color: '#4b5563' },
@@ -664,7 +673,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
   })
 }
 
-export async function generateLabelForOrder(order: any, userId: string, tx: any = db) {
+export async function buildLabelPdfForOrder(order: any, userId: string, tx: any = db) {
   const snapshot = await resolveLabelOrderSnapshot(order, tx)
   const resolvedOrder = snapshot.order ?? order
   const resolvedUserId = normalizeText(resolvedOrder?.user_id ?? userId, '')
@@ -765,6 +774,13 @@ export async function generateLabelForOrder(order: any, userId: string, tx: any 
   if (!pdfBuffer || pdfBuffer.length === 0) {
     throw new Error('PDF buffer is empty or invalid')
   }
+
+  return { buffer: pdfBuffer, order: resolvedOrder, userId: resolvedUserId }
+}
+
+export async function generateLabelForOrder(order: any, userId: string, tx: any = db) {
+  const { buffer: pdfBuffer, order: resolvedOrder, userId: resolvedUserId } =
+    await buildLabelPdfForOrder(order, userId, tx)
 
   const { uploadUrl, key } = await presignUpload({
     filename: `l-${String(resolvedOrder?.order_number || resolvedOrder?.id || resolvedOrder?.order_id || Date.now())

@@ -8,7 +8,7 @@ import { userProfiles } from '../schema/userProfile'
 import { users } from '../schema/users'
 import { sanitizeOrdersForCustomer } from '../../utils/orderSanitizer'
 import { IOrderFilters, PaginationParams } from './shiprocket.service'
-import { generateLabelForOrder } from './generateCustomLabelService'
+import { buildLabelPdfForOrder, generateLabelForOrder } from './generateCustomLabelService'
 import dayjs from 'dayjs'
 import { generateInvoicePDF, Product } from './invoice.service'
 import {
@@ -213,6 +213,173 @@ const normalizeProducts = (rawProducts: unknown, fallbackAmount = 0): Product[] 
       tax_rate: 0,
     },
   ]
+}
+
+type OrderDocumentType = 'label' | 'invoice'
+
+const getOwnedOrderForDocument = async (orderId: string, expectedUserId?: string) => {
+  const [b2cOrder] = await db.select().from(b2c_orders).where(eq(b2c_orders.id, orderId)).limit(1)
+  const [b2bOrder] = b2cOrder
+    ? [undefined]
+    : await db.select().from(b2b_orders).where(eq(b2b_orders.id, orderId)).limit(1)
+
+  const order = b2cOrder || b2bOrder
+  if (!order) throw new Error('Order not found')
+
+  const userId = order.user_id
+  if (!userId) throw new Error('Order user not found')
+  if (expectedUserId && userId !== expectedUserId) throw new Error('Order not found')
+
+  return { order, userId, orderType: b2cOrder ? 'b2c' : 'b2b' as const }
+}
+
+const buildInvoicePdfForOrder = async ({
+  order,
+  userId,
+  invoiceNumber,
+  invoiceDateDisplay,
+  invoiceDateStored,
+}: {
+  order: any
+  userId: string
+  invoiceNumber: string
+  invoiceDateDisplay: string
+  invoiceDateStored: string
+}) => {
+  const [prefs] = await db
+    .select()
+    .from(invoicePreferences)
+    .where(eq(invoicePreferences.userId, userId))
+    .limit(1)
+  const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1)
+  const companyInfo = (profile as any)?.companyInfo || {}
+  const gstDetails = (profile as any)?.gstDetails || {}
+  const companyGST = gstDetails.gstNumber || companyInfo.gstNumber || ''
+  const pickupDetails = normalizePickupDetails(order.pickup_details)
+  const pickupPincode = pickupDetails?.pincode
+
+  const serviceType = order.service_type || order.integration_type || order.courier_partner || ''
+  const pickupAddress = formatPickupAddress(pickupDetails)
+  const sellerAddress = pickupAddress || companyInfo.companyAddress || companyInfo.address || ''
+  const sellerStateCode = pickupDetails?.state || companyInfo.state || ''
+  const sellerName =
+    pickupDetails?.warehouse_name ||
+    companyInfo.brandName ||
+    companyInfo.companyName ||
+    companyInfo.businessName ||
+    'Seller'
+  const brandName = companyInfo.brandName || companyInfo.companyName || pickupDetails?.warehouse_name || ''
+  const gstNumber = companyGST || companyInfo.gstNumber || companyInfo.gst || ''
+  const panNumber = companyInfo.panNumber || companyInfo.pan || ''
+  const supportPhone =
+    pickupDetails?.phone ||
+    companyInfo.companyContactNumber ||
+    companyInfo.contactNumber ||
+    prefs?.supportPhone ||
+    ''
+  const supportEmail = companyInfo.contactEmail || companyInfo.companyEmail || prefs?.supportEmail || ''
+  const products = normalizeProducts(order.products, toNumber(order.order_amount))
+  const { logoBuffer, signatureBuffer } = await loadInvoiceAssets(
+    {
+      companyLogoKey: companyInfo.companyLogoUrl ?? undefined,
+      includeSignature: prefs?.includeSignature,
+      signatureFile: prefs?.signatureFile ?? undefined,
+    },
+    order.order_number || String(order.id),
+  )
+
+  const invoiceAmount =
+    toNumber(order.order_amount) +
+    toNumber(order.shipping_charges) +
+    toNumber(order.gift_wrap) +
+    toNumber(order.transaction_fee) -
+    (toNumber(order.discount) + toNumber(order.prepaid_amount))
+
+  const buffer = await generateInvoicePDF({
+    invoiceNumber,
+    invoiceDate: invoiceDateDisplay,
+    invoiceAmount,
+    buyerName: order.buyer_name,
+    buyerPhone: order.buyer_phone,
+    buyerEmail: order.buyer_email ?? '',
+    buyerAddress: order.address,
+    buyerCity: order.city,
+    buyerState: order.state,
+    buyerPincode: order.pincode,
+    products,
+    shippingCharges: toNumber(order.shipping_charges),
+    giftWrap: toNumber(order.gift_wrap),
+    transactionFee: toNumber(order.transaction_fee),
+    discount: toNumber(order.discount),
+    prepaidAmount: toNumber(order.prepaid_amount),
+    courierName: order.courier_partner ?? '',
+    courierId: String(order.courier_id ?? ''),
+    logoBuffer,
+    orderType: (order.order_type as 'prepaid' | 'cod') || 'prepaid',
+    courierCod: order.order_type === 'cod' ? toNumber(order.cod_charges) : 0,
+    signatureBuffer,
+    companyName: sellerName,
+    supportEmail,
+    supportPhone,
+    companyGST: gstNumber,
+    sellerName,
+    brandName,
+    sellerAddress,
+    sellerStateCode,
+    gstNumber,
+    panNumber,
+    invoiceNotes: prefs?.invoiceNotes ?? '',
+    termsAndConditions: prefs?.termsAndConditions ?? '',
+    orderId: order.order_number,
+    awbNumber: order.awb_number ?? '',
+    courierPartner: order.courier_partner ?? '',
+    serviceType,
+    pickupPincode: pickupPincode ?? '',
+    deliveryPincode: order.pincode ?? '',
+    orderDate: order.order_date ?? '',
+    rtoCharges: Number(order.rto_charges ?? 0),
+    layout: ((prefs?.template as 'classic' | 'thermal') ?? 'classic'),
+  })
+
+  return { buffer, amount: invoiceAmount, date: invoiceDateStored }
+}
+
+const safeDocumentName = (value: unknown) =>
+  String(value || 'shipment')
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'shipment'
+
+export const getOrderDocumentForDownload = async ({
+  orderId,
+  documentType,
+  expectedUserId,
+}: {
+  orderId: string
+  documentType: OrderDocumentType
+  expectedUserId?: string
+}) => {
+  const { order, userId } = await getOwnedOrderForDocument(orderId, expectedUserId)
+  const documentName = safeDocumentName(order.order_number || order.id)
+
+  if (documentType === 'label') {
+    const { buffer } = await buildLabelPdfForOrder(order, userId, db)
+    return { buffer, fileName: `label-${documentName}.pdf` }
+  }
+
+  const parsedDate = dayjs(order.invoice_date || order.order_date || order.created_at)
+  const documentDate = parsedDate.isValid() ? parsedDate : dayjs()
+  const invoiceNumber = String(order.invoice_number || `INV-${order.order_number || order.id}`)
+  const invoice = await buildInvoicePdfForOrder({
+    order,
+    userId,
+    invoiceNumber,
+    invoiceDateDisplay: documentDate.format('DD MMM YYYY'),
+    invoiceDateStored: documentDate.format('YYYY-MM-DD'),
+  })
+
+  return { buffer: invoice.buffer, fileName: `invoice-${documentName}.pdf` }
 }
 
 export const regenerateOrderDocumentsServiceAdmin = async ({

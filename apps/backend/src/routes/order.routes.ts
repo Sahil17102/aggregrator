@@ -4,6 +4,7 @@ import {
   createB2BShipmentController,
   createB2CShipmentController,
   deleteB2COrderController,
+  downloadOrderDocumentController,
   generateManifestController,
   getAllOrdersController,
   getB2BOrdersController,
@@ -34,6 +35,7 @@ router.post('/b2c/:orderId/retry-manifest', requireAuth, retryFailedManifestCont
 router.post('/b2c/:orderId/request-pickup', requireAuth, requestB2CPickupController)
 router.post('/b2c/:orderId/sync-tracking', requireAuth, syncB2CTrackingController)
 router.post('/:orderId/regenerate-documents', requireAuth, regenerateOrderDocumentsController)
+router.get('/:orderId/documents/:documentType', requireAuth, downloadOrderDocumentController)
 router.get('/all', requireAuth, getAllOrdersController)
 
 router.get('/track', trackOrderController)

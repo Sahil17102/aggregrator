@@ -18,7 +18,10 @@ import {
   trackByAwbService,
   trackByOrderService,
 } from '../models/services/shiprocket.service'
-import { regenerateOrderDocumentsServiceAdmin } from '../models/services/adminOrders.service'
+import {
+  getOrderDocumentForDownload,
+  regenerateOrderDocumentsServiceAdmin,
+} from '../models/services/adminOrders.service'
 import { db } from '../models/client'
 import { b2c_orders } from '../models/schema/b2cOrders'
 
@@ -793,6 +796,39 @@ export const regenerateOrderDocumentsController = async (req: any, res: Response
     return res.status(statusCode).json({
       success: false,
       message: error?.message || 'Failed to regenerate order documents',
+    })
+  }
+}
+
+export const downloadOrderDocumentController = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.sub
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const orderId = String(req.params.orderId || '').trim()
+    const documentType = String(req.params.documentType || '').trim().toLowerCase()
+    if (!orderId || (documentType !== 'label' && documentType !== 'invoice')) {
+      return res.status(400).json({ success: false, message: 'A valid order document is required' })
+    }
+
+    const document = await getOrderDocumentForDownload({
+      orderId,
+      documentType,
+      expectedUserId: userId,
+    })
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Length', document.buffer.length)
+    res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`)
+    res.setHeader('Cache-Control', 'private, no-store')
+    return res.status(200).send(document.buffer)
+  } catch (error: any) {
+    const statusCode = error?.message === 'Order not found' ? 404 : 400
+    return res.status(statusCode).json({
+      success: false,
+      message: error?.message || 'Failed to prepare order document',
     })
   }
 }
