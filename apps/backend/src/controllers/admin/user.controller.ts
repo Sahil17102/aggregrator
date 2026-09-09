@@ -10,6 +10,7 @@ import {
 } from '../../models/services/kyc.service'
 import { deleteEmployeeService, getEmployeesByAdminService, toggleEmployeeStatusService, createEmployeeService } from '../../models/services/employee.service'
 import { completeMerchantOrderAccess } from '../../models/services/adminMerchantReadiness.service'
+import { getPickupAddressesService } from '../../models/services/pickupAddresses.service'
 import { deleteUser, findUserById, getAllUsersWithRoleUser, resetUserPassword, updateUserApprovalStatus } from '../../models/services/userService'
 import { sendKycStatusEmail } from '../../utils/emailSender'
 
@@ -337,6 +338,32 @@ export async function getUserBankAccounts(req: any, res: Response) {
   } catch (error) {
     console.error('Error fetching user bank accounts:', error)
     return res.status(500).json({ success: false, message: 'Server error fetching bank accounts' })
+  }
+}
+
+export async function getUserPickupAddresses(req: any, res: Response) {
+  try {
+    const userId = req.params.id
+    const user = await findUserById(userId)
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' })
+    }
+
+    const { page = 1, limit = 100, ...filters } = req.query
+    const { data, totalCount } = await getPickupAddressesService(
+      userId,
+      filters,
+      Number(page),
+      Number(limit),
+    )
+
+    return res.status(200).json({ success: true, data, totalCount })
+  } catch (error) {
+    console.error('Error fetching user pickup addresses:', error)
+    return res.status(500).json({
+      success: false,
+      message: 'Server error fetching pickup addresses',
+    })
   }
 }
 

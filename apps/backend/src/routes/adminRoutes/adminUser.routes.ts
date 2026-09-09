@@ -11,6 +11,7 @@ import {
   getKycDetailsByUserId,
   getTeamMembersForUser,
   getUserBankAccounts,
+  getUserPickupAddresses,
   listUsers,
   rejectDocument,
   rejectKyc,
@@ -41,7 +42,8 @@ router.patch(
   updateTeamMemberStatus,
 )
 router.delete('/:id/team-members/:memberId', requireAuth, isAdminMiddleware, deleteTeamMember)
-router.get('/:id/bank-accounts', getUserBankAccounts)
+router.get('/:id/bank-accounts', requireAuth, isAdminMiddleware, getUserBankAccounts)
+router.get('/:id/pickup-addresses', requireAuth, isAdminMiddleware, getUserPickupAddresses)
 router.patch(
   '/:id/bank-accounts/:accountId/status',
   requireAuth,
