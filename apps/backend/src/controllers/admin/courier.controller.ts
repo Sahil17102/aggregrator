@@ -532,6 +532,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
         apiBase: DEFAULT_SHIPWAY_API_BASE,
         email: '',
         username: '',
+        warehouseId: '',
         hasLicenseKey: false,
         licenseKeyMasked: '',
       },
@@ -570,6 +571,7 @@ export const getCourierCredentialsController = async (req: Request, res: Respons
               apiBase: shipwayCredential.apiBase || DEFAULT_SHIPWAY_API_BASE,
               email: shipwayCredential.username || '',
               username: shipwayCredential.username || '',
+              warehouseId: shipwayCredential.clientId || '',
               hasLicenseKey: Boolean(shipwaySecret.trim()),
               licenseKeyMasked: shipwaySecret
                 ? `${shipwaySecret.slice(0, 4)}${'*'.repeat(Math.max(shipwaySecret.length - 8, 0))}${shipwaySecret.slice(-4)}`
@@ -599,6 +601,7 @@ export const updateShipwayCredentialsController = async (req: Request, res: Resp
         provider: 'shipway',
         apiBase: result.config.apiBase,
         email: result.config.username,
+        warehouseId: result.config.warehouseId,
         hasLicenseKey: true,
         carriersSynced: result.carriers.length,
       },

@@ -80,6 +80,12 @@ import {
   type DelhiveryB2BManifestPayload,
 } from './couriers/delhiveryB2B.service'
 import { EkartService } from './couriers/ekart.service'
+import {
+  cancelShipwayOrder,
+  createShipwayShipment,
+  fetchShipwayRates,
+  type ShipwayRate,
+} from './couriers/shipway.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
@@ -2002,6 +2008,44 @@ export const fetchAvailableCouriersWithRates = async (
       candidates: providerCourierBuckets.get('deliveryone')?.rows.length ?? 0,
     })
 
+    let shipwayRates: ShipwayRate[] = []
+    if (enabledProviders.has('shipway')) {
+      const originPincode = normalizePincode(params.origin ?? params.source_pincode)?.toString()
+      const destinationPincode = normalizePincode(
+        params.destination ?? params.destination_pincode,
+      )?.toString()
+
+      if (originPincode && destinationPincode) {
+        try {
+          const requestedWeightKg = normalizeServiceabilityWeightToGrams(params.weight) / 1000
+          const liveRates = await fetchShipwayRates({
+            originPincode,
+            destinationPincode,
+            paymentType: normalizedPaymentType,
+          })
+          shipwayRates = liveRates.filter(
+            (rate) => !requestedWeightKg || rate.charged_weight >= requestedWeightKg,
+          )
+
+          if (shipwayRates.length) {
+            registerServiceableProvider('shipway', {
+              providerId: 'shipway',
+              providerName: 'Shipway',
+              codAvailable: true,
+              prepaidAvailable: true,
+              edd: '3-7 Days',
+              raw: { rate_card: shipwayRates },
+            })
+          }
+        } catch (err: any) {
+          console.error(
+            '[Serviceability] Shipway rate lookup failed:',
+            err?.response?.data || err?.message || err,
+          )
+        }
+      }
+    }
+
     // 🟢 Ekart Serviceability V3
     let ekartAvailable = false
     let ekartResp: any = null
@@ -2177,6 +2221,10 @@ export const fetchAvailableCouriersWithRates = async (
       if (!providerMeta) continue
 
       for (const courier of bucket.rows) {
+        const shipwayRecord =
+          providerKey === 'shipway'
+            ? shipwayRates.find((record) => Number(record.carrier_id) === Number(courier.id))
+            : null
         const xpressbeesRecord =
           providerKey === 'xpressbees'
             ? xpressbeesResp?.records?.find(
@@ -2193,7 +2241,21 @@ export const fetchAvailableCouriersWithRates = async (
               raw: xpressbeesRecord,
             })
           : null
-        const providerRate = providerKey === 'ekart' ? ekartProviderRate : xpressbeesProviderRate
+        const shipwayProviderRate = shipwayRecord
+          ? buildProviderRate('shipway', {
+              total: shipwayRecord.delivery_charge,
+              freight: shipwayRecord.delivery_charge,
+              chargeable_weight: shipwayRecord.charged_weight * 1000,
+              raw: shipwayRecord,
+            })
+          : null
+        const providerRate =
+          providerKey === 'ekart'
+            ? ekartProviderRate
+            : providerKey === 'shipway'
+              ? shipwayProviderRate
+              : xpressbeesProviderRate
+        if (providerKey === 'shipway' && !shipwayRecord) continue
         providerMeta.matchedCourierIds.add(Number(courier.id))
         combinedCouriers.push({
           id: courier.id,
@@ -2207,15 +2269,21 @@ export const fetchAvailableCouriersWithRates = async (
           createdAt: courier.createdAt,
           courier_cost_estimate:
             getProviderRateAmount(providerRate) ??
+            shipwayRecord?.delivery_charge ??
             xpressbeesRecord?.total_charges ??
             xpressbeesRecord?.freight_charges ??
             null,
           provider_rate: providerRate,
-          freight_charges: xpressbeesRecord?.freight_charges ?? null,
+          freight_charges:
+            shipwayRecord?.delivery_charge ?? xpressbeesRecord?.freight_charges ?? null,
           cod_charges: xpressbeesRecord?.cod_charges ?? null,
-          total_charges: xpressbeesRecord?.total_charges ?? null,
-          chargeable_weight: xpressbeesRecord?.chargeable_weight ?? null,
-          provider_serviceability: xpressbeesRecord ?? null,
+          total_charges:
+            shipwayRecord?.delivery_charge ?? xpressbeesRecord?.total_charges ?? null,
+          chargeable_weight:
+            shipwayRecord?.charged_weight !== undefined
+              ? shipwayRecord.charged_weight * 1000
+              : xpressbeesRecord?.chargeable_weight ?? null,
+          provider_serviceability: shipwayRecord ?? xpressbeesRecord ?? null,
         })
       }
     }
@@ -2615,10 +2683,15 @@ export const fetchAvailableCouriersWithRates = async (
       const inSystem = isCourierInSystem(providerKey, c.id)
       const requiredRateType = isReverseShipment ? 'rto' : 'forward'
       const localRatesAvailable = !requireLocalRates || Boolean(c.localRates?.[requiredRateType])
+      const liveProviderRateAvailable =
+        providerKey === 'shipway' && getProviderRateAmount(c.provider_rate) !== null
       const calculatorLocalRate =
         isCalculator && c.provider_serviceability?.source === 'local_rate_card'
 
-      if ((!inSystem && !calculatorLocalRate) || !localRatesAvailable) {
+      if (
+        (!inSystem && !calculatorLocalRate) ||
+        (!localRatesAvailable && !liveProviderRateAvailable)
+      ) {
         console.log('Removing courier from final list', {
           courierId: c.id,
           providerKey,
@@ -2628,7 +2701,10 @@ export const fetchAvailableCouriersWithRates = async (
         })
       }
 
-      return (inSystem || calculatorLocalRate) && localRatesAvailable
+      return (
+        (inSystem || calculatorLocalRate) &&
+        (localRatesAvailable || liveProviderRateAvailable)
+      )
     })
 
     // ✅ Final filter: Ensure all couriers have correct business_type
@@ -4389,23 +4465,62 @@ export const createB2CShipmentService = async (
 
   if (courierIdForRate && bookingPickupPincode && bookingDestinationPincode) {
     try {
-      const computedFreight = await computeB2CFreightForOrder({
-        userId,
-        courierId: courierIdForRate,
-        serviceProvider: params.integration_type ?? null,
-        mode: selectedProviderShippingMode,
-        selectedMaxSlabWeight,
-        zoneIdOverride: params.zone_id ?? null,
-        destinationPincode: bookingDestinationPincode,
-        originPincode: bookingPickupPincode,
-        weightG: normalizeServiceabilityWeightToGrams(params.package_weight ?? params.weight ?? 0),
-        lengthCm: Number(params.package_length ?? params.length ?? 0),
-        breadthCm: Number(params.package_breadth ?? params.breadth ?? 0),
-        heightCm: Number(params.package_height ?? params.height ?? 0),
-        isReverse: isReverseShipment,
-        paymentType: params.payment_type,
-        codChargeBasis,
-      })
+      const normalizedProvider = normalizeServiceProviderKey(params.integration_type)
+      const computedFreight =
+        normalizedProvider === 'shipway'
+          ? await (async () => {
+              const rates = await fetchShipwayRates({
+                originPincode: bookingPickupPincode,
+                destinationPincode: bookingDestinationPincode,
+                paymentType: String(params.payment_type || 'prepaid'),
+              })
+              const selectedRate = rates.find(
+                (rate) => Number(rate.carrier_id) === Number(courierIdForRate),
+              )
+              if (!selectedRate) {
+                throw new HttpError(
+                  400,
+                  'The selected Shipway carrier is not serviceable for these pincodes.',
+                )
+              }
+              const requestedWeightG = normalizeServiceabilityWeightToGrams(
+                params.package_weight ?? params.weight ?? 0,
+              )
+              if (selectedRate.charged_weight * 1000 < requestedWeightG) {
+                throw new HttpError(
+                  400,
+                  'The selected Shipway carrier weight slab is below the package weight.',
+                )
+              }
+              params.courier_cost = selectedRate.delivery_charge
+              return {
+                freight: selectedRate.delivery_charge,
+                cod_charges: 0,
+                cod_charge_basis: codChargeBasis,
+                cod_charge_source: 'shipway_live_rate',
+                volumetric_weight: null,
+                chargeable_weight: selectedRate.charged_weight * 1000,
+                slabs: 1,
+                max_slab_weight: selectedRate.charged_weight,
+              }
+            })()
+          : await computeB2CFreightForOrder({
+              userId,
+              courierId: courierIdForRate,
+              serviceProvider: params.integration_type ?? null,
+              mode: selectedProviderShippingMode,
+              selectedMaxSlabWeight,
+              zoneIdOverride: params.zone_id ?? null,
+              destinationPincode: bookingDestinationPincode,
+              originPincode: bookingPickupPincode,
+              weightG: normalizeServiceabilityWeightToGrams(params.package_weight ?? params.weight ?? 0),
+              lengthCm: Number(params.package_length ?? params.length ?? 0),
+              breadthCm: Number(params.package_breadth ?? params.breadth ?? 0),
+              heightCm: Number(params.package_height ?? params.height ?? 0),
+              isReverse: isReverseShipment,
+              paymentType: params.payment_type,
+              codChargeBasis,
+            })
       if (computedFreight?.freight !== undefined) {
         slabbedFreight = computedFreight
         freightCharges = Number(computedFreight.freight)
@@ -4511,6 +4626,7 @@ export const createB2CShipmentService = async (
       | 'ekart'
       | 'xpressbees'
       | 'deliveryone'
+      | 'shipway'
     const providerName =
       integrationType === 'delhivery'
         ? 'Delhivery'
@@ -4518,7 +4634,9 @@ export const createB2CShipmentService = async (
           ? 'Ekart Logistics'
           : integrationType === 'deliveryone'
             ? 'Delhivery'
-            : 'Xpressbees'
+            : integrationType === 'shipway'
+              ? 'Shipway'
+              : 'Xpressbees'
 
     let providerQuoteForBooking = 0
     if (!isReverseShipment && isQuoteBackedProvider(integrationType)) {
@@ -4577,7 +4695,7 @@ export const createB2CShipmentService = async (
       }
     }
 
-    if (['delhivery', 'deliveryone'].includes(integrationType) && !isReverseShipment) {
+    if (['delhivery', 'deliveryone', 'shipway'].includes(integrationType) && !isReverseShipment) {
       const insuranceSettings = await getShipmentInsuranceSettings()
       const insuranceChargeBasis = computeB2CInsuranceChargeBasis(params)
       const insuranceCharge = computeShipmentInsuranceCharge({
@@ -4597,7 +4715,7 @@ export const createB2CShipmentService = async (
       if (expectedWalletDebit > 0 && walletBalance < expectedWalletDebit) {
         throw new HttpError(
           400,
-          `Insufficient wallet balance to create Delhivery shipment. Required INR ${expectedWalletDebit.toFixed(
+          `Insufficient wallet balance to create ${providerName} shipment. Required INR ${expectedWalletDebit.toFixed(
             2,
           )}, available INR ${walletBalance.toFixed(2)}.`,
         )
@@ -4808,6 +4926,40 @@ export const createB2CShipmentService = async (
         manifest: undefined,
         courier_cost: providerCourierCost,
         sort_code: providerSortCode,
+      }
+    } else if (integrationType === 'shipway') {
+      if (isReverseShipment) {
+        throw new HttpError(400, 'Shipway reverse shipments are not supported yet')
+      }
+
+      shipmentData = await createShipwayShipment(params)
+      rollbackActions.push(async () => {
+        await cancelShipwayOrder(params.order_number)
+      })
+      const [selectedCourier] = await db
+        .select({ name: couriers.name })
+        .from(couriers)
+        .where(
+          and(
+            eq(couriers.id, Number(params.courier_id)),
+            eq(couriers.serviceProvider, 'shipway'),
+          ),
+        )
+        .limit(1)
+
+      shipmentSuccessPackage = {
+        waybill: shipmentData.awb_number,
+        charge: params.courier_cost ?? null,
+      }
+      providerCourierCost = Number(params.courier_cost ?? 0) || null
+      shipmentMeta = {
+        shipment_id: shipmentData.shipment_id,
+        awb_number: shipmentData.awb_number,
+        courier_name: selectedCourier?.name || 'Shipway',
+        courier_id: shipmentData.courier_id ?? params.courier_id,
+        label: shipmentData.label || undefined,
+        courier_cost: providerCourierCost,
+        sort_code: null,
       }
     } else if (integrationType === 'ekart') {
       if (isReverseShipment) {
@@ -5052,7 +5204,10 @@ export const createB2CShipmentService = async (
       throw new HttpError(400, 'Courier ID is required to compute freight')
     }
 
-    const finalSlabbedFreight = await computeB2CFreightForOrder({
+    const finalSlabbedFreight =
+      integrationType === 'shipway'
+        ? slabbedFreight
+        : await computeB2CFreightForOrder({
       userId,
       courierId: courierIdForRate,
       serviceProvider: params.integration_type ?? null,
@@ -5068,7 +5223,7 @@ export const createB2CShipmentService = async (
       isReverse: params.isReverse === true || params.payment_type === 'reverse',
       paymentType: params.payment_type,
       codChargeBasis,
-    })
+          })
 
     // 2️⃣ INSERT LOCAL ORDER + WALLET DEBIT PREVIEW
     codCharges = isCodOrder ? Number(finalSlabbedFreight.cod_charges ?? 0) : 0
@@ -5237,7 +5392,7 @@ export const createB2CShipmentService = async (
 
       // 3️⃣ CREATE LOCAL ORDER ENTRY (no seller insurance for B2C – platform liability only)
       const orderStatus =
-        ['delhivery', 'deliveryone'].includes(integrationType) &&
+        ['delhivery', 'deliveryone', 'shipway'].includes(integrationType) &&
         !isReverseShipment &&
         shipmentMeta.awb_number
           ? 'shipment_created'
@@ -5401,9 +5556,9 @@ export const createB2CShipmentService = async (
       }
 
       // 4️⃣ WALLET TRANSACTION
-      // Delhivery forward orders are charged at booking; other forward couriers are charged after manifest.
+      // Shipway also returns an AWB immediately, so its wallet debit is not deferred.
       const shouldDeferWalletDebit =
-        !isReverseShipment && !['delhivery', 'deliveryone'].includes(integrationType)
+        !isReverseShipment && !['delhivery', 'deliveryone', 'shipway'].includes(integrationType)
       const finalWalletDebit = walletDebit ?? 0
       if (shouldDeferWalletDebit) {
         console.log('ℹ️ Deferring wallet debit until manifest success for B2C order', {
