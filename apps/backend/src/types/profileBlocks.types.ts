@@ -32,6 +32,7 @@ export interface IUserProfileDB {
 
   onboardingStep: number;
   monthlyOrderCount: string;
+  accountVerified?: boolean;
   onboardingComplete: boolean;
   profileComplete: boolean;
 

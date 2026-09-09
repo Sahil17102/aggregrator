@@ -15,7 +15,6 @@ import {
   saveRefreshToken,
   updateUserPasswordResetToken,
   updateUserByEmail,
-  updateUserOtpByEmail,
   verifyGoogleToken,
 } from '../models/services/userService'
 
@@ -75,6 +74,7 @@ const isOnboardingComplete = (user: any) =>
     user?.onboardingComplete ||
       user?.profileComplete ||
       user?.approved ||
+      user?.accountVerified ||
       Number(user?.onboardingStep ?? 0) < 0,
   )
 
@@ -99,6 +99,7 @@ const buildAuthUserPayload = async (userId: string, fallback?: any) => {
     emailVerified: Boolean(user.emailVerified),
     profilePicture: user.profilePicture ?? null,
     role: user.role ?? fallback?.role ?? 'customer',
+    accountVerified: Boolean(user.accountVerified),
     onboardingComplete: isOnboardingComplete(user),
     onboardingStep: Number(user.onboardingStep ?? 0),
     profileComplete: Boolean(user.profileComplete || isOnboardingComplete(user)),
@@ -240,6 +241,7 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
 
     // 1. Look up user by email
     const user = await findUserByEmail(normalizedEmail)
+    const isNewOtpUser = !user
 
     if (user && user.role === 'employee') {
       const [employeeRecord] = await db
@@ -264,6 +266,7 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
         otp,
         otpExpiresAt: expiry,
         emailVerified: false,
+        accountVerified: false,
         onboardingStep: 0,
         onboardingComplete: false,
       })
@@ -273,7 +276,11 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
         userId: otpUser.id,
       })
     } else {
-      await updateUserOtpByEmail(normalizedEmail, otp, expiry)
+      await updateUserByEmail(normalizedEmail, {
+        otp,
+        otpExpiresAt: expiry,
+        accountVerified: true,
+      })
       console.log('[Auth OTP] Updated existing user OTP', {
         email: maskEmailForLog(normalizedEmail),
         userId: otpUser.id,
@@ -303,6 +310,8 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
           message: 'Verification code generated successfully',
           otp,
           emailDelivered: false,
+          isNewUser: isNewOtpUser,
+          requiresOnboarding: isNewOtpUser,
         })
       }
     } else {
@@ -318,6 +327,8 @@ export const requestOtp = async (req: Request, res: Response): Promise<any> => {
         : 'OTP sent successfully to your email',
       ...(exposeOtp ? { otp } : {}),
       emailDelivered: !exposeOtp,
+      isNewUser: isNewOtpUser,
+      requiresOnboarding: isNewOtpUser,
     })
   } catch (err) {
     console.error('[Auth OTP] Error in requestOtp', {

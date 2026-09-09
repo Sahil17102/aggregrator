@@ -185,6 +185,7 @@ export const findUserById = async (id: string) => {
     profile?.onboardingComplete ||
       profile?.profileComplete ||
       profile?.approved ||
+      result[0].user.accountVerified ||
       Number(profile?.onboardingStep ?? 0) < 0,
   )
 
@@ -192,6 +193,7 @@ export const findUserById = async (id: string) => {
   return {
     ...result[0].user,
     ...profile,
+    accountVerified: Boolean(result[0].user.accountVerified),
     onboardingComplete,
     profileComplete: Boolean(profile?.profileComplete || onboardingComplete),
     currentPlanId: result[0].userPlan?.plan_id || null, // current assigned plan

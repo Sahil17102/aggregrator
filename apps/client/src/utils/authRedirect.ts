@@ -2,6 +2,7 @@ type OnboardingStatusUser = {
   onboardingComplete?: boolean | null
   profileComplete?: boolean | null
   approved?: boolean | null
+  accountVerified?: boolean | null
   onboardingStep?: number | null
 }
 
@@ -10,6 +11,7 @@ export const isOnboardingComplete = (user?: OnboardingStatusUser | null) =>
     user?.onboardingComplete ||
       user?.profileComplete ||
       user?.approved ||
+      user?.accountVerified ||
       Number(user?.onboardingStep ?? 0) < 0,
   )
 

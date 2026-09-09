@@ -28,17 +28,31 @@ export const getProfileByUserId = async (userId: string) => {
       profile: userProfiles,
       currentPlanId: userPlans.plan_id,
       currentPlanName: plans.name,
+      accountVerified: users.accountVerified,
     })
     .from(userProfiles)
     .leftJoin(userPlans, eq(userPlans.userId, userProfiles.userId))
     .leftJoin(plans, eq(plans.id, userPlans.plan_id))
+    .leftJoin(users, eq(users.id, userProfiles.userId))
     .where(eq(userProfiles.userId, userId))
     .limit(1)
 
   if (!rows[0]) return null
+  const profile = rows[0].profile
+  const accountVerified = Boolean(rows[0].accountVerified)
+  const onboardingComplete = Boolean(
+    profile.onboardingComplete ||
+      profile.profileComplete ||
+      profile.approved ||
+      accountVerified ||
+      Number(profile.onboardingStep ?? 0) < 0,
+  )
 
   return {
-    ...rows[0].profile,
+    ...profile,
+    accountVerified,
+    onboardingComplete,
+    profileComplete: Boolean(profile.profileComplete || onboardingComplete),
     currentPlanId: rows[0].currentPlanId ?? null,
     currentPlanName: rows[0].currentPlanName ?? null,
   }
