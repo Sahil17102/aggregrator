@@ -83,7 +83,8 @@ const fetchCarriers = async (config: ShipwayConfig): Promise<ShipwayCarrier[]> =
   const response = await axios.get(`${config.apiBase}/getcarrier`, {
     auth: { username: config.username, password: config.password },
     headers: { Accept: 'application/json' },
-    timeout: 20000,
+    // Shipway's carrier catalog can take more than 20 seconds on a cold request.
+    timeout: 60000,
   })
   const payload = response.data
   const rawCarriers = Array.isArray(payload?.message)
