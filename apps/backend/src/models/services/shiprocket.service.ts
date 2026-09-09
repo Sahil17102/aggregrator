@@ -154,6 +154,20 @@ const resolveStoredLabelKey = async ({
   return rawLabel
 }
 
+const tryGenerateLabelForOrder = async (
+  order: any,
+  userId: string,
+  tx: any,
+  context: string,
+) => {
+  try {
+    return await generateLabelForOrder(order, userId, tx)
+  } catch (err: any) {
+    console.warn(`⚠️ Label generation skipped for ${context}:`, err?.message || err)
+    return null
+  }
+}
+
 const truncateColumnValue = (value: string, maxLength = 255) => {
   if (value.length <= maxLength) return value
   return `${value.slice(0, Math.max(0, maxLength - 3))}...`
@@ -3588,7 +3602,12 @@ export async function createB2COrder({
     if (!storedShipmentLabel && /^https?:\/\//i.test(rawShipmentLabel)) {
       const [freshOrder] = await tx.select().from(b2c_orders).where(eq(b2c_orders.id, newOrder.id))
       if (freshOrder) {
-        const generatedLabelKey = await generateLabelForOrder(freshOrder, userId, tx)
+        const generatedLabelKey = await tryGenerateLabelForOrder(
+          freshOrder,
+          userId,
+          tx,
+          `order ${normalizedOrderNumber}`,
+        )
         if (generatedLabelKey) {
           await tx
             .update(b2c_orders)
@@ -5500,10 +5519,11 @@ export const createB2CShipmentService = async (
                 .limit(1)
 
               if (freshUpdatedOrder) {
-                const generatedLabelKey = await generateLabelForOrder(
+                const generatedLabelKey = await tryGenerateLabelForOrder(
                   freshUpdatedOrder,
                   userId,
                   tx,
+                  `order ${params.order_number}`,
                 )
 
                 if (generatedLabelKey) {
