@@ -7,9 +7,53 @@ import { findUserByEmail, findUserById, saveRefreshToken } from "./userService";
 
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DEFAULT_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@truetransitmobility.com")
+  .trim()
+  .toLowerCase();
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "TrueTransit@123";
+
+export const ensureDefaultAdmin = async () => {
+  if (!DEFAULT_ADMIN_EMAIL || !DEFAULT_ADMIN_PASSWORD) return;
+
+  const passwordHash = await bcrypt.hash(DEFAULT_ADMIN_PASSWORD, 10);
+  const [existing] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, DEFAULT_ADMIN_EMAIL))
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(users)
+      .set({
+        passwordHash,
+        role: "admin",
+        emailVerified: true,
+        accountVerified: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, existing.id));
+
+    console.log(`Default admin credentials ensured for ${DEFAULT_ADMIN_EMAIL}`);
+    return;
+  }
+
+  await db.insert(users).values({
+    email: DEFAULT_ADMIN_EMAIL,
+    passwordHash,
+    role: "admin",
+    emailVerified: true,
+    phoneVerified: false,
+    accountVerified: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  console.log(`Default admin account created for ${DEFAULT_ADMIN_EMAIL}`);
+};
 
 export const loginAdmin = async (email: string, password: string) => {
-  const user = await findUserByEmail(email);
+  const user = await findUserByEmail(email.trim().toLowerCase());
 
   if (!user || user.role !== "admin") {
     throw new Error("Unauthorized");
