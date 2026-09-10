@@ -3,7 +3,7 @@ services:
     name: shipaggregator-backend
     runtime: node
     buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm start
+    startCommand: npm run migrate:plan-commission && npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
