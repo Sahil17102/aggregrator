@@ -360,6 +360,17 @@ type PincodeCsvRecord = {
   // city and state are optional - will use existing values from DB if not provided
   city?: string
   state?: string
+  status?: string
+}
+
+const normalizePincodeCsvHeader = (header: string) => {
+  const normalized = String(header || '').replace(/[^a-z0-9]/gi, '').toLowerCase()
+  const aliases: Record<string, string> = {
+    pincode: 'pincode',
+    odazone: 'is_oda',
+    status: 'status',
+  }
+  return aliases[normalized] || String(header || '').trim().toLowerCase()
 }
 
 const truthy = (value?: string) => {
@@ -382,15 +393,19 @@ export const importPincodesFromCsv = async (
   const parsed = Papa.parse<PincodeCsvRecord>(csv, {
     header: true,
     skipEmptyLines: true,
+    transformHeader: normalizePincodeCsvHeader,
   })
 
   if (parsed.errors?.length) {
     throw new Error(`CSV parse error: ${parsed.errors[0].message}`)
   }
 
-  const rows = parsed.data.filter(
-    (row) => row.pincode && row.pincode.trim(), // Only require pincode
-  )
+  const rows = parsed.data.filter((row) => {
+    if (!row.pincode || !row.pincode.trim()) return false
+    // The Delhivery B2B LTL list is a serviceability file; inactive rows must
+    // not alter an existing pincode's ODA status.
+    return !row.status || row.status.trim().toLowerCase() === 'active'
+  })
 
   const zoneCache = new Map<string, string>()
 
@@ -463,15 +478,13 @@ export const importPincodesFromCsv = async (
       if (existing) {
         // Update existing pincode attributes
         // Only update city/state if provided in CSV, otherwise keep existing values
-        const updateData: any = {
-          is_oda: truthy(row.is_oda),
-          is_remote: truthy(row.is_remote),
-          is_mall: truthy(row.is_mall),
-          is_sez: truthy(row.is_sez),
-          is_airport: truthy(row.is_airport),
-          is_high_security: truthy(row.is_high_security),
-          updated_at: new Date(),
-        }
+        const updateData: any = { updated_at: new Date() }
+        if (row.is_oda !== undefined) updateData.is_oda = truthy(row.is_oda)
+        if (row.is_remote !== undefined) updateData.is_remote = truthy(row.is_remote)
+        if (row.is_mall !== undefined) updateData.is_mall = truthy(row.is_mall)
+        if (row.is_sez !== undefined) updateData.is_sez = truthy(row.is_sez)
+        if (row.is_airport !== undefined) updateData.is_airport = truthy(row.is_airport)
+        if (row.is_high_security !== undefined) updateData.is_high_security = truthy(row.is_high_security)
 
         // Only update city/state if provided in CSV
         if (row.city?.trim()) {

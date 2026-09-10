@@ -34,6 +34,9 @@ const ODAAndCSDSection = memo(({ formData, onFieldChange }) => {
         <Text fontSize="sm" fontWeight="semibold" color="purple.700" mb={3}>
           ODA Charges
         </Text>
+        <Text fontSize="xs" color="purple.700" mb={3}>
+          Applied only to destination pincodes marked ODA. Update these amounts whenever the courier ODA rate changes.
+        </Text>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium">

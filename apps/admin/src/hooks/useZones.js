@@ -1,8 +1,18 @@
 // src/hooks/useZones.js
 import { useToast } from '@chakra-ui/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { b2bAdminService } from '../services/b2bAdmin.service'
 import { zoneService } from '../services/zones.service'
+
+const B2C_ZONE_ORDER = { WITHIN_CITY: 10, WITHIN_STATE: 20, WITHIN_REGION: 21, METRO_TO_METRO: 30, ROI: 40, KASHMIR: 50 }
+const b2cZonePosition = (zone) => {
+  const code = String(zone?.code || '').trim().toUpperCase()
+  if (B2C_ZONE_ORDER[code] !== undefined) return B2C_ZONE_ORDER[code]
+  const label = `${zone?.name || ''} ${zone?.description || ''}`.toUpperCase()
+  return label.includes('KASHMIR') || label.includes('LADAKH') || label.includes('NORTH EAST') ? 50 : 100
+}
+const sortB2CZones = (zones) => [...zones].sort((a, b) => b2cZonePosition(a) - b2cZonePosition(b) || String(a?.name || a?.code || '').localeCompare(String(b?.name || b?.code || '')))
 
 export function useZones(businessType = null, filters = {}) {
   const queryClient = useQueryClient()
@@ -17,7 +27,7 @@ export function useZones(businessType = null, filters = {}) {
     queryClient.invalidateQueries({ queryKey: ['b2b-zone-rates'] })
   }
 
-  const { data: zones = [], isLoading, isError } = useQuery({
+  const { data: fetchedZones = [], isLoading, isError } = useQuery({
     queryKey,
     queryFn: () =>
       isB2B
@@ -28,6 +38,11 @@ export function useZones(businessType = null, filters = {}) {
         : zoneService.getZones(businessType, filters),
     keepPreviousData: true,
   })
+
+  const zones = useMemo(
+    () => (normalizedType === 'B2C' ? sortB2CZones(fetchedZones) : fetchedZones),
+    [fetchedZones, normalizedType],
+  )
 
   const createZone = useMutation({
     mutationFn: (payload) =>

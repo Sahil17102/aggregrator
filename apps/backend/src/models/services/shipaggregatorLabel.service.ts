@@ -49,6 +49,11 @@ const formatMoney = (value: number | string | null | undefined) => {
   return `Rs. ${amount.toFixed(2)}`
 }
 
+const formatShipmentWeight = (order: any) => {
+  const weight = normalizeNumber(order?.charged_weight ?? order?.actual_weight ?? order?.weight ?? order?.package_weight)
+  return weight > 0 ? `${Number(weight.toFixed(3))} kg` : '-'
+}
+
 const parseMaybeJson = <T>(value: unknown): T | null => {
   if (value === null || value === undefined) return null
   if (typeof value === 'object') return value as T
@@ -419,6 +424,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
   const providerLabel =
     providerKey === 'delhivery' ? 'DELHIVERY' : providerKey === 'shipway' ? 'SHIPWAY' : 'DELIVERYONE'
   const totalAmount = normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0)
+  const shipmentWeight = formatShipmentWeight(order)
   const rows: any[] = normalizedItems.slice(0, 4).map((item) => [
     { text: item.productId || '-', fontSize: 6.3, color: '#4b5563' },
     { text: item.productName || '-', fontSize: 6.3, color: '#111111' },
@@ -530,7 +536,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
                 margin: [0, 1, 0, 0],
               },
               {
-                text: `Order Value: ${formatMoney(totalAmount)}`,
+                text: `Weight: ${shipmentWeight}`,
                 fontSize: 9.2,
                 bold: true,
                 color: '#111111',
@@ -559,7 +565,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
           {
             width: '*',
             stack: [
-              { text: 'To:', fontSize: 9.2, bold: true, color: '#111111' },
+              { text: 'DELIVER TO', fontSize: 9.2, bold: true, color: '#111111' },
               { text: customerName, fontSize: 11.5, bold: true, color: '#111111', margin: [0, 1, 0, 0] },
               ...customerAddressLines.map((line) => ({ text: line, fontSize: 8.2, color: '#111111' })),
               { text: `Contact: ${customerPhone || '-'}`, fontSize: 8.2, color: '#374151', margin: [0, 1, 0, 0] },
