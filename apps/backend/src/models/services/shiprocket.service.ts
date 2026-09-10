@@ -1353,6 +1353,7 @@ const isQuoteBackedProvider = (value?: string | null) =>
 export const calculateFinalCourierCharge = ({
   platformFreight,
   providerQuote,
+  commissionPercentage = 0,
   codCharge,
   otherCharges,
   insuranceCharge,
@@ -1360,6 +1361,7 @@ export const calculateFinalCourierCharge = ({
 }: {
   platformFreight?: unknown
   providerQuote?: unknown
+  commissionPercentage?: unknown
   codCharge?: unknown
   otherCharges?: unknown
   insuranceCharge?: unknown
@@ -1371,7 +1373,12 @@ export const calculateFinalCourierCharge = ({
   const insuranceChargeAmount = roundMoneyValue(insuranceCharge)
   const codChargeAmount =
     String(paymentType || '').toLowerCase() === 'cod' ? roundMoneyValue(codCharge) : 0
-  const sellerFreightCharge = platformFreightCharge
+  // Sellers are billed courier cost plus the commission of their assigned plan.
+  // A live provider quote is the source of truth; local rate-card freight is the fallback.
+  const commissionBase = providerQuoteCharge > 0 ? providerQuoteCharge : platformFreightCharge
+  const appliedCommissionPercentage = Math.min(70, Math.max(0, Number(commissionPercentage) || 0))
+  const commissionAmount = roundMoneyValue((commissionBase * appliedCommissionPercentage) / 100)
+  const sellerFreightCharge = roundMoneyValue(commissionBase + commissionAmount)
   const finalCourierCharge = roundMoneyValue(
     sellerFreightCharge + otherChargeAmount + codChargeAmount + insuranceChargeAmount,
   )
@@ -1380,6 +1387,9 @@ export const calculateFinalCourierCharge = ({
     platform_freight_charge: platformFreightCharge,
     provider_quote_charge: providerQuoteCharge,
     seller_freight_charge: sellerFreightCharge,
+    commission_base: commissionBase,
+    commission_percentage: appliedCommissionPercentage,
+    commission_amount: commissionAmount,
     other_charges: otherChargeAmount,
     cod_charges: codChargeAmount,
     insurance_charge: insuranceChargeAmount,
@@ -1661,6 +1671,26 @@ async function resolveServiceabilityPlanId({
   }
 
   return activePlanId
+}
+
+const getPlanCommissionPercentage = async (planId?: string | null) => {
+  if (!planId) return 0
+  const [plan] = await db
+    .select({ commissionPercentage: plans.commission_percentage })
+    .from(plans)
+    .where(eq(plans.id, planId))
+    .limit(1)
+  return Math.min(70, Math.max(0, Number(plan?.commissionPercentage ?? 0)))
+}
+
+const getUserPlanCommissionPercentage = async (userId?: string | null) => {
+  if (!userId) return 0
+  const [userPlan] = await db
+    .select({ planId: userPlans.plan_id })
+    .from(userPlans)
+    .where(and(eq(userPlans.userId, userId), eq(userPlans.is_active, true)))
+    .limit(1)
+  return getPlanCommissionPercentage(userPlan?.planId)
 }
 
 export const fetchAvailableCouriersWithRates = async (
@@ -2320,6 +2350,7 @@ export const fetchAvailableCouriersWithRates = async (
     // ✅ Local rate & zone logic - Fetch for ALL service providers
     let localRates: any[] = []
     let approxZone: { id: string; code: string; name?: string } | null = null
+    let planCommissionPercentage = 0
 
     if (params.shipment_type === 'b2c') {
       const originPincode = params.origin?.toString()
@@ -2340,6 +2371,7 @@ export const fetchAvailableCouriersWithRates = async (
         planFallbackName,
         fallbackToBasicForUser: true,
       })
+      planCommissionPercentage = await getPlanCommissionPercentage(activePlanId)
 
       const loadCalculatorRatesForPlan = async (planId: string) => {
         let rateZone = zoneRow
@@ -2837,6 +2869,7 @@ export const fetchAvailableCouriersWithRates = async (
       const finalCharge = calculateFinalCourierCharge({
         platformFreight: localRate?.rate ?? courier.rate ?? 0,
         providerQuote,
+        commissionPercentage: planCommissionPercentage,
         codCharge: localRate?.cod_charges ?? 0,
         otherCharges: localRate?.other_charges ?? 0,
         insuranceCharge,
@@ -2864,6 +2897,9 @@ export const fetchAvailableCouriersWithRates = async (
         final_rate_breakdown: {
           platform_freight: finalCharge.platform_freight_charge,
           provider_quote: finalCharge.provider_quote_charge,
+          commission_base: finalCharge.commission_base,
+          commission_percentage: finalCharge.commission_percentage,
+          commission_amount: finalCharge.commission_amount,
           other_charges: finalCharge.other_charges,
           cod_charges: finalCharge.cod_charges,
           insurance_charge: finalCharge.insurance_charge,
@@ -5285,9 +5321,11 @@ export const createB2CShipmentService = async (
         )
       }
 
+      const planCommissionPercentage = await getUserPlanCommissionPercentage(userId)
       const finalCharge = calculateFinalCourierCharge({
         platformFreight: platformFreightCharge,
         providerQuote: providerQuoteCharge,
+        commissionPercentage: planCommissionPercentage,
         codCharge: codCharges,
         otherCharges,
         insuranceCharge,

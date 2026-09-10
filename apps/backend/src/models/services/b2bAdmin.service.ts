@@ -18,6 +18,7 @@ import { db } from '../client'
 // Try importing the entire module first to debug
 import { checkHolidayCharge } from '../../utils/holidayChecker'
 import { tracking_events } from '../schema/trackingEvents'
+import { plans } from '../schema/plans'
 import * as zonesModule from '../schema/zones'
 import { getAdditionalCharges } from './b2bPricingConfig.service'
 const { b2bOverheadRules, b2bPincodes, b2bZoneToZoneRates, b2bZoneRegions, zones } = zonesModule
@@ -2432,6 +2433,29 @@ export const calculateB2BRate = async (params: {
     runningTotal += amount
   }
 
+  // Plan commission is calculated on the full courier cost (freight plus all
+  // applicable courier charges), then added to the seller's payable amount.
+  let commissionPercentage = 0
+  if (params.planId) {
+    const [plan] = await db
+      .select({ commissionPercentage: plans.commission_percentage })
+      .from(plans)
+      .where(eq(plans.id, params.planId))
+      .limit(1)
+    commissionPercentage = Math.min(70, Math.max(0, Number(plan?.commissionPercentage ?? 0)))
+  }
+  const commissionAmount = Number(((runningTotal * commissionPercentage) / 100).toFixed(2))
+  if (commissionAmount > 0) {
+    overheadBreakdown.push({
+      id: 'plan_commission',
+      code: 'PLAN_COMMISSION',
+      name: `Plan Commission (${commissionPercentage}%)`,
+      type: 'percent',
+      amount: commissionAmount,
+    })
+    runningTotal += commissionAmount
+  }
+
   return {
     origin,
     destination,
@@ -2468,6 +2492,7 @@ export const calculateB2BRate = async (params: {
           }
         : null,
       volumetricDivisor: cftFactor, // Uses CFT factor from additional charges configuration
+      commissionPercentage,
     },
   }
 }
