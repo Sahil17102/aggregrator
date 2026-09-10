@@ -23,31 +23,18 @@ export const PlansService = {
       .orderBy(desc(plans.created_at)) // sort by newest first
   },
 
-  create: async (data: { name: string; description?: string; commission_percentage?: number }) => {
-    const [newPlan] = await db
-      .insert(plans)
-      .values({
-        ...data,
-        commission_percentage: Number(data.commission_percentage ?? 0).toFixed(2),
-      })
-      .returning()
+  create: async (data: { name: string; description?: string }) => {
+    const [newPlan] = await db.insert(plans).values(data).returning()
     return newPlan
   },
 
   update: async (
     id: string,
-    data: { name?: string; description?: string; is_active?: boolean; commission_percentage?: number },
+    data: { name?: string; description?: string; is_active?: boolean },
   ) => {
-    const { commission_percentage, ...planFields } = data
-    const updateData = {
-      ...planFields,
-      ...(commission_percentage !== undefined
-        ? { commission_percentage: Number(commission_percentage || 0).toFixed(2) }
-        : {}),
-    }
     const [updated] = await db
       .update(plans)
-      .set(updateData)
+      .set({ ...data })
       .where(eq(plans.id, id))
       .returning()
     return updated

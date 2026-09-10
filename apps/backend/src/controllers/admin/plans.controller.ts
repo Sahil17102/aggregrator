@@ -18,8 +18,8 @@ export const PlansController = {
 
   createPlan: async (req: Request, res: Response) => {
     try {
-      const { name, description, commission_percentage } = req.body
-      const plan = await PlansService.create({ name, description, commission_percentage })
+      const { name, description } = req.body
+      const plan = await PlansService.create({ name, description })
       res.status(201).json(plan)
     } catch (err) {
       res.status(500).json({ error: 'Failed to create plan' })
