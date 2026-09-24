@@ -24,6 +24,7 @@
     "seed:delivery-one-b2c:force": "tsx src/scripts/seedDeliveryOneB2CRatecard.ts --force",
     "seed:delivery-one-express-b2c": "tsx src/scripts/seedDeliveryOneExpressB2CRatecard.ts",
     "seed:delivery-one-express-b2c:force": "tsx src/scripts/seedDeliveryOneExpressB2CRatecard.ts --force",
+    "seed:delivery-one-b2b-demo": "tsx src/scripts/seedDeliveryOneB2BDemo.ts",
     "purge:legacy-couriers": "tsx src/scripts/purgeLegacyCourierSeeds.ts",
     "purge:legacy-couriers:dry-run": "tsx src/scripts/purgeLegacyCourierSeeds.ts --dry-run",
     "recover:sumair-upgrade": "tsx src/scripts/recoverSumairUpgradeRateCard.ts",

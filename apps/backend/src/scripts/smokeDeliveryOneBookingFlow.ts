@@ -30,6 +30,13 @@ type SmokeCourier = {
 
 const money = (value: unknown) => Number(value ?? 0).toFixed(2)
 
+const smokeOrigin = Number(process.env.DELHIVERY_SMOKE_ORIGIN || 500032)
+const smokeDestination = Number(process.env.DELHIVERY_SMOKE_DESTINATION || 110001)
+
+if (!/^\d{6}$/.test(String(smokeOrigin)) || !/^\d{6}$/.test(String(smokeDestination))) {
+  throw new Error('DELHIVERY_SMOKE_ORIGIN and DELHIVERY_SMOKE_DESTINATION must be 6-digit pincodes.')
+}
+
 async function getBasicPlanId() {
   const planRows = await db.select({ id: plans.id, name: plans.name }).from(plans)
   const basicPlan = planRows.find((plan) => plan.name?.trim().toLowerCase() === 'basic')
@@ -101,8 +108,8 @@ function assertDeliveryOneCourier(paymentType: 'prepaid' | 'cod', couriers: Smok
 async function quoteFor(userId: string, paymentType: 'prepaid' | 'cod') {
   return fetchAvailableCouriersWithRates(
     {
-      origin: 190001,
-      destination: 110042,
+      origin: smokeOrigin,
+      destination: smokeDestination,
       payment_type: paymentType,
       order_amount: 10,
       cod_charge_basis: paymentType === 'cod' ? 10 : 0,
@@ -136,8 +143,8 @@ async function main() {
           message:
             'Delhivery booking courier lookup passed for a live Rs 10 test order without creating a shipment.',
           route: {
-            origin: 190001,
-            destination: 110042,
+            origin: smokeOrigin,
+            destination: smokeDestination,
             weight_g: 500,
           },
           prepaid: {
