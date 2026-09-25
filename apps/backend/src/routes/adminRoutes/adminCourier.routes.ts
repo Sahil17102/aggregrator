@@ -37,6 +37,7 @@ import {
   testIThinkCredentialsController,
   updateIThinkCredentialsController,
 } from '../../controllers/admin/ithink.controller'
+import { getShadowfaxCredentialsController, testShadowfaxCredentialsController, updateShadowfaxCredentialsController } from '../../controllers/admin/shadowfax.controller'
 
 const router = Router()
 
@@ -58,6 +59,9 @@ router.post(
 )
 router.post('/available', requireAuth, fetchAvailableCouriersForAdmin)
 router.get('/credentials', requireAuth, isAdminMiddleware, getCourierCredentialsController)
+router.get('/credentials/shadowfax', requireAuth, isAdminMiddleware, getShadowfaxCredentialsController)
+router.put('/credentials/shadowfax', requireAuth, isAdminMiddleware, updateShadowfaxCredentialsController)
+router.post('/credentials/shadowfax/test', requireAuth, isAdminMiddleware, testShadowfaxCredentialsController)
 router.get(
   '/credentials/ithink',
   requireAuth,

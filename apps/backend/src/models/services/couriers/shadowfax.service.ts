@@ -1,12 +1,16 @@
 import axios from 'axios'
+import { eq } from 'drizzle-orm'
 import { HttpError } from '../../../utils/classes'
+import { db } from '../../client'
+import { courier_credentials } from '../../schema/courierCredentials'
 
 const clean = (value: unknown) => String(value ?? '').trim()
-const DEFAULT_SHADOWFAX_API_BASE = 'https://dale.shadowfax.in/api'
+export const DEFAULT_SHADOWFAX_API_BASE = 'https://dale.shadowfax.in/api'
 
-const config = () => {
-  const apiBase = clean(process.env.SHADOWFAX_API_BASE || DEFAULT_SHADOWFAX_API_BASE).replace(/\/+$/, '')
-  const token = clean(process.env.SHADOWFAX_API_TOKEN)
+const config = async () => {
+  const [saved] = await db.select().from(courier_credentials).where(eq(courier_credentials.provider, 'shadowfax')).limit(1)
+  const apiBase = clean(saved?.apiBase || process.env.SHADOWFAX_API_BASE || DEFAULT_SHADOWFAX_API_BASE).replace(/\/+$/, '')
+  const token = clean(saved?.apiKey || process.env.SHADOWFAX_API_TOKEN)
   if (!token) throw new HttpError(500, 'Shadowfax API token is not configured')
   return { apiBase, token }
 }
@@ -65,7 +69,7 @@ export const checkShadowfaxServiceability = async (
   pincodes: Array<string | number>,
   service = 'customer_delivery',
 ) => {
-  const { apiBase, token } = config()
+  const { apiBase, token } = await config()
   const normalized = pincodes.map(clean).filter(Boolean)
   const response = await axios.get(`${apiBase}/v1/clients/serviceability/`, {
     headers: headers(token),
@@ -76,7 +80,7 @@ export const checkShadowfaxServiceability = async (
 }
 
 export const createShadowfaxShipment = async (params: any) => {
-  const { apiBase, token } = config()
+  const { apiBase, token } = await config()
   const pickup = address(params.pickup, params.company?.name)
   const rto = address(params.rto || params.pickup, params.company?.name)
   const consignee = address(params.consignee)
@@ -146,7 +150,7 @@ export const createShadowfaxShipment = async (params: any) => {
 }
 
 export const cancelShadowfaxShipment = async (awbNumber: string, clientOrderId?: string) => {
-  const { apiBase, token } = config()
+  const { apiBase, token } = await config()
   const response = await axios.post(
     `${apiBase}/v3/clients/orders/cancel/`,
     {
@@ -160,7 +164,7 @@ export const cancelShadowfaxShipment = async (awbNumber: string, clientOrderId?:
 }
 
 export const trackShadowfaxShipment = async (awbNumber: string) => {
-  const { apiBase, token } = config()
+  const { apiBase, token } = await config()
   const response = await axios.get(
     `${apiBase}/v4/clients/orders/${encodeURIComponent(clean(awbNumber))}/track/`,
     { headers: headers(token), timeout: 60000 },

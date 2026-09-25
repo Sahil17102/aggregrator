@@ -35,10 +35,10 @@ export const getIThinkCredentialsController = async (_req: Request, res: Respons
       data: {
         provider: 'ithink',
         apiBase: saved?.apiBase || DEFAULT_ITHINK_API_BASE,
-        configured: Boolean(saved?.accessToken?.trim() && saved?.secretKey?.trim()),
-        accessTokenMasked: maskIThinkSecret(saved?.accessToken),
-        secretKeyMasked: maskIThinkSecret(saved?.secretKey),
-        pickupAddressId: saved?.pickupAddressId || '',
+        configured: Boolean((saved?.accessToken || process.env.ITHINK_ACCESS_TOKEN)?.trim() && (saved?.secretKey || process.env.ITHINK_SECRET_KEY)?.trim()),
+        accessTokenMasked: maskIThinkSecret(saved?.accessToken || process.env.ITHINK_ACCESS_TOKEN),
+        secretKeyMasked: maskIThinkSecret(saved?.secretKey || process.env.ITHINK_SECRET_KEY),
+        pickupAddressId: saved?.pickupAddressId || process.env.ITHINK_PICKUP_ADDRESS_ID || '',
       },
     })
   } catch (error) {

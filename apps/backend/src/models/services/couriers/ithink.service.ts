@@ -389,9 +389,9 @@ export class IThinkService {
 
 export const saveIThinkCredentials = async (input: IThinkCredentialInput) => {
   const saved = await readSavedCredentials()
-  const accessToken = clean(input.accessToken || input.access_token || saved?.accessToken)
-  const secretKey = clean(input.secretKey || input.secret_key || saved?.secretKey)
-  const pickupAddressId = clean(input.pickupAddressId || input.pickup_address_id)
+  const accessToken = clean(input.accessToken || input.access_token || saved?.accessToken || process.env.ITHINK_ACCESS_TOKEN)
+  const secretKey = clean(input.secretKey || input.secret_key || saved?.secretKey || process.env.ITHINK_SECRET_KEY)
+  const pickupAddressId = clean(input.pickupAddressId || input.pickup_address_id || saved?.pickupAddressId || process.env.ITHINK_PICKUP_ADDRESS_ID)
   const apiBase = normalizeBase(input.apiBase || saved?.apiBase)
   if (!accessToken || !secretKey) {
     throw new HttpError(400, 'iThink accessToken and secretKey are required')
