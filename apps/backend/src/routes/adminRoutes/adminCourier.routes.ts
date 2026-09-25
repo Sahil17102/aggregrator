@@ -31,6 +31,12 @@ import {
 import { isAdminMiddleware } from '../../middlewares/isAdmin'
 import { requireAuth } from '../../middlewares/requireAuth'
 import { upload } from '../../middlewares/upload'
+import {
+  callIThinkOperationController,
+  getIThinkCredentialsController,
+  testIThinkCredentialsController,
+  updateIThinkCredentialsController,
+} from '../../controllers/admin/ithink.controller'
 
 const router = Router()
 
@@ -52,6 +58,30 @@ router.post(
 )
 router.post('/available', requireAuth, fetchAvailableCouriersForAdmin)
 router.get('/credentials', requireAuth, isAdminMiddleware, getCourierCredentialsController)
+router.get(
+  '/credentials/ithink',
+  requireAuth,
+  isAdminMiddleware,
+  getIThinkCredentialsController,
+)
+router.put(
+  '/credentials/ithink',
+  requireAuth,
+  isAdminMiddleware,
+  updateIThinkCredentialsController,
+)
+router.post(
+  '/credentials/ithink/test',
+  requireAuth,
+  isAdminMiddleware,
+  testIThinkCredentialsController,
+)
+router.post(
+  '/ithink/:operation',
+  requireAuth,
+  isAdminMiddleware,
+  callIThinkOperationController,
+)
 router.put(
   '/credentials/delivery-one',
   requireAuth,

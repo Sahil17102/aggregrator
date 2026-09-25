@@ -1,0 +1,103 @@
+{
+  "info": {
+    "name": "ShipAggregator - iThink Logistics v3",
+    "description": "Admin API coverage for every iThink Logistics v3 operation. Set baseUrl and adminToken. Save credentials first; secrets are stored by the backend and are not repeated in operation bodies.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+  },
+  "event": [{
+    "listen": "test",
+    "script": {
+      "type": "text/javascript",
+      "exec": [
+        "pm.test('HTTP response is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+        "pm.test('Response is JSON', () => pm.response.to.be.json);",
+        "pm.test('API reports success', () => pm.expect(pm.response.json().success).to.eql(true));"
+      ]
+    }
+  }],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "adminToken", "value": "" },
+    { "key": "ithinkApiBase", "value": "https://pre-alpha.ithinklogistics.com/api_v3" },
+    { "key": "ithinkAccessToken", "value": "" },
+    { "key": "ithinkSecretKey", "value": "" },
+    { "key": "awb", "value": "REPLACE_WITH_AWB" },
+    { "key": "orderNo", "value": "postman-order-001" }
+  ],
+  "item": [
+    {
+      "name": "Credentials",
+      "item": [
+        {
+          "name": "Save credentials",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/admin/couriers/credentials/ithink",
+            "body": { "mode": "raw", "raw": "{\n  \"apiBase\": \"{{ithinkApiBase}}\",\n  \"accessToken\": \"{{ithinkAccessToken}}\",\n  \"secretKey\": \"{{ithinkSecretKey}}\"\n}" }
+          }
+        },
+        {
+          "name": "Get masked credentials",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/couriers/credentials/ithink" }
+        },
+        {
+          "name": "Test credentials",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/credentials/ithink/test", "body": { "mode": "raw", "raw": "{}" } }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        { "name": "Sync Order", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/syncOrder", "body": { "mode": "raw", "raw": "{\n  \"shipments\": []\n}" } } },
+        { "name": "Track Order", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/trackOrder", "body": { "mode": "raw", "raw": "{\n  \"awb_number_list\": \"{{awb}}\"\n}" } } },
+        { "name": "Add Order", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/addOrder", "body": { "mode": "raw", "raw": "{\n  \"shipments\": [{\n    \"order\": \"{{orderNo}}\",\n    \"order_date\": \"25-09-2026 10:00:00\",\n    \"total_amount\": \"100\",\n    \"name\": \"Test Customer\",\n    \"add\": \"Test address\",\n    \"pin\": \"400001\",\n    \"phone\": \"9999999999\",\n    \"billing_name\": \"Test Customer\",\n    \"billing_add\": \"Test address\",\n    \"billing_pin\": \"400001\",\n    \"billing_phone\": \"9999999999\",\n    \"products\": [{\"product_name\":\"Test product\",\"product_quantity\":\"1\",\"product_price\":\"100\"}],\n    \"shipment_length\": \"10\", \"shipment_width\": \"10\", \"shipment_height\": \"10\", \"weight\": \"0.5\",\n    \"payment_mode\": \"Prepaid\"\n  }]\n}" } } },
+        { "name": "Order Details", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/orderDetails", "body": { "mode": "raw", "raw": "{\n  \"order_no_list\": \"{{orderNo}}\"\n}" } } },
+        { "name": "Cancel Order", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/cancelOrder", "body": { "mode": "raw", "raw": "{\n  \"awb_numbers\": \"{{awb}}\"\n}" } } },
+        { "name": "Update Payment", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/updatePayment", "body": { "mode": "raw", "raw": "{\n  \"awb_number\": \"{{awb}}\",\n  \"payment_mode\": \"Prepaid\"\n}" } } },
+        { "name": "Get Airwaybill", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getAirwaybill", "body": { "mode": "raw", "raw": "{\n  \"order_no\": \"{{orderNo}}\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        { "name": "Print Shipment Label", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/printLabel", "body": { "mode": "raw", "raw": "{\n  \"awb_numbers\": \"{{awb}}\"\n}" } } },
+        { "name": "Print Manifest", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/printManifest", "body": { "mode": "raw", "raw": "{\n  \"awb_numbers\": \"{{awb}}\"\n}" } } },
+        { "name": "Print Invoice", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/printInvoice", "body": { "mode": "raw", "raw": "{\n  \"awb_numbers\": \"{{awb}}\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Locations and Warehouses",
+      "item": [
+        { "name": "Check Pincode", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/checkPincode", "body": { "mode": "raw", "raw": "{\n  \"pincode\": \"400001\"\n}" } } },
+        { "name": "Get State", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getState", "body": { "mode": "raw", "raw": "{}" } } },
+        { "name": "Get City", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getCity", "body": { "mode": "raw", "raw": "{\n  \"state_id\": \"1\"\n}" } } },
+        { "name": "Add Warehouse", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/addWarehouse", "body": { "mode": "raw", "raw": "{\n  \"warehouse_name\": \"Postman Warehouse\",\n  \"address\": \"Test address\",\n  \"pincode\": \"400001\",\n  \"contact_person_name\": \"Test User\",\n  \"contact_number\": \"9999999999\"\n}" } } },
+        { "name": "Get Warehouse", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getWarehouse", "body": { "mode": "raw", "raw": "{}" } } }
+      ]
+    },
+    {
+      "name": "Rates and Finance",
+      "item": [
+        { "name": "Get Rate", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getRate", "body": { "mode": "raw", "raw": "{\n  \"from_pincode\": \"400001\", \"to_pincode\": \"110001\", \"shipping_length_cms\": \"10\", \"shipping_width_cms\": \"10\", \"shipping_height_cms\": \"10\", \"shipping_weight_kg\": \"0.5\", \"order_type\": \"forward\", \"payment_method\": \"prepaid\", \"product_mrp\": \"100\"\n}" } } },
+        { "name": "Get Zone Rate", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getZoneRate", "body": { "mode": "raw", "raw": "{\n  \"from_pincode\": \"400001\", \"to_pincode\": \"110001\", \"shipping_weight_kg\": \"0.5\"\n}" } } },
+        { "name": "Get Remittance", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getRemittance", "body": { "mode": "raw", "raw": "{\n  \"remittance_date\": \"2026-09-25\"\n}" } } },
+        { "name": "Get Remittance Details", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getRemittanceDetails", "body": { "mode": "raw", "raw": "{\n  \"remittance_date\": \"2026-09-25\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Stores and NDR",
+      "item": [
+        { "name": "Get Store", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getStore", "body": { "mode": "raw", "raw": "{}" } } },
+        { "name": "Store Order Details", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getStoreOrderDetails", "body": { "mode": "raw", "raw": "{\n  \"order_no_list\": \"{{orderNo}}\", \"platform_id\": \"2\"\n}" } } },
+        { "name": "Store Order List", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/getStoreOrderList", "body": { "mode": "raw", "raw": "{\n  \"platform_id\": \"2\", \"start_date\": \"2026-09-01\", \"end_date\": \"2026-09-25\"\n}" } } },
+        { "name": "Reattempt or RTO", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/couriers/ithink/reattemptOrRto", "body": { "mode": "raw", "raw": "{\n  \"shipments\": [{\"awb_numbers\":\"{{awb}}\",\"ndr_action\":\"1\",\"reattempt_date\":\"2026-09-26\",\"reattempt_time\":\"15:00:00\"}]\n}" } } }
+      ]
+    }
+  ]
+}

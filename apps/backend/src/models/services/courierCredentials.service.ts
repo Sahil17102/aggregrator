@@ -3,7 +3,7 @@ import { db } from '../client'
 import { courierCredentials } from '../schema/courierCredentials'
 
 export type BusinessType = 'b2b' | 'b2c'
-export type ServiceProviderId = 'delhivery' | 'shipway' | 'xpressbees' | 'ekart' | 'deliveryone'
+export type ServiceProviderId = 'delhivery' | 'shipway' | 'xpressbees' | 'ekart' | 'deliveryone' | 'ithink'
 
 export type DelhiveryConfig = {
   apiKey?: string
@@ -55,6 +55,12 @@ export type ShipwayConfig = {
   password?: string
 }
 
+export type IThinkConfig = {
+  apiBase?: string
+  accessToken?: string
+  secretKey?: string
+}
+
 export type CourierConfig =
   | DelhiveryConfig
   | SmartshipConfig
@@ -63,6 +69,7 @@ export type CourierConfig =
   | XpressbeesConfig
   | EkartConfig
   | DeliveryOneConfig
+  | IThinkConfig
 
 export interface CourierCredentialsUpsertPayload {
   serviceProvider: ServiceProviderId
@@ -90,7 +97,7 @@ export interface CourierCredentialsMeta {
   }
 }
 
-const KNOWN_PROVIDERS: ServiceProviderId[] = ['deliveryone', 'shipway']
+const KNOWN_PROVIDERS: ServiceProviderId[] = ['deliveryone', 'shipway', 'ithink']
 export const DEFAULT_EKART_BASE_URL = 'https://app.elite.ekartlogistics.in'
 
 const hasEnvForProviderAndType = (provider: ServiceProviderId, _type: BusinessType): boolean => {
@@ -125,6 +132,12 @@ const hasEnvForProviderAndType = (provider: ServiceProviderId, _type: BusinessTy
       process.env.DELIVERYONE_USERNAME ||
       process.env.DELIVERY_ONE_PASSWORD ||
       process.env.DELIVERYONE_PASSWORD
+    )
+  }
+  if (provider === 'ithink') {
+    return !!(
+      process.env.ITHINK_ACCESS_TOKEN ||
+      process.env.ITHINK_SECRET_KEY
     )
   }
   return false
@@ -180,6 +193,15 @@ const buildConfigFromRow = (provider: ServiceProviderId, row: typeof courierCred
       username: normalize(row.username),
       password: normalize(row.password),
       webhookSecret: normalize(row.webhookSecret),
+    }
+    return cfg
+  }
+
+  if (provider === 'ithink') {
+    const cfg: IThinkConfig = {
+      apiBase: normalize(row.apiBase),
+      accessToken: normalize(row.apiKey),
+      secretKey: normalize(row.password),
     }
     return cfg
   }
