@@ -1,5 +1,6 @@
 import { Box, Chip, CircularProgress, Divider, Grid, Paper, Stack, Typography, alpha } from '@mui/material'
 import { useFormContext } from 'react-hook-form'
+import { useRef } from 'react'
 import { BiCalendar, BiCheckCircle, BiMap, BiPackage, BiUser } from 'react-icons/bi'
 import { TbPlane, TbTruck } from 'react-icons/tb'
 import {
@@ -44,6 +45,7 @@ const computeInsuranceChargePreview = ({
 export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b2c' }) => {
   const { watch, setValue, clearErrors } = useFormContext<B2BFormData | B2CFormData>()
   const { data: paymentOptions } = usePaymentOptions()
+  const priceBreakupRef = useRef<HTMLDivElement | null>(null)
 
   const products = watch('products') ?? []
   const b2bBoxes = watch('boxes') as B2BBox[] | undefined
@@ -271,9 +273,9 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
     : 0
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={2}>
       <Grid size={{ md: 4.5, xs: 12 }}>
-        <Stack spacing={2.5} sx={{ position: { md: 'sticky' }, top: { md: 16 } }}>
+        <Stack spacing={1.5} sx={{ position: { md: 'sticky' }, top: { md: 12 } }}>
           <Paper
             sx={{
               p: 0,
@@ -332,7 +334,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
               <Divider sx={{ my: 2 }} />
 
-              <Stack spacing={1.2}>
+              <Stack ref={priceBreakupRef} spacing={1.2} sx={{ scrollMarginTop: 96 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 800, color: TEXT_SECONDARY }}>
                   Price Breakup
                 </Typography>
@@ -501,7 +503,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
       <Grid size={{ md: 7.5, xs: 12 }}>
         <Paper
           sx={{
-            p: 2.5,
+            p: { xs: 1.25, sm: 1.5 },
             borderRadius: 4,
             border: `1px solid ${alpha(ACCENT, 0.1)}`,
             boxShadow: '0 18px 40px rgba(16,42,84,0.06)',
@@ -512,7 +514,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
             justifyContent="space-between"
             alignItems={{ xs: 'flex-start', md: 'center' }}
             spacing={1}
-            sx={{ mb: 2.5 }}
+            sx={{ mb: 1.5 }}
           >
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: TEXT_PRIMARY }}>
@@ -533,7 +535,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
             />
           </Stack>
 
-          <Stack spacing={2}>
+          <Stack spacing={1}>
             {availableCouriers?.map((courier) => {
               const local = courier?.localRates
               const courierOptionKey = String(
@@ -586,42 +588,48 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     setValue('volumetricWeight', courier?.volumetric_weight ?? null)
                     setValue('slabs', courier?.slabs ?? null)
                     clearErrors('courierPartnerId')
+                    window.requestAnimationFrame(() => {
+                      priceBreakupRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      })
+                    })
                   }}
                   sx={{
-                    p: 2,
+                    p: { xs: 1.1, sm: 1.25 },
                     cursor: isBookable ? 'pointer' : 'not-allowed',
                     opacity: isBookable ? 1 : 0.72,
-                    borderRadius: 4,
+                    borderRadius: 3,
                     border: isSelected
                       ? `2px solid ${alpha(ACCENT, 0.42)}`
                       : `1px solid ${alpha(isBookable ? '#102A54' : '#8A1F11', isBookable ? 0.12 : 0.2)}`,
                     bgcolor: isSelected ? alpha(ACCENT, 0.045) : '#fff',
                     boxShadow: isSelected
-                      ? '0 18px 36px rgba(13,59,142,0.14)'
-                      : '0 8px 22px rgba(16,42,84,0.06)',
+                      ? '0 10px 24px rgba(13,59,142,0.12)'
+                      : '0 4px 14px rgba(16,42,84,0.05)',
                     transition: '0.25s ease',
                     '&:hover': {
                       borderColor: alpha(isBookable ? ACCENT : '#8A1F11', isBookable ? 0.38 : 0.2),
                       boxShadow: isBookable
-                        ? '0 18px 36px rgba(13,59,142,0.12)'
-                        : '0 8px 22px rgba(16,42,84,0.06)',
+                        ? '0 10px 24px rgba(13,59,142,0.1)'
+                        : '0 4px 14px rgba(16,42,84,0.05)',
                       transform: isBookable ? 'translateY(-1px)' : 'none',
                     },
                   }}
                 >
-                  <Stack spacing={1.75}>
+                  <Stack spacing={0.9}>
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
                       justifyContent="space-between"
                       alignItems={{ xs: 'flex-start', sm: 'center' }}
-                      spacing={1.5}
+                      spacing={0.75}
                     >
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack direction="row" spacing={1} alignItems="center">
                         <Box
                           sx={{
-                            width: 52,
-                            height: 52,
-                            borderRadius: 3,
+                            width: 42,
+                            height: 42,
+                            borderRadius: 2.25,
                             bgcolor: SURFACE,
                             border: `1px solid ${alpha(ACCENT, 0.08)}`,
                             display: 'grid',
@@ -632,7 +640,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                           <img
                             src={getCourierLogo(courier, defaultLogo)}
                             alt={courier?.name}
-                            style={{ width: 34, height: 34, objectFit: 'contain' }}
+                            style={{ width: 28, height: 28, objectFit: 'contain' }}
                           />
                         </Box>
                         <Box>
@@ -666,13 +674,13 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                         <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
                           Courier Charge
                         </Typography>
-                        <Typography sx={{ fontSize: 28, fontWeight: 900, color: TEXT_PRIMARY }}>
+                        <Typography sx={{ fontSize: 22, lineHeight: 1.1, fontWeight: 900, color: TEXT_PRIMARY }}>
                           {finalChargeLabel}
                         </Typography>
                       </Stack>
                     </Stack>
 
-                    <Grid container spacing={1.1}>
+                    <Grid container spacing={0.7}>
                       {[
                         ['Courier Charge', finalChargeLabel],
                         ['Chargeable', formatWeightKg(courier?.chargeable_weight)],
@@ -682,14 +690,15 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                         <Grid key={label} size={{ xs: 6, lg: 3 }}>
                           <Box
                             sx={{
-                              p: 1.25,
-                              borderRadius: 3,
+                              px: 1,
+                              py: 0.7,
+                              borderRadius: 2,
                               bgcolor: SURFACE,
                               border: '1px solid rgba(13,59,142,0.08)',
                             }}
                           >
                             <Typography sx={{ fontSize: 11, color: TEXT_SECONDARY }}>{label}</Typography>
-                            <Typography sx={{ mt: 0.35, fontWeight: 800, color: TEXT_PRIMARY }}>
+                            <Typography sx={{ mt: 0.2, fontWeight: 800, lineHeight: 1.25, color: TEXT_PRIMARY }}>
                               {value}
                             </Typography>
                           </Box>
