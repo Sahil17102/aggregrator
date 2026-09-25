@@ -30,6 +30,18 @@ const zoneFactor = (code: string) => {
 const planFactor = (name: string) => name.trim().toLowerCase() === 'premium' ? 1 : 1.08
 
 export async function ensureIntegratedDemoPricingCatalog() {
+  // Older Shipway cards were saved with the generic provider name. Keep the
+  // provider-specific row but restore its exact courier catalog label.
+  await db.execute(sql`
+    UPDATE shipping_rates AS rate
+    SET courier_name = courier.name
+    FROM couriers AS courier
+    WHERE rate.courier_id = courier.id
+      AND lower(trim(rate.service_provider)) = lower(trim(courier."serviceProvider"))
+      AND lower(trim(rate.service_provider)) IN ('deliveryone', 'shipway', 'shadowfax', 'ithink')
+      AND rate.courier_name IS DISTINCT FROM courier.name
+  `)
+
   const [activePlans, b2cZones, b2bZones, integratedCouriers] = await Promise.all([
     db.select({ id: plans.id, name: plans.name }).from(plans).where(eq(plans.is_active, true)),
     db.select({ id: zones.id, code: zones.code }).from(zones).where(sql`lower(trim(${zones.business_type})) = 'b2c'`),
