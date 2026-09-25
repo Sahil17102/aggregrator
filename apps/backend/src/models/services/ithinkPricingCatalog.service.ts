@@ -215,14 +215,14 @@ async function ensureB2BRates() {
         `
           INSERT INTO meracourierwala_b2b_zone_states
             (zone_id, state_name, courier_id, service_provider, created_at, updated_at)
-          SELECT z.id, state_name, $1, $2, now(), now()
+          SELECT z.id, state_name, $1::integer, $2::varchar, now(), now()
           FROM meracourierwala_zones z
           CROSS JOIN LATERAL jsonb_array_elements_text(z.states) AS state_name
           WHERE lower(trim(z.business_type)) = 'b2b'
             AND NOT EXISTS (
               SELECT 1 FROM meracourierwala_b2b_zone_states current
               WHERE current.zone_id = z.id AND current.state_name = state_name
-                AND current.courier_id = $1 AND current.service_provider = $2
+                AND current.courier_id = $1::integer AND current.service_provider = $2::varchar
             )
         `,
         [courier.id, PROVIDER],
@@ -234,13 +234,13 @@ async function ensureB2BRates() {
              minimum_chargeable_amount, minimum_chargeable_weight, fuel_surcharge_percentage,
              oda_charges, oda_per_kg_charge, insurance_charge, cod_fixed_amount, cod_percentage,
              metadata, created_at, updated_at)
-          SELECT p.id, $1, $2, 40, 5, 200, 10, 10, 500, 5, 75, 50, 1,
+          SELECT p.id, $1::integer, $2::varchar, 40, 5, 200, 10, 10, 500, 5, 75, 50, 1,
             $3::jsonb, now(), now()
           FROM plans p
           WHERE p.is_active = true AND NOT EXISTS (
             SELECT 1 FROM meracourierwala_b2b_additional_charges current
-            WHERE current.plan_id = p.id AND current.courier_id = $1
-              AND current.service_provider = $2
+            WHERE current.plan_id = p.id AND current.courier_id = $1::integer
+              AND current.service_provider = $2::varchar
           )
         `,
         [courier.id, PROVIDER, JSON.stringify({ source: SOURCE })],
@@ -250,10 +250,10 @@ async function ensureB2BRates() {
           INSERT INTO meracourierwala_b2b_volumetric_rules
             (courier_id, service_provider, volumetric_divisor, cft_factor,
              minimum_volumetric_weight, metadata, created_at, updated_at)
-          SELECT $1, $2, 5000, 5, 1, $3::jsonb, now(), now()
+          SELECT $1::integer, $2::varchar, 5000, 5, 1, $3::jsonb, now(), now()
           WHERE NOT EXISTS (
             SELECT 1 FROM meracourierwala_b2b_volumetric_rules
-            WHERE courier_id = $1 AND service_provider = $2
+            WHERE courier_id = $1::integer AND service_provider = $2::varchar
           )
         `,
         [courier.id, PROVIDER, JSON.stringify({ source: SOURCE })],
