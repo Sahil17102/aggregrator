@@ -30,8 +30,36 @@ const address = (source: any, fallbackName = '') => ({
     : {}),
 })
 
-const errorMessage = (data: any, fallback: string) =>
-  clean(data?.message || data?.detail || data?.responseMsg || data?.errors?.[0]?.message) || fallback
+const flattenValidationErrors = (value: unknown, path = ''): string[] => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return [`${path ? `${path}: ` : ''}${clean(value)}`]
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => flattenValidationErrors(entry, path))
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, entry]) =>
+      flattenValidationErrors(entry, path ? `${path}.${key}` : key),
+    )
+  }
+  return []
+}
+
+const errorMessage = (data: any, fallback: string) => {
+  const primary = clean(data?.detail || data?.responseMsg)
+  const validation = flattenValidationErrors(data?.errors || data?.data).join('; ')
+  const generic = clean(data?.message)
+  if (primary) return primary
+  if (validation) return generic && generic.toLowerCase() !== 'failure' ? `${generic}: ${validation}` : validation
+  return generic || fallback
+}
+
+const normalizeWeightToGrams = (value: unknown) => {
+  const numeric = Number(value ?? 0)
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0
+  // TrueTransit accepts kg for small decimal values and grams for normal B2C inputs.
+  return numeric > 50 ? Math.round(numeric) : Math.round(numeric * 1000)
+}
 
 export const checkShadowfaxServiceability = async (
   pincodes: Array<string | number>,
@@ -55,7 +83,7 @@ export const createShadowfaxShipment = async (params: any) => {
   const items = Array.isArray(params.order_items) ? params.order_items : []
   const orderAmount = Number(params.order_amount ?? 0)
   const isCod = String(params.payment_type || '').toLowerCase() === 'cod'
-  const actualWeightGrams = Math.max(0, Math.round(Number(params.package_weight ?? params.weight ?? 0) * 1000))
+  const actualWeightGrams = normalizeWeightToGrams(params.package_weight ?? params.weight ?? 0)
   const volumetricWeightGrams = Math.max(
     0,
     Math.round(
