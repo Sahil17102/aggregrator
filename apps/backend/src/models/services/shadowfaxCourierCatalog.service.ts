@@ -13,8 +13,19 @@ const DEFAULT_FORWARD_RATES: Record<string, number> = {
   C: 32.7,
   D: 34.5,
   E: 38.1,
+  WITHIN_CITY: 23.6,
+  'WITHIN CITY': 23.6,
+  WITHIN_STATE: 27.2,
+  'WITHIN STATE': 27.2,
+  WITHIN_REGION: 32.7,
+  'WITHIN REGION': 32.7,
+  METRO_TO_METRO: 34.5,
+  'METRO TO METRO': 34.5,
   ROI: 38.1,
   SPECIAL: 38.1,
+  SPECIAL_ZONE: 38.1,
+  'SPECIAL ZONE': 38.1,
+  KASHMIR: 38.1,
 }
 
 /**
