@@ -23,8 +23,8 @@ import {
 import { IconSearch } from "@tabler/icons-react";
 
 export const adminUi = {
-  pageTop: { base: "120px", md: "75px" },
-  cardRadius: "20px",
+  pageTop: "0px",
+  cardRadius: "14px",
   purple: "#6C5CE7",
   text: "#0F172A",
   muted: "#607397",
@@ -34,7 +34,7 @@ export const adminUi = {
 
 export function AdminStack({ children, ...props }) {
   return (
-    <Stack spacing="20px" pt={adminUi.pageTop} {...props}>
+    <Stack spacing="14px" pt={adminUi.pageTop} {...props}>
       {children}
     </Stack>
   );
@@ -61,22 +61,22 @@ export function PageIntro({
   title,
   subtitle,
   right,
-  py = "22px",
-  px = "26px",
+  py = "16px",
+  px = "20px",
 }) {
   const titleColor = useColorModeValue(adminUi.text, "#E6EDF3");
   const mutedColor = useColorModeValue(adminUi.muted, "#8B949E");
   return (
     <AdminCard px={px} py={py}>
       <Flex justify="space-between" align="center" gap={4} wrap="wrap">
-        <HStack spacing="16px" minW={0}>
+        <HStack spacing="12px" minW={0}>
           {icon ? (
             <Flex
               align="center"
               justify="center"
-              w="46px"
-              h="46px"
-              borderRadius="14px"
+              w="40px"
+              h="40px"
+              borderRadius="10px"
               bg="#F0EDFF"
               color={adminUi.purple}
               flexShrink={0}
@@ -86,7 +86,7 @@ export function PageIntro({
           ) : null}
           <Box minW={0}>
             <Text
-              fontSize="22px"
+              fontSize="20px"
               fontWeight="800"
               color={titleColor}
               lineHeight="1.2"
@@ -161,7 +161,7 @@ export function AdminSelect({
 
 export function ToolbarCard({ children, ...props }) {
   return (
-    <AdminCard px="26px" py="16px" {...props}>
+    <AdminCard px="20px" py="12px" {...props}>
       {children}
     </AdminCard>
   );
@@ -208,8 +208,8 @@ export function DataTable({
                   fontWeight="800"
                   letterSpacing="0"
                   textTransform="uppercase"
-                  py="17px"
-                  px="21px"
+                  py="11px"
+                  px="16px"
                   borderColor={adminUi.border}
                   textAlign={column.align || "left"}
                   w={column.w}
@@ -225,8 +225,8 @@ export function DataTable({
                   fontWeight="800"
                   letterSpacing="0"
                   textTransform="uppercase"
-                  py="17px"
-                  px="21px"
+                  py="11px"
+                  px="16px"
                   borderColor={adminUi.border}
                   textAlign="right"
                 >

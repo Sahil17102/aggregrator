@@ -15,15 +15,15 @@ const CreateOrderWrapper = () => {
     <Container
       maxWidth="xl"
       sx={{
-        px: { xs: 1.5, sm: 2, md: 3 }, // responsive horizontal padding
-        py: { xs: 2, sm: 3 }, // responsive vertical padding
+        px: 0,
+        py: 0,
       }}
     >
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: { xs: 2, sm: 3 }, // tighter gap on mobile
+          gap: { xs: 1.25, sm: 1.5 },
         }}
       >
         <PageHeading title="Create New Order" />
@@ -35,12 +35,11 @@ const CreateOrderWrapper = () => {
             border: '1px solid #E2E8F0',
             borderRadius: { xs: 2, sm: 3 },
             boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            p: { xs: 1.5, sm: 2, md: 3 },
-            minHeight: '70vh',
+            p: { xs: 1.25, sm: 1.5, md: 2 },
           }}
         >
           {/* Tabs */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1.5 }}>
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
@@ -50,7 +49,7 @@ const CreateOrderWrapper = () => {
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '1rem',
-                  minHeight: 48,
+                  minHeight: 42,
                 },
                 '& .Mui-selected': {
                   color: '#333369',

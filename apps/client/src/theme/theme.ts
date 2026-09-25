@@ -288,6 +288,8 @@ export const createAppTheme = (mode: PaletteMode = 'light') => {
       styleOverrides: {
         root: {
           flexGrow: 1,
+          padding: 16,
+          '&:last-child': { paddingBottom: 16 },
           backgroundColor: isDark ? backgroundPaper : undefined,
           color: textPrimary,
         },

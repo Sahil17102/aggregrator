@@ -136,8 +136,8 @@ export default function Layout() {
               bgcolor: shellBg,
               position: 'relative',
               zIndex: 0,
-              px: { xs: 1.5, md: 3 },
-              pb: { xs: 1.5, md: 3 },
+              px: { xs: 1, md: 2 },
+              pb: { xs: 1, md: 2 },
               height: '100%',
               minHeight: 0,
               overscrollBehavior: 'auto',
@@ -149,7 +149,7 @@ export default function Layout() {
               maxWidth="xl"
               sx={{
                 bgcolor: 'transparent',
-                pt: { xs: 2, md: 3 },
+                pt: { xs: 1.25, md: 1.75 },
                 px: { xs: 0, md: 0 },
                 overflowX: 'visible',
               }}

@@ -15,7 +15,7 @@ interface FormSectionAccordionProps {
 export const glassStyles = {
   background: '#FFFFFF',
   borderRadius: 3,
-  mb: 2,
+  mb: 0,
   border: `1px solid ${alpha(BRAND_PRIMARY, 0.12)}`,
   boxShadow: `0 4px 14px ${alpha(BRAND_PRIMARY, 0.06)}`,
   overflow: 'hidden',
@@ -38,8 +38,9 @@ const FormSectionAccordion: React.FC<FormSectionAccordionProps> = ({
         expandIcon={<MdExpandMore color={BRAND_PRIMARY} />}
         sx={{
           backgroundColor: alpha(BRAND_PRIMARY, 0.03),
-          px: 2.5,
-          py: 1.5,
+          px: { xs: 1.5, sm: 2 },
+          py: 0.65,
+          minHeight: 50,
           transition: 'all 0.2s ease',
           '&:hover': {
             backgroundColor: alpha(BRAND_PRIMARY, 0.06),
@@ -75,8 +76,8 @@ const FormSectionAccordion: React.FC<FormSectionAccordionProps> = ({
       </AccordionSummary>
       <AccordionDetails
         sx={{
-          px: 2.5,
-          py: 2.5,
+          px: { xs: 1.5, sm: 2 },
+          py: { xs: 1.25, sm: 1.5 },
           backgroundColor: '#FFFFFF',
         }}
       >

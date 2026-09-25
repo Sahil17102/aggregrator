@@ -259,8 +259,8 @@ const SidebarContent = ({
       }}
     >
       <Flex
-        h="70px"
-        px="28px"
+        h="60px"
+        px="22px"
         align="center"
         gap="14px"
         borderBottom="1px solid"
@@ -270,8 +270,8 @@ const SidebarContent = ({
           as="img"
           src={brandIdentity.logoPath}
           alt={brandIdentity.name}
-          w="42px"
-          h="42px"
+          w="36px"
+          h="36px"
           borderRadius="50%"
           objectFit="cover"
         />
@@ -285,7 +285,7 @@ const SidebarContent = ({
         </Text>
       </Flex>
 
-      <Stack spacing="7px" px="15px" py="22px">
+      <Stack spacing="4px" px="12px" py="12px">
         {sidebarItems.map((item) => {
           const active = isItemActive(location.pathname, item);
           const Icon = item.icon || IconTruck;
@@ -294,8 +294,8 @@ const SidebarContent = ({
             return (
               <NavLink key={item.label} to={item.path} onClick={onNavigate}>
                 <Flex
-                  h="44px"
-                  px="16px"
+                  h="38px"
+                  px="12px"
                   align="center"
                   gap="11px"
                   borderRadius="8px"
@@ -309,7 +309,7 @@ const SidebarContent = ({
                 >
                   {renderIcon(Icon, active)}
                   <Text
-                    fontSize="18px"
+                    fontSize="15px"
                     fontWeight={active ? "700" : "500"}
                     lineHeight="1.15"
                   >
@@ -327,9 +327,9 @@ const SidebarContent = ({
               <Button
                 type="button"
                 onClick={() => toggleGroup(item.label)}
-                minH="44px"
+                minH="38px"
                 w="100%"
-                px="16px"
+                px="12px"
                 py="0"
                 justifyContent="space-between"
                 borderRadius="8px"
@@ -345,7 +345,7 @@ const SidebarContent = ({
                 <Flex align="center" gap="11px" minW={0}>
                   {renderIcon(Icon, active)}
                   <Text
-                    fontSize="18px"
+                    fontSize="15px"
                     whiteSpace="normal"
                     textAlign="left"
                     lineHeight="1.25"
@@ -362,11 +362,11 @@ const SidebarContent = ({
               </Button>
               <Collapse in={open} animateOpacity>
                 <Stack
-                  spacing="5px"
-                  mt="8px"
-                  mb="9px"
-                  ml="26px"
-                  pl="20px"
+                  spacing="3px"
+                  mt="5px"
+                  mb="6px"
+                  ml="22px"
+                  pl="14px"
                   borderLeft="1px solid"
                   borderColor={borderColor}
                 >
@@ -384,9 +384,9 @@ const SidebarContent = ({
                         <Flex
                           align="center"
                           gap="10px"
-                          minH="39px"
-                          px="15px"
-                          py="7px"
+                          minH="34px"
+                          px="11px"
+                          py="5px"
                           borderRadius="7px"
                           color={childActive ? childActiveColor : childColor}
                           bg={childActive ? childActiveBg : "transparent"}
@@ -402,7 +402,7 @@ const SidebarContent = ({
                             <ChildIcon size={18} strokeWidth={1.65} />
                           </Box>
                           <Text
-                            fontSize="16px"
+                            fontSize="14px"
                             fontWeight={childActive ? "700" : "500"}
                             lineHeight="1.22"
                           >

@@ -3,8 +3,8 @@ const CardBody = {
     display: 'flex',
     width: '100%',
     flexDirection: 'column',
-    gap: '18px',
-    pt: '18px',
+    gap: '12px',
+    pt: '12px',
   },
 }
 

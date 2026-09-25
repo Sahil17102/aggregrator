@@ -48,7 +48,7 @@ const PageHeading: React.FC<PageHeadingProps> = ({
         border: `1px solid ${isDark ? alpha('#f8fafc', 0.1) : alpha('#FFFFFF', 0.7)}`,
         background: isDark ? '#151b23' : brandGradients.surface,
         px: { xs: 1.8, sm: 2.4 },
-        py: { xs: 1.8, sm: 2.1 },
+        py: { xs: 1.15, sm: 1.35 },
         boxShadow: isDark ? '0 14px 34px rgba(0,0,0,0.18)' : '0 20px 42px rgba(15,44,67,0.08)',
       }}
     >
@@ -69,8 +69,8 @@ const PageHeading: React.FC<PageHeadingProps> = ({
           >
             <Box
               sx={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: '10px',
                 background: brandGradients.button,
                 color: brand.ink,
@@ -96,7 +96,7 @@ const PageHeading: React.FC<PageHeadingProps> = ({
               {normalizedEyebrow}
             </Typography>
             <Typography
-              fontSize={fontSize ?? { xs: '1.45rem', md: '1.95rem' }}
+              fontSize={fontSize ?? { xs: '1.3rem', md: '1.65rem' }}
               fontWeight={700}
               lineHeight={1.08}
               sx={{

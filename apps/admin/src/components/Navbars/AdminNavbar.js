@@ -94,8 +94,8 @@ export default function AdminNavbar(props) {
       top="0"
       left={{ base: '0', xl: `${sidebarWidth}px` }}
       right="0"
-      h="70px"
-      px={{ base: '16px', md: '30px' }}
+      h="60px"
+      px={{ base: '14px', md: '20px' }}
       align="center"
       justify="space-between"
       bg={navBg}
@@ -103,7 +103,7 @@ export default function AdminNavbar(props) {
       borderColor={borderColor}
       zIndex="1200"
     >
-      <HStack spacing="20px" minW={0}>
+      <HStack spacing="12px" minW={0}>
         <IconButton
           aria-label="Open menu"
           display={{ base: 'inline-flex', xl: 'none' }}

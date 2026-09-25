@@ -265,7 +265,7 @@ export default function Sidebar({
   }
 
   const navItemSx = {
-    minHeight: 43,
+    minHeight: 38,
     borderRadius: 0,
     px: isSidebarExpanded ? 3.6 : 0,
     py: 0,
@@ -443,7 +443,7 @@ export default function Sidebar({
     >
       <Box
         sx={{
-          height: 72,
+          height: 60,
           px: isSidebarExpanded ? 2.25 : 1,
           display: 'flex',
           alignItems: 'center',
@@ -452,7 +452,7 @@ export default function Sidebar({
           borderBottom: `1px solid ${BORDER}`,
         }}
       >
-        <BrandLogo compact sx={{ width: 44, height: 44, objectFit: 'contain', flexShrink: 0 }} />
+        <BrandLogo compact sx={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0 }} />
         {isSidebarExpanded ? (
           <Typography
             sx={{
@@ -477,7 +477,7 @@ export default function Sidebar({
           overscrollBehavior: 'contain',
           scrollbarGutter: 'stable',
           WebkitOverflowScrolling: 'touch',
-          py: 1.5,
+          py: 1,
           bgcolor: DARK_BG,
           '&::-webkit-scrollbar': { width: 6 },
           '&::-webkit-scrollbar-track': { background: DARK_BG },
@@ -486,12 +486,12 @@ export default function Sidebar({
       >
         {visibleSections.map((section) =>
           section.items.length ? (
-            <Box key={section.title} sx={{ mb: 2.2 }}>
+            <Box key={section.title} sx={{ mb: 1.35 }}>
               {isSidebarExpanded ? (
                 <Typography
                   sx={{
                     px: 3.6,
-                    mb: 0.8,
+                    mb: 0.45,
                     color: MUTED,
                     fontSize: '0.82rem',
                     fontWeight: 850,
@@ -514,7 +514,7 @@ export default function Sidebar({
           <Box
             sx={{
               px: 3.6,
-              py: 1.85,
+              py: 1.15,
               borderTop: `1px solid ${BORDER}`,
               display: 'flex',
               alignItems: 'center',
