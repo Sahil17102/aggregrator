@@ -86,6 +86,10 @@ import {
   fetchShipwayRates,
   type ShipwayRate,
 } from './couriers/shipway.service'
+import {
+  cancelShadowfaxShipment,
+  createShadowfaxShipment,
+} from './couriers/shadowfax.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
@@ -4682,6 +4686,7 @@ export const createB2CShipmentService = async (
       | 'xpressbees'
       | 'deliveryone'
       | 'shipway'
+      | 'shadowfax'
     const providerName =
       integrationType === 'delhivery'
         ? 'Delhivery'
@@ -4691,6 +4696,8 @@ export const createB2CShipmentService = async (
             ? 'Delhivery'
             : integrationType === 'shipway'
               ? 'Shipway'
+              : integrationType === 'shadowfax'
+                ? 'Shadowfax'
               : 'Xpressbees'
 
     let providerQuoteForBooking = 0
@@ -4750,7 +4757,7 @@ export const createB2CShipmentService = async (
       }
     }
 
-    if (['delhivery', 'deliveryone', 'shipway'].includes(integrationType) && !isReverseShipment) {
+    if (['delhivery', 'deliveryone', 'shipway', 'shadowfax'].includes(integrationType) && !isReverseShipment) {
       const insuranceSettings = await getShipmentInsuranceSettings()
       const insuranceChargeBasis = computeB2CInsuranceChargeBasis(params)
       const insuranceCharge = computeShipmentInsuranceCharge({
@@ -5013,6 +5020,29 @@ export const createB2CShipmentService = async (
         courier_name: selectedCourier?.name || 'Shipway',
         courier_id: shipmentData.courier_id ?? params.courier_id,
         label: shipmentData.label || undefined,
+        courier_cost: providerCourierCost,
+        sort_code: null,
+      }
+    } else if (integrationType === 'shadowfax') {
+      if (isReverseShipment) {
+        throw new HttpError(400, 'Shadowfax reverse shipments are not supported yet')
+      }
+
+      shipmentData = await createShadowfaxShipment(params)
+      rollbackActions.push(async () => {
+        await cancelShadowfaxShipment(shipmentData.awb_number, params.order_number)
+      })
+      shipmentSuccessPackage = {
+        waybill: shipmentData.awb_number,
+        charge: params.courier_cost ?? null,
+      }
+      providerCourierCost = Number(params.courier_cost ?? 0) || null
+      shipmentMeta = {
+        shipment_id: shipmentData.shipment_id,
+        awb_number: shipmentData.awb_number,
+        courier_name: 'Shadowfax',
+        courier_id: params.courier_id ? Number(params.courier_id) : null,
+        label: undefined,
         courier_cost: providerCourierCost,
         sort_code: null,
       }
@@ -5449,7 +5479,7 @@ export const createB2CShipmentService = async (
 
       // 3️⃣ CREATE LOCAL ORDER ENTRY (no seller insurance for B2C – platform liability only)
       const orderStatus =
-        ['delhivery', 'deliveryone', 'shipway'].includes(integrationType) &&
+        ['delhivery', 'deliveryone', 'shipway', 'shadowfax'].includes(integrationType) &&
         !isReverseShipment &&
         shipmentMeta.awb_number
           ? 'shipment_created'
@@ -5616,7 +5646,8 @@ export const createB2CShipmentService = async (
       // 4️⃣ WALLET TRANSACTION
       // Shipway also returns an AWB immediately, so its wallet debit is not deferred.
       const shouldDeferWalletDebit =
-        !isReverseShipment && !['delhivery', 'deliveryone', 'shipway'].includes(integrationType)
+        !isReverseShipment &&
+        !['delhivery', 'deliveryone', 'shipway', 'shadowfax'].includes(integrationType)
       const finalWalletDebit = walletDebit ?? 0
       if (shouldDeferWalletDebit) {
         console.log('ℹ️ Deferring wallet debit until manifest success for B2C order', {
