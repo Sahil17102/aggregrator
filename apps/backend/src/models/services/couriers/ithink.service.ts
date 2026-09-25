@@ -388,10 +388,11 @@ export class IThinkService {
 }
 
 export const saveIThinkCredentials = async (input: IThinkCredentialInput) => {
-  const accessToken = clean(input.accessToken || input.access_token)
-  const secretKey = clean(input.secretKey || input.secret_key)
+  const saved = await readSavedCredentials()
+  const accessToken = clean(input.accessToken || input.access_token || saved?.accessToken)
+  const secretKey = clean(input.secretKey || input.secret_key || saved?.secretKey)
   const pickupAddressId = clean(input.pickupAddressId || input.pickup_address_id)
-  const apiBase = normalizeBase(input.apiBase)
+  const apiBase = normalizeBase(input.apiBase || saved?.apiBase)
   if (!accessToken || !secretKey) {
     throw new HttpError(400, 'iThink accessToken and secretKey are required')
   }
