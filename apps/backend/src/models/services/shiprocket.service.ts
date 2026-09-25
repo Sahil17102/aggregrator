@@ -2161,6 +2161,18 @@ export const fetchAvailableCouriersWithRates = async (
     )?.toString()
     if (iThinkOriginPincode && iThinkDestinationPincode) {
       try {
+        const configuredIThinkPickupPincode = String(
+          process.env.ITHINK_PICKUP_PINCODE || '',
+        ).trim()
+        if (
+          configuredIThinkPickupPincode &&
+          configuredIThinkPickupPincode !== iThinkOriginPincode
+        ) {
+          throw new HttpError(
+            400,
+            `iThink is configured for pickup pincode ${configuredIThinkPickupPincode}`,
+          )
+        }
         const iThink = new IThinkService()
         iThinkRates = await iThink.fetchRates({
           from_pincode: iThinkOriginPincode,
@@ -2216,7 +2228,7 @@ export const fetchAvailableCouriersWithRates = async (
           })
         }
       } catch (err: any) {
-        if (!/not configured/i.test(String(err?.message || ''))) {
+        if (!/not configured|configured for pickup pincode/i.test(String(err?.message || ''))) {
           console.error('[Serviceability] iThink rate lookup failed:', err?.message || err)
         }
       }

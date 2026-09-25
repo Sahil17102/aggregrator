@@ -258,10 +258,24 @@ export class IThinkService {
     const pickupAddressId = clean(
       params?.ithink_pickup_address_id ?? params?.pickup_address_id ?? config.pickupAddressId,
     )
+    const configuredPickupPincode = clean(process.env.ITHINK_PICKUP_PINCODE)
+    const selectedPickupPincode = clean(
+      params?.pickup?.pincode ?? params?.pickup_details?.pincode ?? params?.pickup_pincode,
+    )
     if (!pickupAddressId) {
       throw new HttpError(
         400,
         'iThink pickup address ID is not configured. Save it with the iThink courier credentials first.',
+      )
+    }
+    if (
+      configuredPickupPincode &&
+      selectedPickupPincode &&
+      configuredPickupPincode !== selectedPickupPincode
+    ) {
+      throw new HttpError(
+        400,
+        `iThink is configured for pickup pincode ${configuredPickupPincode}, not ${selectedPickupPincode}.`,
       )
     }
 
