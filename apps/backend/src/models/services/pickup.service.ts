@@ -7,6 +7,7 @@ import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { cancelShadowfaxShipment } from './couriers/shadowfax.service'
 import { cancelShipwayOrder } from './couriers/shipway.service'
+import { IThinkService } from './couriers/ithink.service'
 import { applyCancellationRefundOnce } from './webhookProcessor'
 import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
 import {
@@ -56,6 +57,8 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
   const providerSource = `${order.integration_type || ''} ${order.courier_partner || ''}`.toLowerCase()
   const integration = providerSource.includes('shadowfax')
     ? 'shadowfax'
+    : providerSource.includes('ithink')
+      ? 'ithink'
     : providerSource.includes('shipway') || providerSource.includes('amazon shipping')
       ? 'shipway'
       : providerSource.includes('xpressbees') || providerSource.includes('expressbees')
@@ -138,6 +141,15 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
     if (!shipwayOrderId) throw new Error('Shipway cancellation requires an order number')
     const providerResponse = await cancelShipwayOrder(shipwayOrderId)
     cancellationResult = { success: true, providerResponse }
+  } else if (integration === 'ithink') {
+    const providerResponse = await new IThinkService().cancelOrder({
+      awb_numbers: order.awb_number,
+    })
+    const providerStatus = String(providerResponse?.status || '').toLowerCase()
+    cancellationResult = {
+      success: providerStatus === 'success' || providerResponse?.status_code === 200,
+      providerResponse,
+    }
   } else {
     throw new Error(`Supported cancellation providers: ${supportedServiceProviderList()}`)
   }

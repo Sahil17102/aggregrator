@@ -92,6 +92,7 @@ import {
   createShadowfaxShipment,
 } from './couriers/shadowfax.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
+import { IThinkService, type IThinkRate } from './couriers/ithink.service'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
 import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
@@ -1272,7 +1273,7 @@ const getProviderRateAmount = (providerRate?: { total?: unknown; freight?: unkno
   return freight ?? cod
 }
 
-const QUOTE_BACKED_PROVIDER_KEYS = new Set(['deliveryone'])
+const QUOTE_BACKED_PROVIDER_KEYS = new Set(['deliveryone', 'ithink'])
 
 const roundMoneyValue = (value: unknown) => {
   const parsed = Number(value ?? 0)
@@ -2151,6 +2152,76 @@ export const fetchAvailableCouriersWithRates = async (
       }
     }
 
+    let iThinkRates: IThinkRate[] = []
+    const iThinkOriginPincode = normalizePincode(
+      params.origin ?? params.source_pincode,
+    )?.toString()
+    const iThinkDestinationPincode = normalizePincode(
+      params.destination ?? params.destination_pincode,
+    )?.toString()
+    if (iThinkOriginPincode && iThinkDestinationPincode) {
+      try {
+        const iThink = new IThinkService()
+        iThinkRates = await iThink.fetchRates({
+          from_pincode: iThinkOriginPincode,
+          to_pincode: iThinkDestinationPincode,
+          shipping_length_cms: String(Number(params.length ?? 0)),
+          shipping_width_cms: String(Number(params.breadth ?? 0)),
+          shipping_height_cms: String(Number(params.height ?? 0)),
+          shipping_weight_kg: String(normalizeServiceabilityWeightToGrams(params.weight) / 1000),
+          order_type: params.isReverse === true || params.payment_type === 'reverse' ? 'reverse' : 'forward',
+          payment_method: normalizedPaymentType === 'cod' ? 'cod' : 'prepaid',
+          product_mrp: String(Number(params.order_amount ?? params.orderAmount ?? 0)),
+        })
+        iThinkRates = iThinkRates.filter((rate) => {
+          if (!rate.pickup) return false
+          return normalizedPaymentType === 'cod' ? rate.cod : rate.prepaid
+        })
+
+        if (iThinkRates.length) {
+          enabledProviders.add('ithink')
+          const bucket: ProviderBucket = { rows: [], idSet: new Set<number>() }
+          for (const rate of iThinkRates) {
+            const row: CourierRow = {
+              id: rate.courierId,
+              name: `${rate.courierName}${rate.serviceType ? ` ${rate.serviceType}` : ''}`,
+              serviceProvider: 'ithink',
+              createdAt: null,
+            }
+            bucket.rows.push(row)
+            bucket.idSet.add(rate.courierId)
+            await db
+              .insert(couriers)
+              .values({
+                id: rate.courierId,
+                name: row.name,
+                serviceProvider: 'ithink',
+                isEnabled: true,
+                businessType: ['b2c'],
+              })
+              .onConflictDoUpdate({
+                target: [couriers.id, couriers.serviceProvider],
+                set: { name: row.name, updatedAt: new Date() },
+              })
+          }
+          providerCourierBuckets.set('ithink', bucket)
+          systemCourierMap.ithink = bucket.idSet
+          registerServiceableProvider('ithink', {
+            providerId: 'ithink',
+            providerName: 'iThink Logistics',
+            codAvailable: iThinkRates.some((rate) => rate.cod),
+            prepaidAvailable: iThinkRates.some((rate) => rate.prepaid),
+            edd: `${Math.max(1, Math.min(...iThinkRates.map((rate) => rate.deliveryTatDays || 5)))} Days`,
+            raw: { rates: iThinkRates.map((rate) => rate.raw) },
+          })
+        }
+      } catch (err: any) {
+        if (!/not configured/i.test(String(err?.message || ''))) {
+          console.error('[Serviceability] iThink rate lookup failed:', err?.message || err)
+        }
+      }
+    }
+
     // 🟢 Ekart Serviceability V3
     let ekartAvailable = false
     let ekartResp: any = null
@@ -2336,6 +2407,10 @@ export const fetchAvailableCouriersWithRates = async (
                 (record: any) => String(record?.id || '').trim() === String(courier.id).trim(),
               )
             : null
+        const iThinkRecord =
+          providerKey === 'ithink'
+            ? iThinkRates.find((record) => Number(record.courierId) === Number(courier.id))
+            : null
         const xpressbeesProviderRate = xpressbeesRecord
           ? buildProviderRate('xpressbees', {
               total: xpressbeesRecord?.total_charges ?? xpressbeesRecord?.totalCharges,
@@ -2354,12 +2429,23 @@ export const fetchAvailableCouriersWithRates = async (
               raw: shipwayRecord,
             })
           : null
+        const iThinkProviderRate = iThinkRecord
+          ? buildProviderRate('ithink', {
+              total: iThinkRecord.totalRate,
+              freight: iThinkRecord.freightCharges,
+              cod: iThinkRecord.codCharges,
+              chargeable_weight: iThinkRecord.weightSlabKg * 1000,
+              raw: iThinkRecord.raw,
+            })
+          : null
         const providerRate =
           providerKey === 'ekart'
             ? ekartProviderRate
             : providerKey === 'shipway'
               ? shipwayProviderRate
-              : xpressbeesProviderRate
+              : providerKey === 'ithink'
+                ? iThinkProviderRate
+                : xpressbeesProviderRate
         if (providerKey === 'shipway' && !shipwayRecord) continue
         providerMeta.matchedCourierIds.add(Number(courier.id))
         combinedCouriers.push({
@@ -2380,15 +2466,17 @@ export const fetchAvailableCouriersWithRates = async (
             null,
           provider_rate: providerRate,
           freight_charges:
-            shipwayRecord?.delivery_charge ?? xpressbeesRecord?.freight_charges ?? null,
-          cod_charges: xpressbeesRecord?.cod_charges ?? null,
+            shipwayRecord?.delivery_charge ?? iThinkRecord?.freightCharges ?? xpressbeesRecord?.freight_charges ?? null,
+          cod_charges: iThinkRecord?.codCharges ?? xpressbeesRecord?.cod_charges ?? null,
           total_charges:
-            shipwayRecord?.delivery_charge ?? xpressbeesRecord?.total_charges ?? null,
+            shipwayRecord?.delivery_charge ?? iThinkRecord?.totalRate ?? xpressbeesRecord?.total_charges ?? null,
           chargeable_weight:
             shipwayRecord?.charged_weight !== undefined
               ? shipwayRecord.charged_weight * 1000
               : xpressbeesRecord?.chargeable_weight ?? null,
-          provider_serviceability: shipwayRecord ?? xpressbeesRecord ?? null,
+          shipping_mode: iThinkRecord?.serviceType?.toLowerCase() || null,
+          selected_courier_name: iThinkRecord?.courierName || null,
+          provider_serviceability: shipwayRecord ?? iThinkRecord?.raw ?? xpressbeesRecord ?? null,
         })
       }
     }
@@ -2791,7 +2879,7 @@ export const fetchAvailableCouriersWithRates = async (
       const requiredRateType = isReverseShipment ? 'rto' : 'forward'
       const localRatesAvailable = !requireLocalRates || Boolean(c.localRates?.[requiredRateType])
       const liveProviderRateAvailable =
-        providerKey === 'shipway' && getProviderRateAmount(c.provider_rate) !== null
+        ['shipway', 'ithink'].includes(providerKey) && getProviderRateAmount(c.provider_rate) !== null
       const calculatorLocalRate =
         isCalculator && c.provider_serviceability?.source === 'local_rate_card'
 
@@ -4744,6 +4832,7 @@ export const createB2CShipmentService = async (
       | 'deliveryone'
       | 'shipway'
       | 'shadowfax'
+      | 'ithink'
     const providerName =
       integrationType === 'delhivery'
         ? 'Delhivery'
@@ -4755,6 +4844,8 @@ export const createB2CShipmentService = async (
               ? 'Shipway'
               : integrationType === 'shadowfax'
                 ? 'Shadowfax'
+              : integrationType === 'ithink'
+                ? 'iThink Logistics'
               : 'Xpressbees'
 
     let providerQuoteForBooking = 0
@@ -4778,7 +4869,26 @@ export const createB2CShipmentService = async (
                 deliveryOne: new DeliveryOneService(),
                 ...quoteParams,
               })
-            : await fetchDelhiveryShippingCostEstimate({
+            : integrationType === 'ithink'
+              ? await (async () => {
+                  const rates = await new IThinkService().fetchRates({
+                    from_pincode: bookingPickupPincode,
+                    to_pincode: bookingDestinationPincode,
+                    shipping_length_cms: String(quoteParams.lengthCm),
+                    shipping_width_cms: String(quoteParams.breadthCm),
+                    shipping_height_cms: String(quoteParams.heightCm),
+                    shipping_weight_kg: String(quoteParams.weightG / 1000),
+                    order_type: 'forward',
+                    payment_method:
+                      String(params.payment_type).toLowerCase() === 'cod' ? 'cod' : 'prepaid',
+                    product_mrp: String(Number(params.order_amount || 0)),
+                  })
+                  const rate = rates.find(
+                    (entry) => Number(entry.courierId) === Number(params.courier_id),
+                  )
+                  return rate ? { amount: rate.totalRate, rate } : null
+                })()
+              : await fetchDelhiveryShippingCostEstimate({
                 delhivery: new DelhiveryService(),
                 ...quoteParams,
               })
@@ -4814,7 +4924,7 @@ export const createB2CShipmentService = async (
       }
     }
 
-    if (['delhivery', 'deliveryone', 'shipway', 'shadowfax'].includes(integrationType) && !isReverseShipment) {
+    if (['delhivery', 'deliveryone', 'shipway', 'shadowfax', 'ithink'].includes(integrationType) && !isReverseShipment) {
       const insuranceSettings = await getShipmentInsuranceSettings()
       const insuranceChargeBasis = computeB2CInsuranceChargeBasis(params)
       const insuranceCharge = computeShipmentInsuranceCharge({
@@ -5045,6 +5155,49 @@ export const createB2CShipmentService = async (
         manifest: undefined,
         courier_cost: providerCourierCost,
         sort_code: providerSortCode,
+      }
+    } else if (integrationType === 'ithink') {
+      if (isReverseShipment) {
+        throw new HttpError(400, 'iThink reverse shipments are not supported yet')
+      }
+      const [selectedCourier] = await db
+        .select({ name: couriers.name })
+        .from(couriers)
+        .where(
+          and(
+            eq(couriers.id, Number(params.courier_id)),
+            eq(couriers.serviceProvider, 'ithink'),
+          ),
+        )
+        .limit(1)
+      if (!selectedCourier) {
+        throw new HttpError(400, 'Selected iThink courier is no longer available. Recheck serviceability.')
+      }
+      const serviceType = String(params.shipping_mode || '').trim()
+      const courierName = selectedCourier.name
+        .replace(new RegExp(`\\s+${serviceType}$`, 'i'), '')
+        .trim()
+      shipmentData = await new IThinkService().createShipment({
+        ...params,
+        selected_courier_name: courierName,
+        service_type: serviceType,
+      })
+      rollbackActions.push(async () => {
+        await new IThinkService().cancelOrder({ awb_numbers: shipmentData.awb_number })
+      })
+      shipmentSuccessPackage = {
+        waybill: shipmentData.awb_number,
+        charge: params.courier_cost ?? null,
+      }
+      providerCourierCost = Number(params.courier_cost ?? 0) || null
+      shipmentMeta = {
+        shipment_id: shipmentData.shipment_id,
+        awb_number: shipmentData.awb_number,
+        courier_name: selectedCourier.name,
+        courier_id: Number(params.courier_id),
+        label: undefined,
+        courier_cost: providerCourierCost,
+        sort_code: null,
       }
     } else if (integrationType === 'shipway') {
       if (isReverseShipment) {
@@ -5536,7 +5689,7 @@ export const createB2CShipmentService = async (
 
       // 3️⃣ CREATE LOCAL ORDER ENTRY (no seller insurance for B2C – platform liability only)
       const orderStatus =
-        ['delhivery', 'deliveryone', 'shipway', 'shadowfax'].includes(integrationType) &&
+        ['delhivery', 'deliveryone', 'shipway', 'shadowfax', 'ithink'].includes(integrationType) &&
         !isReverseShipment &&
         shipmentMeta.awb_number
           ? 'shipment_created'
@@ -5704,7 +5857,7 @@ export const createB2CShipmentService = async (
       // Shipway also returns an AWB immediately, so its wallet debit is not deferred.
       const shouldDeferWalletDebit =
         !isReverseShipment &&
-        !['delhivery', 'deliveryone', 'shipway', 'shadowfax'].includes(integrationType)
+        !['delhivery', 'deliveryone', 'shipway', 'shadowfax', 'ithink'].includes(integrationType)
       const finalWalletDebit = walletDebit ?? 0
       if (shouldDeferWalletDebit) {
         console.log('ℹ️ Deferring wallet debit until manifest success for B2C order', {

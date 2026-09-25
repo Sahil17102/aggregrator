@@ -25,6 +25,7 @@
     { "key": "ithinkApiBase", "value": "https://pre-alpha.ithinklogistics.com/api_v3" },
     { "key": "ithinkAccessToken", "value": "" },
     { "key": "ithinkSecretKey", "value": "" },
+    { "key": "ithinkPickupAddressId", "value": "" },
     { "key": "awb", "value": "REPLACE_WITH_AWB" },
     { "key": "orderNo", "value": "postman-order-001" }
   ],
@@ -38,7 +39,7 @@
             "method": "PUT",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/api/admin/couriers/credentials/ithink",
-            "body": { "mode": "raw", "raw": "{\n  \"apiBase\": \"{{ithinkApiBase}}\",\n  \"accessToken\": \"{{ithinkAccessToken}}\",\n  \"secretKey\": \"{{ithinkSecretKey}}\"\n}" }
+            "body": { "mode": "raw", "raw": "{\n  \"apiBase\": \"{{ithinkApiBase}}\",\n  \"accessToken\": \"{{ithinkAccessToken}}\",\n  \"secretKey\": \"{{ithinkSecretKey}}\",\n  \"pickupAddressId\": \"{{ithinkPickupAddressId}}\"\n}" }
           }
         },
         {

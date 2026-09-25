@@ -25,6 +25,7 @@ export const getIThinkCredentialsController = async (_req: Request, res: Respons
         apiBase: courier_credentials.apiBase,
         accessToken: courier_credentials.apiKey,
         secretKey: courier_credentials.password,
+        pickupAddressId: courier_credentials.clientId,
       })
       .from(courier_credentials)
       .where(eq(courier_credentials.provider, 'ithink'))
@@ -37,6 +38,7 @@ export const getIThinkCredentialsController = async (_req: Request, res: Respons
         configured: Boolean(saved?.accessToken?.trim() && saved?.secretKey?.trim()),
         accessTokenMasked: maskIThinkSecret(saved?.accessToken),
         secretKeyMasked: maskIThinkSecret(saved?.secretKey),
+        pickupAddressId: saved?.pickupAddressId || '',
       },
     })
   } catch (error) {
@@ -56,6 +58,7 @@ export const updateIThinkCredentialsController = async (req: Request, res: Respo
         configured: true,
         accessTokenMasked: maskIThinkSecret(saved.accessToken),
         secretKeyMasked: maskIThinkSecret(saved.secretKey),
+        pickupAddressId: saved.pickupAddressId,
       },
     })
   } catch (error) {

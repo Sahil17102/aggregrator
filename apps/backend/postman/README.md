@@ -6,5 +6,7 @@ Import `iThink-Logistics-v3.postman_collection.json` into Postman, then set:
 - `adminToken` to a valid admin bearer token.
 - `ithinkApiBase` to staging or production.
 - `ithinkAccessToken` and `ithinkSecretKey` to credentials issued by iThink Logistics.
+- Configure an iThink pickup address in the iThink portal and save its numeric ID as
+  `pickupAddressId` (or deploy it as `ITHINK_PICKUP_ADDRESS_ID`) before booking shipments.
 
 Run **Save credentials** first, followed by **Test credentials**. Replace the collection's AWB/order variables and example payload values before running state-changing order, warehouse, cancellation, payment, or NDR calls. The collection tests HTTP status, JSON format, and the backend success envelope for every request.

@@ -41,9 +41,34 @@ export type IThinkCredentialInput = {
   access_token?: string
   secretKey?: string
   secret_key?: string
+  pickupAddressId?: string | number
+  pickup_address_id?: string | number
 }
 
-type IThinkConfig = { apiBase: string; accessToken: string; secretKey: string }
+type IThinkConfig = {
+  apiBase: string
+  accessToken: string
+  secretKey: string
+  pickupAddressId: string
+}
+
+export type IThinkRate = {
+  courierId: number
+  courierName: string
+  serviceType: string
+  prepaid: boolean
+  cod: boolean
+  pickup: boolean
+  reversePickup: boolean
+  weightSlabKg: number
+  freightCharges: number
+  codCharges: number
+  gstCharges: number
+  totalRate: number
+  zone: string
+  deliveryTatDays: number | null
+  raw: any
+}
 
 const clean = (value: unknown) => String(value ?? '').trim()
 const normalizeBase = (value: unknown) =>
@@ -55,6 +80,7 @@ const readSavedCredentials = async () => {
       apiBase: courier_credentials.apiBase,
       accessToken: courier_credentials.apiKey,
       secretKey: courier_credentials.password,
+      pickupAddressId: courier_credentials.clientId,
     })
     .from(courier_credentials)
     .where(eq(courier_credentials.provider, ITHINK_PROVIDER))
@@ -86,8 +112,16 @@ export class IThinkService {
   private async getConfig(): Promise<IThinkConfig> {
     let saved: Awaited<ReturnType<typeof readSavedCredentials>> | undefined
     const hasCompleteOverrides = Boolean(
-      clean(this.overrides.accessToken || this.overrides.access_token) &&
-        clean(this.overrides.secretKey || this.overrides.secret_key),
+      clean(
+        this.overrides.accessToken ||
+          this.overrides.access_token ||
+          process.env.ITHINK_ACCESS_TOKEN,
+      ) &&
+        clean(
+          this.overrides.secretKey ||
+            this.overrides.secret_key ||
+            process.env.ITHINK_SECRET_KEY,
+        ),
     )
     if (!hasCompleteOverrides) {
       try {
@@ -112,6 +146,12 @@ export class IThinkService {
           this.overrides.secret_key ||
           saved?.secretKey ||
           process.env.ITHINK_SECRET_KEY,
+      ),
+      pickupAddressId: clean(
+        this.overrides.pickupAddressId ||
+          this.overrides.pickup_address_id ||
+          saved?.pickupAddressId ||
+          process.env.ITHINK_PICKUP_ADDRESS_ID,
       ),
     }
     if (!config.accessToken || !config.secretKey) {
@@ -183,11 +223,152 @@ export class IThinkService {
     this.call('getStoreOrderDetails', payload)
   getStoreOrderList = (payload: Record<string, any>) => this.call('getStoreOrderList', payload)
   reattemptOrRto = (payload: Record<string, any>) => this.call('reattemptOrRto', payload)
+
+  async fetchRates(payload: Record<string, any>): Promise<IThinkRate[]> {
+    const response = await this.getRate(payload)
+    if (String(response?.status || '').toLowerCase() !== 'success') {
+      throw new HttpError(502, clean(response?.html_message || response?.data) || 'iThink rate lookup failed')
+    }
+    const rows = Array.isArray(response?.data) ? response.data : []
+    return rows
+      .map((row: any): IThinkRate => ({
+        courierId: Number(row?.logistic_id),
+        courierName: clean(row?.logistic_name) || 'iThink Logistics',
+        serviceType: clean(row?.service_type),
+        prepaid: clean(row?.prepaid).toUpperCase() === 'Y',
+        cod: clean(row?.cod).toUpperCase() === 'Y',
+        pickup: clean(row?.pickup).toUpperCase() === 'Y',
+        reversePickup: clean(row?.rev_pickup).toUpperCase() === 'Y',
+        weightSlabKg: Number(row?.weight_slab || 0),
+        freightCharges: Number(row?.freight_charges || 0),
+        codCharges: Number(row?.cod_charges || 0),
+        gstCharges: Number(row?.gst_charges || 0),
+        totalRate: Number(row?.rate || 0),
+        zone: clean(row?.logistics_zone),
+        deliveryTatDays: Number.isFinite(Number(row?.delivery_tat))
+          ? Number(row.delivery_tat)
+          : null,
+        raw: row,
+      }))
+      .filter((row: IThinkRate) => Number.isInteger(row.courierId) && row.totalRate > 0)
+  }
+
+  async createShipment(params: any) {
+    const config = await this.getConfig()
+    const pickupAddressId = clean(
+      params?.ithink_pickup_address_id ?? params?.pickup_address_id ?? config.pickupAddressId,
+    )
+    if (!pickupAddressId) {
+      throw new HttpError(
+        400,
+        'iThink pickup address ID is not configured. Save it with the iThink courier credentials first.',
+      )
+    }
+
+    const consignee = params?.consignee || {}
+    const pickup = params?.pickup || params?.pickup_details || {}
+    const items = Array.isArray(params?.order_items) ? params.order_items : []
+    const paymentMode = String(params?.payment_type || '').toLowerCase() === 'cod' ? 'COD' : 'Prepaid'
+    const codAmount = paymentMode === 'COD' ? Number(params?.order_amount || 0) : 0
+    const selectedCourierName = clean(params?.courier_name || params?.selected_courier_name)
+    if (!selectedCourierName) {
+      throw new HttpError(400, 'Selected iThink courier name is required')
+    }
+
+    const orderDate = params?.order_date ? new Date(params.order_date) : new Date()
+    const pad = (value: number) => String(value).padStart(2, '0')
+    const formattedOrderDate = `${pad(orderDate.getDate())}-${pad(orderDate.getMonth() + 1)}-${orderDate.getFullYear()} ${pad(orderDate.getHours())}:${pad(orderDate.getMinutes())}:${pad(orderDate.getSeconds())}`
+    const shipment = {
+      waybill: clean(params?.waybill),
+      order: clean(params?.order_number),
+      sub_order: '',
+      order_date: formattedOrderDate,
+      total_amount: String(Number(params?.order_amount || 0)),
+      name: clean(consignee.name),
+      company_name: clean(consignee.company_name),
+      add: clean(consignee.address),
+      add2: clean(consignee.address_2),
+      add3: '',
+      pin: clean(consignee.pincode),
+      city: clean(consignee.city),
+      state: clean(consignee.state),
+      country: clean(consignee.country) || 'India',
+      phone: clean(consignee.phone),
+      alt_phone: '',
+      email: clean(consignee.email),
+      is_billing_same_as_shipping: 'yes',
+      billing_name: clean(consignee.name),
+      billing_company_name: clean(consignee.company_name),
+      billing_add: clean(consignee.address),
+      billing_add2: clean(consignee.address_2),
+      billing_add3: '',
+      billing_pin: clean(consignee.pincode),
+      billing_city: clean(consignee.city),
+      billing_state: clean(consignee.state),
+      billing_country: clean(consignee.country) || 'India',
+      billing_phone: clean(consignee.phone),
+      billing_alt_phone: '',
+      billing_email: clean(consignee.email),
+      products: items.map((item: any) => ({
+        product_name: clean(item?.name) || 'Product',
+        product_sku: clean(item?.sku),
+        product_quantity: String(Number(item?.qty ?? item?.quantity ?? 1)),
+        product_price: String(Number(item?.price ?? 0)),
+        product_tax_rate: String(Number(item?.tax_rate ?? 0)),
+        product_hsn_code: clean(item?.hsn ?? item?.hsnCode),
+        product_discount: String(Number(item?.discount ?? 0)),
+      })),
+      shipment_length: String(Number(params?.package_length ?? params?.length ?? 0)),
+      shipment_width: String(Number(params?.package_breadth ?? params?.breadth ?? 0)),
+      shipment_height: String(Number(params?.package_height ?? params?.height ?? 0)),
+      weight: String(Number(params?.package_weight ?? params?.weight ?? 0) / 1000),
+      shipping_charges: String(Number(params?.shipping_charges ?? 0)),
+      giftwrap_charges: '0',
+      transaction_charges: String(Number(params?.transaction_fee ?? 0)),
+      total_discount: String(Number(params?.discount ?? 0)),
+      first_attemp_discount: '0',
+      cod_charges: String(Number(params?.cod_charges ?? 0)),
+      advance_amount: '0',
+      cod_amount: String(codAmount),
+      payment_mode: paymentMode,
+      reseller_name: clean(params?.company?.name),
+      eway_bill_number: clean(params?.ewaybill_number ?? params?.ewbn),
+      gst_number: clean(params?.company?.gst),
+      return_address_id: pickupAddressId,
+      pickup_name: clean(pickup?.warehouse_name || pickup?.name),
+    }
+
+    const response = await this.addOrder({
+      shipments: [shipment],
+      pickup_address_id: pickupAddressId,
+      logistics: selectedCourierName,
+      s_type: clean(params?.shipping_mode || params?.service_type).toLowerCase(),
+      order_type: '',
+    })
+    const result = Array.isArray(response?.data) ? response.data[0] : response?.data
+    const resultShipment = Array.isArray(result?.shipments)
+      ? result.shipments[0]
+      : Array.isArray(response?.shipments)
+        ? response.shipments[0]
+        : result?.shipment || result
+    const awbNumber = clean(
+      resultShipment?.waybill || resultShipment?.awb_number || resultShipment?.awb || response?.awb_number,
+    )
+    if (!awbNumber || String(response?.status || '').toLowerCase() === 'error') {
+      throw new HttpError(
+        502,
+        clean(response?.html_message || response?.message || resultShipment?.remark) ||
+          'iThink shipment creation failed',
+      )
+    }
+    return { raw: response, shipment_id: awbNumber, awb_number: awbNumber }
+  }
 }
 
 export const saveIThinkCredentials = async (input: IThinkCredentialInput) => {
   const accessToken = clean(input.accessToken || input.access_token)
   const secretKey = clean(input.secretKey || input.secret_key)
+  const pickupAddressId = clean(input.pickupAddressId || input.pickup_address_id)
   const apiBase = normalizeBase(input.apiBase)
   if (!accessToken || !secretKey) {
     throw new HttpError(400, 'iThink accessToken and secretKey are required')
@@ -195,12 +376,12 @@ export const saveIThinkCredentials = async (input: IThinkCredentialInput) => {
 
   await db
     .insert(courier_credentials)
-    .values({ provider: ITHINK_PROVIDER, apiBase, apiKey: accessToken, password: secretKey })
+    .values({ provider: ITHINK_PROVIDER, apiBase, apiKey: accessToken, password: secretKey, clientId: pickupAddressId })
     .onConflictDoUpdate({
       target: courier_credentials.provider,
-      set: { apiBase, apiKey: accessToken, password: secretKey, updatedAt: new Date() },
+      set: { apiBase, apiKey: accessToken, password: secretKey, clientId: pickupAddressId, updatedAt: new Date() },
     })
-  return { apiBase, accessToken, secretKey }
+  return { apiBase, accessToken, secretKey, pickupAddressId }
 }
 
 export const maskIThinkSecret = (value: unknown) => {

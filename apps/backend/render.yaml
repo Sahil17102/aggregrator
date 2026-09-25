@@ -84,6 +84,14 @@ services:
         sync: false
       - key: DELIVERY_ONE_B2B_API_BASE
         value: https://ltl-clients-api.delhivery.com
+      - key: ITHINK_API_BASE
+        value: https://my.ithinklogistics.com/api_v3
+      - key: ITHINK_ACCESS_TOKEN
+        sync: false
+      - key: ITHINK_SECRET_KEY
+        sync: false
+      - key: ITHINK_PICKUP_ADDRESS_ID
+        sync: false
       - key: R2_ENDPOINT
         sync: false
       - key: R2_ACCESS_KEY_ID
