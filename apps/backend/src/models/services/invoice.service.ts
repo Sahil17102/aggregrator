@@ -449,7 +449,23 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
   }
 
   const toSafeString = (value?: string | null) => (value ? value.trim() : '')
-  const sellerDisplayName = PLATFORM_COURIER_BRAND_NAME
+  const merchantDisplayName =
+    toSafeString(invoice.brandName) ||
+    toSafeString(invoice.sellerName) ||
+    toSafeString(invoice.companyName) ||
+    'Merchant'
+  const sellerDisplayName = merchantDisplayName
+  const courierDisplayName =
+    toSafeString(invoice.courierPartner) || toSafeString(invoice.courierName) || 'Courier Partner'
+  const serviceDisplayName = (() => {
+    const raw = toSafeString(invoice.serviceType)
+      .replace(/[_-]+/g, ' ')
+      .replace(/\bdeliveryone\b/gi, 'Delhivery')
+      .replace(/\bdelhiveryone\b/gi, 'Delhivery')
+      .trim()
+    if (!raw) return '-'
+    return raw.replace(/\b\w/g, (letter) => letter.toUpperCase())
+  })()
   const sellerAddressLines = (invoice.sellerAddress || '')
     .split('\n')
     .map((line) => line.trim())
@@ -648,8 +664,8 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
     const shipmentRows = [
       ['Order ID', invoice.orderId || invoiceNumber],
       ['AWB Number', invoice.awbNumber || '-'],
-      ['Courier Partner', invoice.courierPartner || invoice.courierName || '-'],
-      ['Service', invoice.serviceType || '-'],
+      ['Courier Partner', courierDisplayName],
+      ['Service', serviceDisplayName],
       ['Pickup Pincode', invoice.pickupPincode || '-'],
       ['Delivery Pincode', invoice.deliveryPincode || invoice.buyerPincode || '-'],
       ['Order Date', invoice.orderDate || '-'],
@@ -909,39 +925,19 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
 
   const contentClassic: any[] = [
     {
-      columns: [
-        {
-          width: 130,
-          text: invoice.invoiceDate,
-          fontSize: 8,
-          color: '#111111',
-        },
-        {
-          width: '*',
-          text: PLATFORM_COURIER_BRAND_NAME,
-          fontSize: 8,
-          color: '#111111',
-          alignment: 'center',
-        },
-      ],
-      margin: [0, 0, 0, 12],
+      canvas: [{ type: 'rect', x: 0, y: 0, w: 515, h: 6, color: '#142B4F' }],
+      margin: [0, 0, 0, 18],
     },
     {
       columns: [
         {
           width: '*',
           stack: [
-            images.logo
-              ? { image: 'logo', fit: [104, 52], margin: [0, 0, 0, 6] }
-              : {
-                  text: sellerDisplayName,
-                  fontSize: 18,
-                  bold: true,
-                  color: '#111111',
-                  margin: [0, 0, 0, 6],
-                },
-            { text: sellerDisplayName, fontSize: 12, color: '#111111', margin: [0, 2, 0, 10] },
-            { text: 'FROM', fontSize: 7.7, bold: true, color: '#374151', margin: [0, 0, 0, 8] },
+            { text: PLATFORM_COURIER_BRAND_NAME, fontSize: 24, bold: true, color: '#142B4F', margin: [0, 0, 0, 2] },
+            { text: 'SHIPPING & LOGISTICS', fontSize: 7.4, bold: true, color: '#078D72', characterSpacing: 1.3, margin: [0, 0, 0, 12] },
+            images.logo ? { image: 'logo', fit: [86, 42], margin: [0, 0, 0, 6] } : null,
+            { text: 'SOLD BY', fontSize: 7.4, bold: true, color: '#64748B', characterSpacing: 1, margin: [0, 0, 0, 4] },
+            { text: sellerDisplayName, fontSize: 11, bold: true, color: '#111827', margin: [0, 0, 0, 5] },
             ...sellerAddressLines.map((line) => ({
               text: line,
               fontSize: 7.7,
@@ -955,58 +951,43 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
           ].filter(Boolean),
         },
         {
-          width: 160,
+          width: 178,
           stack: [
             {
-              text: badgeIsCOD ? 'PAY ON DELIVERY' : 'PAID',
-              fontSize: 8.5,
+              text: 'TAX INVOICE',
+              fontSize: 8,
               bold: true,
-              color: '#111111',
+              color: '#64748B',
+              alignment: 'right',
+              characterSpacing: 1,
+              margin: [0, 0, 0, 5],
+            },
+            { text: invoiceNumber, fontSize: 15, bold: true, color: '#142B4F', alignment: 'right', margin: [0, 0, 0, 8] },
+            {
+              text: badgeIsCOD ? 'PAY ON DELIVERY' : 'PAID',
+              fontSize: 8,
+              bold: true,
+              color: badgeIsCOD ? '#9A3412' : '#166534',
               alignment: 'center',
-              fillColor: badgeIsCOD ? '#fed7aa' : '#d1fad4',
-              margin: [0, 0, 0, 8],
+              background: badgeIsCOD ? '#FFEDD5' : '#DCFCE7',
+              margin: [48, 4, 0, 10],
             },
             {
               table: {
-                widths: ['*'],
+                widths: [52, '*'],
                 body: [
-                  [
-                    {
-                      stack: [
-                        { text: 'INVOICE NO.', fontSize: 6.8, bold: true, color: '#4b5563' },
-                        { text: invoiceNumber, fontSize: 11, bold: true, color: '#111111' },
-                      ],
-                      border: [false, false, false, false],
-                    },
-                  ],
+                  [{ text: 'DATE', fontSize: 7, bold: true, color: '#64748B' }, { text: invoice.invoiceDate, fontSize: 8.5, alignment: 'right', color: '#111827' }],
+                  [{ text: 'ORDER', fontSize: 7, bold: true, color: '#64748B' }, { text: invoice.orderId || '-', fontSize: 8.5, alignment: 'right', color: '#111827' }],
                 ],
               },
-              layout: 'noBorders',
-              margin: [0, 0, 0, 6],
-            },
-            {
-              table: {
-                widths: ['*'],
-                body: [
-                  [
-                    {
-                      stack: [
-                        { text: 'DATE', fontSize: 6.8, bold: true, color: '#4b5563' },
-                        { text: invoice.invoiceDate, fontSize: 9, color: '#111111' },
-                      ],
-                      border: [false, false, false, false],
-                    },
-                  ],
-                ],
-              },
-              layout: 'noBorders',
+              layout: { defaultBorder: false, hLineColor: () => '#E2E8F0', hLineWidth: (i: number) => (i === 0 ? 0 : 0.5), paddingTop: () => 4, paddingBottom: () => 4 },
               margin: [0, 0, 0, 8],
             },
           ].filter(Boolean),
         },
       ],
       columnGap: 16,
-      margin: [0, 0, 0, 14],
+      margin: [0, 0, 0, 20],
     },
     {
       columns: [
@@ -1055,8 +1036,8 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
                 body: [
                   ['Order ID', invoice.orderId || invoiceNumber],
                   ['AWB Number', invoice.awbNumber || '-'],
-                  ['Courier Partner', invoice.courierPartner || invoice.courierName || '-'],
-                  ['Service', invoice.serviceType || '-'],
+                  ['Courier Partner', courierDisplayName],
+                  ['Service', serviceDisplayName],
                   ['Pickup Pincode', invoice.pickupPincode || '-'],
                   ['Delivery Pincode', invoice.deliveryPincode || invoice.buyerPincode || '-'],
                   ['Order Date', invoice.orderDate || invoice.invoiceDate || '-'],
@@ -1217,7 +1198,7 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
         body: [
           [
             {
-              text: `Courier: ${invoice.courierPartner || invoice.courierName || '-'}${invoice.serviceType ? ` · ${invoice.serviceType}` : ''}`,
+              text: `Courier: ${courierDisplayName}${serviceDisplayName !== '-' ? ` - ${serviceDisplayName}` : ''}`,
               bold: true,
               margin: [4, 4, 4, 4],
             },

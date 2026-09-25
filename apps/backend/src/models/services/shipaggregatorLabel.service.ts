@@ -54,7 +54,12 @@ const formatMoney = (value: number | string | null | undefined) => {
 
 const formatShipmentWeight = (order: any) => {
   const weight = normalizeNumber(order?.charged_weight ?? order?.actual_weight ?? order?.weight ?? order?.package_weight)
-  return weight > 0 ? `${Number(weight.toFixed(3))} kg` : '-'
+  if (weight <= 0) return '-'
+
+  // B2C weights are persisted in grams. Keep compatibility with older rows that
+  // stored small values in kilograms, matching the client-side display rule.
+  const weightKg = weight > 50 ? weight / 1000 : weight
+  return `${weightKg.toFixed(weightKg < 10 ? 2 : 1).replace(/\.0+$|(?<=\.[0-9])0+$/, '')} kg`
 }
 
 const parseMaybeJson = <T>(value: unknown): T | null => {
