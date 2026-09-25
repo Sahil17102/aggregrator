@@ -45,7 +45,7 @@ const computeInsuranceChargePreview = ({
 export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b2c' }) => {
   const { watch, setValue, clearErrors } = useFormContext<B2BFormData | B2CFormData>()
   const { data: paymentOptions } = usePaymentOptions()
-  const priceBreakupRef = useRef<HTMLDivElement | null>(null)
+  const selectedPriceBreakupRef = useRef<HTMLDivElement | null>(null)
 
   const products = watch('products') ?? []
   const b2bBoxes = watch('boxes') as B2BBox[] | undefined
@@ -334,7 +334,7 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
 
               <Divider sx={{ my: 2 }} />
 
-              <Stack ref={priceBreakupRef} spacing={1.2} sx={{ scrollMarginTop: 96 }}>
+              <Stack spacing={1.2}>
                 <Typography sx={{ fontSize: 12, fontWeight: 800, color: TEXT_SECONDARY }}>
                   Price Breakup
                 </Typography>
@@ -589,9 +589,11 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     setValue('slabs', courier?.slabs ?? null)
                     clearErrors('courierPartnerId')
                     window.requestAnimationFrame(() => {
-                      priceBreakupRef.current?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
+                      window.requestAnimationFrame(() => {
+                        selectedPriceBreakupRef.current?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'nearest',
+                        })
                       })
                     })
                   }}
@@ -719,12 +721,52 @@ export const SelectCourierForm = ({ shipment_type }: { shipment_type: 'b2b' | 'b
                     </Stack>
 
                     {isSelected && isBookable && (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <BiCheckCircle size={20} color={ACCENT} />
-                        <Typography sx={{ fontWeight: 800, color: ACCENT }}>
-                          Selected for booking
-                        </Typography>
-                      </Stack>
+                      <Box
+                        ref={selectedPriceBreakupRef}
+                        sx={{
+                          p: 1,
+                          borderRadius: 2,
+                          bgcolor: alpha(ACCENT, 0.055),
+                          border: `1px solid ${alpha(ACCENT, 0.14)}`,
+                          scrollMarginBottom: 88,
+                        }}
+                      >
+                        <Stack
+                          direction={{ xs: 'column', sm: 'row' }}
+                          justifyContent="space-between"
+                          spacing={0.75}
+                        >
+                          <Stack direction="row" spacing={0.75} alignItems="center">
+                            <BiCheckCircle size={18} color={ACCENT} />
+                            <Typography sx={{ fontSize: 13, fontWeight: 800, color: ACCENT }}>
+                              Selected · Price Breakup
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1.5} flexWrap="wrap">
+                            <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
+                              Freight <strong>{formatCurrency(freightCharge)}</strong>
+                            </Typography>
+                            {otherCharge > 0 && (
+                              <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
+                                Other <strong>{formatCurrency(otherCharge)}</strong>
+                              </Typography>
+                            )}
+                            {codCharge > 0 && (
+                              <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
+                                COD <strong>{formatCurrency(codCharge)}</strong>
+                              </Typography>
+                            )}
+                            {insuranceCharge > 0 && (
+                              <Typography sx={{ fontSize: 12, color: TEXT_SECONDARY }}>
+                                Insurance <strong>{formatCurrency(insuranceCharge)}</strong>
+                              </Typography>
+                            )}
+                            <Typography sx={{ fontSize: 13, fontWeight: 900, color: TEXT_PRIMARY }}>
+                              Total {finalChargeLabel}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </Box>
                     )}
                   </Stack>
                 </Paper>
