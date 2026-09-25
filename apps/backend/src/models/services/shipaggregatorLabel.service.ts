@@ -10,6 +10,9 @@ import { b2c_orders } from '../schema/b2cOrders'
 import { userProfiles } from '../schema/userProfile'
 import { users } from '../schema/users'
 import { presignDownload, presignUpload } from './upload.service'
+import { getServiceProviderLabel, normalizeServiceProviderKey } from '../../utils/courierProviders'
+
+const PLATFORM_BRAND_NAME = 'TrueTransit'
 
 type LabelSnapshot = {
   order: any
@@ -313,7 +316,7 @@ const normalizeLineItem = (item: any) => {
 }
 
 const resolveProviderKey = (order: any) => {
-  const integration = String(order?.integration_type ?? '').trim().toLowerCase()
+  const integration = normalizeServiceProviderKey(order?.integration_type)
   const courierPartner = String(order?.courier_partner ?? '').trim().toLowerCase()
 
   if (order?.delhivery_label_meta) return 'delhivery'
@@ -327,8 +330,19 @@ const resolveProviderKey = (order: any) => {
     return 'shipway'
   }
   if (integration === 'deliveryone' || courierPartner.includes('deliveryone')) return 'deliveryone'
+  if (integration === 'shadowfax' || courierPartner.includes('shadowfax')) return 'shadowfax'
+  if (integration === 'ekart' || courierPartner.includes('ekart')) return 'ekart'
+  if (integration === 'xpressbees' || courierPartner.includes('xpressbees')) return 'xpressbees'
   if (String(order?.shipment_id ?? '').trim()) return 'deliveryone'
-  return 'delhivery'
+  return integration || courierPartner || 'courier'
+}
+
+const resolveCourierLabel = (order: any) => {
+  const providerKey = resolveProviderKey(order)
+  const knownLabel = getServiceProviderLabel(providerKey)
+  if (knownLabel) return knownLabel
+
+  return normalizeText(order?.courier_partner || order?.integration_type, 'Courier Partner')
 }
 
 const resolveShippingModeLabel = (order: any) => {
@@ -420,9 +434,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
   } = params
 
   const awb = normalizeText(order?.awb_number ?? order?.awbNumber, '-')
-  const providerKey = resolveProviderKey(order)
-  const providerLabel =
-    providerKey === 'delhivery' ? 'DELHIVERY' : providerKey === 'shipway' ? 'SHIPWAY' : 'DELIVERYONE'
+  const providerLabel = resolveCourierLabel(order).toUpperCase()
   const totalAmount = normalizedItems.reduce((sum, item) => sum + Math.max(0, item.lineTotal), 0)
   const shipmentWeight = formatShipmentWeight(order)
   const rows: any[] = normalizedItems.slice(0, 4).map((item) => [
@@ -442,10 +454,10 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
 
   const docDefinition: any = {
     info: {
-      title: 'Ship Aggregator Shipment Label',
-      author: 'Ship Aggregator',
-      subject: 'Ship Aggregator shipment label',
-      creator: 'Ship Aggregator Label Generator',
+      title: `${PLATFORM_BRAND_NAME} Shipment Label`,
+      author: PLATFORM_BRAND_NAME,
+      subject: `${PLATFORM_BRAND_NAME} shipment label`,
+      creator: `${PLATFORM_BRAND_NAME} Label Generator`,
     },
     pageSize: { width: 288, height: 432 },
     pageMargins: [13, 13, 13, 13],
@@ -468,6 +480,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
                     margin: [0, 0, 0, 3],
                   }
                 : { text: '', margin: [0, 0, 0, 0] },
+              { text: PLATFORM_BRAND_NAME, fontSize: 7.2, bold: true, color: '#374151', characterSpacing: 0.6 },
               { text: sellerName, fontSize: 10.6, bold: true, color: '#111111', margin: [0, 0, 0, 1] },
             ],
           },
@@ -638,7 +651,7 @@ export const buildShipmentLabelPdfBuffer = async (params: ShipmentLabelPdfParams
             width: '*',
             stack: [
               { text: 'NOTE', fontSize: 6.6, bold: true, color: '#111111', margin: [0, 0, 0, 2] },
-              { text: 'Local Ship Aggregator label template generated from order and seller details.', fontSize: 6.0, color: '#6b7280' },
+              { text: `${PLATFORM_BRAND_NAME} shipping label · Courier service by ${providerLabel}.`, fontSize: 6.0, color: '#6b7280' },
             ],
           },
           {

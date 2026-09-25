@@ -13,8 +13,8 @@ const summarizeFetchError = (err: any) => {
   return status ? `${message} (status ${status})` : message
 }
 
-const PLATFORM_COURIER_BRAND_NAME = 'Ship Aggregator'
-const PLATFORM_LOGISTICS_BRAND_NAME = 'Ship Aggregator'
+const PLATFORM_COURIER_BRAND_NAME = 'TrueTransit'
+const PLATFORM_LOGISTICS_BRAND_NAME = 'TrueTransit'
 const PLATFORM_LOGO_KEY = 'favicon.jpg'
 const ALLOW_MERCHANT_DOCUMENT_LOGOS = false
 
@@ -648,6 +648,8 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
     const shipmentRows = [
       ['Order ID', invoice.orderId || invoiceNumber],
       ['AWB Number', invoice.awbNumber || '-'],
+      ['Courier Partner', invoice.courierPartner || invoice.courierName || '-'],
+      ['Service', invoice.serviceType || '-'],
       ['Pickup Pincode', invoice.pickupPincode || '-'],
       ['Delivery Pincode', invoice.deliveryPincode || invoice.buyerPincode || '-'],
       ['Order Date', invoice.orderDate || '-'],
@@ -1053,6 +1055,8 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
                 body: [
                   ['Order ID', invoice.orderId || invoiceNumber],
                   ['AWB Number', invoice.awbNumber || '-'],
+                  ['Courier Partner', invoice.courierPartner || invoice.courierName || '-'],
+                  ['Service', invoice.serviceType || '-'],
                   ['Pickup Pincode', invoice.pickupPincode || '-'],
                   ['Delivery Pincode', invoice.deliveryPincode || invoice.buyerPincode || '-'],
                   ['Order Date', invoice.orderDate || invoice.invoiceDate || '-'],
@@ -1199,6 +1203,22 @@ export const generateInvoicePDF = async (invoice: InvoiceData): Promise<Buffer> 
                 { text: `${invoice.buyerCity}, ${invoice.buyerState} - ${invoice.buyerPincode}` },
                 { text: `Ph: ${invoice.buyerPhone}` },
               ],
+              margin: [4, 4, 4, 4],
+            },
+          ],
+        ],
+      },
+      layout: borderLayout,
+      margin: [0, 0, 0, 4],
+    },
+    {
+      table: {
+        widths: ['*'],
+        body: [
+          [
+            {
+              text: `Courier: ${invoice.courierPartner || invoice.courierName || '-'}${invoice.serviceType ? ` · ${invoice.serviceType}` : ''}`,
+              bold: true,
               margin: [4, 4, 4, 4],
             },
           ],

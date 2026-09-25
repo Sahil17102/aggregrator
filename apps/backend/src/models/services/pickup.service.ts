@@ -5,6 +5,8 @@ import { DelhiveryService } from './couriers/delhivery.service'
 import { DeliveryOneService } from './couriers/deliveryone.service'
 import { EkartService } from './couriers/ekart.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
+import { cancelShadowfaxShipment } from './couriers/shadowfax.service'
+import { cancelShipwayOrder } from './couriers/shipway.service'
 import { applyCancellationRefundOnce } from './webhookProcessor'
 import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
 import {
@@ -51,7 +53,20 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
     throw new Error(`Order with status "${order.order_status}" cannot be cancelled`)
   }
 
-  const integration = normalizeServiceProviderKey(order.integration_type)
+  const providerSource = `${order.integration_type || ''} ${order.courier_partner || ''}`.toLowerCase()
+  const integration = providerSource.includes('shadowfax')
+    ? 'shadowfax'
+    : providerSource.includes('shipway') || providerSource.includes('amazon shipping')
+      ? 'shipway'
+      : providerSource.includes('xpressbees') || providerSource.includes('expressbees')
+        ? 'xpressbees'
+        : providerSource.includes('ekart')
+          ? 'ekart'
+          : providerSource.includes('deliveryone') || providerSource.includes('delivery one')
+            ? 'deliveryone'
+            : providerSource.includes('delhivery')
+              ? 'delhivery'
+              : normalizeServiceProviderKey(order.integration_type || order.courier_partner)
   if (!order.awb_number) {
     console.log('Cancelling local pending order without provider AWB', {
       orderId,
@@ -112,9 +127,19 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
   } else if (integration === 'ekart') {
     const svc = new EkartService()
     cancellationResult = await svc.cancelShipment(order.awb_number)
-  } else {
+  } else if (integration === 'xpressbees') {
     const svc = new XpressbeesService()
     cancellationResult = await svc.cancelShipment(order.awb_number)
+  } else if (integration === 'shadowfax') {
+    const providerResponse = await cancelShadowfaxShipment(order.awb_number, order.order_number)
+    cancellationResult = { success: true, providerResponse }
+  } else if (integration === 'shipway') {
+    const shipwayOrderId = order.order_number || order.shipment_id
+    if (!shipwayOrderId) throw new Error('Shipway cancellation requires an order number')
+    const providerResponse = await cancelShipwayOrder(shipwayOrderId)
+    cancellationResult = { success: true, providerResponse }
+  } else {
+    throw new Error(`Supported cancellation providers: ${supportedServiceProviderList()}`)
   }
 
   // Validate courier response
@@ -125,6 +150,10 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
     cancellationResult?.status === true || // Boolean true (most common)
     cancellationResult?.status === 'Success' ||
     cancellationResult?.status === 'success' ||
+    cancellationResult?.status === 'cancelled' ||
+    cancellationResult?.status === 'canceled' ||
+    cancellationResult?.data?.success === true ||
+    cancellationResult?.data?.status === true ||
     cancellationResult?.response?.status === true ||
     (cancellationResult?.remark &&
       cancellationResult.remark.toLowerCase().includes('cancelled')) || // Check remark field for cancellation confirmation

@@ -1,4 +1,11 @@
-export const INTEGRATED_SERVICE_PROVIDERS = ['deliveryone', 'delhivery', 'shipway', 'shadowfax'] as const
+export const INTEGRATED_SERVICE_PROVIDERS = [
+  'deliveryone',
+  'delhivery',
+  'shipway',
+  'shadowfax',
+  'ekart',
+  'xpressbees',
+] as const
 
 export type IntegratedServiceProvider = (typeof INTEGRATED_SERVICE_PROVIDERS)[number]
 

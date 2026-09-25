@@ -16,10 +16,19 @@ const B2C_CANCELLABLE_STATUSES = new Set([
   'booked',
   'confirmed',
   'shipment_booked',
+  'shipment_created',
   'pickup_initiated',
   'manifest_generated',
+  'manifest_failed',
 ])
-const B2C_CANCELLABLE_PROVIDERS = new Set(['delhivery', 'deliveryone'])
+const B2C_CANCELLABLE_PROVIDERS = new Set([
+  'delhivery',
+  'deliveryone',
+  'shadowfax',
+  'shipway',
+  'ekart',
+  'xpressbees',
+])
 const B2C_MANIFESTABLE_STATUSES = new Set([
   'pending',
   'booked',
@@ -50,6 +59,14 @@ const getB2CActionProvider = (order: B2COrderActionShape) => {
     combinedProvider.includes('delhivery_express')
   ) {
     return 'deliveryone'
+  }
+  if (combinedProvider.includes('shadowfax')) return 'shadowfax'
+  if (combinedProvider.includes('shipway') || combinedProvider.includes('amazon_shipping')) {
+    return 'shipway'
+  }
+  if (combinedProvider.includes('ekart')) return 'ekart'
+  if (combinedProvider.includes('xpressbees') || combinedProvider.includes('expressbees')) {
+    return 'xpressbees'
   }
   if (
     combinedProvider.includes('delhivery') ||
