@@ -89,6 +89,7 @@ export const getSortClause = (sortBy?: GetAllCouriersPaginatedParams['sortBy']) 
 type ShippingRateJoinRow = {
   rate: typeof shippingRates.$inferSelect
   zone: typeof zones.$inferSelect | null
+  catalogCourierName: string
 }
 
 const toTimestamp = (value: unknown) => {
@@ -354,6 +355,7 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
     .select({
       rate: shippingRates,
       zone: zones,
+      catalogCourierName: couriers.name,
     })
     .from(shippingRates)
     .innerJoin(
@@ -447,6 +449,7 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
 
       grouped[key] = {
         ...row.rate,
+        courier_name: row.catalogCourierName || row.rate.courier_name,
         mode: normalizeB2CShippingMode(row.rate.mode),
         service_provider: serviceProvider, // Always include service_provider
         rates,
