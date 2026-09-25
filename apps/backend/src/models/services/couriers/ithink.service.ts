@@ -71,6 +71,15 @@ export type IThinkRate = {
 }
 
 const clean = (value: unknown) => String(value ?? '').trim()
+const iThinkMessage = (response: any, shipment?: any) =>
+  clean(
+    response?.html_message ||
+      response?.message ||
+      response?.error ||
+      shipment?.remark ||
+      shipment?.message ||
+      (typeof response?.data === 'string' ? response.data : ''),
+  )
 const normalizeBase = (value: unknown) =>
   (clean(value) || DEFAULT_ITHINK_API_BASE).replace(/\/+$/, '')
 
@@ -371,8 +380,7 @@ export class IThinkService {
     if (!awbNumber || String(response?.status || '').toLowerCase() === 'error') {
       throw new HttpError(
         502,
-        clean(response?.html_message || response?.message || resultShipment?.remark) ||
-          'iThink shipment creation failed',
+        iThinkMessage(response, resultShipment) || 'iThink shipment creation failed',
       )
     }
     return { raw: response, shipment_id: awbNumber, awb_number: awbNumber }

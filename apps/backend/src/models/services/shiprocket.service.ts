@@ -3499,6 +3499,7 @@ export interface ShipmentParams {
   zone_id?: string
   selected_max_slab_weight?: number
   courier_option_key?: string
+  selected_courier_name?: string
 
   cod_charges?: number
   cod_charge_basis?: number
@@ -5186,9 +5187,9 @@ export const createB2CShipmentService = async (
         throw new HttpError(400, 'Selected iThink courier is no longer available. Recheck serviceability.')
       }
       const serviceType = String(params.shipping_mode || '').trim()
-      const courierName = selectedCourier.name
-        .replace(new RegExp(`\\s+${serviceType}$`, 'i'), '')
-        .trim()
+      const courierName =
+        String(params.selected_courier_name || '').trim() ||
+        selectedCourier.name.replace(new RegExp(`\\s+${serviceType}$`, 'i'), '').trim()
       shipmentData = await new IThinkService().createShipment({
         ...params,
         selected_courier_name: courierName,
