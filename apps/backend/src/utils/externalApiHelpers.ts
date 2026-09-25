@@ -13,6 +13,7 @@ const PROVIDER_CODE_MAP: Record<IntegratedServiceProvider, string> = {
   deliveryone: 'QH8L2',
   delhivery: 'QH8L2',
   shipway: 'S9W3Y',
+  shadowfax: 'F4X6S',
 }
 
 // Reverse map: provider code -> integration type
@@ -20,6 +21,7 @@ const PROVIDER_CODE_REVERSE_MAP: Record<string, string> = {
   QH8L2: 'deliveryone',
   R7M4K: 'deliveryone',
   S9W3Y: 'shipway',
+  F4X6S: 'shadowfax',
 }
 
 /**
