@@ -1,3 +1,4 @@
+import { RateCardContainer } from "components/RateCard/RateCardContainer";
 import {
   Box,
   Flex,
@@ -68,7 +69,7 @@ const zoneRows = [
   },
 ];
 
-const B2CPricingManagement = () => {
+const LegacyB2CPricingManagement = () => {
   const [activeTab, setActiveTab] = useState("zones");
   const [search, setSearch] = useState("");
 
@@ -262,5 +263,9 @@ const B2CPricingManagement = () => {
     </AdminStack>
   );
 };
+
+const B2CPricingManagement = () => (
+  <RateCardContainer forceBusinessType="B2C" />
+);
 
 export default B2CPricingManagement;

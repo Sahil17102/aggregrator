@@ -3,7 +3,7 @@ import { db } from '../client'
 import { couriers } from '../schema/couriers'
 import { plans } from '../schema/plans'
 import { shippingRates } from '../schema/shippingRates'
-import { zones } from '../schema/zones'
+import { b2bZoneToZoneRates, zones } from '../schema/zones'
 
 const SHADOWFAX_COURIER_ID = 4
 const SHADOWFAX_PROVIDER = 'shadowfax'
@@ -41,7 +41,7 @@ export const ensureShadowfaxCourierCatalog = async () => {
       name: 'Shadowfax Surface',
       serviceProvider: SHADOWFAX_PROVIDER,
       isEnabled: true,
-      businessType: ['b2c'],
+      businessType: ['b2c', 'b2b'],
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -49,7 +49,7 @@ export const ensureShadowfaxCourierCatalog = async () => {
       set: {
         name: 'Shadowfax Surface',
         isEnabled: true,
-        businessType: ['b2c'],
+        businessType: ['b2c', 'b2b'],
         updatedAt: new Date(),
       },
     })
@@ -108,5 +108,49 @@ export const ensureShadowfaxCourierCatalog = async () => {
     plans: planRows.length,
     zones: zoneRows.length,
     insertedRates: inserted,
+  })
+
+  const b2bZones = await db
+    .select({ id: zones.id })
+    .from(zones)
+    .where(sql`lower(${zones.business_type}) = 'b2b'`)
+  let insertedB2BRates = 0
+  for (const plan of planRows) {
+    for (const origin of b2bZones) {
+      for (const destination of b2bZones) {
+        const existing = await db
+          .select({ id: b2bZoneToZoneRates.id })
+          .from(b2bZoneToZoneRates)
+          .where(
+            and(
+              eq(b2bZoneToZoneRates.plan_id, plan.id),
+              eq(b2bZoneToZoneRates.origin_zone_id, origin.id),
+              eq(b2bZoneToZoneRates.destination_zone_id, destination.id),
+              eq(b2bZoneToZoneRates.courier_id, SHADOWFAX_COURIER_ID),
+              eq(b2bZoneToZoneRates.service_provider, SHADOWFAX_PROVIDER),
+            ),
+          )
+          .limit(1)
+        if (existing.length) continue
+
+        await db.insert(b2bZoneToZoneRates).values({
+          plan_id: plan.id,
+          origin_zone_id: origin.id,
+          destination_zone_id: destination.id,
+          courier_id: SHADOWFAX_COURIER_ID,
+          service_provider: SHADOWFAX_PROVIDER,
+          rate_per_kg: '56.30',
+          volumetric_factor: '5000',
+          is_active: true,
+          metadata: { demo: true, source: 'shadowfax-demo-rate-card' },
+        })
+        insertedB2BRates += 1
+      }
+    }
+  }
+  console.log('[Shadowfax] B2B demo rate matrix ready', {
+    plans: planRows.length,
+    zones: b2bZones.length,
+    insertedRates: insertedB2BRates,
   })
 }

@@ -112,6 +112,10 @@ const getCanonicalDelhiveryCouriers = async (filters: {
   const shipwayRows = dbCatalogRows.filter(
     (row) => normalizeServiceProviderKey(row.serviceProvider) === 'shipway',
   )
+  const otherProviderRows = dbCatalogRows.filter((row) => {
+    const provider = normalizeServiceProviderKey(row.serviceProvider)
+    return provider !== 'deliveryone' && provider !== 'shipway'
+  })
   const sourceRows: DeliveryOneCourierCatalogItem[] = deliveryOneRows.length
     ? deliveryOneRows
     : normalizedProviderFilter === 'shipway'
@@ -152,7 +156,7 @@ const getCanonicalDelhiveryCouriers = async (filters: {
     })
   }
 
-  const list = [...Array.from(deduped.values()), ...shipwayRows].filter((courier) => {
+  const list = [...Array.from(deduped.values()), ...shipwayRows, ...otherProviderRows].filter((courier) => {
     if (
       normalizedProviderFilter &&
       normalizeServiceProviderKey(courier.serviceProvider) !== normalizedProviderFilter

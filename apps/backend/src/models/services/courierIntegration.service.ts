@@ -362,7 +362,6 @@ export const getShippingRates = async (filters: ShippingRateFilters = {}) => {
         eq(couriers.id, shippingRates.courier_id),
         eq(couriers.isEnabled, true),
         inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
-        inArray(couriers.id, DELIVERY_ONE_ALLOWED_COURIER_IDS),
         sql`lower(trim(${couriers.serviceProvider})) = lower(trim(coalesce(${shippingRates.service_provider}, '')))`,
       ),
     )

@@ -34,11 +34,6 @@ import { PlansService } from 'services/plan.service'
 import { getCourierDisplayName } from 'utils/courierDisplay'
 
 const normalizeProvider = (value) => String(value || '').trim().toLowerCase()
-const DELIVERY_ONE_COURIER_FILTER_OPTIONS = [
-  { label: 'Delhivery Surface', value: 'Delhivery Surface' },
-  { label: 'Delhivery Express', value: 'Delhivery Express' },
-]
-
 const normalizeMode = (value) => {
   const raw = String(value || '').trim().toLowerCase()
   if (!raw) return ''
@@ -288,12 +283,16 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
 
   const filterOptions = useMemo(
     () => {
+      const courierOptions = (courierList || []).map((courier) => {
+        const label = getCourierDisplayName(courier)
+        return { label, value: courier.name || label }
+      })
       const options = [
         {
           key: 'courier_name',
           label: 'Courier',
           type: 'multiselect',
-          options: DELIVERY_ONE_COURIER_FILTER_OPTIONS,
+          options: courierOptions,
         },
         {
           key: 'mode',
@@ -319,7 +318,7 @@ export const RateCardContainer = ({ forceBusinessType = null, embedded = false }
 
       return options
     },
-    [selectedBusinessType, zones],
+    [courierList, selectedBusinessType, zones],
   )
 
   return (

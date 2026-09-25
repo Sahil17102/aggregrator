@@ -10,6 +10,7 @@ import {
   adminUi,
 } from "components/AdminUI/AdminPage";
 import { useState } from "react";
+import { RateCardContainer } from "components/RateCard/RateCardContainer";
 
 const tabs = [
   "Zones",
@@ -42,7 +43,7 @@ const zoneRows = [
   { code: "CRG_CHD", name: "Chandigarh", description: "Chandigarh / Punjab" },
 ];
 
-const B2BPricingManagement = () => {
+const LegacyB2BPricingManagement = () => {
   const [activeTab, setActiveTab] = useState("Zones");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -160,5 +161,9 @@ const B2BPricingManagement = () => {
     </AdminStack>
   );
 };
+
+const B2BPricingManagement = () => (
+  <RateCardContainer forceBusinessType="B2B" />
+);
 
 export default B2BPricingManagement;
