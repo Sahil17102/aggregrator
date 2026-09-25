@@ -59,7 +59,7 @@ const getOrderPaymentType = (order: any) => {
 const getPlatformRevenue = (order: any) => {
   const freightCharge = numberValue(order.freight_charges || order.freightCharges)
   const courierCost = numberValue(order.courier_cost || order.courierCost)
-  return freightCharge > 0 && courierCost > 0 ? freightCharge - courierCost : 0
+  return freightCharge > 0 ? freightCharge - courierCost : 0
 }
 
 const getShippingCharge = (order: any) =>
@@ -485,6 +485,9 @@ export const getAdminDashboardStats = async (
         rtoOrders: rtoOrders.length,
         pendingOrders: orders.filter((order) =>
           ['pending', 'booked', 'pickup_initiated'].includes(getOrderStatus(order)),
+        ).length,
+        inTransitOrders: orders.filter((order) =>
+          ['shipment_created', 'in_transit', 'out_for_delivery'].includes(getOrderStatus(order)),
         ).length,
       },
       alerts: {
