@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../client'
 import { couriers } from '../schema/couriers'
 import { plans } from '../schema/plans'
@@ -48,7 +48,7 @@ export const ensureShadowfaxCourierCatalog = async () => {
     db
       .select({ id: zones.id, code: zones.code })
       .from(zones)
-      .where(eq(zones.business_type, 'B2C')),
+      .where(sql`lower(${zones.business_type}) = 'b2c'`),
   ])
 
   let inserted = 0
