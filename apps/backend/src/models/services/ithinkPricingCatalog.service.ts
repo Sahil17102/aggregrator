@@ -4,7 +4,7 @@ import { db, pool } from '../client'
 import { couriers } from '../schema/couriers'
 import { plans } from '../schema/plans'
 import { shippingRateCodSlabs, shippingRates, shippingRateSlabs } from '../schema/shippingRates'
-import { zones } from '../schema/zones'
+import { b2bZoneToZoneRates, zones } from '../schema/zones'
 
 const SOURCE = 'ithink-default-pricing-v1'
 const PROVIDER = 'ithink'
@@ -153,6 +153,60 @@ async function ensureB2CRates() {
 }
 
 async function ensureB2BRates() {
+  const activePlans = await db
+    .select({ id: plans.id, name: plans.name })
+    .from(plans)
+    .where(eq(plans.is_active, true))
+  const b2bZones = await db
+    .select({ id: zones.id, code: zones.code })
+    .from(zones)
+    .where(sql`lower(trim(${zones.business_type})) = 'b2b'`)
+  let inserted = 0
+
+  for (const courier of catalog) {
+    for (const plan of activePlans) {
+      for (const origin of b2bZones) {
+        for (const destination of b2bZones) {
+          const [existing] = await db
+            .select({ id: b2bZoneToZoneRates.id })
+            .from(b2bZoneToZoneRates)
+            .where(
+              and(
+                eq(b2bZoneToZoneRates.plan_id, plan.id),
+                eq(b2bZoneToZoneRates.origin_zone_id, origin.id),
+                eq(b2bZoneToZoneRates.destination_zone_id, destination.id),
+                eq(b2bZoneToZoneRates.courier_id, courier.id),
+                eq(b2bZoneToZoneRates.service_provider, PROVIDER),
+                eq(b2bZoneToZoneRates.is_active, true),
+              ),
+            )
+            .limit(1)
+          if (existing) continue
+
+          const isNorthEast =
+            origin.code.toUpperCase().includes('NORTHEAST') ||
+            destination.code.toUpperCase().includes('NORTHEAST')
+          const laneMultiplier = origin.id === destination.id ? 0.85 : isNorthEast ? 1.35 : 1.15
+          await db.insert(b2bZoneToZoneRates).values({
+            plan_id: plan.id,
+            origin_zone_id: origin.id,
+            destination_zone_id: destination.id,
+            courier_id: courier.id,
+            service_provider: PROVIDER,
+            rate_per_kg: money(
+              courier.b2bPerKg * laneMultiplier * (plan.name.trim().toLowerCase() === 'premium' ? 1 : 1.1),
+            ),
+            volumetric_factor: '5000',
+            effective_from: new Date(),
+            is_active: true,
+            metadata: { source: SOURCE, currency: 'INR', unit: 'kg' },
+          })
+          inserted += 1
+        }
+      }
+    }
+  }
+
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
@@ -172,33 +226,6 @@ async function ensureB2BRates() {
             )
         `,
         [courier.id, PROVIDER],
-      )
-      await client.query(
-        `
-          INSERT INTO meracourierwala_b2b_zone_to_zone_rates
-            (plan_id, origin_zone_id, destination_zone_id, courier_id, service_provider,
-             rate_per_kg, volumetric_factor, effective_from, is_active, metadata, created_at, updated_at)
-          SELECT p.id, oz.id, dz.id, $1, $2,
-            ROUND(($3 * CASE
-              WHEN oz.id = dz.id THEN 0.85
-              WHEN upper(oz.code) LIKE '%NORTH%EAST%' OR upper(dz.code) LIKE '%NORTH%EAST%' THEN 1.35
-              ELSE 1.15
-            END * CASE WHEN lower(trim(p.name)) = 'premium' THEN 1 ELSE 1.1 END)::numeric, 4),
-            5000, now(), true, $4::jsonb, now(), now()
-          FROM plans p
-          CROSS JOIN meracourierwala_zones oz
-          CROSS JOIN meracourierwala_zones dz
-          WHERE p.is_active = true
-            AND lower(trim(oz.business_type)) = 'b2b'
-            AND lower(trim(dz.business_type)) = 'b2b'
-            AND NOT EXISTS (
-              SELECT 1 FROM meracourierwala_b2b_zone_to_zone_rates current
-              WHERE current.plan_id = p.id AND current.origin_zone_id = oz.id
-                AND current.destination_zone_id = dz.id AND current.courier_id = $1
-                AND current.service_provider = $2 AND current.is_active = true
-            )
-        `,
-        [courier.id, PROVIDER, courier.b2bPerKg, JSON.stringify({ source: SOURCE, currency: 'INR', unit: 'kg' })],
       )
       await client.query(
         `
@@ -239,11 +266,14 @@ async function ensureB2BRates() {
   } finally {
     client.release()
   }
+  return inserted
 }
 
 export async function ensureIThinkPricingCatalog() {
   await ensureCourierCatalog()
   const b2cInserted = await ensureB2CRates()
-  await ensureB2BRates()
-  console.log(`[iThink pricing] catalog ready; inserted ${b2cInserted} missing B2C rate cards`)
+  const b2bInserted = await ensureB2BRates()
+  console.log(
+    `[iThink pricing] catalog ready; inserted ${b2cInserted} missing B2C cards and ${b2bInserted} B2B lanes`,
+  )
 }
