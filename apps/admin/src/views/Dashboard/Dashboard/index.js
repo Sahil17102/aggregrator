@@ -480,7 +480,7 @@ export default function Dashboard() {
   const couriers = stats.couriers || {};
   const geographic = stats.geographic || {};
   const charts = stats.charts || {};
-  const sellers = stats.sellers || {};
+  const sellers = stats.sellers || stats.users || {};
   const courierOptions = stats.filterOptions?.couriers || Object.keys(couriers.performance || {});
 
   const totalOrders = toNum(operational.totalOrders);
@@ -489,7 +489,7 @@ export default function Dashboard() {
   );
   const totalRevenue = toNum(financial.totalRevenue);
   const totalCost = toNum(
-    financial.totalCost || financial.courierCost || financial.freightCost
+    financial.totalCost || financial.totalCourierCosts || financial.courierCost || financial.freightCost
   );
   const totalMargin = Number.isFinite(Number(financial.totalMargin))
     ? toNum(financial.totalMargin)
@@ -572,6 +572,15 @@ export default function Dashboard() {
   const codRemittances = toNum(
     alerts.codRemittancesPending || financial.codRemittancesPending
   );
+  const rangeLabel = dashboardFilters.range === "all" ? "All time" : dashboardFilters.range;
+  const alertRows = [
+    { label: "Open support tickets", count: toNum(alerts.openTickets), route: "/admin/support-tickets" },
+    { label: "KYC approvals pending", count: toNum(alerts.pendingKyc), route: "/admin/users-management" },
+    { label: "Weight discrepancies", count: toNum(alerts.weightDiscrepancies), route: "/admin/weight-reconciliation" },
+    { label: "NDR orders", count: toNum(operational.ndrOrders), route: "/admin/ops/ndr" },
+    { label: "RTO orders", count: toNum(operational.rtoOrders), route: "/admin/ops/rto" },
+    { label: "COD remittances pending", count: codRemittances, route: "/admin/cod-remittance", tone: "green" },
+  ].filter((item) => item.count > 0);
 
   if (isLoading) {
     return (
@@ -709,7 +718,7 @@ export default function Dashboard() {
           <Stack spacing="25px">
             <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing="15px">
               <MetricCard
-                label="Orders (30d)"
+                label={`Orders (${rangeLabel})`}
                 value={totalOrders.toLocaleString()}
                 subtitle={`${toNum(todayOps.orders)} today`}
                 trend={ordersTrend}
@@ -723,7 +732,7 @@ export default function Dashboard() {
                 color={ui.blue}
               />
               <MetricCard
-                label="Revenue (30d)"
+                label={`Revenue (${rangeLabel})`}
                 value={formatCurrency(totalRevenue)}
                 trend={revenueTrend}
                 icon={IconCoinRupee}
@@ -744,7 +753,7 @@ export default function Dashboard() {
 
             <Grid templateColumns={{ base: "1fr", xl: "2fr 1fr" }} gap="20px">
               <Panel
-                title="Orders by Status (30d)"
+                title={`Orders by Status (${rangeLabel})`}
                 badge={statusItems.reduce((sum, item) => sum + item.count, 0)}
                 icon={{
                   node: <IconPackageExport size={18} />,
@@ -756,9 +765,7 @@ export default function Dashboard() {
               </Panel>
               <Panel
                 title="Alerts & Actions"
-                badge={
-                  toNum(alerts.totalAlerts) + bankApprovals + codRemittances
-                }
+                badge={toNum(alerts.totalAlerts) || alertRows.reduce((sum, item) => sum + item.count, 0)}
                 icon={{
                   node: <IconAlertTriangle size={18} />,
                   color: ui.danger,
@@ -774,16 +781,14 @@ export default function Dashboard() {
                       route="/admin/users-management"
                     />
                   ) : null}
-                  {codRemittances > 0 ? (
+                  {alertRows.map((item) => (
                     <ActionRow
-                      icon={<IconWallet size={18} />}
-                      label="COD remittances pending"
-                      count={codRemittances}
-                      route="/admin/cod-remittance"
-                      tone="green"
+                      key={item.label}
+                      icon={item.tone === "green" ? <IconWallet size={18} /> : <IconAlertTriangle size={18} />}
+                      {...item}
                     />
-                  ) : null}
-                  {bankApprovals === 0 && codRemittances === 0 ? (
+                  ))}
+                  {bankApprovals === 0 && alertRows.length === 0 ? (
                     <EmptyState
                       label="No alerts or pending actions"
                       h="126px"
@@ -794,7 +799,7 @@ export default function Dashboard() {
             </Grid>
 
             <Grid templateColumns={{ base: "1fr", xl: "2fr 1fr" }} gap="20px">
-              <Panel title="Trends (30d)" minH="330px">
+              <Panel title={`Trends (${rangeLabel})`} minH="330px">
                 {(charts.ordersByDate || []).length ? (
                   <Box h="280px">
                     <OrdersLineChart data={charts.ordersByDate || []} />
@@ -803,7 +808,7 @@ export default function Dashboard() {
                   <EmptyState h="280px" />
                 )}
               </Panel>
-              <Panel title="Courier Performance (30d)" minH="330px">
+              <Panel title={`Courier Performance (${rangeLabel})`} minH="330px">
                 {topCouriers.length ? (
                   <Stack spacing={3}>
                     {topCouriers.slice(0, 5).map((courier) => (
@@ -885,7 +890,7 @@ export default function Dashboard() {
                   <EmptyState h="250px" />
                 )}
               </Panel>
-              <Panel title="Payment Type Split (30d)" minH="310px">
+              <Panel title={`Payment Type Split (${rangeLabel})`} minH="310px">
                 {(charts.revenueByDate || []).length ? (
                   <Box h="164px" mb={4}>
                     <RevenueBarChart data={charts.revenueByDate || []} />
@@ -984,7 +989,7 @@ export default function Dashboard() {
               </Panel>
             </Grid>
 
-            <Panel title="Top States (30d)" minH="235px">
+            <Panel title={`Top States (${rangeLabel})`} minH="235px">
               {topStates.length ? (
                 <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={3}>
                   {topStates.slice(0, 8).map((state) => (

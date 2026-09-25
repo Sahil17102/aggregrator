@@ -74,8 +74,8 @@ export const useMerchantDashboardStats = () => {
   return useQuery<MerchantDashboardStats, Error>({
     queryKey: ['merchantDashboardStats'],
     queryFn: getMerchantDashboardStats,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    refetchInterval: 60 * 1000,
   })
 }

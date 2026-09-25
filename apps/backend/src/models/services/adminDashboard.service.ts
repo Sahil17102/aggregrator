@@ -85,6 +85,8 @@ export const getAdminDashboardStats = async (
     db
       .select({
         id: users.id,
+        email: users.email,
+        phone: users.phone,
         role: users.role,
         createdAt: users.createdAt,
       })
@@ -305,6 +307,13 @@ export const getAdminDashboardStats = async (
 
   Object.keys(ordersByCourier).forEach((key) => {
     const courier = ordersByCourier[key]
+    courier.cost = courier.courierCosts
+    courier.margin = courier.revenue
+    courier.revenue = courier.freightCharges
+    courier.marginPercent = courier.revenue > 0
+      ? Math.round((courier.margin / courier.revenue) * 10000) / 100
+      : 0
+    courier.revPerOrder = courier.count > 0 ? courier.revenue / courier.count : 0
     courier.deliveryRate = courier.count > 0 ? Math.round((courier.delivered / courier.count) * 100) : 0
     courier.ndrRate = courier.count > 0 ? Math.round((courier.ndr / courier.count) * 100) : 0
     courier.rtoRate = courier.count > 0 ? Math.round((courier.rto / courier.count) * 100) : 0
@@ -330,6 +339,46 @@ export const getAdminDashboardStats = async (
     acc[status] = (acc[status] || 0) + 1
     return acc
   }, {})
+  const topDestinationStates = orders.reduce<Record<string, number>>((acc, order) => {
+    const state = order.state || order.destination_state || order.destinationState || 'Unknown'
+    acc[state] = (acc[state] || 0) + 1
+    return acc
+  }, {})
+
+  const paymentSplit = orders.reduce(
+    (acc, order) => {
+      const type = getOrderPaymentType(order)
+      acc[type].orders += 1
+      acc[type].revenue += numberValue(order.freight_charges || order.freightCharges)
+      return acc
+    },
+    {
+      prepaid: { orders: 0, revenue: 0 },
+      cod: { orders: 0, revenue: 0 },
+    },
+  )
+
+  const userById = new Map(customerUsers.map((user) => [String(user.id), user]))
+  const sellerPerformance = orders.reduce<Record<string, { orders: number; rto: number }>>(
+    (acc, order) => {
+      const userId = getOrderUserId(order) || 'unknown'
+      if (!acc[userId]) acc[userId] = { orders: 0, rto: 0 }
+      acc[userId].orders += 1
+      if (rtoOrders.some((rto) => String(rto.id) === String(order.id))) acc[userId].rto += 1
+      return acc
+    },
+    {},
+  )
+  const sellerRows = Object.entries(sellerPerformance).map(([userId, values]) => {
+    const user = userById.get(userId)
+    return {
+      id: userId,
+      name: user?.email || user?.phone || `Seller ${userId.slice(0, 8)}`,
+      orders: values.orders,
+      rtoOrders: values.rto,
+      rtoRate: values.orders > 0 ? Math.round((values.rto / values.orders) * 100) : 0,
+    }
+  })
 
   const ordersByDate: Record<string, number> = {}
   const ordersByDateByIntegration: Record<string, Record<string, number>> = {}
@@ -409,11 +458,14 @@ export const getAdminDashboardStats = async (
       },
       financial: {
         todayShippingCharges,
-        todayRevenue,
+        todayRevenue: todayShippingCharges,
+        todayMargin: todayRevenue,
         totalShippingCharges,
         totalFreightCharges,
         totalCourierCosts,
-        totalRevenue,
+        totalRevenue: totalFreightCharges,
+        totalCost: totalCourierCosts,
+        totalMargin: totalRevenue,
         codAmount,
         codRemittanceDue: codStats.totalPending.amount,
         codStats: {
@@ -431,6 +483,9 @@ export const getAdminDashboardStats = async (
         deliveredOrders: deliveredOrders.length,
         ndrOrders: activeNdrOrders.length,
         rtoOrders: rtoOrders.length,
+        pendingOrders: orders.filter((order) =>
+          ['pending', 'booked', 'pickup_initiated'].includes(getOrderStatus(order)),
+        ).length,
       },
       alerts: {
         openTickets: openTickets.length,
@@ -446,6 +501,16 @@ export const getAdminDashboardStats = async (
           total: rtoRows.length,
           affectedOrders: rtoOrderIds.size,
         },
+        codRemittancesPending: codStats.totalPending.count,
+        totalAlerts:
+          openTickets.length +
+          inProgressTickets.length +
+          overdueTickets.length +
+          pendingKycUsers.length +
+          actionableWeightRows.length +
+          activeNdrOrders.length +
+          rtoOrders.length +
+          codStats.totalPending.count,
       },
       couriers: {
         performance: ordersByCourier,
@@ -461,6 +526,10 @@ export const getAdminDashboardStats = async (
           .sort(([, a], [, b]) => b - a)
           .slice(0, 5)
           .map(([city, count]) => ({ city, count })),
+        topDestinationStates: Object.entries(topDestinationStates)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 8)
+          .map(([state, count]) => ({ state, count })),
       },
       users: {
         total: customerUsers.length,
@@ -470,6 +539,17 @@ export const getAdminDashboardStats = async (
         veryActive: veryActiveUsers.length,
         pendingKyc: pendingKycUsers.length,
       },
+      sellers: {
+        total: customerUsers.length,
+        active: activeUsers.length,
+        veryActive: veryActiveUsers.length,
+        topSellers: [...sellerRows].sort((a, b) => b.orders - a.orders).slice(0, 5),
+        highRtoSellers: [...sellerRows]
+          .filter((seller) => seller.rtoOrders > 0)
+          .sort((a, b) => b.rtoRate - a.rtoRate || b.rtoOrders - a.rtoOrders)
+          .slice(0, 5),
+      },
+      paymentSplit,
       charts: {
         ordersByDate: Object.entries(ordersByDate).map(([date, count]) => ({ date, orders: count })),
         ordersByIntegration: Object.entries(ordersByDateByIntegration).map(([date, types]) => ({

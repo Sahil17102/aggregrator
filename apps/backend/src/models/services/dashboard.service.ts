@@ -403,9 +403,10 @@ export const getMerchantDashboardStats = async (userId: string) => {
     return ['shipment_created', 'in_transit', 'out_for_delivery'].includes(status)
   })
 
-  const deliveredToday = todayOrders.filter((o) => {
+  const deliveredToday = allOrders.filter((o) => {
     const status = (o.order_status || '').toLowerCase()
-    return status === 'delivered'
+    const deliveredDate = getFirstValidDate((o as any).delivered_at, (o as any).updated_at)
+    return status === 'delivered' && isSameLocalDay(deliveredDate, today)
   })
 
   // Financial overview (CUSTOMER-FACING - only platform rates)
