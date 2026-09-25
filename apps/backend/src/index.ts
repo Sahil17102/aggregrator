@@ -7,6 +7,7 @@ import { ensureInsuranceChargeColumns } from './models/migrations/ensureInsuranc
 import { ensureInvoicePreferencesColumns } from './models/migrations/ensureInvoicePreferencesColumns'
 import { ensureShipmentEmailDeliveriesTable } from './models/migrations/ensureShipmentEmailDeliveriesTable'
 import { ensureDefaultAdmin } from './models/services/adminAuth.service'
+import { ensureShadowfaxCourierCatalog } from './models/services/shadowfaxCourierCatalog.service'
 
 // Determine environment
 const resolveRuntimeEnv = () =>
@@ -38,6 +39,7 @@ async function startServer() {
   await ensureInvoicePreferencesColumns()
   await ensureShipmentEmailDeliveriesTable()
   await ensureDefaultAdmin()
+  await ensureShadowfaxCourierCatalog()
 
   // Set server timeout to 3.5 minutes (210000ms) to allow for slow external API calls
   // Default Node.js server timeout is 2 minutes (120000ms)

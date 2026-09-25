@@ -88,6 +88,7 @@ import {
 } from './couriers/shipway.service'
 import {
   cancelShadowfaxShipment,
+  checkShadowfaxServiceability,
   createShadowfaxShipment,
 } from './couriers/shadowfax.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
@@ -2047,6 +2048,62 @@ export const fetchAvailableCouriersWithRates = async (
         edd: '3-5 Days',
         raw: deliveryOneResp,
       })
+    }
+
+    let shadowfaxDeliveryResp: any = null
+    let shadowfaxPickupResp: any = null
+    if (enabledProviders.has('shadowfax')) {
+      const originPincode = normalizePincode(params.origin ?? params.source_pincode)?.toString()
+      const destinationPincode = normalizePincode(
+        params.destination ?? params.destination_pincode,
+      )?.toString()
+
+      if (originPincode && destinationPincode) {
+        try {
+          ;[shadowfaxPickupResp, shadowfaxDeliveryResp] = await Promise.all([
+            checkShadowfaxServiceability([originPincode], 'warehouse_pickup'),
+            checkShadowfaxServiceability([destinationPincode], 'customer_delivery'),
+          ])
+          const hasPincode = (response: any, pincode: string) => {
+            const records = Array.isArray(response)
+              ? response
+              : Array.isArray(response?.results)
+                ? response.results
+                : Array.isArray(response?.data)
+                  ? response.data
+                  : []
+            return records.some(
+              (record: any) =>
+                String(record?.code ?? record?.pincode ?? '').trim() === pincode &&
+                (!Array.isArray(record?.services) || record.services.length > 0),
+            )
+          }
+
+          const pickupAvailable = hasPincode(shadowfaxPickupResp, originPincode)
+          const deliveryAvailable = hasPincode(shadowfaxDeliveryResp, destinationPincode)
+          if (pickupAvailable && deliveryAvailable) {
+            registerServiceableProvider('shadowfax', {
+              providerId: 'shadowfax',
+              providerName: 'Shadowfax',
+              codAvailable: true,
+              prepaidAvailable: true,
+              edd: '3-7 Days',
+              raw: { pickup: shadowfaxPickupResp, delivery: shadowfaxDeliveryResp },
+            })
+          }
+          console.log('[Serviceability] Shadowfax pincode check result', {
+            origin: originPincode,
+            destination: destinationPincode,
+            pickupAvailable,
+            deliveryAvailable,
+          })
+        } catch (err: any) {
+          console.error(
+            '[Serviceability] Shadowfax pincode check failed:',
+            err?.response?.data || err?.message || err,
+          )
+        }
+      }
     }
 
     console.log('[Serviceability] Delhivery candidate couriers prepared', {

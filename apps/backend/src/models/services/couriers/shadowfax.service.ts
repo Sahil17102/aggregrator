@@ -33,12 +33,15 @@ const address = (source: any, fallbackName = '') => ({
 const errorMessage = (data: any, fallback: string) =>
   clean(data?.message || data?.detail || data?.responseMsg || data?.errors?.[0]?.message) || fallback
 
-export const checkShadowfaxServiceability = async (pincodes: Array<string | number>) => {
+export const checkShadowfaxServiceability = async (
+  pincodes: Array<string | number>,
+  service = 'customer_delivery',
+) => {
   const { apiBase, token } = config()
   const normalized = pincodes.map(clean).filter(Boolean)
   const response = await axios.get(`${apiBase}/v1/clients/serviceability/`, {
     headers: headers(token),
-    params: { service: 'customer_delivery', page: 1, count: normalized.length || 1, pincodes: normalized.join(',') },
+    params: { service, page: 1, count: normalized.length || 1, pincodes: normalized.join(',') },
     timeout: 60000,
   })
   return response.data
