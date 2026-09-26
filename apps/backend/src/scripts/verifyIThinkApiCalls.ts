@@ -1,13 +1,17 @@
 import axios from 'axios'
+import assert from 'node:assert/strict'
+import { iThinkOptionKey } from '../models/services/couriers/ithinkResponse'
 
 process.env.DATABASE_URL ||= 'postgresql://verify:verify@127.0.0.1:5432/verify'
 
 const originalPost = axios.post
 const calls: Array<{ url: string; body: any; config: any }> = []
 let simulateInsufficientBalance = false
+let mockResponse: any
 
 ;(axios as any).post = async (url: string, body: any, config: any) => {
   calls.push({ url, body, config })
+  if (mockResponse) return { data: mockResponse }
   if (simulateInsufficientBalance && url.endsWith('/order/add.json')) {
     return { data: { status: 'error', data: 'Insufficient wallet balance' } }
   }
@@ -61,6 +65,20 @@ const run = async () => {
   }
   if (!limitRejected) fail('Sync Order limit validation did not reject 26 shipments')
 
+  const providerRates = ['BlueDart', 'DTDC', 'Xpressbees', 'Delhivery', 'Ekart'].map((name) => ({
+    logistic_name: name, logistic_service_type: 'surface', prepaid: 'Y', cod: 'Y', pickup: 'Y', rate: 75,
+  }))
+  providerRates.push({ ...providerRates[0], logistic_service_type: 'air', rate: 95 })
+  mockResponse = { status: 'success', data: Object.fromEntries(providerRates.map((row, index) => [index, row])) }
+  const rates = await service.fetchRates({})
+  assert.equal(rates.length, 6, 'Documented rates without numeric courier IDs must remain available')
+  assert.equal(rates[0].courierId, rates[5].courierId)
+  assert.notEqual(iThinkOptionKey(rates[0].courierId, rates[0].serviceType), iThinkOptionKey(rates[5].courierId, rates[5].serviceType))
+  assert.equal(rates[5].totalRate, 95)
+  mockResponse = { status: 'success', data: [{ ...providerRates[0], logistic_id: 3, logistic_service_type: '', service_type: 'Surface' }] }
+  assert.equal((await service.fetchRates({}))[0].courierId, 3)
+  mockResponse = undefined
+
   simulateInsufficientBalance = true
   const bookingCouriers = ['Xpressbees', 'Delhivery', 'BlueDart', 'Shadowfax', 'DTDC']
   for (const courierName of bookingCouriers) {
@@ -108,6 +126,13 @@ const run = async () => {
       fail(`${courierName} did not preserve the provider balance failure: ${bookingError}`)
     }
   }
+
+  mockResponse = { status: 'success', data: { '1': { status: 'Success', waybill: 'TEST-AWB-001' } } }
+  const booked = await new IThinkService({
+    apiBase: 'https://ithink.verify.local/api_v3/', accessToken: 'test', secretKey: 'test', pickupAddressId: 'test-pickup',
+  }).createShipment({ selected_courier_name: 'BlueDart', shipping_mode: 'air', order_number: 'TEST-BOOKING' })
+  assert.equal(booked.awb_number, 'TEST-AWB-001', 'Keyed booking response must preserve confirmed AWB')
+  mockResponse = undefined
 
   console.log(
     `iThink API contract verification passed for every operation and ${bookingCouriers.length} courier booking paths.`,

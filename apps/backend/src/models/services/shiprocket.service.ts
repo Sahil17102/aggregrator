@@ -94,6 +94,7 @@ import {
 } from './couriers/shadowfax.service'
 import { XpressbeesService } from './couriers/xpressbees.service'
 import { IThinkService, type IThinkRate } from './couriers/ithink.service'
+import { iThinkOptionKey } from './couriers/ithinkResponse'
 import { calculateOrderWeights } from './courierWeightCalculation.service'
 import { generateLabelForOrder } from './generateCustomLabelService'
 import { sendShipmentStatusEmailIfChanged } from './shipmentNotification.service'
@@ -1760,8 +1761,9 @@ export const fetchAvailableCouriersWithRates = async (
       integration_type?: string | null
       serviceProvider?: string | null
       max_slab_weight?: number | null
+      courier_option_key?: string
     }) =>
-      `${String(courier.id)}__${normalizeProviderKey(courier.integration_type || courier.serviceProvider || null)}__${courier.max_slab_weight ?? 'base'}`
+      courier.courier_option_key || `${String(courier.id)}__${normalizeProviderKey(courier.integration_type || courier.serviceProvider || null)}__${courier.max_slab_weight ?? 'base'}`
 
     const courierNameAlreadyHasWeight = (name?: string | null) =>
       /\b\d+(\.\d+)?\s*(k\.?\s*g\.?|kg)\b/i.test(String(name || ''))
@@ -1772,6 +1774,7 @@ export const fetchAvailableCouriersWithRates = async (
     }
 
     interface CourierRow {
+      iThinkRate?: IThinkRate
       id: number
       serviceProvider: string | null
       name: string
@@ -2196,11 +2199,24 @@ export const fetchAvailableCouriersWithRates = async (
           return normalizedPaymentType === 'cod' ? rate.cod : rate.prepaid
         })
 
+        const iThinkCatalog = await db.select().from(couriers)
+          .where(eq(couriers.serviceProvider, 'ithink'))
+        const nameKey = (name: string) => name.replace(/\s+(surface|air|express)$/i, '')
+          .toLowerCase().replace(/[^a-z0-9]/g, '')
+        iThinkRates = iThinkRates.filter((rate) => {
+          const saved = iThinkCatalog.find((row) => row.id === rate.courierId) ||
+            iThinkCatalog.find((row) => nameKey(row.name) === nameKey(rate.courierName))
+          if (!saved) return true
+          rate.courierId = saved.id
+          return saved.isEnabled && Array.isArray(saved.businessType) && saved.businessType.includes('b2c')
+        })
+
         if (iThinkRates.length) {
           enabledProviders.add('ithink')
           const bucket: ProviderBucket = { rows: [], idSet: new Set<number>() }
           for (const rate of iThinkRates) {
             const row: CourierRow = {
+              iThinkRate: rate,
               id: rate.courierId,
               name: `${rate.courierName}${rate.serviceType ? ` ${rate.serviceType}` : ''}`,
               serviceProvider: 'ithink',
@@ -2427,7 +2443,7 @@ export const fetchAvailableCouriersWithRates = async (
             : null
         const iThinkRecord =
           providerKey === 'ithink'
-            ? iThinkRates.find((record) => Number(record.courierId) === Number(courier.id))
+            ? courier.iThinkRate
             : null
         const xpressbeesProviderRate = xpressbeesRecord
           ? buildProviderRate('xpressbees', {
@@ -2467,6 +2483,7 @@ export const fetchAvailableCouriersWithRates = async (
         if (providerKey === 'shipway' && !shipwayRecord) continue
         providerMeta.matchedCourierIds.add(Number(courier.id))
         combinedCouriers.push({
+          ...(iThinkRecord ? { courier_option_key: iThinkOptionKey(courier.id, iThinkRecord.serviceType) } : {}),
           id: courier.id,
           name: courier.name,
           integration_type: providerKey,
@@ -2857,6 +2874,9 @@ export const fetchAvailableCouriersWithRates = async (
         return applicableRateOptions.map((applicableRate: any) => ({
           ...courier,
           courier_option_key: makeCourierIdentityKey({
+            courier_option_key: courier.courier_option_key
+              ? courier.courier_option_key.replace(/__base$/, `__${applicableRate.max_slab_weight ?? 'base'}`)
+              : undefined,
             id: courier.id,
             integration_type: courier.integration_type || courier.service_provider || null,
             serviceProvider: courier.serviceProvider || null,
@@ -2871,7 +2891,9 @@ export const fetchAvailableCouriersWithRates = async (
               ? formatCourierOptionName(courier.name, applicableRate.max_slab_weight)
               : courier.name,
           localRates: { [rateType]: applicableRate },
-          shipping_mode: applicableRate.mode ?? courier.shipping_mode ?? courier.mode ?? null,
+          shipping_mode: providerKey === 'ithink'
+            ? courier.shipping_mode
+            : applicableRate.mode ?? courier.shipping_mode ?? courier.mode ?? null,
           approxZone,
           courier_cost_estimate:
             courier?.courier_cost_estimate ||

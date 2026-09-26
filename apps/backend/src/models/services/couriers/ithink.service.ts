@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../client'
 import { courier_credentials } from '../../schema/courierCredentials'
 import { HttpError } from '../../../utils/classes'
+import { iThinkRows, iThinkCourierId, iThinkServiceType } from './ithinkResponse'
 
 export const ITHINK_PROVIDER = 'ithink'
 export const DEFAULT_ITHINK_API_BASE = 'https://my.ithinklogistics.com/api_v3'
@@ -238,12 +239,12 @@ export class IThinkService {
     if (String(response?.status || '').toLowerCase() !== 'success') {
       throw new HttpError(502, clean(response?.html_message || response?.data) || 'iThink rate lookup failed')
     }
-    const rows = Array.isArray(response?.data) ? response.data : []
+    const rows = iThinkRows(response?.data)
     return rows
       .map((row: any): IThinkRate => ({
-        courierId: Number(row?.logistic_id),
+        courierId: iThinkCourierId(row),
         courierName: clean(row?.logistic_name) || 'iThink Logistics',
-        serviceType: clean(row?.service_type),
+        serviceType: iThinkServiceType(row),
         prepaid: clean(row?.prepaid).toUpperCase() === 'Y',
         cod: clean(row?.cod).toUpperCase() === 'Y',
         pickup: clean(row?.pickup).toUpperCase() === 'Y',
@@ -368,7 +369,7 @@ export class IThinkService {
       s_type: clean(params?.shipping_mode || params?.service_type).toLowerCase(),
       order_type: '',
     })
-    const result = Array.isArray(response?.data) ? response.data[0] : response?.data
+    const result = iThinkRows(response?.data)[0] ?? response?.data
     const resultShipment = Array.isArray(result?.shipments)
       ? result.shipments[0]
       : Array.isArray(response?.shipments)
