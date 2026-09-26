@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../client'
 import { courier_credentials } from '../../schema/courierCredentials'
 import { couriers } from '../../schema/couriers'
+import { parseShipwayShipmentResponse } from './shipwayResponse'
 
 const SHIPWAY_PROVIDER = 'shipway'
 export const DEFAULT_SHIPWAY_API_BASE = 'https://app.shipway.com/api'
@@ -207,19 +208,7 @@ export const createShipwayShipment = async (params: any) => {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     timeout: 60000,
   })
-  const data = response.data || {}
-  if (!data.success || !data.awb_response?.success || !data.awb_response?.AWB) {
-    throw new Error(clean(data.message || data.awb_response?.message) || 'Shipway shipment failed')
-  }
-
-  return {
-    raw: data,
-    shipment_id: clean(data.awb_response.AWB),
-    awb_number: clean(data.awb_response.AWB),
-    courier_id: Number(data.awb_response.carrier_id ?? carrierId),
-    courier_name: '',
-    label: clean(data.awb_response.shipping_url),
-  }
+  return parseShipwayShipmentResponse(response.data, carrierId)
 }
 
 export const cancelShipwayOrder = async (orderId: string) => {
