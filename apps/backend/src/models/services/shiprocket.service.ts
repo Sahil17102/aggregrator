@@ -2128,6 +2128,11 @@ export const fetchAvailableCouriersWithRates = async (
             originPincode,
             destinationPincode,
             paymentType: normalizedPaymentType,
+            weightG: normalizeServiceabilityWeightToGrams(params.weight),
+            lengthCm: Number(params.length ?? 0),
+            breadthCm: Number(params.breadth ?? 0),
+            heightCm: Number(params.height ?? 0),
+            codAmount: Number(params.cod_charge_basis ?? params.codChargeBasis ?? params.order_amount ?? params.orderAmount ?? 0),
           })
           shipwayRates = liveRates.filter(
             (rate) => !requestedWeightKg || rate.charged_weight >= requestedWeightKg,
@@ -4690,6 +4695,11 @@ export const createB2CShipmentService = async (
                 originPincode: bookingPickupPincode,
                 destinationPincode: bookingDestinationPincode,
                 paymentType: String(params.payment_type || 'prepaid'),
+                weightG: normalizeServiceabilityWeightToGrams(params.package_weight ?? params.weight ?? 0),
+                lengthCm: Number(params.package_length ?? params.length ?? 0),
+                breadthCm: Number(params.package_breadth ?? params.breadth ?? 0),
+                heightCm: Number(params.package_height ?? params.height ?? 0),
+                codAmount: codChargeBasis,
               })
               const selectedRate = rates.find(
                 (rate) => Number(rate.carrier_id) === Number(courierIdForRate),

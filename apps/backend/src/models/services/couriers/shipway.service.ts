@@ -4,6 +4,7 @@ import { db } from '../../client'
 import { courier_credentials } from '../../schema/courierCredentials'
 import { couriers } from '../../schema/couriers'
 import { parseShipwayShipmentResponse } from './shipwayResponse'
+import { buildShipwayRateParams, type ShipwayRateRequest } from './shipwayRateRequest'
 
 const SHIPWAY_PROVIDER = 'shipway'
 export const DEFAULT_SHIPWAY_API_BASE = 'https://app.shipway.com/api'
@@ -98,24 +99,13 @@ export type ShipwayRate = {
   zone: number | string | null
 }
 
-export const fetchShipwayRates = async ({
-  originPincode,
-  destinationPincode,
-  paymentType,
-}: {
-  originPincode: string
-  destinationPincode: string
-  paymentType: string
-}): Promise<ShipwayRate[]> => {
+export const fetchShipwayRates = async (input: ShipwayRateRequest): Promise<ShipwayRate[]> => {
+  const rateParams = buildShipwayRateParams(input)
   const config = await resolveConfig()
   const response = await axios.get(`${config.apiBase}/getshipwaycarrierrates`, {
     auth: { username: config.username, password: config.password },
     headers: { Accept: 'application/json' },
-    params: {
-      fromPincode: originPincode,
-      toPincode: destinationPincode,
-      paymentType: paymentType.toLowerCase() === 'cod' ? 'cod' : 'prepaid',
-    },
+    params: rateParams,
     timeout: 60000,
   })
 
