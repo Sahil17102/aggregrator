@@ -12,7 +12,6 @@ import {
   upsertShippingRate,
 } from '../../models/services/courierIntegration.service'
 import {
-  getDeliveryOneCourierCatalog,
   type DeliveryOneCourierCatalogItem,
 } from '../../models/services/deliveryOneCourierCatalog.service'
 import { DeliveryOneService } from '../../models/services/couriers/deliveryone.service'
@@ -24,6 +23,7 @@ import {
 import { fetchAvailableCouriersWithRatesAdmin } from '../../models/services/shiprocket.service'
 import { courier_credentials } from '../../models/schema/courierCredentials'
 import { couriers } from '../../models/schema/couriers'
+import { supportsB2BBooking } from '../../utils/b2bBooking'
 import { getAllZones } from '../../models/services/zone.service'
 import {
   VISIBLE_SERVICE_PROVIDERS,
@@ -87,7 +87,6 @@ const getCanonicalDelhiveryCouriers = async (filters: {
     .from(couriers)
     .where(
       and(
-        eq(couriers.isEnabled, true),
         inArray(couriers.serviceProvider, [...VISIBLE_SERVICE_PROVIDERS]),
       ),
     )
@@ -100,7 +99,8 @@ const getCanonicalDelhiveryCouriers = async (filters: {
     service_provider: row.serviceProvider,
     isEnabled: row.isEnabled,
     businessType: Array.isArray(row.businessType)
-      ? row.businessType.filter((type): type is 'b2c' | 'b2b' => type === 'b2c' || type === 'b2b')
+      ? row.businessType.filter((type): type is 'b2c' | 'b2b' =>
+          type === 'b2c' || (type === 'b2b' && supportsB2BBooking(row.serviceProvider)))
       : [],
     mode: '',
     shipping_mode: '',
@@ -116,11 +116,7 @@ const getCanonicalDelhiveryCouriers = async (filters: {
     const provider = normalizeServiceProviderKey(row.serviceProvider)
     return provider !== 'deliveryone' && provider !== 'shipway'
   })
-  const sourceRows: DeliveryOneCourierCatalogItem[] = deliveryOneRows.length
-    ? deliveryOneRows
-    : normalizedProviderFilter === 'shipway'
-      ? []
-      : getDeliveryOneCourierCatalog()
+  const sourceRows: DeliveryOneCourierCatalogItem[] = deliveryOneRows
   const legacyIds = new Set<number>(DELHIVERY_ALLOWED_COURIER_IDS)
   const deduped = new Map<string, DeliveryOneCourierCatalogItem>()
 
@@ -148,13 +144,6 @@ const getCanonicalDelhiveryCouriers = async (filters: {
         shippingMode: mode === 'air' ? 'Express' : 'Surface',
       })
     })
-
-  if (normalizedProviderFilter !== 'shipway') {
-    getDeliveryOneCourierCatalog().forEach((courier) => {
-      const key = normalizeCourierListToken(courier.displayName)
-      if (!deduped.has(key)) deduped.set(key, courier)
-    })
-  }
 
   const list = [...Array.from(deduped.values()), ...shipwayRows, ...otherProviderRows].filter((courier) => {
     if (
@@ -347,6 +336,12 @@ export const updateCourierStatusController = async (req: Request, res: Response)
     if (businessType && Array.isArray(businessType) && businessType.length > 0) {
       // Validate businessType values
       const validTypes = businessType.filter((type) => type === 'b2c' || type === 'b2b')
+      if (validTypes.includes('b2b') && !supportsB2BBooking(serviceProvider)) {
+        return res.status(400).json({
+          success: false,
+          message: 'This provider currently supports B2C booking only in TrueTransit.',
+        })
+      }
       if (validTypes.length === 0) {
         return res.status(400).json({
           success: false,
