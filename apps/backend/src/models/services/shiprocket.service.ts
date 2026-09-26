@@ -5286,7 +5286,7 @@ export const createB2CShipmentService = async (
 
       shipmentData = await createShadowfaxShipment(params)
       rollbackActions.push(async () => {
-        await cancelShadowfaxShipment(shipmentData.awb_number, params.order_number)
+        await cancelShadowfaxShipment(shipmentData.awb_number || params.order_number)
       })
       shipmentSuccessPackage = {
         waybill: shipmentData.awb_number,

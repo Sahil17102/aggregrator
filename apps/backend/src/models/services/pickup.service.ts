@@ -46,6 +46,7 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
     'pending',
     'booked',
     'confirmed',
+    'shipment_created',
     'pickup_initiated',
     'manifest_failed',
   ])
@@ -134,7 +135,7 @@ export async function cancelOrderShipment(orderId: string, expectedUserId?: stri
     const svc = new XpressbeesService()
     cancellationResult = await svc.cancelShipment(order.awb_number)
   } else if (integration === 'shadowfax') {
-    const providerResponse = await cancelShadowfaxShipment(order.awb_number, order.order_number)
+    const providerResponse = await cancelShadowfaxShipment(order.awb_number || order.order_number)
     cancellationResult = { success: true, providerResponse }
   } else if (integration === 'shipway') {
     const shipwayOrderId = order.order_number || order.shipment_id

@@ -149,13 +149,14 @@ export const createShadowfaxShipment = async (params: any) => {
   }
 }
 
-export const cancelShadowfaxShipment = async (awbNumber: string, clientOrderId?: string) => {
+export const cancelShadowfaxShipment = async (requestId: string) => {
   const { apiBase, token } = await config()
+  const normalizedRequestId = clean(requestId)
+  if (!normalizedRequestId) throw new HttpError(400, 'Shadowfax AWB or client order ID is required')
   const response = await axios.post(
     `${apiBase}/v3/clients/orders/cancel/`,
     {
-      ...(clean(awbNumber) ? { awb_number: clean(awbNumber) } : {}),
-      ...(clean(clientOrderId) ? { client_order_id: clean(clientOrderId) } : {}),
+      request_id: normalizedRequestId,
       cancel_remarks: 'Cancelled as per client request',
     },
     { headers: headers(token), timeout: 60000 },
