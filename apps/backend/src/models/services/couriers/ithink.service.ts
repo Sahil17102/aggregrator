@@ -240,16 +240,6 @@ export class IThinkService {
       throw new HttpError(502, clean(response?.html_message || response?.data) || 'iThink rate lookup failed')
     }
     const rows = iThinkRows(response?.data)
-    console.info('[iThink rates] provider serviceability', rows.map((row: any) => ({
-      name: row?.logistic_name,
-      service: row?.logistic_service_type,
-      serviceName: row?.logistic_service_type_name,
-      mode: row?.service_type,
-      pickup: row?.pickup,
-      prepaid: row?.prepaid,
-      cod: row?.cod,
-      rate: row?.rate,
-    })))
     return rows
       .map((row: any): IThinkRate => ({
         courierId: iThinkCourierId(row),

@@ -6,8 +6,15 @@ export const iThinkRows = (data: unknown): any[] => {
   return Object.entries(data).filter(([key]) => /^\d+$/.test(key)).map(([, row]) => row)
 }
 
-export const iThinkServiceType = (row: any) =>
-  String(row?.logistic_service_type || row?.service_type || '').trim().toLowerCase()
+export const iThinkServiceType = (row: any) => {
+  // Live domestic responses use logistic_service_type for a numeric service ID.
+  // Booking s_type and customer-facing mode must use the textual service type.
+  for (const value of [row?.service_type, row?.logistic_service_type_name, row?.logistic_service_type]) {
+    const mode = String(value ?? '').trim().toLowerCase()
+    if (mode && !/^\d+$/.test(mode)) return mode
+  }
+  return ''
+}
 
 export const iThinkCourierId = (row: any) => {
   const explicit = Number(row?.logistic_id)

@@ -77,6 +77,16 @@ const run = async () => {
   assert.equal(rates[5].totalRate, 95)
   mockResponse = { status: 'success', data: [{ ...providerRates[0], logistic_id: 3, logistic_service_type: '', service_type: 'Surface' }] }
   assert.equal((await service.fetchRates({}))[0].courierId, 3)
+  mockResponse = { status: 'success', data: [
+    { ...providerRates[0], logistic_service_type: '7', service_type: 'Surface' },
+    { ...providerRates[0], logistic_service_type: '8', service_type: 'Surface', prepaid: 'N', cod: 'N' },
+    { ...providerRates[0], logistic_service_type: '99' },
+  ] }
+  const liveShapeRates = await service.fetchRates({})
+  assert.equal(liveShapeRates[0].serviceType, 'surface', 'Numeric service IDs must not replace the booking mode')
+  assert.equal(liveShapeRates[1].prepaid, false)
+  assert.equal(liveShapeRates[1].cod, false)
+  assert.equal(liveShapeRates[2].serviceType, '', 'Unknown numeric IDs must not become display or booking modes')
   mockResponse = undefined
 
   simulateInsufficientBalance = true
