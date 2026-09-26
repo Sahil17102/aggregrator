@@ -1,18 +1,9 @@
-import sgMail from '@sendgrid/mail'
 import { and, desc, eq } from 'drizzle-orm'
 import { sendNotification } from '../../config/socketServer'
+import { sendTransactionalEmail } from '../../utils/emailSender'
 import { db } from '../client'
 import { notifications } from '../schema/notifications'
 import { users } from '../schema/users'
-import { getTransactionalFromAddress } from '../../utils/emailSender'
-
-const sendGridApiKey = process.env.TWILLIO_SENDGRID_API_KEY
-
-if (sendGridApiKey) {
-  sgMail.setApiKey(sendGridApiKey)
-} else {
-  console.warn('[SendGrid] TWILLIO_SENDGRID_API_KEY is not configured. Email notifications are disabled.')
-}
 
 export type NotificationType = 'ticket_update' | 'payment' | 'general'
 
@@ -50,6 +41,14 @@ export async function createNotificationService(params: CreateNotificationParams
       if (n?.userId) sendNotification(n.userId, n)
     })
 
+    if (params.sendEmail) {
+      await Promise.all(
+        adminUsers.map((admin) =>
+          admin.email ? sendEmailNotification(admin.email, title, message) : Promise.resolve(),
+        ),
+      )
+    }
+
     return newNotifications
   }
 
@@ -65,6 +64,20 @@ export async function createNotificationService(params: CreateNotificationParams
 
   if (userId && targetRole === 'user') {
     sendNotification(userId, newNotification)
+  }
+
+  if (params.sendEmail) {
+    const recipient =
+      params.email ||
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, userId || ''))
+          .limit(1)
+      )[0]?.email
+
+    if (recipient) await sendEmailNotification(recipient, title, message)
   }
 
   return newNotification
@@ -101,28 +114,16 @@ export async function markAllNotificationsAsRead(userId: string) {
 }
 
 async function sendEmailNotification(to: string, subject: string, message: string) {
-  if (!sendGridApiKey) {
-    console.warn('[SendGrid] Skipping email notification because API key is not configured.')
-    return
-  }
-
-  const from = getTransactionalFromAddress()
-
-  const msg = {
-    to,
-    from,
-    subject,
-    html: `
+  const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 8px;">
         <h2 style="color: #333;">${subject}</h2>
         <p style="font-size: 16px; color: #555;">${message}</p>
         <p style="font-size: 14px; color: #888; margin-top: 32px;">- The Ship Aggregator Team</p>
       </div>
-    `,
-  }
+    `
 
   try {
-    await sgMail.send(msg)
+    await sendTransactionalEmail(to, subject, html)
   } catch (error) {
     console.error('Email sending failed:', error)
   }

@@ -2008,3 +2008,5 @@ export const sendKycStatusEmail = async (opts: {
 
   await sendEmail(to, subject, html)
 }
+
+export { sendEmail as sendTransactionalEmail }
