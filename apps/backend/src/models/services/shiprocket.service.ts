@@ -60,6 +60,7 @@ import {
   visibleServiceProviderList,
 } from '../../utils/courierProviders'
 import { requireMerchantOrderReadiness } from '../../utils/merchantReadiness'
+import { summarizeB2BBoxes, supportsB2BBooking } from '../../utils/b2bBooking'
 import { courierPriorityProfiles } from '../schema/courierPriority'
 import { couriers } from '../schema/couriers'
 import { locations } from '../schema/locations'
@@ -3387,7 +3388,7 @@ export const fetchAvailableCouriersWithRatesB2B = async (
       const providerKey = normalizeServiceProviderKey(rate.serviceProvider)
       const isEnabled = providerKey && systemCourierMap[providerKey]?.has(Number(rate.courierId))
 
-      if (!isEnabled) continue
+      if (!isEnabled || !supportsB2BBooking(providerKey)) continue
 
       // Get or create courier entry
       if (!courierMap.has(rate.courierId)) {
@@ -6159,10 +6160,24 @@ export const createB2BShipmentService = async (
   await requireMerchantOrderReadiness(userId)
 
   const integrationType = normalizeServiceProviderKey(params.integration_type || 'delhivery')
-  if (!['delhivery', 'deliveryone'].includes(integrationType)) {
+  if (!supportsB2BBooking(integrationType)) {
     throw new HttpError(400, 'B2B shipment booking is currently available through Delhivery only.')
   }
-  params.integration_type = 'delhivery'
+  params.integration_type = integrationType
+
+  if (!Number.isInteger(Number(params.courier_id)) || Number(params.courier_id) <= 0) {
+    throw new HttpError(400, 'Select a valid B2B courier before booking.')
+  }
+  const [selectedB2BCourier] = await db.select().from(couriers).where(and(
+    eq(couriers.id, Number(params.courier_id)),
+    eq(couriers.serviceProvider, integrationType),
+    eq(couriers.isEnabled, true),
+    sql`${couriers.businessType} @> '["b2b"]'::jsonb`,
+  )).limit(1)
+  if (!selectedB2BCourier) {
+    throw new HttpError(400, 'Select an enabled B2B courier before booking.')
+  }
+  params.courier_partner = selectedB2BCourier.name
 
   // Helper function to normalize JSON values (similar to B2C)
   const normalizeJsonValue = (value: unknown) => {
@@ -6196,19 +6211,11 @@ export const createB2BShipmentService = async (
   const pickupDetails = normalizeJsonValue(params.pickup) ?? {}
   const rtoDetails = normalizeJsonValue(params.rto)
   const b2bBoxes = Array.isArray(params.boxes) ? params.boxes : []
-  if (b2bBoxes.length === 0) {
-    throw new HttpError(400, 'At least one box is required for a B2B shipment.')
-  }
-  if (
-    b2bBoxes.some(
-      (box: any) =>
-        Number(box?.weightKg ?? box?.weight ?? 0) <= 0 ||
-        Number(box?.lengthCm ?? box?.length ?? 0) <= 0 ||
-        Number(box?.breadthCm ?? box?.breadth ?? box?.width ?? 0) <= 0 ||
-        Number(box?.heightCm ?? box?.height ?? 0) <= 0,
-    )
-  ) {
-    throw new HttpError(400, 'Every B2B box requires weight, length, breadth, and height greater than zero.')
+  let boxSummary: ReturnType<typeof summarizeB2BBoxes>
+  try {
+    boxSummary = summarizeB2BBoxes(b2bBoxes)
+  } catch (error: any) {
+    throw new HttpError(400, error.message)
   }
 
   const b2bInvoices = Array.isArray(params.invoices) ? params.invoices : []
@@ -6262,7 +6269,7 @@ export const createB2BShipmentService = async (
   })
   const packageWeightKg =
     Number(params.package_weight ?? 0) ||
-    b2bBoxes.reduce((sum: number, box: any) => sum + Number(box?.weightKg ?? box?.weight ?? 0), 0)
+    boxSummary.weightKg
   const packageLengthCm =
     Number(params.package_length ?? 0) ||
     Math.max(0, ...b2bBoxes.map((box: any) => Number(box?.lengthCm ?? box?.length ?? 0)))
@@ -6326,6 +6333,8 @@ export const createB2BShipmentService = async (
       originPincode: params.pickup?.pincode ?? '',
       destinationPincode: params.consignee.pincode,
       weightKg: packageWeightKg,
+      pieceCount: boxSummary.count,
+      isSinglePiece: boxSummary.count === 1,
       length: packageLengthCm || undefined,
       width: packageBreadthCm || undefined,
       height: packageHeightCm || undefined,
@@ -6351,12 +6360,12 @@ export const createB2BShipmentService = async (
     }
   } catch (err) {
     console.error('⚠️ Failed to compute B2B charges breakdown for order', params.order_number, err)
-    chargesBreakdown = null
+    throw new HttpError(400, 'A valid B2B rate is required for the selected courier and route. Please refresh courier selection.')
   }
-  const resolvedFreightCharges =
-    calculatedFreightCharges !== null && Number.isFinite(calculatedFreightCharges)
-      ? calculatedFreightCharges
-      : Number(params.freight_charges ?? params.shipping_charges ?? 0)
+  if (calculatedFreightCharges === null || !Number.isFinite(calculatedFreightCharges) || calculatedFreightCharges <= 0) {
+    throw new HttpError(400, 'No valid B2B freight charge is configured for this courier and route.')
+  }
+  const resolvedFreightCharges = calculatedFreightCharges
   const expectedWalletDebit = resolvedFreightCharges + insuranceCharge
   const sellerWallet = await walletOfUser(userId)
   const sellerWalletBalance = Number(sellerWallet.balance ?? 0)
@@ -6442,29 +6451,7 @@ export const createB2BShipmentService = async (
   })
 
   // 2️⃣ Calculate package weight and dimensions
-  const boxes = b2bBoxes.length ? b2bBoxes : params?.order_items ?? []
-
-  const totalDeadWeight = boxes.reduce(
-    (sum: number, b: any) => sum + Number(b.weightKg ?? b.weight ?? 0),
-    0,
-  )
-  const totalVolumetricWeight = boxes.reduce(
-    (sum: number, b: any) =>
-      sum +
-      (Number(b.lengthCm ?? b.length ?? 0) *
-        Number(b.breadthCm ?? b.breadth ?? b.width ?? 0) *
-        Number(b.heightCm ?? b.height ?? 0)) /
-        5000,
-    0,
-  )
-
-  const package_weight = Math.ceil(Math.max(totalDeadWeight, totalVolumetricWeight))
-  const package_length = Math.max(0, ...boxes.map((b: any) => Number(b.lengthCm ?? b.length ?? 0)))
-  const package_breadth = Math.max(
-    0,
-    ...boxes.map((b: any) => Number(b.breadthCm ?? b.breadth ?? b.width ?? 0)),
-  )
-  const package_height = Math.max(0, ...boxes.map((b: any) => Number(b.heightCm ?? b.height ?? 0)))
+  const package_weight = Math.ceil(Math.max(packageWeightKg, boxSummary.weightKg, boxSummary.volumetricKg))
 
   // 3️⃣ Prepare payload for Delhivery
   const [sellerProfile] = await db
@@ -6514,19 +6501,14 @@ export const createB2BShipmentService = async (
     shipment_details: [
       {
         order_id: String(pendingOrder.orderNumber).slice(0, 50),
-        box_count: b2bBoxes.length,
+        box_count: boxSummary.count,
         description,
         weight: Math.max(1, Math.ceil(package_weight * 1000)),
         waybills: [],
         master: false,
       },
     ],
-    dimensions: b2bBoxes.map((box: any) => ({
-      box_count: 1,
-      length: Number(box.lengthCm ?? box.length),
-      width: Number(box.breadthCm ?? box.breadth ?? box.width),
-      height: Number(box.heightCm ?? box.height),
-    })),
+    dimensions: boxSummary.dimensions,
     rov_insurance: Boolean(params.is_insurance),
     enable_paperless_movement: false,
     invoices: b2bInvoices.map((invoice: any) => ({
