@@ -56,8 +56,46 @@ const sanitizeFilename = (filename: string) => {
   return `${sanitizeKeySegment(baseName, 'file')}${ext}`
 }
 
+const getStoragePrefix = () => {
+  const prefix = process.env.R2_KEY_PREFIX?.trim()
+  if (!prefix) return ''
+
+  return prefix
+    .split('/')
+    .map((segment) => sanitizeKeySegment(segment, ''))
+    .filter(Boolean)
+    .join('/')
+}
+
+const applyStoragePrefix = (key: string) => {
+  const normalizedKey = key.replace(/^\/+/, '')
+  const prefix = getStoragePrefix()
+
+  if (!prefix || normalizedKey === prefix || normalizedKey.startsWith(`${prefix}/`)) {
+    return normalizedKey
+  }
+
+  return `${prefix}/${normalizedKey}`
+}
+
 const buildStorageKey = (folderKey: string | undefined, userId: string, filename: string) =>
-  `${sanitizeFolderKey(folderKey)}/${userId}/${Date.now()}-${sanitizeFilename(filename)}`
+  applyStoragePrefix(
+    `${sanitizeFolderKey(folderKey)}/${userId}/${Date.now()}-${sanitizeFilename(filename)}`,
+  )
+
+const buildObjectReferenceUrl = (bucket: string, key: string) => {
+  const rawEndpoint = process.env.R2_ENDPOINT?.trim().replace(/\/+$/, '')
+  if (!rawEndpoint) return key
+
+  try {
+    const url = new URL(rawEndpoint)
+    const pathParts = url.pathname.split('/').filter(Boolean)
+    const includesBucket = pathParts[pathParts.length - 1] === bucket
+    return `${rawEndpoint}${includesBucket ? '' : `/${bucket}`}/${key}`
+  } catch {
+    return `${rawEndpoint}/${bucket}/${key}`
+  }
+}
 
 const presignCacheKey = (
   bucket: string,
@@ -93,7 +131,7 @@ export const presignUpload = async ({
 
   const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 60 * 5 }) // 5 min
 
-  const publicUrl = `${process.env.R2_ENDPOINT}/${bucket}/${key}`
+  const publicUrl = buildObjectReferenceUrl(bucket, key)
   return { uploadUrl, key, publicUrl, bucket }
 }
 
@@ -116,7 +154,7 @@ export const uploadBufferToR2 = async ({
 
   await r2.send(command)
 
-  const publicUrl = `${process.env.R2_ENDPOINT}/${bucket}/${key}`
+  const publicUrl = buildObjectReferenceUrl(bucket, key)
   return { key, publicUrl, bucket }
 }
 
@@ -151,12 +189,12 @@ export const downloadAndUploadToR2 = async ({
       // If it's already a key (contains folder structure), return it as-is
       if (url.includes('/')) {
         console.log(`✅ Using existing R2 key: ${url}`)
-        return url
+        return applyStoragePrefix(url)
       }
 
       // If it's just a filename, construct a proper key path
       // This handles cases where Delhivery returns just a filename
-      const key = `${folderKey}/${userId}/${url}`
+      const key = applyStoragePrefix(`${folderKey}/${userId}/${url}`)
       console.log(`✅ Constructed R2 key from filename: ${key}`)
       return key
     }
@@ -294,7 +332,8 @@ export const presignDownload = async (
       }
 
       // It's already a key, presign it
-      const cacheKey = presignCacheKey(bucket, value, options)
+      const storageKey = applyStoragePrefix(value)
+      const cacheKey = presignCacheKey(bucket, storageKey, options)
       const cached = presignDownloadCache.get(cacheKey)
       if (cached && cached.expiresAt - PRESIGN_CACHE_SAFETY_BUFFER_MS > now) {
         return cached.url
@@ -303,7 +342,7 @@ export const presignDownload = async (
       console.log(`🔄 Presigning download URL for key: ${value} in bucket: ${bucket}`)
       const command = new GetObjectCommand({
         Bucket: bucket,
-        Key: value,
+        Key: storageKey,
         ResponseContentDisposition: responseContentDisposition,
         ResponseContentType: responseContentType,
       })
@@ -351,7 +390,8 @@ export const presignDownload = async (
         }
 
         // It's already a key, presign it
-        const cacheKey = presignCacheKey(bucket, value, options)
+        const storageKey = applyStoragePrefix(value)
+        const cacheKey = presignCacheKey(bucket, storageKey, options)
         const cached = presignDownloadCache.get(cacheKey)
         if (cached && cached.expiresAt - PRESIGN_CACHE_SAFETY_BUFFER_MS > now) {
           return cached.url
@@ -360,7 +400,7 @@ export const presignDownload = async (
         console.log(`🔄 Presigning download URL for key: ${value} in bucket: ${bucket}`)
         const command = new GetObjectCommand({
           Bucket: bucket,
-          Key: value,
+          Key: storageKey,
           ResponseContentDisposition: responseContentDisposition,
           ResponseContentType: responseContentType,
         })

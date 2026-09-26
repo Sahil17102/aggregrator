@@ -32,6 +32,8 @@
     "repair:delhivery-visibility": "tsx src/scripts/repairDelhiveryVisibility.ts",
     "zones:remove-kashmir-special": "tsx src/scripts/removeKashmirFromSpecialZone.ts",
     "verify:smtp": "tsx src/scripts/verifySmtp.ts",
+    "configure:r2-cors": "tsx src/scripts/configureR2Cors.ts",
+    "verify:r2-storage": "tsx src/scripts/verifyR2Storage.ts",
     "preview:shipment-status-email": "tsx src/scripts/sendShipmentStatusPreview.ts",
     "verify:shipment-status-email": "tsx src/scripts/verifyShipmentEmailTemplate.ts",
     "verify:delivery-one-api-calls": "tsx src/scripts/verifyDeliveryOneApiCalls.ts",

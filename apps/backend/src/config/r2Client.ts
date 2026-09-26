@@ -10,9 +10,27 @@ const backendRoot = path.resolve(__dirname, '../..')
 dotenv.config({ path: path.resolve(backendRoot, `.env.${env}`) })
 dotenv.config({ path: path.resolve(backendRoot, '.env') })
 
+const normalizeR2Endpoint = (value: string | undefined) => {
+  const endpoint = value?.trim()
+  if (!endpoint) return endpoint
+
+  try {
+    const url = new URL(endpoint)
+    if (url.hostname.endsWith('.r2.cloudflarestorage.com')) {
+      url.pathname = '/'
+      url.search = ''
+      url.hash = ''
+      return url.toString().replace(/\/$/, '')
+    }
+    return endpoint.replace(/\/$/, '')
+  } catch {
+    return endpoint.replace(/\/$/, '')
+  }
+}
+
 export const r2 = new S3Client({
   region: 'auto',
-  endpoint: process.env.R2_ENDPOINT,
+  endpoint: normalizeR2Endpoint(process.env.R2_ENDPOINT),
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID || 'placeholder',
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,

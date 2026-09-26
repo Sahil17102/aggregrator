@@ -25,6 +25,6 @@ export default defineConfig({
     user: decodeURIComponent(databaseUrl.username),
     password: decodeURIComponent(databaseUrl.password),
     database: databaseUrl.pathname.replace(/^\//, ''),
-    ssl: process.env.PGSSLMODE === 'require' ? 'require' : undefined,
+    ssl: process.env.PGSSLMODE === 'require' ? 'require' : false,
   },
 })
