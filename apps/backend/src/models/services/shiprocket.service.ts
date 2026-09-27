@@ -1275,7 +1275,10 @@ const getProviderRateAmount = (providerRate?: { total?: unknown; freight?: unkno
   return freight ?? cod
 }
 
-const QUOTE_BACKED_PROVIDER_KEYS = new Set(['deliveryone', 'ithink'])
+// Providers whose live rate response is the billing source of truth. Shipway
+// couriers can be returned without a local rate card, so omitting Shipway here
+// turns a valid provider quote into a zero-priced, apparently bookable option.
+const QUOTE_BACKED_PROVIDER_KEYS = new Set(['deliveryone', 'ithink', 'shipway'])
 
 const roundMoneyValue = (value: unknown) => {
   const parsed = Number(value ?? 0)

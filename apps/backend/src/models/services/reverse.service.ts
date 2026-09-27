@@ -151,9 +151,21 @@ const convertKgToGrams = (value: unknown, fallback = 500) => {
   return Math.max(1, Math.round(numericValue * 1000))
 }
 
-export async function quoteReverseForOrder(orderId: string, _overrideWeightGrams?: number) {
+export async function quoteReverseForOrder(
+  orderId: string,
+  _overrideWeightGrams?: number,
+  userId?: string,
+) {
   // 1) Fetch order and resolve courier
-  const [order] = await db.select().from(b2c_orders).where(eq(b2c_orders.id, orderId)).limit(1)
+  const [order] = await db
+    .select()
+    .from(b2c_orders)
+    .where(
+      userId
+        ? and(eq(b2c_orders.id, orderId), eq(b2c_orders.user_id, userId))
+        : eq(b2c_orders.id, orderId),
+    )
+    .limit(1)
   if (!order) throw new Error('Order not found')
 
   // Always trust server-stored order weight; ignore any client override
@@ -246,6 +258,8 @@ export async function quoteReverseForOrder(orderId: string, _overrideWeightGrams
     zoneId: zoneRow.id,
     zoneCode,
     courierId: resolvedCourierId,
+    serviceProvider: provider || null,
+    shippingMode: order.shipping_mode ?? null,
     max_slab_weight: quote.max_slab_weight ?? null,
     oda,
     eddDays,

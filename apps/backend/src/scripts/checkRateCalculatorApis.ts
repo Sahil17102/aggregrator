@@ -60,6 +60,19 @@ const run = async () => {
           seller_freight_charge: 100,
           final_courier_charge: 140,
         },
+        {
+          id: 2,
+          name: 'Mock Live Quote Only',
+          rate: 0,
+          provider_rate: { provider: 'shipway', total: 73.05, freight: 73.05 },
+          final_courier_charge: 0,
+        },
+        {
+          id: 3,
+          name: 'Mock Missing Rate',
+          rate: 0,
+          final_courier_charge: 0,
+        },
       ]
     }
 
@@ -224,6 +237,9 @@ const run = async () => {
       assert.equal(res.body?.data?.rates?.[0]?.courier_name, 'Mock B2C')
       assert.equal(res.body?.data?.rates?.[0]?.rate, 140)
       assert.equal(res.body?.data?.rates?.[0]?.final_courier_charge, 140)
+      assert.equal(res.body?.data?.rates?.[1]?.courier_name, 'Mock Live Quote Only')
+      assert.equal(res.body?.data?.rates?.[1]?.rate, 73.05)
+      assert.equal(res.body?.data?.rates?.some((rate: any) => rate.courier_name === 'Mock Missing Rate'), false)
     }
 
     {

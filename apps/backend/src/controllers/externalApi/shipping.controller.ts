@@ -2,6 +2,27 @@ import { Response } from 'express'
 import { fetchAvailableCouriersWithRates } from '../../models/services/shiprocket.service'
 import { extractCodChargeBasisFromBody, extractOrderAmountFromBody } from '../../utils/orderAmount'
 
+const resolveCourierRate = (courier: any): number => {
+  const candidates = [
+    courier?.final_courier_charge,
+    courier?.seller_freight_charge,
+    courier?.provider_quote,
+    courier?.provider_rate?.total,
+    courier?.provider_rate?.freight,
+    courier?.courier_cost_estimate,
+    courier?.rate,
+    courier?.freight_charges,
+    courier?.charge,
+  ]
+
+  for (const candidate of candidates) {
+    const amount = Number(candidate)
+    if (Number.isFinite(amount) && amount > 0) return amount
+  }
+
+  return 0
+}
+
 /**
  * Get shipping rates for a shipment
  * POST /api/v1/shipping/rates
@@ -90,32 +111,28 @@ export const getShippingRatesController = async (req: any, res: Response) => {
 
     // Format response for shipping rates
     // Note: integration_type is intentionally excluded from external API responses
-    const rates = (couriers ?? []).map((courier: any) => ({
-      courier_option_key: courier.courier_option_key || null,
-      courier_id: courier.id,
-      courier_name: courier.displayName || courier.name,
-      rate:
-        courier.final_courier_charge ??
-        courier.seller_freight_charge ??
-        courier.rate ??
-        courier.freight_charges ??
-        courier.charge ??
-        0,
-      final_courier_charge: courier.final_courier_charge ?? null,
-      platform_rate: courier.platform_rate ?? null,
-      provider_quote: courier.provider_quote ?? null,
-      courier_cost_estimate: courier.courier_cost_estimate ?? null,
-      provider_rate: courier.provider_rate ?? null,
-      chargeable_weight_g: courier.chargeable_weight ?? null,
-      volumetric_weight_g: courier.volumetric_weight ?? null,
-      slabs: courier.slabs ?? null,
-      max_slab_weight: courier.max_slab_weight ?? null,
-      estimated_delivery_days: courier.estimated_delivery_days || courier.tat || '3-5',
-      estimated_delivery_date: courier.estimated_delivery_date,
-      serviceable: courier.serviceable !== false,
-      cod_available: courier.cod_available !== false,
-      zone: courier.zone,
-    }))
+    const rates = (couriers ?? [])
+      .map((courier: any) => ({
+        courier_option_key: courier.courier_option_key || null,
+        courier_id: courier.id,
+        courier_name: courier.displayName || courier.name,
+        rate: resolveCourierRate(courier),
+        final_courier_charge: courier.final_courier_charge ?? null,
+        platform_rate: courier.platform_rate ?? null,
+        provider_quote: courier.provider_quote ?? null,
+        courier_cost_estimate: courier.courier_cost_estimate ?? null,
+        provider_rate: courier.provider_rate ?? null,
+        chargeable_weight_g: courier.chargeable_weight ?? null,
+        volumetric_weight_g: courier.volumetric_weight ?? null,
+        slabs: courier.slabs ?? null,
+        max_slab_weight: courier.max_slab_weight ?? null,
+        estimated_delivery_days: courier.estimated_delivery_days || courier.tat || '3-5',
+        estimated_delivery_date: courier.estimated_delivery_date,
+        serviceable: courier.serviceable !== false,
+        cod_available: courier.cod_available !== false,
+        zone: courier.zone,
+      }))
+      .filter((courier) => courier.rate > 0)
 
     res.status(200).json({
       success: true,
