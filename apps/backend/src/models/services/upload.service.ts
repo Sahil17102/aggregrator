@@ -267,6 +267,16 @@ const extractKeyFromUrl = (url: string, bucket: string): string | null => {
       return pathParts.slice(bucketIndex + 1).join('/')
     }
 
+    // Cloudflare R2 virtual-hosted URLs put the bucket in the hostname and
+    // keep the complete object key in the path. Dropping the first path
+    // segment here turns `trustransit/labels/...` into `labels/...` and the
+    // newly signed URL points to a non-existent object.
+    const hostname = urlObj.hostname.toLowerCase()
+    const normalizedBucket = bucket.toLowerCase()
+    if (hostname === normalizedBucket || hostname.startsWith(`${normalizedBucket}.`)) {
+      return pathParts.join('/')
+    }
+
     if (pathParts.length > 1 && (urlObj.hostname.includes('cloudflarestorage.com') || /(^|\.)r2(\.|$)/i.test(urlObj.hostname))) {
       return pathParts.slice(1).join('/')
     }
