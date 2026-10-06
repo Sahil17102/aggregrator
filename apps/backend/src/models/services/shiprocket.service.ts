@@ -4878,6 +4878,32 @@ export const createB2CShipmentService = async (
       | 'shipway'
       | 'shadowfax'
       | 'ithink'
+
+    // Reject stale iThink selections before any live quote or booking request.
+    // This prevents an already-open client form from reaching a provider that
+    // an admin has disabled (for example while its account is finance-blocked).
+    if (integrationType === 'ithink') {
+      const [enabledIThinkCourier] = await db
+        .select({ id: couriers.id })
+        .from(couriers)
+        .where(
+          and(
+            eq(couriers.id, Number(params.courier_id)),
+            eq(couriers.serviceProvider, 'ithink'),
+            eq(couriers.isEnabled, true),
+            sql`${couriers.businessType} @> '["b2c"]'::jsonb`,
+          ),
+        )
+        .limit(1)
+
+      if (!enabledIThinkCourier) {
+        throw new HttpError(
+          400,
+          'This courier is no longer available. Refresh courier rates and select another option.',
+        )
+      }
+    }
+
     const providerName =
       integrationType === 'delhivery'
         ? 'Delhivery'
@@ -5212,6 +5238,8 @@ export const createB2CShipmentService = async (
           and(
             eq(couriers.id, Number(params.courier_id)),
             eq(couriers.serviceProvider, 'ithink'),
+            eq(couriers.isEnabled, true),
+            sql`${couriers.businessType} @> '["b2c"]'::jsonb`,
           ),
         )
         .limit(1)
