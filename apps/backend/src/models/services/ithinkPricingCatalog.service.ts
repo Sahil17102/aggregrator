@@ -45,7 +45,8 @@ async function ensureCourierCatalog() {
         name: courier.name,
         serviceProvider: PROVIDER,
         businessType: ['b2c', 'b2b'],
-        isEnabled: true,
+        // Seeded providers stay unavailable until an admin explicitly enables them.
+        isEnabled: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -53,8 +54,7 @@ async function ensureCourierCatalog() {
         target: [couriers.id, couriers.serviceProvider],
         set: {
           name: courier.name,
-          businessType: ['b2c', 'b2b'],
-          isEnabled: true,
+          // Preserve admin-managed availability and business-type settings.
           updatedAt: new Date(),
         },
       })
