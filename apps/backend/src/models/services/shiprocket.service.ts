@@ -2171,7 +2171,14 @@ export const fetchAvailableCouriersWithRates = async (
     const iThinkDestinationPincode = normalizePincode(
       params.destination ?? params.destination_pincode,
     )?.toString()
-    if (iThinkOriginPincode && iThinkDestinationPincode) {
+    // iThink must remain fully controlled by the courier catalogue. In particular,
+    // do not call or expose it when every iThink courier has been disabled by an
+    // admin (for example while the provider account is finance-blocked).
+    if (
+      enabledProviders.has('ithink') &&
+      iThinkOriginPincode &&
+      iThinkDestinationPincode
+    ) {
       try {
         const configuredIThinkPickupPincode = String(
           process.env.ITHINK_PICKUP_PINCODE || '',
@@ -2209,7 +2216,9 @@ export const fetchAvailableCouriersWithRates = async (
         iThinkRates = iThinkRates.filter((rate) => {
           const saved = iThinkCatalog.find((row) => row.id === rate.courierId) ||
             iThinkCatalog.find((row) => nameKey(row.name) === nameKey(rate.courierName))
-          if (!saved) return true
+          // Live discovery must not silently opt a new courier into production.
+          // Only catalogue entries explicitly enabled for B2C are bookable.
+          if (!saved) return false
           rate.courierId = saved.id
           return saved.isEnabled && Array.isArray(saved.businessType) && saved.businessType.includes('b2c')
         })
@@ -2227,19 +2236,6 @@ export const fetchAvailableCouriersWithRates = async (
             }
             bucket.rows.push(row)
             bucket.idSet.add(rate.courierId)
-            await db
-              .insert(couriers)
-              .values({
-                id: rate.courierId,
-                name: row.name,
-                serviceProvider: 'ithink',
-                isEnabled: true,
-                businessType: ['b2c'],
-              })
-              .onConflictDoUpdate({
-                target: [couriers.id, couriers.serviceProvider],
-                set: { name: row.name, updatedAt: new Date() },
-              })
           }
           providerCourierBuckets.set('ithink', bucket)
           systemCourierMap.ithink = bucket.idSet
